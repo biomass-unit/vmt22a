@@ -1,5 +1,7 @@
 #pragma once
 
+#include "disable_unnecessary_warnings.hpp"
+
 #include <cstddef>
 #include <cstdint>
 
