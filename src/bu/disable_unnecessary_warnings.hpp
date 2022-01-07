@@ -1,8 +1,7 @@
 #pragma once
 
 
-// The warnings could be disabled through the
-// project settings, but this allows comments.
+// The warnings could be disabled through the project settings, but this allows comments.
 
 
 #ifdef _MSC_VER // MS warnings only

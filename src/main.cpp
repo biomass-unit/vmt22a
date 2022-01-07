@@ -1,10 +1,10 @@
-#include "utilities/utils.hpp"
+#include "bu/utilities.hpp"
 
 
 auto main() -> int try {
-
+    bu::print("Hello, world!\n");
 }
 
 catch (std::exception const& exception) {
-    std::cerr << "Error: " << exception.what() << '\n';
+    bu::print<std::cerr>("Error: {}\n", exception.what());
 }

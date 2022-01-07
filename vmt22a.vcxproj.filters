@@ -18,15 +18,15 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\utilities\utils.cpp">
+    <ClCompile Include="src\bu\utilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\utilities\utils.hpp">
+    <ClInclude Include="src\bu\utilities.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\utilities\disable_unnecessary_warnings.hpp">
+    <ClInclude Include="src\bu\disable_unnecessary_warnings.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
