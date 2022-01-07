@@ -2,7 +2,7 @@
 
 
 auto main() -> int try {
-    bu::print("Hello, world!\n");
+    bu::unimplemented();
 }
 
 catch (std::exception const& exception) {

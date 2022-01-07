@@ -13,6 +13,7 @@
 #include <utility>
 #include <concepts>
 #include <type_traits>
+#include <source_location>
 
 #include <fstream>
 #include <iostream>
@@ -80,5 +81,37 @@ namespace bu {
             os << fmt;
         }
     }
+
+    [[noreturn]]
+    inline auto abort(std::string_view message, std::source_location caller = std::source_location::current()) -> void {
+        throw std::runtime_error(
+            std::format(
+                "bu::abort invoked in {}, in file {} on line {}, with message: {}",
+                caller.function_name(),
+                caller.file_name(),
+                caller.line(),
+                message
+            )
+        );
+    }
+
+    [[noreturn]]
+    inline auto unimplemented(std::source_location caller = std::source_location::current()) -> void {
+        abort("Unimplemented branch reached", caller);
+    }
+
+
+    template <class Fst, class Snd = Fst>
+    struct [[nodiscard]] Pair {
+        Fst first;
+        Snd second;
+
+        [[nodiscard]]
+        constexpr auto operator==(Pair const&) const
+            noexcept(noexcept(pair == pair, second == second)) -> bool = default;
+    };
+
+    inline constexpr auto first  = [](auto& pair) noexcept -> auto& { return pair.first ; };
+    inline constexpr auto second = [](auto& pair) noexcept -> auto& { return pair.second; };
 
 }
