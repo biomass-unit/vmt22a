@@ -53,6 +53,10 @@ namespace bu {
     using Usize = std::size_t;
     using Isize = std::make_signed_t<Usize>;
 
+    using Char = unsigned char;
+
+    using Float = double;
+
 
     inline namespace literals {
 

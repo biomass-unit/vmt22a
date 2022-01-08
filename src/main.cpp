@@ -1,5 +1,7 @@
 #include "bu/utilities.hpp"
 
+#include "lexer/token.hpp"
+
 
 auto main() -> int try {
     bu::unimplemented();
