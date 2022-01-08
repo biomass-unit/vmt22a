@@ -31,4 +31,4 @@ DISABLE(4866) // left-to-right evaluation not enforced
 #pragma pop_macro("DISABLE_HELPER")
 #pragma pop_macro("DISABLE")
 
-#endif // defined _MSVC_VER
+#endif // defined _MSC_VER

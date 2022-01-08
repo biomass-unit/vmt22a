@@ -215,6 +215,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\disable_unnecessary_warnings.hpp" />
+    <ClInclude Include="src\bu\formatting.hpp" />
     <ClInclude Include="src\bu\utilities.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
   </ItemGroup>

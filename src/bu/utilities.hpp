@@ -12,6 +12,7 @@
 #include <limits>
 #include <utility>
 #include <concepts>
+#include <functional>
 #include <type_traits>
 #include <source_location>
 
