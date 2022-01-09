@@ -1,10 +1,11 @@
 #include "bu/utilities.hpp"
 
-#include "lexer/token.hpp"
+#include "lexer/lexer.hpp"
+#include "lexer/lexer_test.hpp"
 
 
 auto main() -> int try {
-    bu::unimplemented();
+    lexer::run_tests();
 }
 
 catch (std::exception const& exception) {
