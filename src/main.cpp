@@ -5,6 +5,7 @@
 #include "lexer/token_formatting.hpp"
 
 #include "ast/ast.hpp"
+#include "ast/ast_formatting.hpp"
 
 
 auto main() -> int try {

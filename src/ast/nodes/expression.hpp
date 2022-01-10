@@ -37,6 +37,7 @@ namespace ast {
             DEFAULTED_EQUALITY(Case);
         };
         std::vector<Case> cases;
+        bu::Wrapper<Expression> expression;
         DEFAULTED_EQUALITY(Match);
     };
 

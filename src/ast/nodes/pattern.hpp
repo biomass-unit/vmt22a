@@ -3,6 +3,21 @@
 
 namespace ast {
 
-    struct Pattern {};
+    namespace pattern {
+
+        struct Wildcard {
+            DEFAULTED_EQUALITY(Wildcard);
+        };
+
+    }
+
+
+    struct Pattern {
+        using Variant = std::variant<
+            pattern::Wildcard
+        >;
+        Variant value;
+        DEFAULTED_EQUALITY(Pattern);
+    };
 
 }
