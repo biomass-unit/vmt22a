@@ -4,14 +4,11 @@
 #include "lexer/lexer_test.hpp"
 #include "lexer/token_formatting.hpp"
 
-#include "bu/wrapper.hpp"
+#include "ast/ast.hpp"
 
 
 auto main() -> int try {
-    //lexer::run_tests();
 
-    bu::Wrapper wrapper { "world" };
-    bu::print("Hello, {}!", wrapper);
 }
 
 catch (std::exception const& exception) {
