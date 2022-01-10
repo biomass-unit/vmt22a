@@ -50,5 +50,8 @@
     <ClInclude Include="src\lexer\token_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\bu\wrapper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

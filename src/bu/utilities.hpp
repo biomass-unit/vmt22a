@@ -61,6 +61,8 @@ namespace bu {
 
     inline namespace literals {
 
+        using namespace std::literals;
+
         consteval auto operator"" _i8 (Usize n) noexcept -> I8  { return static_cast<I8 >(n); }
         consteval auto operator"" _i16(Usize n) noexcept -> I16 { return static_cast<I16>(n); }
         consteval auto operator"" _i32(Usize n) noexcept -> I32 { return static_cast<I32>(n); }
@@ -194,7 +196,7 @@ DEFINE_FORMATTER_FOR(bu::Pair<F, S>) {
 
 template <>
 struct std::formatter<std::monostate> : bu::Formatter_base {
-    auto format(std::monostate, std::format_context& context) -> std::format_context::iterator {
+    auto format(std::monostate, std::format_context& context) {
         return std::format_to(context.out(), "std::monostate");
     }
 };
