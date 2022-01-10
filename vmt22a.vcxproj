@@ -203,6 +203,7 @@
   <ItemGroup>
     <ClCompile Include="src\lexer\lexer.cpp" />
     <ClCompile Include="src\lexer\lexer_test.cpp" />
+    <ClCompile Include="src\lexer\token_formatting.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\bu\utilities.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -217,11 +218,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\disable_unnecessary_warnings.hpp" />
-    <ClInclude Include="src\bu\formatting.hpp" />
     <ClInclude Include="src\bu\utilities.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\lexer\lexer_test.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
+    <ClInclude Include="src\lexer\token_formatting.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

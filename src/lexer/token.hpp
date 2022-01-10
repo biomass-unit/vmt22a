@@ -73,6 +73,8 @@ namespace lexer {
 
         Variant value;
         Type type;
+
+        static constexpr auto type_count = static_cast<bu::Usize>(Type::end_of_input) + 1;
     };
 
 }

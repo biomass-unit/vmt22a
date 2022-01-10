@@ -1,5 +1,4 @@
 #include "bu/utilities.hpp"
-#include "bu/formatting.hpp"
 #include "lexer_test.hpp"
 
 

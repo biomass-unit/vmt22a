@@ -2,6 +2,7 @@
 
 #include "lexer/lexer.hpp"
 #include "lexer/lexer_test.hpp"
+#include "lexer/token_formatting.hpp"
 
 
 auto main() -> int try {
