@@ -49,6 +49,9 @@ namespace bu {
         {
             vector.reserve(initial_capacity);
         }
+
+        Wrapper_context(Wrapper_context const&) = delete;
+
         constexpr ~Wrapper_context() {
             Wrapper<T>::vector = old_vector;
         }

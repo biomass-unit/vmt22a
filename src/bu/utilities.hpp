@@ -131,6 +131,10 @@ namespace bu {
 }
 
 
+#define DEFAULTED_EQUALITY(name) \
+auto operator==(name const&) const noexcept -> bool = default
+
+
 #define DECLARE_FORMATTER_FOR_TEMPLATE(...)                             \
 struct std::formatter<__VA_ARGS__> : bu::Formatter_base {               \
     [[nodiscard]] auto format(__VA_ARGS__ const&, std::format_context&) \

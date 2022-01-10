@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bu/utilities.hpp"
+#include "bu/wrapper.hpp"
 
 
 namespace ast {
