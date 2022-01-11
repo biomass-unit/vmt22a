@@ -74,5 +74,8 @@
     <ClInclude Include="src\ast\ast_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\bu\pooled_string.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

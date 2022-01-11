@@ -1,9 +1,16 @@
 #pragma once
 
 #include "bu/utilities.hpp"
+#include "bu/pooled_string.hpp"
 
 
 namespace lexer {
+
+    using String_literal = bu::Unique_pooled_string<>;
+    using Identifier     = bu::Unique_pooled_string<>;
+
+    static_assert(!std::same_as<String_literal, Identifier>);
+
 
     struct [[nodiscard]] Token {
         using Variant = std::variant<
@@ -11,7 +18,9 @@ namespace lexer {
             bu::Isize,
             bu::Float,
             bu::Char,
-            bool
+            bool,
+            String_literal,
+            Identifier
         >;
 
         enum class Type {

@@ -122,6 +122,25 @@ namespace bu {
     inline constexpr auto second = [](auto& pair) noexcept -> auto& { return pair.second; };
 
 
+    inline constexpr auto move = []<class X>(X&& x) noexcept -> std::remove_reference_t<X>&& {
+        static_assert(!std::is_const_v<std::remove_reference_t<X>>, "Attempted to move from const");
+        return static_cast<std::remove_reference_t<X>&&>(x);
+    };
+
+    template <class T>
+    inline constexpr auto make = []<class... Args>(Args&&... args)
+        noexcept(std::is_nothrow_constructible_v<T, Args&&...>) -> T
+    {
+        return T { std::forward<Args>(args)... };
+    };
+
+
+    [[nodiscard]]
+    constexpr auto unsigned_distance(auto const start, auto const stop) noexcept -> Usize {
+        return static_cast<Usize>(std::distance(start, stop));
+    }
+
+
     struct Formatter_base {
         constexpr auto parse(std::format_parse_context& context) {
             return context.end();
