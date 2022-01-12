@@ -9,7 +9,7 @@
 
 
 auto main() -> int try {
-
+    lexer::run_tests();
 }
 
 catch (std::exception const& exception) {
