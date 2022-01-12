@@ -20,4 +20,6 @@ auto lexer::run_tests() -> void {
     //test("for;forr(for2", { for_, semicolon, lower_name, paren_open, lower_name });
     //test("x1 _ wasd,3"  , { lower_name, underscore, lower_name, comma, integer });
     //test("a<$>_:\nVec"  , { lower_name, operator_name, underscore, colon, upper_name });
+
+    bu::print("Lexer tests passed!\n");
 }

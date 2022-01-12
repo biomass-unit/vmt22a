@@ -1,17 +1,22 @@
 #include "bu/utilities.hpp"
 #include "lexer.hpp"
 
+#include <charconv>
+
 
 namespace {
 
+    using Type = lexer::Token::Type;
+
     class Lex_context {
         std::vector<lexer::Token>* tokens;
+    public:
         char const* start;
         char const* stop;
         char const* pointer;
         bu::Usize line   = 1;
         bu::Usize column = 1;
-    public:
+
         explicit Lex_context(std::string_view const source, std::vector<lexer::Token>& tokens) noexcept
             : tokens  { &tokens               }
             , start   { source.data()         }
@@ -46,12 +51,34 @@ namespace {
             return { anchor, pointer };
         }
 
-        inline auto success(lexer::Token&& token) noexcept -> std::true_type {
-            tokens->push_back(std::move(token));
-            return {};
+        inline auto try_consume(char const c) noexcept -> bool {
+            assert(c != '\n');
+
+            if (*pointer == c) {
+                ++pointer;
+                ++column;
+                return true;
+            }
+            else {
+                return false;
+            }
         }
 
-        inline auto failure() noexcept -> std::false_type {
+        inline auto try_consume(std::string_view string) noexcept -> bool {
+            auto ptr = pointer;
+
+            for (char const character : string) {
+                if (*ptr++ != character) {
+                    return false;
+                }
+            }
+
+            pointer = ptr;
+            return true;
+        }
+
+        inline auto success(lexer::Token&& token) noexcept -> std::true_type {
+            tokens->push_back(std::move(token));
             return {};
         }
     private:
@@ -67,16 +94,43 @@ namespace {
     };
 
 
-    auto extract_identifier(Lex_context&) -> bool {
+    /*auto extract_identifier(Lex_context&) -> bool {
         bu::unimplemented();
-    }
+    }*/
 
-    auto extract_punctuation(Lex_context&) -> bool {
+    /*auto extract_punctuation(Lex_context&) -> bool {
         bu::unimplemented();
-    }
+    }*/
 
-    auto extract_numeric(Lex_context&) -> bool {
-        bu::unimplemented();
+    auto extract_numeric(Lex_context& context) -> bool {
+        auto const anchor = context.pointer;
+
+        int base = 10;
+        if (context.try_consume('0')) {
+            switch (context.extract_current()) {
+            case 'b': base = 2; break;
+            case 'q': base = 4; break;
+            case 'o': base = 8; break;
+            case 'd': base = 12; break;
+            case 'x': base = 16; break;
+            default:
+                context.pointer -= 2;
+            }
+        }
+
+        bu::Isize integer;
+        auto const [ptr, ec] = std::from_chars(context.pointer, context.stop, integer, base);
+
+        if (anchor == ptr) {
+            return false;
+        }
+        else if (ec == std::errc {}) {
+            context.pointer = ptr;
+            return context.success({ .value = integer, .type = Type::integer });
+        }
+        else {
+            bu::unimplemented();
+        }
     }
 
 }
@@ -87,9 +141,9 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
     Lex_context context { source, tokens };
 
     constexpr std::array extractors {
-        extract_identifier,
-        extract_punctuation,
-        extract_numeric
+        //extract_identifier,
+        //extract_punctuation,
+        extract_numeric,
     };
 
     for (;;) {

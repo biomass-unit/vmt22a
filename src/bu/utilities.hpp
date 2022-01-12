@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cassert>
 
 #include <limits>
 #include <utility>
