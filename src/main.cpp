@@ -33,6 +33,7 @@ namespace {
 
 
 auto main() -> int try {
+    //lexer::run_tests();
     lexer_repl();
 }
 

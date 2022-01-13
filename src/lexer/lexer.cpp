@@ -68,12 +68,14 @@ namespace {
             auto ptr = pointer;
 
             for (char const character : string) {
+                assert(character != '\n');
                 if (*ptr++ != character) {
                     return false;
                 }
             }
 
             pointer = ptr;
+            column += string.size();
             return true;
         }
 
@@ -93,6 +95,68 @@ namespace {
         }
     };
 
+
+    template <char... cs>
+    constexpr auto is_one_of(char const c) noexcept -> bool {
+        return ((c == cs) || ...);
+    }
+
+    template <char... cs>
+    constexpr auto is_not_one_of(char const c) noexcept -> bool {
+        return ((c != cs) && ...);
+    }
+
+    template <char a, char b>
+        requires (a < b)
+    constexpr auto is_in_range(char const c) noexcept -> bool {
+        return a <= c && c <= b;
+    }
+
+    template <std::predicate<char> auto... predicates>
+    constexpr auto satisfies_one_of(char const c) noexcept -> bool {
+        return (predicates(c) || ...);
+    }
+
+    constexpr auto is_space = is_one_of<' ', '\t', '\n'>;
+    constexpr auto is_digit = is_in_range<'0', '9'>;
+    constexpr auto is_lower = is_in_range<'a', 'z'>;
+    constexpr auto is_upper = is_in_range<'A', 'Z'>;
+    constexpr auto is_alpha = satisfies_one_of<is_lower, is_upper>;
+    constexpr auto is_alnum = satisfies_one_of<is_alpha, is_digit>;
+
+
+    auto skip_comments_and_whitespace(Lex_context& context) -> void {
+        context.consume(is_space);
+
+        if (context.try_consume('/')) {
+            switch (context.extract_current()) {
+            case '/':
+                context.consume(is_not_one_of<'\n'>);
+                break;
+            case '*':
+                for (bu::Usize depth = 1; depth != 0; ) {
+                    if (context.is_finished()) {
+                        bu::abort("unterminating comment");
+                    }
+                    else if (context.try_consume("*/")) {
+                        --depth;
+                    }
+                    else if (context.try_consume("/*")) {
+                        ++depth;
+                    }
+                    else {
+                        ++context.pointer;
+                    }
+                }
+                break;
+            default:
+                context.pointer -= 2;
+                return;
+            }
+
+            skip_comments_and_whitespace(context);
+        }
+    }
 
     /*auto extract_identifier(Lex_context&) -> bool {
         bu::unimplemented();
@@ -147,6 +211,8 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
     };
 
     for (;;) {
+        skip_comments_and_whitespace(context);
+
         bool did_extract = false;
 
         for (auto extractor : extractors) {
