@@ -9,7 +9,8 @@ namespace bu {
     class [[nodiscard]] Pooled_string {
         bu::Usize index;
 
-        inline static std::vector<Pair<std::string, bu::Usize>> vector;
+        inline static auto vector =
+            bu::vector_with_capacity<Pair<std::string, bu::Usize>>(256);
 
         explicit Pooled_string(auto&& string, auto f) noexcept {
             auto const hash = std::hash<std::string_view>{}(string);

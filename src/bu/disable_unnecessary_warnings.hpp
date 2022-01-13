@@ -17,6 +17,8 @@
 
 
 
+DISABLE(4456) // declaration hides previous local declaration
+
 DISABLE(4514) // unreferenced inline function has been removed
 
 DISABLE(4623) // default constructor was implicitly defined as deleted

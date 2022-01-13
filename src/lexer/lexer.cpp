@@ -167,8 +167,6 @@ namespace {
     }*/
 
     auto extract_numeric(Lex_context& context) -> bool {
-        auto const anchor = context.pointer;
-
         int base = 10;
         if (context.try_consume('0')) {
             switch (context.extract_current()) {
@@ -182,15 +180,41 @@ namespace {
             }
         }
 
+        auto const anchor = context.pointer;
+
         bu::Isize integer;
-        auto const [ptr, ec] = std::from_chars(context.pointer, context.stop, integer, base);
+        auto const [ptr, ec] = std::from_chars(anchor, context.stop, integer, base);
 
         if (anchor == ptr) {
-            return false;
+            if (base != 10) {
+                bu::abort(std::format("expected an integer literal after the base-{} specifier", base));
+            }
+            else {
+                return false;
+            }
+        }
+        else if (*ptr == '.') {
+            if (base != 10) {
+                bu::abort("float literals must be base-10");
+            }
+
+            bu::Float floating;
+            auto const [ptr, ec] = std::from_chars(anchor, context.stop, floating);
+            if (anchor == ptr) {
+                bu::unimplemented();
+            }
+            else if (ec == std::errc::result_out_of_range) {
+                bu::abort("float literal too large");
+            }
+            else {
+                assert(ec == std::errc {});
+                context.pointer = ptr;
+                return context.success({ floating, Type::floating });
+            }
         }
         else if (ec == std::errc {}) {
             context.pointer = ptr;
-            return context.success({ .value = integer, .type = Type::integer });
+            return context.success({ integer, Type::integer });
         }
         else {
             bu::unimplemented();
