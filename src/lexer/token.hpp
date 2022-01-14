@@ -6,8 +6,8 @@
 
 namespace lexer {
 
-    using String_literal = bu::Unique_pooled_string<>;
-    using Identifier     = bu::Unique_pooled_string<>;
+    using String_literal = bu::Pooled_string<struct _string_literal_tag>;
+    using Identifier     = bu::Pooled_string<struct _identifier_tag>;
 
     static_assert(!std::same_as<String_literal, Identifier>);
 

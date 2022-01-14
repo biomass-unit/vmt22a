@@ -21,7 +21,7 @@ namespace bu {
             }
             else {
                 index = vector.size();
-                vector.push_back({ f(string), hash });
+                vector.emplace_back(f(string), hash);
             }
         }
     public:
@@ -44,9 +44,6 @@ namespace bu {
             decltype(vector){}.swap(vector);
         }
     };
-
-    template <auto tag = []{}>
-    using Unique_pooled_string = Pooled_string<decltype(tag)>;
 
 }
 

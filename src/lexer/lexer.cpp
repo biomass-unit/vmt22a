@@ -158,9 +158,29 @@ namespace {
         }
     }
 
-    /*auto extract_identifier(Lex_context&) -> bool {
-        bu::unimplemented();
-    }*/
+
+    auto extract_identifier(Lex_context& context) -> bool {
+        constexpr auto is_valid_head = satisfies_one_of<is_alpha, is_one_of<'_'>>;
+        constexpr auto is_identifier = satisfies_one_of<is_alnum, is_one_of<'_', '\''>>;
+
+        if (!is_valid_head(context.current())) {
+            return false;
+        }
+
+        auto const view = context.extract(is_identifier);
+
+        if (std::ranges::all_of(view, is_one_of<'_'>)) [[unlikely]] {
+            return context.success({ .type = Type::underscore });
+        }
+        else {
+            return context.success({
+                lexer::Identifier { view },
+                is_upper(view.front())
+                    ? Type::upper_name
+                    : Type::lower_name
+            });
+        }
+    }
 
     auto extract_punctuation(Lex_context& context) -> bool {
         static constexpr auto options = std::to_array<bu::Pair<char, Type>>({
@@ -260,7 +280,7 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
     Lex_context context { source, tokens };
 
     constexpr std::array extractors {
-        //extract_identifier,
+        extract_identifier,
         extract_punctuation,
         extract_numeric,
     };
