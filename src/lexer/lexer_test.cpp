@@ -10,7 +10,7 @@ namespace {
 
         try {
             tokens = lexer::lex(source);
-            tokens.erase(tokens.end() - 1);
+            tokens.erase(tokens.end() - 1); // get rid of the end_of_input token
         }
         catch (std::exception const& exception) {
             bu::abort(

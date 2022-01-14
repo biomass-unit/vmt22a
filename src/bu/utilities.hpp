@@ -206,17 +206,13 @@ DEFINE_FORMATTER_FOR(std::optional<T>) {
 template <class T>
 DEFINE_FORMATTER_FOR(std::vector<T>) {
     auto out = context.out();
-
-    if (value.empty()) {
-        return std::format_to(out, "[]");
-    }
-    else {
-        std::format_to(out, "[{}", value.front());
+    if (!value.empty()) {
+        std::format_to(out, "{}", value.front());
         for (auto& x : value | std::views::drop(1)) {
             std::format_to(out, ", {}", x);
         }
-        return std::format_to(out, "]");
     }
+    return out;
 }
 
 template <class F, class S>

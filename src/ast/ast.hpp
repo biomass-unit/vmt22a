@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
+#include "lexer/token.hpp"
 
 
 namespace ast {

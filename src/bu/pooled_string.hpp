@@ -57,8 +57,8 @@ namespace bu {
 
 
 template <class Tag>
-struct std::formatter<bu::Pooled_string<Tag>> : std::formatter<std::string_view> {
+struct std::formatter<bu::Pooled_string<Tag>> : bu::Formatter_base {
     auto format(bu::Pooled_string<Tag> const string, std::format_context& context) {
-        return std::formatter<std::string_view>::format(string.view(), context);
+        return std::format_to(context.out(), "{}", string.view());
     }
 };

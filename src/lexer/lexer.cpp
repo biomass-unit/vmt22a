@@ -248,7 +248,7 @@ namespace {
             }
         }
 
-        return context.success({ lexer::Identifier { view }, Type::operator_name});
+        return context.success({ lexer::Identifier { view }, Type::operator_name });
     }
 
     auto extract_punctuation(Lex_context& context) -> bool {

@@ -54,7 +54,20 @@ namespace {
 
     struct Pattern_format_visitor : Visitor_base {};
 
-    struct Type_format_visitor : Visitor_base {};
+    struct Type_format_visitor : Visitor_base {
+        auto operator()(ast::type::Int)    { return format("Int");    }
+        auto operator()(ast::type::Float)  { return format("Float");  }
+        auto operator()(ast::type::Char)   { return format("Char");   }
+        auto operator()(ast::type::Bool)   { return format("Bool");   }
+        auto operator()(ast::type::String) { return format("String"); }
+
+        auto operator()(ast::type::Tuple const& tuple) {
+            return format("({})", tuple.types);
+        }
+        auto operator()(ast::type::Function const& function) {
+            return format("fn({}): {}", function.argument_types, function.return_type);
+        }
+    };
 
     struct Definition_format_visitor : Visitor_base {};
 
