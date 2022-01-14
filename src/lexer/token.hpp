@@ -30,7 +30,6 @@ namespace lexer {
             semicolon,
             double_colon,
 
-            ellipsis,
             ampersand,
             pipe,
 

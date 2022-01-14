@@ -38,6 +38,7 @@ auto lexer::run_tests() -> void {
     using enum lexer::Token::Type;
 
     test("50 23.4 0xdeadbeef", { integer, floating, integer });
+    test("\n::\t,;(--? @#", { double_colon, comma, semicolon, paren_open, paren_open, operator_name, operator_name });
 
     test(",.[}\tmatch::", { comma, dot, bracket_open, brace_close, match, double_colon });
     test("for;forr(for2", { for_, semicolon, lower_name, paren_open, lower_name });

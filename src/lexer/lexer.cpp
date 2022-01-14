@@ -162,9 +162,40 @@ namespace {
         bu::unimplemented();
     }*/
 
-    /*auto extract_punctuation(Lex_context&) -> bool {
-        bu::unimplemented();
-    }*/
+    auto extract_punctuation(Lex_context& context) -> bool {
+        static constexpr auto options = std::to_array<bu::Pair<char, Type>>({
+            { '.', Type::dot         },
+            { ',', Type::comma       },
+            { ';', Type::semicolon   },
+            { '(', Type::paren_open  },
+            { ')', Type::paren_close },
+            { '{', Type::brace_open  },
+            { '}', Type::brace_close },
+            { '[', Type::brace_open  },
+            { ']', Type::brace_close },
+            { '&', Type::ampersand   },
+            { '|', Type::pipe        },
+        });
+
+        char const current = context.extract_current();
+
+        for (auto const [character, type] : options) {
+            if (character == current) {
+                return context.success({ .type = type });
+            }
+        }
+
+        if (current == ':') {
+            return context.success({
+                .type = context.try_consume(':')
+                    ? Type::double_colon
+                    : Type::colon
+            });
+        }
+
+        --context.pointer;
+        return false;
+    }
 
     auto extract_numeric(Lex_context& context) -> bool {
         int base = 10;
@@ -230,7 +261,7 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
 
     constexpr std::array extractors {
         //extract_identifier,
-        //extract_punctuation,
+        extract_punctuation,
         extract_numeric,
     };
 
@@ -248,6 +279,7 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
 
         if (!did_extract) {
             if (context.is_finished()) {
+                tokens.push_back({ .type = Type::end_of_input });
                 return tokens;
             }
             else {

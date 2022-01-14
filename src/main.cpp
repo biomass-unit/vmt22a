@@ -10,6 +10,7 @@
 
 namespace {
 
+    [[maybe_unused]]
     auto lexer_repl() -> void {
         std::string string;
         for (;;) {
