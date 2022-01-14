@@ -7,28 +7,36 @@ namespace bu {
 
     template <class /* tag */>
     class [[nodiscard]] Pooled_string {
+    public:
+        enum Strategy {
+            guaranteed_new_string,
+            potential_new_string,
+        };
+    private:
         bu::Usize index;
 
         inline static auto vector =
             bu::vector_with_capacity<Pair<std::string, bu::Usize>>(256);
 
-        explicit Pooled_string(auto&& string, auto f) noexcept {
+        explicit Pooled_string(auto&& string, auto f, Strategy strategy) noexcept {
             auto const hash = std::hash<std::string_view>{}(string);
-            auto const it = std::ranges::find(vector, hash, bu::second);
 
-            if (it != vector.end()) {
-                index = bu::unsigned_distance(vector.begin(), it);
+            if (strategy == potential_new_string) {
+                auto const it = std::ranges::find(vector, hash, bu::second);
+                if (it != vector.end()) {
+                    index = bu::unsigned_distance(vector.begin(), it);
+                    return;
+                }
             }
-            else {
-                index = vector.size();
-                vector.emplace_back(f(string), hash);
-            }
+
+            index = vector.size();
+            vector.emplace_back(f(string), hash);
         }
     public:
-        explicit Pooled_string(std::string&& string) noexcept
-            : Pooled_string(std::move(string), bu::move) {}
-        explicit Pooled_string(std::string_view string) noexcept
-            : Pooled_string(string, bu::make<std::string>) {}
+        explicit Pooled_string(std::string&& string, Strategy strategy = potential_new_string) noexcept
+            : Pooled_string(std::move(string), bu::move, strategy) {}
+        explicit Pooled_string(std::string_view string, Strategy strategy = potential_new_string) noexcept
+            : Pooled_string(string, bu::make<std::string>, strategy) {}
 
         [[nodiscard]]
         auto view() const noexcept -> std::string_view {

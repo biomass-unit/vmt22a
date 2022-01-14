@@ -172,14 +172,52 @@ namespace {
         if (std::ranges::all_of(view, is_one_of<'_'>)) [[unlikely]] {
             return context.success({ .type = Type::underscore });
         }
-        else {
-            return context.success({
-                lexer::Identifier { view },
-                is_upper(view.front())
-                    ? Type::upper_name
-                    : Type::lower_name
-            });
+
+        lexer::Identifier const identifier { view };
+
+        auto const new_id = [](std::string_view id) noexcept {
+            return lexer::Identifier { id, lexer::Identifier::guaranteed_new_string };
+        };
+        static auto const options = std::to_array<bu::Pair<lexer::Identifier, Type>>({
+            { new_id("let")      , Type::let       },
+            { new_id("let")      , Type::let       },
+            { new_id("mut")      , Type::mut       },
+            { new_id("if")       , Type::if_       },
+            { new_id("else")     , Type::else_     },
+            { new_id("for")      , Type::for_      },
+            { new_id("in")       , Type::in        },
+            { new_id("while")    , Type::while_    },
+            { new_id("loop")     , Type::loop      },
+            { new_id("continue") , Type::continue_ },
+            { new_id("break")    , Type::break_    },
+            { new_id("match")    , Type::match     },
+            { new_id("ret")      , Type::ret       },
+            { new_id("fn")       , Type::fn        },
+            { new_id("as")       , Type::as        },
+            { new_id("data")     , Type::data      },
+            { new_id("struct")   , Type::struct_   },
+            { new_id("class")    , Type::class_    },
+            { new_id("inst")     , Type::inst      },
+            { new_id("alias")    , Type::alias     },
+            { new_id("import")   , Type::import    },
+            { new_id("size_of")  , Type::size_of   },
+            { new_id("type_of")  , Type::type_of   },
+            { new_id("meta")     , Type::meta      },
+            { new_id("mod")      , Type::mod       },
+        });
+
+        for (auto const [keyword, keyword_type] : options) {
+            if (identifier == keyword) {
+                return context.success({ .type = keyword_type });
+            }
         }
+
+        return context.success({
+            identifier,
+            is_upper(view.front())
+                ? Type::upper_name
+                : Type::lower_name
+        });
     }
 
     auto extract_punctuation(Lex_context& context) -> bool {
@@ -199,9 +237,9 @@ namespace {
 
         char const current = context.extract_current();
 
-        for (auto const [character, type] : options) {
+        for (auto const [character, punctuation_type] : options) {
             if (character == current) {
-                return context.success({ .type = type });
+                return context.success({ .type = punctuation_type });
             }
         }
 
@@ -307,4 +345,9 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
             }
         }
     }
+}
+
+
+auto lexer::literals::operator"" _id(char const* string, bu::Usize length) noexcept -> Identifier {
+    return Identifier { std::string_view { string, length } };
 }
