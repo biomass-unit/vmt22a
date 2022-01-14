@@ -1,5 +1,6 @@
 #include "bu/utilities.hpp"
 #include "lexer.hpp"
+#include "token_formatting.hpp"
 
 #include <charconv>
 
@@ -124,6 +125,10 @@ namespace {
     constexpr auto is_alpha = satisfies_one_of<is_lower, is_upper>;
     constexpr auto is_alnum = satisfies_one_of<is_alpha, is_digit>;
 
+    auto new_id(std::string_view const id) noexcept {
+        return lexer::Identifier { id, lexer::Identifier::guaranteed_new_string };
+    }
+
 
     auto skip_comments_and_whitespace(Lex_context& context) -> void {
         context.consume(is_space);
@@ -173,11 +178,6 @@ namespace {
             return context.success({ .type = Type::underscore });
         }
 
-        lexer::Identifier const identifier { view };
-
-        auto const new_id = [](std::string_view id) noexcept {
-            return lexer::Identifier { id, lexer::Identifier::guaranteed_new_string };
-        };
         static auto const options = std::to_array<bu::Pair<lexer::Identifier, Type>>({
             { new_id("let")      , Type::let       },
             { new_id("let")      , Type::let       },
@@ -206,6 +206,8 @@ namespace {
             { new_id("mod")      , Type::mod       },
         });
 
+        lexer::Identifier const identifier { view };
+
         for (auto const [keyword, keyword_type] : options) {
             if (identifier == keyword) {
                 return context.success({ .type = keyword_type });
@@ -220,19 +222,45 @@ namespace {
         });
     }
 
+    auto extract_operator(Lex_context& context) -> bool {
+        constexpr auto is_operator = is_one_of<
+            '+', '-', '*', '/', '.', '|', '<', '=', '>', ':',
+            '!', '?', '#', '%', '&', '^', '~', '$', '@', '\\'
+        >;
+        
+        auto const view = context.extract(is_operator);
+        if (view.empty()) {
+            return false;
+        }
+
+        static constexpr auto clashing = std::to_array<bu::Pair<std::string_view, Type>>({
+            { "." , Type::dot          },
+            { ":" , Type::colon        },
+            { "::", Type::double_colon },
+            { "|" , Type::pipe         },
+            { "=" , Type::equals       },
+            { "&" , Type::ampersand    },
+        });
+
+        for (auto [punctuation, punctuation_type] : clashing) {
+            if (view == punctuation) {
+                return context.success({ .type = punctuation_type });
+            }
+        }
+
+        return context.success({ lexer::Identifier { view }, Type::operator_name});
+    }
+
     auto extract_punctuation(Lex_context& context) -> bool {
         static constexpr auto options = std::to_array<bu::Pair<char, Type>>({
-            { '.', Type::dot         },
-            { ',', Type::comma       },
-            { ';', Type::semicolon   },
-            { '(', Type::paren_open  },
-            { ')', Type::paren_close },
-            { '{', Type::brace_open  },
-            { '}', Type::brace_close },
-            { '[', Type::brace_open  },
-            { ']', Type::brace_close },
-            { '&', Type::ampersand   },
-            { '|', Type::pipe        },
+            { ',', Type::comma         },
+            { ';', Type::semicolon     },
+            { '(', Type::paren_open    },
+            { ')', Type::paren_close   },
+            { '{', Type::brace_open    },
+            { '}', Type::brace_close   },
+            { '[', Type::bracket_open  },
+            { ']', Type::bracket_close },
         });
 
         char const current = context.extract_current();
@@ -319,6 +347,7 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
 
     constexpr std::array extractors {
         extract_identifier,
+        extract_operator,
         extract_punctuation,
         extract_numeric,
     };

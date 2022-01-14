@@ -31,6 +31,7 @@ namespace lexer {
             double_colon,
 
             ampersand,
+            equals,
             pipe,
 
             paren_open,
