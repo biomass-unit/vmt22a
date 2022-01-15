@@ -202,6 +202,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ast\ast_formatting.cpp" />
+    <ClCompile Include="src\bu\source.cpp" />
     <ClCompile Include="src\lexer\lexer.cpp" />
     <ClCompile Include="src\lexer\lexer_test.cpp" />
     <ClCompile Include="src\lexer\token_formatting.cpp" />
@@ -231,6 +232,7 @@
     <ClInclude Include="src\ast\nodes\type.hpp" />
     <ClInclude Include="src\bu\disable_unnecessary_warnings.hpp" />
     <ClInclude Include="src\bu\pooled_string.hpp" />
+    <ClInclude Include="src\bu\source.hpp" />
     <ClInclude Include="src\bu\utilities.hpp" />
     <ClInclude Include="src\bu\wrapper.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
