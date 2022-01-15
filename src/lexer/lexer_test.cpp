@@ -1,5 +1,6 @@
 #include "bu/utilities.hpp"
 #include "lexer_test.hpp"
+#include "lexer.hpp"
 #include "token_formatting.hpp"
 
 
@@ -10,7 +11,7 @@ namespace {
 
         try {
             tokens = lexer::lex(source);
-            tokens.erase(tokens.end() - 1); // get rid of the end_of_input token
+            tokens.pop_back(); // get rid of the end_of_input token
         }
         catch (std::exception const& exception) {
             bu::abort(
@@ -49,7 +50,6 @@ auto lexer::run_tests() -> void {
     test("for;forr(for2", { for_, semicolon, lower_name, paren_open, lower_name });
     test("x1 _ wasd,3"  , { lower_name, underscore, lower_name, comma, integer });
     test("a<$>_:\nVec"  , { lower_name, operator_name, underscore, colon, upper_name });
-
 
     bu::print("Lexer tests passed!\n");
 }

@@ -7,6 +7,9 @@
 #include "ast/ast.hpp"
 #include "ast/ast_formatting.hpp"
 
+#include "parser/parser.hpp"
+#include "parser/parser_test.hpp"
+
 
 namespace {
 
@@ -35,7 +38,7 @@ namespace {
 
 auto main() -> int try {
     lexer::run_tests();
-    lexer_repl();
+    parser::run_tests();
 }
 
 catch (std::exception const& exception) {

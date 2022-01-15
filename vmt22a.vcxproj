@@ -216,6 +216,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bu/utilities.hpp</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="src\parser\parser.cpp" />
+    <ClCompile Include="src\parser\parser_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ast\ast.hpp" />
@@ -232,6 +234,8 @@
     <ClInclude Include="src\lexer\lexer_test.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
     <ClInclude Include="src\lexer\token_formatting.hpp" />
+    <ClInclude Include="src\parser\parser.hpp" />
+    <ClInclude Include="src\parser\parser_test.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,7 +1,7 @@
 #pragma once
 
 
-namespace lexer {
+namespace parser {
 
     auto run_tests() -> void;
 

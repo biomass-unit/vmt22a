@@ -12,6 +12,10 @@ namespace ast {
     struct [[nodiscard]] Type;
     struct [[nodiscard]] Definition;
 
+    struct [[nodiscard]] Module {
+        // todo
+    };
+
 }
 
 
