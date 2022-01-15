@@ -15,8 +15,9 @@ namespace {
 
     [[maybe_unused]]
     auto lexer_repl() -> void {
-        std::string string;
         for (;;) {
+            std::string string;
+
             bu::print(" >>> ");
             std::getline(std::cin, string);
 
@@ -25,7 +26,8 @@ namespace {
             }
 
             try {
-                bu::print("Tokens: {}\n", lexer::lex(string));
+                bu::Source source { bu::Source::REPL_tag {}, std::move(string) };
+                bu::print("Tokens: {}\n", lexer::lex(std::move(source)).tokens);
             }
             catch (std::exception const& exception) {
                 bu::print<std::cerr>("REPL error: {}\n", exception.what());
@@ -38,7 +40,7 @@ namespace {
 
 auto main() -> int try {
     lexer::run_tests();
-    parser::run_tests();
+    lexer_repl();
 }
 
 catch (std::exception const& exception) {

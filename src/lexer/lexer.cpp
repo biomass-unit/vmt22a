@@ -9,20 +9,20 @@ namespace {
 
     using Type = lexer::Token::Type;
 
-    class Lex_context {
-        std::vector<lexer::Token>* tokens;
-    public:
+    struct Lex_context {
+        std::vector<lexer::Token> tokens;
+        bu::Source* source;
         char const* start;
         char const* stop;
         char const* pointer;
         bu::Usize line   = 1;
         bu::Usize column = 1;
 
-        explicit Lex_context(std::string_view const source, std::vector<lexer::Token>& tokens) noexcept
-            : tokens  { &tokens               }
-            , start   { source.data()         }
-            , stop    { start + source.size() }
-            , pointer { start                 }
+        explicit Lex_context(bu::Source& source) noexcept
+            : source  { &source                        }
+            , start   { source.string().data()         }
+            , stop    { start + source.string().size() }
+            , pointer { start                          }
         {
             tokens.reserve(1024);
         }
@@ -81,7 +81,7 @@ namespace {
         }
 
         inline auto success(lexer::Token&& token) noexcept -> std::true_type {
-            tokens->push_back(std::move(token));
+            tokens.push_back(std::move(token));
             return {};
         }
     private:
@@ -341,9 +341,8 @@ namespace {
 }
 
 
-auto lexer::lex(std::string_view const source) -> std::vector<Token> {
-    std::vector<Token> tokens;
-    Lex_context context { source, tokens };
+auto lexer::lex(bu::Source&& source) -> Tokenized_source {
+    Lex_context context { source };
 
     constexpr std::array extractors {
         extract_identifier,
@@ -366,8 +365,8 @@ auto lexer::lex(std::string_view const source) -> std::vector<Token> {
 
         if (!did_extract) {
             if (context.is_finished()) {
-                tokens.push_back({ .type = Type::end_of_input });
-                return tokens;
+                context.tokens.push_back({ .type = Type::end_of_input });
+                return { std::move(source), std::move(context.tokens) };
             }
             else {
                 bu::abort("syntax error");

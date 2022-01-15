@@ -9,8 +9,13 @@ namespace bu {
         std::string filename;
         std::string contents;
     public:
-        explicit Source(std::string&&);
+        struct REPL_tag {};
 
+        explicit Source(std::string&&);
+        explicit Source(REPL_tag, std::string&&);
+
+        [[nodiscard]]
+        auto name() const noexcept -> std::string_view;
         [[nodiscard]]
         auto string() const noexcept -> std::string_view;
     };

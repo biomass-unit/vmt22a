@@ -15,6 +15,14 @@ bu::Source::Source(std::string&& name)
     }
 }
 
+bu::Source::Source(REPL_tag, std::string&& contents)
+    : filename { "[REPL]" }
+    , contents { std::move(contents) } {}
+
+
+auto bu::Source::name() const noexcept -> std::string_view {
+    return filename;
+}
 
 auto bu::Source::string() const noexcept -> std::string_view {
     return contents;

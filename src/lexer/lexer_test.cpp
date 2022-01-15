@@ -6,18 +6,19 @@
 
 namespace {
 
-    auto test(std::string_view source, std::initializer_list<lexer::Token::Type> types) -> void {
+    auto test(std::string_view const text, std::initializer_list<lexer::Token::Type> types) -> void {
+        bu::Source source { bu::Source::REPL_tag {}, std::string { text } };
         std::vector<lexer::Token> tokens;
 
         try {
-            tokens = lexer::lex(source);
+            tokens = lexer::lex(std::move(source)).tokens;
             tokens.pop_back(); // get rid of the end_of_input token
         }
         catch (std::exception const& exception) {
             bu::abort(
                 std::format(
                     "Lexer test case failed, with\n\tsource: '{}'\n\tthrown exception: {}",
-                    source,
+                    source.name(),
                     exception.what()
                 )
             );
@@ -28,7 +29,7 @@ namespace {
                 std::format(
                     "Lexer test case failed, with\n\tsource: '{}'\n\t"
                     "expected token types: {}\n\tactual tokens: {}",
-                    source,
+                    source.name(),
                     std::vector(types), // there is no formatter for std::initializer_list
                     tokens
                 )
