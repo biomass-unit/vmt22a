@@ -4,7 +4,7 @@
 // This file is intended to be included by every single translation unit in the project
 
 
-#include "bu/disable_unnecessary_warnings.hpp"
+#include "disable_unnecessary_warnings.hpp"
 
 #include <cstddef>
 #include <cstdint>

@@ -39,6 +39,15 @@
     <ClCompile Include="src\parser\parser_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\parser\internals\parse_expression.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parser\internals\parse_pattern.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\parser\internals\parse_type.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\utilities.hpp">
@@ -87,6 +96,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\parser\parser_test.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\parser\internals\parser_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -216,6 +216,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bu/utilities.hpp</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="src\parser\internals\parse_expression.cpp" />
+    <ClCompile Include="src\parser\internals\parse_pattern.cpp" />
+    <ClCompile Include="src\parser\internals\parse_type.cpp" />
     <ClCompile Include="src\parser\parser.cpp" />
     <ClCompile Include="src\parser\parser_test.cpp" />
   </ItemGroup>
@@ -235,6 +238,7 @@
     <ClInclude Include="src\lexer\token.hpp" />
     <ClInclude Include="src\lexer\token_formatting.hpp" />
     <ClInclude Include="src\parser\parser.hpp" />
+    <ClInclude Include="src\parser\internals\parser_internals.hpp" />
     <ClInclude Include="src\parser\parser_test.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
