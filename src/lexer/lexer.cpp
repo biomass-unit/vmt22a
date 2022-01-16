@@ -329,10 +329,7 @@ namespace {
         }
         else if (*ptr == '.') {
             if (base != 10) {
-                throw context.error(
-                    { anchor - 2, anchor },
-                    "float literals must be base-10"
-                );
+                throw context.error({ anchor - 2, anchor }, "float literals must be base-10");
             }
 
             bu::Float floating;
@@ -341,10 +338,7 @@ namespace {
                 bu::unimplemented();
             }
             else if (ec == std::errc::result_out_of_range) {
-                throw context.error(
-                    { anchor, ptr },
-                    "float literal too large"
-                );
+                throw context.error({ anchor, ptr }, "float literal too large");
             }
             else {
                 assert(ec == std::errc {});
@@ -361,6 +355,79 @@ namespace {
         }
     }
 
+
+    auto handle_escape_sequence(Lex_context& context) -> char {
+        auto const anchor = context.pointer;
+
+        switch (context.extract_current()) {
+        case '\'': return '\'';
+        case '\"': return '\"';
+        case '\\': return '\\';
+        case 'a': return '\a';
+        case 'b': return '\b';
+        case 'f': return '\f';
+        case 'n': return '\n';
+        case 'r': return '\r';
+        case 't': return '\t';
+        case 'v': return '\v';
+        case '\0':
+            throw context.error(anchor, "Expected an escape sequence, but found the end of input");
+        default:
+            throw context.error(anchor, "Unrecognized escape sequence");
+        }
+    }
+
+
+    auto extract_character(Lex_context& context) -> bool {
+        auto const anchor = context.pointer;
+
+        if (context.try_consume('\'')) {
+            char c = context.extract_current();
+
+            if (c == '\0') {
+                throw context.error(anchor, "Unterminating character literal");
+            }
+            else if (c == '\\') {
+                c = handle_escape_sequence(context);
+            }
+
+            if (context.try_consume('\'')) {
+                return context.success({ c, Type::character });
+            }
+            else {
+                throw context.error(context.pointer, "Expected a closing single-quote");
+            }
+        }
+        else {
+            return false;
+        }
+    }
+
+    auto extract_string(Lex_context& context) -> bool {
+        auto const anchor = context.pointer;
+
+        if (context.try_consume('"')) {
+            std::string string;
+
+            for (;;) {
+                switch (char c = context.extract_current()) {
+                case '\0':
+                    throw context.error(anchor, "Unterminating string literal");
+                case '"':
+                    return context.success({ lexer::String_literal { std::move(string) }, Type::string });
+                case '\\':
+                    c = handle_escape_sequence(context);
+                    [[fallthrough]];
+                default:
+                    string.push_back(c);
+                }
+            }
+        }
+        else {
+            return false;
+        }
+    }
+
 }
 
 
@@ -372,6 +439,8 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
         extract_operator,
         extract_punctuation,
         extract_numeric,
+        extract_character,
+        extract_string,
     };
 
     for (;;) {
@@ -392,10 +461,7 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
                 return { std::move(source), std::move(context.tokens) };
             }
             else {
-                throw context.error(
-                    context.pointer,
-                    "Syntax error; unable to extract lexical token"
-                );
+                throw context.error(context.pointer, "Syntax error; unable to extract lexical token");
             }
         }
     }

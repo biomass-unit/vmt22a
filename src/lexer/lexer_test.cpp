@@ -29,7 +29,7 @@ namespace {
                 std::format(
                     "Lexer test case failed, with\n\tsource: '{}'\n\t"
                     "expected token types: {}\n\tactual tokens: {}",
-                    source.name(),
+                    "[TEST CASE]",
                     std::vector(types), // there is no formatter for std::initializer_list
                     tokens
                 )
@@ -51,6 +51,8 @@ auto lexer::run_tests() -> void {
     test("for;forr(for2", { for_, semicolon, lower_name, paren_open, lower_name });
     test("x1 _ wasd,3"  , { lower_name, underscore, lower_name, comma, integer });
     test("a<$>_:\nVec"  , { lower_name, operator_name, underscore, colon, upper_name });
+
+    test("\"test\\t\\\",\", 'a', '\\\\'", { string, comma, character, comma, character });
 
     bu::print("Lexer tests passed!\n");
 }

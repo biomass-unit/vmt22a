@@ -17,7 +17,7 @@ namespace lexer {
             std::monostate,
             bu::Isize,
             bu::Float,
-            bu::Char,
+            char,
             bool,
             String_literal,
             Identifier
