@@ -1,5 +1,6 @@
 #include "bu/utilities.hpp"
 #include "lexer.hpp"
+#include "lexical_error.hpp"
 #include "token_formatting.hpp"
 
 #include <charconv>
@@ -15,14 +16,13 @@ namespace {
         char const* start;
         char const* stop;
         char const* pointer;
-        bu::Usize line   = 1;
-        bu::Usize column = 1;
+        lexer::Position position { 1, 1 };
 
         explicit Lex_context(bu::Source& source) noexcept
-            : source  { &source                        }
-            , start   { source.string().data()         }
+            : source  { &source }
+            , start   { source.string().data() }
             , stop    { start + source.string().size() }
-            , pointer { start                          }
+            , pointer { start }
         {
             tokens.reserve(1024);
         }
@@ -36,13 +36,13 @@ namespace {
         }
 
         inline auto extract_current() noexcept -> char {
-            update_location();
+            update_position();
             return *pointer++;
         }
 
         inline auto consume(std::predicate<char> auto const predicate) noexcept -> void {
             for (; (pointer != stop) && predicate(*pointer); ++pointer) {
-                update_location();
+                update_position();
             }
         }
 
@@ -57,7 +57,7 @@ namespace {
 
             if (*pointer == c) {
                 ++pointer;
-                ++column;
+                ++position.column;
                 return true;
             }
             else {
@@ -76,7 +76,7 @@ namespace {
             }
 
             pointer = ptr;
-            column += string.size();
+            position.column += string.size();
             return true;
         }
 
@@ -84,14 +84,22 @@ namespace {
             tokens.push_back(std::move(token));
             return {};
         }
+
+        inline auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) -> lexer::Lexical_error {
+            return lexer::Lexical_error { start, stop, view, source->name(), position, message, help };
+        }
+
+        inline auto error(char const* location, std::string_view message, std::optional<std::string_view> help = std::nullopt) -> lexer::Lexical_error {
+            return error({ location, location + 1 }, message, help);
+        }
     private:
-        inline auto update_location() noexcept -> void {
+        inline auto update_position() noexcept -> void {
             if (*pointer == '\n') {
-                ++line;
-                column = 1;
+                ++position.line;
+                position.column = 1;
             }
             else {
-                ++column;
+                ++position.column;
             }
         }
     };
@@ -133,6 +141,8 @@ namespace {
     auto skip_comments_and_whitespace(Lex_context& context) -> void {
         context.consume(is_space);
 
+        auto const anchor = context.pointer;
+
         if (context.try_consume('/')) {
             switch (context.extract_current()) {
             case '/':
@@ -141,7 +151,11 @@ namespace {
             case '*':
                 for (bu::Usize depth = 1; depth != 0; ) {
                     if (context.is_finished()) {
-                        bu::abort("unterminating comment");
+                        throw context.error(
+                            anchor,
+                            "Unterminating comment",
+                            "Comments starting with '/*' can be terminated with '*/'"
+                        );
                     }
                     else if (context.try_consume("*/")) {
                         --depth;
@@ -304,7 +318,10 @@ namespace {
 
         if (anchor == ptr) {
             if (base != 10) {
-                bu::abort(std::format("expected an integer literal after the base-{} specifier", base));
+                throw context.error(
+                    { anchor - 2, anchor },
+                    std::format("Expected an integer literal after the base-{} specifier", base)
+                );
             }
             else {
                 return false;
@@ -312,7 +329,10 @@ namespace {
         }
         else if (*ptr == '.') {
             if (base != 10) {
-                bu::abort("float literals must be base-10");
+                throw context.error(
+                    { anchor - 2, anchor },
+                    "float literals must be base-10"
+                );
             }
 
             bu::Float floating;
@@ -321,7 +341,10 @@ namespace {
                 bu::unimplemented();
             }
             else if (ec == std::errc::result_out_of_range) {
-                bu::abort("float literal too large");
+                throw context.error(
+                    { anchor, ptr },
+                    "float literal too large"
+                );
             }
             else {
                 assert(ec == std::errc {});
@@ -369,7 +392,10 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
                 return { std::move(source), std::move(context.tokens) };
             }
             else {
-                bu::abort("syntax error");
+                throw context.error(
+                    context.pointer,
+                    "Syntax error; unable to extract lexical token"
+                );
             }
         }
     }

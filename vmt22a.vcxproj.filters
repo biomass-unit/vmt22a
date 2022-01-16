@@ -51,6 +51,9 @@
     <ClCompile Include="src\bu\source.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\lexer\lexical_error.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\utilities.hpp">
@@ -105,6 +108,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bu\source.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\lexer\lexical_error.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
