@@ -20,6 +20,9 @@ namespace parser {
         inline auto try_extract(Token::Type type) noexcept -> Token* {
             return pointer->type == type ? pointer++ : nullptr;
         }
+        inline auto extract() noexcept -> Token& {
+            return *pointer++;
+        }
         inline auto consume_required(Token::Type type) -> void {
             if (pointer->type == type) {
                 ++pointer;

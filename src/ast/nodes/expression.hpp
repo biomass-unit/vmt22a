@@ -59,8 +59,10 @@ namespace ast {
         using Variant = std::variant<
             Literal<bu::Isize>,
             Literal<bu::Float>,
-            Literal<bu::Char>,
+            Literal<char>,
             Literal<bool>,
+            Literal<lexer::String>,
+            lexer::Identifier,
             Tuple,
             Compound_expression,
             Invocation,
@@ -70,6 +72,11 @@ namespace ast {
             Let_binding
         >;
         Variant value;
+
+        template <class X>
+        Expression(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>)
+            : value { std::forward<X>(x) } {}
+
         DEFAULTED_EQUALITY(Expression);
     };
 

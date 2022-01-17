@@ -17,6 +17,9 @@
 
 
 
+DISABLE(4061) // enumerator is not explicitly handled by a case label
+DISABLE(4065) // switch statement contains default but no case labels
+
 DISABLE(4456) // declaration hides previous local declaration
 
 DISABLE(4514) // unreferenced inline function has been removed

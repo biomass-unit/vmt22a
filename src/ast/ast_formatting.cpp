@@ -28,6 +28,15 @@ namespace {
         auto operator()(ast::Literal<T> const& literal) {
             return format("{}", literal.value);
         }
+        auto operator()(ast::Literal<char> const literal) {
+            return format("'{}'", literal.value);
+        }
+        auto operator()(ast::Literal<lexer::String> const literal) {
+            return format("\"{}\"", literal.value);
+        }
+        auto operator()(lexer::Identifier const identifier) {
+            return format("{}", identifier);
+        }
         auto operator()(ast::Tuple const& tuple) {
             return format("({})", tuple.expressions);
         }

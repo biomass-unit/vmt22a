@@ -9,41 +9,42 @@
 
 #include "parser/parser.hpp"
 #include "parser/parser_test.hpp"
-#include "parser/internals/parser_internals.hpp" // for the repl
+#include "parser/internals/parser_internals.hpp" // for the repl only
 
 
 namespace {
 
-    template <std::invocable<bu::Source> auto f>
-    auto generic_repl() -> void {
-        for (;;) {
-            std::string string;
-            string.reserve(sizeof string); // disable SSO
+    auto generic_repl(std::invocable<bu::Source> auto f) {
+        return [=] {
+            for (;;) {
+                std::string string;
+                string.reserve(sizeof string); // disable SSO
 
-            bu::print(" >>> ");
-            std::getline(std::cin, string);
+                bu::print(" >>> ");
+                std::getline(std::cin, string);
 
-            if (string.empty()) {
-                continue;
-            }
+                if (string.empty()) {
+                    continue;
+                }
 
-            try {
-                bu::Source source { bu::Source::Mock_tag {}, std::move(string) };
-                f(std::move(source));
+                try {
+                    bu::Source source { bu::Source::Mock_tag {}, std::move(string) };
+                    f(std::move(source));
+                }
+                catch (std::exception const& exception) {
+                    bu::print<std::cerr>("REPL error: {}\n", exception.what());
+                }
             }
-            catch (std::exception const& exception) {
-                bu::print<std::cerr>("REPL error: {}\n", exception.what());
-            }
-        }
+        };
     }
 
     [[maybe_unused]]
-    auto lexer_repl = generic_repl<[](bu::Source src) {
+    auto lexer_repl = generic_repl([](bu::Source src) {
         bu::print("Tokens: {}\n", lexer::lex(std::move(src)).tokens);
-    }>;
+    });
 
     [[maybe_unused]]
-    auto parser_repl = generic_repl<[](bu::Source src) {
+    auto parser_repl = generic_repl([](bu::Source src) {
         auto [source, tokens] = lexer::lex(std::move(src));
 
         parser::Parse_context context {
@@ -53,7 +54,7 @@ namespace {
 
         auto result = parser::parse_expression(context);
         bu::print("Result: {}\nRemaining input: '{}'\n", result, context.pointer->source_view.data());
-    }>;
+    });
 
 }
 

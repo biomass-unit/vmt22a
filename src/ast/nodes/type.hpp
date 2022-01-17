@@ -12,7 +12,7 @@ namespace ast {
         using Float  = Primitive<bu::Float>;
         using Char   = Primitive<bu::Char>;
         using Bool   = Primitive<bool>;
-        using String = Primitive<lexer::String_literal>;
+        using String = Primitive<lexer::String>;
 
         struct Tuple {
             std::vector<bu::Wrapper<Type>> types;

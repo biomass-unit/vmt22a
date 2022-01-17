@@ -6,10 +6,10 @@
 
 namespace lexer {
 
-    using String_literal = bu::Pooled_string<struct _string_literal_tag>;
-    using Identifier     = bu::Pooled_string<struct _identifier_tag>;
+    using String     = bu::Pooled_string<struct _string_tag>;
+    using Identifier = bu::Pooled_string<struct _identifier_tag>;
 
-    static_assert(!std::same_as<String_literal, Identifier>);
+    static_assert(!std::same_as<String, Identifier>);
 
 
     struct [[nodiscard]] Token {
@@ -19,7 +19,7 @@ namespace lexer {
             bu::Float,
             char,
             bool,
-            String_literal,
+            String,
             Identifier
         >;
 
@@ -85,6 +85,21 @@ namespace lexer {
         std::string_view source_view;
 
         static constexpr auto type_count = static_cast<bu::Usize>(Type::end_of_input) + 1;
+
+        template <class T>
+        inline auto value_as() noexcept -> T& {
+            assert(std::holds_alternative<T>(value));
+            return *std::get_if<T>(&value);
+        }
+
+        inline auto& as_int        () noexcept { return value_as<bu::Isize >(); }
+        inline auto& as_float      () noexcept { return value_as<bu::Float >(); }
+        inline auto& as_char       () noexcept { return value_as<char      >(); }
+        inline auto& as_bool       () noexcept { return value_as<bool      >(); }
+        inline auto& as_string     () noexcept { return value_as<String    >(); }
+        inline auto& as_identifier () noexcept { return value_as<Identifier>(); }
     };
+
+    static_assert(std::is_trivially_copyable_v<Token>);
 
 }
