@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/pooled_string.hpp"
+#include "bu/textual_error.hpp"
 
 
 namespace lexer {
@@ -92,10 +93,10 @@ namespace lexer {
             return *std::get_if<T>(&value);
         }
 
-        inline auto& as_int        () noexcept { return value_as<bu::Isize >(); }
-        inline auto& as_float      () noexcept { return value_as<bu::Float >(); }
-        inline auto& as_char       () noexcept { return value_as<char      >(); }
-        inline auto& as_bool       () noexcept { return value_as<bool      >(); }
+        inline auto& as_integer    () noexcept { return value_as<bu::Isize >(); }
+        inline auto& as_floating   () noexcept { return value_as<bu::Float >(); }
+        inline auto& as_character  () noexcept { return value_as<char      >(); }
+        inline auto& as_boolean    () noexcept { return value_as<bool      >(); }
         inline auto& as_string     () noexcept { return value_as<String    >(); }
         inline auto& as_identifier () noexcept { return value_as<Identifier>(); }
     };

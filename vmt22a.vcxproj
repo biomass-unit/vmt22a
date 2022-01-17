@@ -205,7 +205,7 @@
     <ClCompile Include="src\bu\source.cpp" />
     <ClCompile Include="src\lexer\lexer.cpp" />
     <ClCompile Include="src\lexer\lexer_test.cpp" />
-    <ClCompile Include="src\lexer\lexical_error.cpp" />
+    <ClCompile Include="src\bu\textual_error.cpp" />
     <ClCompile Include="src\lexer\token_formatting.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\bu\utilities.cpp">
@@ -238,7 +238,7 @@
     <ClInclude Include="src\bu\wrapper.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\lexer\lexer_test.hpp" />
-    <ClInclude Include="src\lexer\lexical_error.hpp" />
+    <ClInclude Include="src\bu\textual_error.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
     <ClInclude Include="src\lexer\token_formatting.hpp" />
     <ClInclude Include="src\parser\parser.hpp" />

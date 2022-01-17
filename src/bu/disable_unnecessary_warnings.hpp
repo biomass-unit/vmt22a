@@ -32,6 +32,9 @@ DISABLE(4711) // function selected for automatic inline expansion
 DISABLE(4820) // n bytes of padding added after data member
 
 DISABLE(4866) // left-to-right evaluation not enforced
+DISABLE(4868) // left-to-right evaluation not enforced in braced init list
+
+DISABLE(5045) // spectre mitigation inserted if /Qspectre is specified
 
 
 

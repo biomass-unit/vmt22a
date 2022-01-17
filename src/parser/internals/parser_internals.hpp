@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/source.hpp"
+#include "bu/textual_error.hpp"
 #include "lexer/token.hpp"
 #include "ast/ast.hpp"
 
@@ -17,12 +18,15 @@ namespace parser {
         inline auto is_finished() const noexcept -> bool {
             return pointer->type == Token::Type::end_of_input;
         }
+
         inline auto try_extract(Token::Type const type) noexcept -> Token* {
             return pointer->type == type ? pointer++ : nullptr;
         }
+
         inline auto extract() noexcept -> Token& {
             return *pointer++;
         }
+
         inline auto consume_required(Token::Type const type) -> void {
             if (pointer->type == type) {
                 ++pointer;
@@ -31,6 +35,7 @@ namespace parser {
                 bu::unimplemented();
             }
         }
+
         inline auto try_consume(Token::Type const type) noexcept -> bool {
             if (pointer->type == type) {
                 ++pointer;
@@ -39,6 +44,17 @@ namespace parser {
             else {
                 return false;
             }
+        }
+
+        inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) -> bu::Textual_error {
+            return bu::Textual_error {
+                bu::Textual_error::Type::parse_error,
+                std::string_view {}, // source view
+                source->string(),
+                source->name(),
+                message,
+                help
+            };
         }
     };
 

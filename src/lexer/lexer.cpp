@@ -1,6 +1,6 @@
 #include "bu/utilities.hpp"
+#include "bu/textual_error.hpp"
 #include "lexer.hpp"
-#include "lexical_error.hpp"
 #include "token_formatting.hpp"
 
 #include <charconv>
@@ -17,7 +17,6 @@ namespace {
         char const* stop;
         char const* pointer;
         char const* token_start = nullptr;
-        lexer::Position position { 1, 1 };
 
         explicit Lex_context(bu::Source& source) noexcept
             : source  { &source }
@@ -37,14 +36,11 @@ namespace {
         }
 
         inline auto extract_current() noexcept -> char {
-            update_position();
             return *pointer++;
         }
 
         inline auto consume(std::predicate<char> auto const predicate) noexcept -> void {
-            for (; (pointer != stop) && predicate(*pointer); ++pointer) {
-                update_position();
-            }
+            for (; (pointer != stop) && predicate(*pointer); ++pointer);
         }
 
         inline auto extract(std::predicate<char> auto const predicate) noexcept -> std::string_view {
@@ -58,7 +54,6 @@ namespace {
 
             if (*pointer == c) {
                 ++pointer;
-                ++position.column;
                 return true;
             }
             else {
@@ -77,7 +72,6 @@ namespace {
             }
 
             pointer = ptr;
-            position.column += string.size();
             return true;
         }
 
@@ -87,22 +81,12 @@ namespace {
             return {};
         }
 
-        inline auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) -> lexer::Lexical_error {
-            return lexer::Lexical_error { start, stop, view, source->name(), position, message, help };
+        inline auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+            return bu::Textual_error { bu::Textual_error::Type::lexical_error, view, { start, stop }, source->name(), message, help };
         }
 
-        inline auto error(char const* location, std::string_view message, std::optional<std::string_view> help = std::nullopt) -> lexer::Lexical_error {
+        inline auto error(char const* location, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
             return error({ location, location + 1 }, message, help);
-        }
-    private:
-        inline auto update_position() noexcept -> void {
-            if (*pointer == '\n') {
-                ++position.line;
-                position.column = 1;
-            }
-            else {
-                ++position.column;
-            }
         }
     };
 
