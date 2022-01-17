@@ -37,7 +37,7 @@ lexer::Lexical_error::Lexical_error(
     assert(std::ranges::count(view, '\n') == 0); // Lexical errors shouldn't span multiple lines
 
     std::string string;
-    string.reserve(128);
+    string.reserve(256);
     auto out = std::back_inserter(string);
 
     std::format_to(

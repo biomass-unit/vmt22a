@@ -15,7 +15,7 @@ bu::Source::Source(std::string&& name)
     }
 }
 
-bu::Source::Source(REPL_tag, std::string&& contents)
+bu::Source::Source(Mock_tag, std::string&& contents)
     : filename { "[REPL]" }
     , contents { std::move(contents) } {}
 

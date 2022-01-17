@@ -2,6 +2,13 @@
 #include "parser_internals.hpp"
 
 
+namespace {
+
+
+
+}
+
+
 auto parser::parse_expression(Parse_context&) -> std::optional<ast::Expression> {
-    bu::unimplemented();
+    return std::nullopt;
 }

@@ -16,6 +16,7 @@ namespace {
         char const* start;
         char const* stop;
         char const* pointer;
+        char const* token_start = nullptr;
         lexer::Position position { 1, 1 };
 
         explicit Lex_context(bu::Source& source) noexcept
@@ -81,6 +82,7 @@ namespace {
         }
 
         inline auto success(lexer::Token&& token) noexcept -> std::true_type {
+            token.source_view = { token_start, pointer };
             tokens.push_back(std::move(token));
             return {};
         }
@@ -329,7 +331,7 @@ namespace {
         }
         else if (*ptr == '.') {
             if (base != 10) {
-                throw context.error({ anchor - 2, anchor }, "float literals must be base-10");
+                throw context.error({ anchor - 2, anchor }, "Float literals must be base-10");
             }
 
             bu::Float floating;
@@ -338,7 +340,7 @@ namespace {
                 bu::unimplemented();
             }
             else if (ec == std::errc::result_out_of_range) {
-                throw context.error({ anchor, ptr }, "float literal too large");
+                throw context.error({ anchor, ptr }, "Float literal too large");
             }
             else {
                 assert(ec == std::errc {});
@@ -360,9 +362,6 @@ namespace {
         auto const anchor = context.pointer;
 
         switch (context.extract_current()) {
-        case '\'': return '\'';
-        case '\"': return '\"';
-        case '\\': return '\\';
         case 'a': return '\a';
         case 'b': return '\b';
         case 'f': return '\f';
@@ -370,6 +369,9 @@ namespace {
         case 'r': return '\r';
         case 't': return '\t';
         case 'v': return '\v';
+        case '\'': return '\'';
+        case '\"': return '\"';
+        case '\\': return '\\';
         case '\0':
             throw context.error(anchor, "Expected an escape sequence, but found the end of input");
         default:
@@ -438,13 +440,14 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
         extract_identifier,
         extract_operator,
         extract_punctuation,
-        extract_numeric,
-        extract_character,
         extract_string,
+        extract_character,
+        extract_numeric,
     };
 
     for (;;) {
         skip_comments_and_whitespace(context);
+        context.token_start = context.pointer;
 
         bool did_extract = false;
 
@@ -457,7 +460,7 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
 
         if (!did_extract) {
             if (context.is_finished()) {
-                context.tokens.push_back({ .type = Type::end_of_input });
+                context.tokens.push_back({ .type = Type::end_of_input, .source_view = context.pointer });
                 return { std::move(source), std::move(context.tokens) };
             }
             else {

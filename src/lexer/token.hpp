@@ -80,8 +80,9 @@ namespace lexer {
             end_of_input
         };
 
-        Variant value;
-        Type type;
+        Variant          value;
+        Type             type;
+        std::string_view source_view;
 
         static constexpr auto type_count = static_cast<bu::Usize>(Type::end_of_input) + 1;
     };

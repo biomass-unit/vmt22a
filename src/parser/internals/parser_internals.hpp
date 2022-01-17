@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bu/utilities.hpp"
+#include "bu/source.hpp"
 #include "lexer/token.hpp"
 #include "ast/ast.hpp"
 
@@ -11,6 +12,7 @@ namespace parser {
 
     struct Parse_context {
         Token* pointer;
+        bu::Source* source;
 
         inline auto is_finished() const noexcept -> bool {
             return pointer->type == Token::Type::end_of_input;

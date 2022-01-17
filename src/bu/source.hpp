@@ -9,10 +9,10 @@ namespace bu {
         std::string filename;
         std::string contents;
     public:
-        struct REPL_tag {};
+        struct Mock_tag {};
 
         explicit Source(std::string&&);
-        explicit Source(REPL_tag, std::string&&);
+        explicit Source(Mock_tag, std::string&&);
 
         [[nodiscard]]
         auto name() const noexcept -> std::string_view;

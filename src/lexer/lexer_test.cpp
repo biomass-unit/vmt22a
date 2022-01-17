@@ -7,7 +7,7 @@
 namespace {
 
     auto test(std::string_view const text, std::initializer_list<lexer::Token::Type> types) -> void {
-        bu::Source source { bu::Source::REPL_tag {}, std::string { text } };
+        bu::Source source { bu::Source::Mock_tag {}, std::string { text } };
         std::vector<lexer::Token> tokens;
 
         try {
@@ -29,7 +29,7 @@ namespace {
                 std::format(
                     "Lexer test case failed, with\n\tsource: '{}'\n\t"
                     "expected token types: {}\n\tactual tokens: {}",
-                    "[TEST CASE]",
+                    text,
                     std::vector(types), // there is no formatter for std::initializer_list
                     tokens
                 )

@@ -9,14 +9,16 @@
 
 #include "parser/parser.hpp"
 #include "parser/parser_test.hpp"
+#include "parser/internals/parser_internals.hpp" // for the repl
 
 
 namespace {
 
-    [[maybe_unused]]
-    auto lexer_repl() -> void {
+    template <std::invocable<bu::Source> auto f>
+    auto generic_repl() -> void {
         for (;;) {
             std::string string;
+            string.reserve(sizeof string); // disable SSO
 
             bu::print(" >>> ");
             std::getline(std::cin, string);
@@ -26,8 +28,8 @@ namespace {
             }
 
             try {
-                bu::Source source { bu::Source::REPL_tag {}, std::move(string) };
-                bu::print("Tokens: {}\n", lexer::lex(std::move(source)).tokens);
+                bu::Source source { bu::Source::Mock_tag {}, std::move(string) };
+                f(std::move(source));
             }
             catch (std::exception const& exception) {
                 bu::print<std::cerr>("REPL error: {}\n", exception.what());
@@ -35,12 +37,30 @@ namespace {
         }
     }
 
+    [[maybe_unused]]
+    auto lexer_repl = generic_repl<[](bu::Source src) {
+        bu::print("Tokens: {}\n", lexer::lex(std::move(src)).tokens);
+    }>;
+
+    [[maybe_unused]]
+    auto parser_repl = generic_repl<[](bu::Source src) {
+        auto [source, tokens] = lexer::lex(std::move(src));
+
+        parser::Parse_context context {
+            .pointer = tokens.data(),
+            .source  = &source
+        };
+
+        auto result = parser::parse_expression(context);
+        bu::print("Result: {}\nRemaining input: '{}'\n", result, context.pointer->source_view.data());
+    }>;
+
 }
 
 
 auto main() -> int try {
     lexer::run_tests();
-    lexer_repl();
+    parser_repl();
 }
 
 catch (std::exception const& exception) {
