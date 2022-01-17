@@ -146,6 +146,17 @@ namespace bu {
     }
 
 
+    namespace dtl {
+        template <class, template <class...> class>
+        struct Is_instance_of : std::false_type {};
+        template <class... Args, template <class...> class F>
+        struct Is_instance_of<F<Args...>, F> : std::true_type {};
+    }
+
+    template <class T, template <class...> class F>
+    concept instance_of = dtl::Is_instance_of<T, F>::value;
+
+
     struct Formatter_base {
         constexpr auto parse(std::format_parse_context& context) {
             return context.end();
