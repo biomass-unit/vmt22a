@@ -29,9 +29,27 @@ namespace {
         }
     }
 
+    auto parse_tuple(Parse_context& context) -> std::optional<ast::Expression> {
+        if (context.try_consume(Token::Type::paren_open)) {
+            auto expressions = extract_comma_separated_zero_or_more<parse_expression>(context);
+            if (context.try_consume(Token::Type::paren_close)) {
+                return ast::Tuple { std::move(expressions) };
+            }
+            else {
+                bu::abort("expected a closing ')'");
+            }
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
 }
 
 
 auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expression> {
-    return parse_literal(context);
+    return parse_one_of<
+        parse_literal,
+        parse_tuple
+    >(context);
 }

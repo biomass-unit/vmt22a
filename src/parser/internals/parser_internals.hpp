@@ -57,8 +57,23 @@ namespace parser {
     using Parse_result = std::invoke_result_t<decltype(parse), Parse_context&>::value_type;
 
 
+    template <parser auto p, parser auto... ps>
+    auto parse_one_of(Parse_context& context) -> decltype(p(context)) {
+        if (auto result = p(context)) {
+            return result;
+        }
+        else {
+            if constexpr (sizeof...(ps) != 0) {
+                return parse_one_of<ps...>(context);
+            }
+            else {
+                return std::nullopt;
+            }
+        }
+    }
+
     template <parser auto parse>
-    auto extract_comma_separated(Parse_context& context)
+    auto extract_comma_separated_zero_or_more(Parse_context& context)
         -> std::vector<Parse_result<parse>>
     {
         std::vector<Parse_result<parse>> vector;
@@ -80,10 +95,10 @@ namespace parser {
     }
 
     template <parser auto parse>
-    auto parse_comma_separated_at_least_one(Parse_context& context)
+    auto parse_comma_separated_one_or_more(Parse_context& context)
         -> std::optional<std::vector<Parse_result<parse>>>
     {
-        auto vector = extract_comma_separated<parse>(context);
+        auto vector = extract_comma_separated_zero_or_more<parse>(context);
 
         if (!vector.empty()) {
             return vector;
