@@ -145,6 +145,11 @@ namespace bu {
         return static_cast<Usize>(std::distance(start, stop));
     }
 
+    [[nodiscard]]
+    constexpr auto to_pointers(std::string_view const view) noexcept -> Pair<char const*> {
+        return { view.data(), view.data() + view.size() };
+    }
+
 
     namespace dtl {
         template <class, template <class...> class>

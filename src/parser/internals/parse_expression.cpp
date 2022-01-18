@@ -36,7 +36,7 @@ namespace {
                 return ast::Tuple { std::move(expressions) };
             }
             else {
-                bu::abort("expected a closing ')'");
+                throw context.expected("a closing ')'");
             }
         }
         else {

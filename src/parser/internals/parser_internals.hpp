@@ -46,7 +46,7 @@ namespace parser {
             }
         }
 
-        inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) -> bu::Textual_error {
+        inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
             return bu::Textual_error { {
                 .error_type     = bu::Textual_error::Type::parse_error,
                 .erroneous_view = pointer->source_view,
@@ -55,6 +55,10 @@ namespace parser {
                 .message        = message,
                 .help_note      = help
             } };
+        }
+
+        inline auto expected(std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+            return error(std::format("Expected {}", expectation), help);
         }
     };
 
