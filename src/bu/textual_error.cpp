@@ -23,6 +23,16 @@ namespace {
         return { begin, end };
     }
 
+    /*auto lines_of_occurrence(std::string_view file, std::string_view view) -> std::vector<std::string_view> {
+        auto const file_start = file.data();
+        auto const file_stop = file_start + file.size();
+        std::vector<std::string_view> lines;
+
+        //for (auto pointer = )
+
+        return lines;
+    }*/
+
     auto find_position(std::string_view file, char const* current) -> bu::Position {
         assert(file.data() <= current && current <= (file.data() + file.size()));
         bu::Position position { 1, 1 };
@@ -43,28 +53,22 @@ namespace {
 }
 
 
-bu::Textual_error::Textual_error(
-    Type             type,
-    std::string_view view,
-    std::string_view file,
-    std::string_view filename,
-    std::string_view message,
-    std::optional<std::string_view> help
-)
+bu::Textual_error::Textual_error(Arguments const arguments)
     : runtime_error
 { [=] {
+    auto const [type, view, file, filename, message, help] = arguments;
+    auto const [line, column] = find_position(file.data(), view.data());
+
     std::string string;
     string.reserve(256);
     auto out = std::back_inserter(string);
-
-    auto const position = find_position(file.data(), view.data());
 
     std::format_to(
         out,
         "In {}, on line {}, column {}:",
         filename,
-        position.line,
-        position.column
+        line,
+        column
     );
 
     switch (type) {

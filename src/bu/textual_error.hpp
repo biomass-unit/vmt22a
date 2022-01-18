@@ -13,14 +13,17 @@ namespace bu {
     struct Textual_error : std::runtime_error {
         enum class Type { lexical_error, parse_error };
 
-        explicit Textual_error(
-            Type             type,
-            std::string_view view,
-            std::string_view file,
-            std::string_view filename,
-            std::string_view message,
-            std::optional<std::string_view> help
-        );
+        // Packaging the arguments in a struct allows named arguments via designated initializers
+        struct Arguments {
+            Type                            error_type;
+            std::string_view                erroneous_view;
+            std::string_view                file_view;
+            std::string_view                file_name;
+            std::string_view                message;
+            std::optional<std::string_view> help_note;
+        };
+
+        explicit Textual_error(Arguments);
     };
 
 }

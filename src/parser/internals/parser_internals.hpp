@@ -47,14 +47,14 @@ namespace parser {
         }
 
         inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) -> bu::Textual_error {
-            return bu::Textual_error {
-                bu::Textual_error::Type::parse_error,
-                std::string_view {}, // source view
-                source->string(),
-                source->name(),
-                message,
-                help
-            };
+            return bu::Textual_error { {
+                .error_type     = bu::Textual_error::Type::parse_error,
+                .erroneous_view = pointer->source_view,
+                .file_view      = source->string(),
+                .file_name      = source->name(),
+                .message        = message,
+                .help_note      = help
+            } };
         }
     };
 
@@ -69,8 +69,8 @@ namespace parser {
         { p(context) } -> bu::instance_of<std::optional>;
     };
 
-    template <parser auto parse>
-    using Parse_result = std::invoke_result_t<decltype(parse), Parse_context&>::value_type;
+    template <parser auto p>
+    using Parse_result = std::invoke_result_t<decltype(p), Parse_context&>::value_type;
 
 
     template <parser auto p, parser auto... ps>
@@ -88,17 +88,17 @@ namespace parser {
         }
     }
 
-    template <parser auto parse>
+    template <parser auto p>
     auto extract_comma_separated_zero_or_more(Parse_context& context)
-        -> std::vector<Parse_result<parse>>
+        -> std::vector<Parse_result<p>>
     {
-        std::vector<Parse_result<parse>> vector;
+        std::vector<Parse_result<p>> vector;
 
-        if (auto head = parse(context)) {
+        if (auto head = p(context)) {
             vector.push_back(std::move(*head));
 
             while (context.try_consume(Token::Type::comma)) {
-                if (auto element = parse(context)) {
+                if (auto element = p(context)) {
                     vector.push_back(std::move(*element));
                 }
                 else {
@@ -110,11 +110,11 @@ namespace parser {
         return vector;
     }
 
-    template <parser auto parse>
+    template <parser auto p>
     auto parse_comma_separated_one_or_more(Parse_context& context)
-        -> std::optional<std::vector<Parse_result<parse>>>
+        -> std::optional<std::vector<Parse_result<p>>>
     {
-        auto vector = extract_comma_separated_zero_or_more<parse>(context);
+        auto vector = extract_comma_separated_zero_or_more<p>(context);
 
         if (!vector.empty()) {
             return vector;
