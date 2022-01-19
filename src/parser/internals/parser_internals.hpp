@@ -4,6 +4,7 @@
 #include "bu/source.hpp"
 #include "bu/textual_error.hpp"
 #include "lexer/token.hpp"
+#include "lexer/token_formatting.hpp"
 #include "ast/ast.hpp"
 
 
@@ -32,7 +33,7 @@ namespace parser {
                 ++pointer;
             }
             else {
-                bu::unimplemented();
+                throw expected(std::format("'{}'", type));
             }
         }
 
@@ -62,11 +63,6 @@ namespace parser {
         }
     };
 
-    
-    auto parse_expression(Parse_context&) -> std::optional<ast::Expression>;
-    auto parse_pattern   (Parse_context&) -> std::optional<ast::Pattern>;
-    auto parse_type      (Parse_context&) -> std::optional<ast::Type>;
-
 
     template <class P>
     concept parser = requires (P p, Parse_context& context) {
@@ -76,6 +72,16 @@ namespace parser {
     template <parser auto p>
     using Parse_result = std::invoke_result_t<decltype(p), Parse_context&>::value_type;
 
+
+    template <parser auto p, bu::Metastring description>
+    auto extract_required(Parse_context& context) -> Parse_result<p> {
+        if (auto result = p(context)) {
+            return std::move(*result);
+        }
+        else {
+            throw context.expected(description.view());
+        }
+    }
 
     template <parser auto p, parser auto... ps>
     auto parse_one_of(Parse_context& context) -> decltype(p(context)) {
@@ -92,8 +98,9 @@ namespace parser {
         }
     }
 
-    template <parser auto p>
-    auto extract_comma_separated_zero_or_more(Parse_context& context)
+
+    template <parser auto p, Token::Type separator, bu::Metastring description>
+    auto extract_separated_zero_or_more(Parse_context& context)
         -> std::vector<Parse_result<p>>
     {
         std::vector<Parse_result<p>> vector;
@@ -101,12 +108,12 @@ namespace parser {
         if (auto head = p(context)) {
             vector.push_back(std::move(*head));
 
-            while (context.try_consume(Token::Type::comma)) {
+            while (context.try_consume(separator)) {
                 if (auto element = p(context)) {
                     vector.push_back(std::move(*element));
                 }
                 else {
-                    bu::abort("expected an element after the comma");
+                    throw context.expected(description.view());
                 }
             }
         }
@@ -114,18 +121,38 @@ namespace parser {
         return vector;
     }
 
-    template <parser auto p>
-    auto parse_comma_separated_one_or_more(Parse_context& context)
+    template <parser auto p, Token::Type separator, bu::Metastring description>
+    auto parse_separated_one_or_more(Parse_context& context)
         -> std::optional<std::vector<Parse_result<p>>>
     {
-        auto vector = extract_comma_separated_zero_or_more<p>(context);
+        auto vector = extract_separated_zero_or_more<p, separator, description>(context);
 
         if (!vector.empty()) {
             return vector;
         }
         else {
-            bu::unimplemented();
+            return std::nullopt;
         }
     }
+
+
+    template <parser auto p, bu::Metastring description>
+    constexpr auto extract_comma_separated_zero_or_more =
+        extract_separated_zero_or_more<p, Token::Type::comma, description>;
+
+    template <parser auto p, bu::Metastring description>
+    constexpr auto parse_comma_separated_one_or_more =
+        parse_separated_one_or_more<p, Token::Type::comma, description>;
+
+
+    auto parse_expression(Parse_context&) -> std::optional<ast::Expression>;
+    auto parse_pattern   (Parse_context&) -> std::optional<ast::Pattern   >;
+    auto parse_type      (Parse_context&) -> std::optional<ast::Type      >;
+
+    inline constexpr auto extract_expression = extract_required<parse_expression, "an expression">;
+    inline constexpr auto extract_pattern    = extract_required<parse_pattern   , "a pattern"    >;
+    inline constexpr auto extract_type       = extract_required<parse_type      , "a type"       >;
+
+    auto parse_compound_expression(Parse_context&) -> std::optional<ast::Expression>;
 
 }

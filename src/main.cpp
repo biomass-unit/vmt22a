@@ -64,6 +64,10 @@ auto main() -> int try {
     parser_repl();
 }
 
+catch (std::bad_alloc const&) {
+    std::cerr << "Error: bad allocation\n";
+}
+
 catch (std::exception const& exception) {
     bu::print<std::cerr>("Error: {}\n", exception.what());
 }

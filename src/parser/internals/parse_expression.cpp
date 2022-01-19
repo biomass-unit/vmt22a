@@ -6,14 +6,26 @@ namespace {
 
     using namespace parser;
 
+
     template <class T>
-    auto extract_literal(Parse_context& context) -> std::optional<ast::Expression> {
+    auto extract_literal(Parse_context& context) -> ast::Expression {
         static_assert(std::is_trivially_copyable_v<lexer::Token>); // ensure cheap copy
-        return ast::Literal<T> { context.extract().value_as<T>() };
+        return ast::Literal<T> { context.pointer[-1].value_as<T>() };
     }
 
-    auto parse_literal(Parse_context& context) -> std::optional<ast::Expression> {
-        switch (context.pointer->type) {
+    auto extract_tuple(Parse_context& context) -> ast::Expression {
+        auto expressions = extract_comma_separated_zero_or_more<parse_expression, "an expression">(context);
+        if (context.try_consume(Token::Type::paren_close)) {
+            return ast::Tuple { std::move(expressions) };
+        }
+        else {
+            throw context.expected("a closing ')'");
+        }
+    }
+
+
+    auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
+        switch (context.extract().type) {
         case Token::Type::integer:
             return extract_literal<bu::Isize>(context);
         case Token::Type::floating:
@@ -24,22 +36,10 @@ namespace {
             return extract_literal<bool>(context);
         case Token::Type::string:
             return extract_literal<lexer::String>(context);
+        case Token::Type::paren_open:
+            return extract_tuple(context);
         default:
-            return std::nullopt;
-        }
-    }
-
-    auto parse_tuple(Parse_context& context) -> std::optional<ast::Expression> {
-        if (context.try_consume(Token::Type::paren_open)) {
-            auto expressions = extract_comma_separated_zero_or_more<parse_expression>(context);
-            if (context.try_consume(Token::Type::paren_close)) {
-                return ast::Tuple { std::move(expressions) };
-            }
-            else {
-                throw context.expected("a closing ')'");
-            }
-        }
-        else {
+            --context.pointer;
             return std::nullopt;
         }
     }
@@ -48,8 +48,19 @@ namespace {
 
 
 auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expression> {
-    return parse_one_of<
-        parse_literal,
-        parse_tuple
-    >(context);
+    return parse_normal_expression(context);
+}
+
+auto parser::parse_compound_expression(Parse_context& context) -> std::optional<ast::Expression> {
+    if (context.try_consume(Token::Type::brace_open)) {
+        constexpr auto extract_expressions =
+            extract_separated_zero_or_more<parse_expression, Token::Type::semicolon, "an expression">;
+
+        auto expressions = extract_expressions(context);
+        context.consume_required(Token::Type::brace_close);
+        return ast::Compound_expression { std::move(expressions) };
+    }
+    else {
+        return std::nullopt;
+    }
 }

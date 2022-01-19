@@ -31,14 +31,17 @@ namespace {
         char const* line_start = view_start;
         for (; line_start != file_start && *line_start != '\n'; --line_start);
 
-        for (char const* pointer = line_start; pointer != view_stop; ++pointer) {
+        for (char const* pointer = line_start; ; ++pointer) {
             if (*pointer == '\n') {
                 lines.push_back({ line_start, pointer });
                 line_start = pointer;
             }
-        }
-        if (lines.size() != 1) {
-            lines.push_back({ line_start, view_stop });
+            if (pointer + 1 == view_stop) {
+                if (line_start != view_stop) {
+                    lines.push_back({ line_start, view_stop });
+                }
+                break;
+            }
         }
 
         constexpr auto whitespace_prefix_length = [](std::string_view string) noexcept -> bu::Usize {

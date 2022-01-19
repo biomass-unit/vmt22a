@@ -113,7 +113,7 @@ namespace bu {
 
         [[nodiscard]]
         constexpr auto operator==(Pair const&) const
-            noexcept(noexcept(pair == pair, second == second)) -> bool = default;
+            noexcept(noexcept(first == first, second == second)) -> bool = default;
     };
 
     inline constexpr auto first  = [](auto& pair) noexcept -> auto& { return pair.first ; };
@@ -160,6 +160,29 @@ namespace bu {
 
     template <class T, template <class...> class F>
     concept instance_of = dtl::Is_instance_of<T, F>::value;
+
+
+    constexpr auto string_length(char const* string) noexcept -> bu::Usize {
+        bu::Usize length = 0;
+        for (; *string++; ++length);
+        return length;
+    }
+
+    static_assert(string_length("") == 0);
+    static_assert(string_length("hello") == 5);
+
+    struct [[nodiscard]] Metastring {
+        char const* pointer;
+        Usize length;
+
+        consteval Metastring(char const* string) noexcept
+            : pointer { string }
+            , length { string_length(string) } {}
+
+        constexpr auto view() const noexcept -> std::string_view {
+            return { pointer, length };
+        }
+    };
 
 
     struct Formatter_base {
