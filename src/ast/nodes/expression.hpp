@@ -26,7 +26,9 @@ namespace ast {
     };
 
     struct Conditional {
-        bu::Wrapper<Expression> condition, true_branch, false_branch;
+        bu::Wrapper<Expression> condition;
+        bu::Wrapper<Expression> true_branch;
+        std::optional<bu::Wrapper<Expression>> false_branch;
         DEFAULTED_EQUALITY(Conditional);
     };
 

@@ -19,7 +19,7 @@ namespace bu {
         inline static Wrapper_context<T> default_context { 0 };
     public:
         template <class... Args>
-        constexpr explicit Wrapper(Args&&... args) noexcept(std::is_nothrow_constructible_v<T>)
+        constexpr Wrapper(Args&&... args) noexcept(std::is_nothrow_constructible_v<T>)
             : index { vector->size() }
         {
             vector->emplace_back(std::forward<Args>(args)...);

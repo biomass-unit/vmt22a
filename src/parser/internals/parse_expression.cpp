@@ -23,6 +23,35 @@ namespace {
         }
     }
 
+    auto extract_conditional(Parse_context& context) -> ast::Expression {
+        if (auto condition = parse_expression(context)) {
+            if (auto true_branch = parse_compound_expression(context)) {
+                std::optional<bu::Wrapper<ast::Expression>> false_branch;
+
+                if (context.try_consume(Token::Type::else_)) {
+                    if (auto branch = parse_compound_expression(context)) {
+                        false_branch.emplace(std::move(*branch));
+                    }
+                    else {
+                        throw context.expected("the false branch");
+                    }
+                }
+
+                return ast::Conditional {
+                    std::move(*condition),
+                    std::move(*true_branch),
+                    std::move(false_branch)
+                };
+            }
+            else {
+                throw context.expected("the true branch");
+            }
+        }
+        else {
+            throw context.expected("a condition");
+        }
+    }
+
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
         switch (context.extract().type) {
@@ -38,6 +67,8 @@ namespace {
             return extract_literal<lexer::String>(context);
         case Token::Type::paren_open:
             return extract_tuple(context);
+        case Token::Type::if_:
+            return extract_conditional(context);
         default:
             --context.pointer;
             return std::nullopt;
