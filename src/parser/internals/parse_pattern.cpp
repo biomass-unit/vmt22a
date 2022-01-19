@@ -2,6 +2,18 @@
 #include "parser_internals.hpp"
 
 
-auto parser::parse_pattern(Parse_context&) -> std::optional<ast::Pattern> {
-    bu::unimplemented();
+namespace {
+
+    using namespace parser;
+
+}
+
+
+auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern> {
+    switch (context.extract().type) {
+    case Token::Type::underscore:
+        return ast::pattern::Wildcard {};
+    default:
+        return std::nullopt;
+    }
 }

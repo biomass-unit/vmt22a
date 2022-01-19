@@ -42,6 +42,10 @@ namespace bu {
         auto view() const noexcept -> std::string_view {
             return vector[index].first;
         }
+        [[nodiscard]]
+        auto hash() const noexcept -> bu::Usize {
+            return vector[index].second;
+        }
 
         [[nodiscard]]
         auto operator==(Pooled_string const& other) const noexcept -> bool {

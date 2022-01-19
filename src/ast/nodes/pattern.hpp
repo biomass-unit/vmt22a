@@ -17,6 +17,11 @@ namespace ast {
             pattern::Wildcard
         >;
         Variant value;
+
+        template <class X>
+        Pattern(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>)
+            : value { std::forward<X>(x) } {}
+
         DEFAULTED_EQUALITY(Pattern);
     };
 

@@ -52,6 +52,23 @@ namespace {
         }
     }
 
+    auto extract_let_binding(Parse_context& context) -> ast::Expression {
+        auto pattern = extract_pattern(context);
+        
+        std::optional<bu::Wrapper<ast::Type>> type;
+        if (context.try_consume(Token::Type::colon)) {
+            type.emplace(extract_type(context));
+        }
+
+        context.consume_required(Token::Type::equals);
+
+        return ast::Let_binding {
+            std::move(pattern),
+            extract_expression(context),
+            std::move(type)
+        };
+    }
+
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
         switch (context.extract().type) {
@@ -69,6 +86,8 @@ namespace {
             return extract_tuple(context);
         case Token::Type::if_:
             return extract_conditional(context);
+        case Token::Type::let:
+            return extract_let_binding(context);
         default:
             --context.pointer;
             return std::nullopt;

@@ -61,7 +61,9 @@ namespace {
         }
     };
 
-    struct Pattern_format_visitor : Visitor_base {};
+    struct Pattern_format_visitor : Visitor_base {
+        auto operator()(ast::pattern::Wildcard) { return format("_"); }
+    };
 
     struct Type_format_visitor : Visitor_base {
         auto operator()(ast::type::Int)    { return format("Int");    }

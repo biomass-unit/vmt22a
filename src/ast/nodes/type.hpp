@@ -34,10 +34,16 @@ namespace ast {
             type::Float,
             type::Char,
             type::Bool,
+            type::String,
             type::Tuple,
             type::Function
         >;
         Variant value;
+
+        template <class X>
+        Type(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>)
+            : value { std::forward<X>(x) } {}
+
         DEFAULTED_EQUALITY(Type);
     };
 
