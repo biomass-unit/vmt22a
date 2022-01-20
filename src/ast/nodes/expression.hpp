@@ -56,6 +56,11 @@ namespace ast {
         DEFAULTED_EQUALITY(Let_binding);
     };
 
+    struct Infinite_loop {
+        bu::Wrapper<Expression> body;
+        DEFAULTED_EQUALITY(Infinite_loop);
+    };
+
 
     struct Expression {
         using Variant = std::variant<
@@ -71,7 +76,8 @@ namespace ast {
             Conditional,
             Match,
             Type_cast,
-            Let_binding
+            Let_binding,
+            Infinite_loop
         >;
         Variant value;
 

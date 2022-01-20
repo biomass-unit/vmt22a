@@ -24,6 +24,9 @@ namespace {
     }
 
     auto extract_conditional(Parse_context& context) -> ast::Expression {
+        constexpr std::string_view help =
+            "the branches of a conditional expression must be compound expressions";
+
         if (auto condition = parse_expression(context)) {
             if (auto true_branch = parse_compound_expression(context)) {
                 std::optional<bu::Wrapper<ast::Expression>> false_branch;
@@ -33,7 +36,7 @@ namespace {
                         false_branch.emplace(std::move(*branch));
                     }
                     else {
-                        throw context.expected("the false branch");
+                        throw context.expected("the false branch", help);
                     }
                 }
 
@@ -44,7 +47,7 @@ namespace {
                 };
             }
             else {
-                throw context.expected("the true branch");
+                throw context.expected("the true branch", help);
             }
         }
         else {
@@ -69,6 +72,15 @@ namespace {
         };
     }
 
+    auto extract_infinite_loop(Parse_context& context) -> ast::Expression {
+        if (auto body = parse_compound_expression(context)) {
+            return ast::Infinite_loop { std::move(*body) };
+        }
+        else {
+            throw context.expected("the loop body", "the loop body must be a compound expression");
+        }
+    }
+
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
         switch (context.extract().type) {
@@ -88,6 +100,8 @@ namespace {
             return extract_conditional(context);
         case Token::Type::let:
             return extract_let_binding(context);
+        case Token::Type::loop:
+            return extract_infinite_loop(context);
         default:
             --context.pointer;
             return std::nullopt;

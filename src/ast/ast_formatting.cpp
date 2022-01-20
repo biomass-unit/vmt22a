@@ -59,6 +59,9 @@ namespace {
         auto operator()(ast::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
         }
+        auto operator()(ast::Infinite_loop const& loop) {
+            return format("loop {}", loop.body);
+        }
     };
 
     struct Pattern_format_visitor : Visitor_base {
