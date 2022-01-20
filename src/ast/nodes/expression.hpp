@@ -61,6 +61,19 @@ namespace ast {
         DEFAULTED_EQUALITY(Infinite_loop);
     };
 
+    struct While_loop {
+        bu::Wrapper<Expression> condition;
+        bu::Wrapper<Expression> body;
+        DEFAULTED_EQUALITY(While_loop);
+    };
+
+    struct For_loop {
+        bu::Wrapper<Pattern> iterator;
+        bu::Wrapper<Expression> iterable;
+        bu::Wrapper<Expression> body;
+        DEFAULTED_EQUALITY(For_loop);
+    };
+
 
     struct Expression {
         using Variant = std::variant<
@@ -77,7 +90,9 @@ namespace ast {
             Match,
             Type_cast,
             Let_binding,
-            Infinite_loop
+            Infinite_loop,
+            While_loop,
+            For_loop
         >;
         Variant value;
 

@@ -72,13 +72,37 @@ namespace {
         };
     }
 
-    auto extract_infinite_loop(Parse_context& context) -> ast::Expression {
+
+    auto extract_loop_body(Parse_context& context) -> ast::Expression {
         if (auto body = parse_compound_expression(context)) {
-            return ast::Infinite_loop { std::move(*body) };
+            return std::move(*body);
         }
         else {
             throw context.expected("the loop body", "the loop body must be a compound expression");
         }
+    }
+
+    auto extract_infinite_loop(Parse_context& context) -> ast::Expression {
+        return ast::Infinite_loop { extract_loop_body(context) };
+    }
+
+    auto extract_while_loop(Parse_context& context) -> ast::Expression {
+        auto condition = extract_expression(context);
+        return ast::While_loop {
+            std::move(condition),
+            extract_loop_body(context)
+        };
+    }
+
+    auto extract_for_loop(Parse_context& context) -> ast::Expression {
+        auto iterator = extract_pattern(context);
+        context.consume_required(Token::Type::in);
+        auto iterable = extract_expression(context);
+        return ast::For_loop {
+            std::move(iterator),
+            std::move(iterable),
+            extract_loop_body(context)
+        };
     }
 
 
@@ -102,6 +126,10 @@ namespace {
             return extract_let_binding(context);
         case Token::Type::loop:
             return extract_infinite_loop(context);
+        case Token::Type::while_:
+            return extract_while_loop(context);
+        case Token::Type::for_:
+            return extract_for_loop(context);
         default:
             --context.pointer;
             return std::nullopt;

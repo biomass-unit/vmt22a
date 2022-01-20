@@ -48,7 +48,7 @@ namespace {
         }
         auto operator()(ast::Conditional const& conditional) {
             auto& [condition, true_branch, false_branch] = conditional;
-            return format("if {} {{ {} }} else {{ {} }}", condition, true_branch, false_branch);
+            return format("if {} {} else {}", condition, true_branch, false_branch);
         }
         auto operator()(ast::Match const& match) {
             return format("match {} {{ {} }}", match.expression, match.cases);
@@ -61,6 +61,12 @@ namespace {
         }
         auto operator()(ast::Infinite_loop const& loop) {
             return format("loop {}", loop.body);
+        }
+        auto operator()(ast::While_loop const& loop) {
+            return format("while {} {}", loop.condition, loop.body);
+        }
+        auto operator()(ast::For_loop const& loop) {
+            return format("for {} in {} {}", loop.iterator, loop.iterable, loop.body);
         }
     };
 
