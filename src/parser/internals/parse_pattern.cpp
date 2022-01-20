@@ -14,6 +14,7 @@ auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern
     case Token::Type::underscore:
         return ast::pattern::Wildcard {};
     default:
+        --context.pointer;
         return std::nullopt;
     }
 }

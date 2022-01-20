@@ -99,6 +99,40 @@ namespace parser {
     }
 
 
+    template <parser auto p, bu::Metastring description, Token::Type open, Token::Type close>
+    auto parse_surrounded(Parse_context& context) -> decltype(p(context)) {
+        if (context.try_consume(open)) {
+            if (auto result = p(context)) {
+                if (context.try_consume(close)) {
+                    return result;
+                }
+                else {
+                    throw context.expected(std::format("a closing '{}'", close));
+                }
+            }
+            else {
+                throw context.expected(description.view());
+            }
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+
+    template <parser auto p, bu::Metastring description>
+    constexpr auto parenthesized =
+        parse_surrounded<p, description, Token::Type::paren_open, Token::Type::paren_close>;
+
+    template <parser auto p, bu::Metastring description>
+    constexpr auto braced =
+        parse_surrounded<p, description, Token::Type::brace_open, Token::Type::brace_close>;
+
+    template <parser auto p, bu::Metastring description>
+    constexpr auto bracketed =
+        parse_surrounded<p, description, Token::Type::brace_open, Token::Type::bracket_close>;
+
+
     template <parser auto p, Token::Type separator, bu::Metastring description>
     auto extract_separated_zero_or_more(Parse_context& context)
         -> std::vector<Parse_result<p>>

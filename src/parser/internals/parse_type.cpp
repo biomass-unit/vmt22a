@@ -47,6 +47,7 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
     case Token::Type::upper_name:
         return extract_typename(context);
     default:
+        --context.pointer;
         return std::nullopt;
     }
 }
