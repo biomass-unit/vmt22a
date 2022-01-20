@@ -49,7 +49,7 @@ namespace bu {
 
         [[nodiscard]]
         auto operator==(Pooled_string const& other) const noexcept -> bool {
-            return index == other.index;
+            return index == other.index; // could be defaulted but this explicitly shows how cheap the operation is
         }
 
         static auto release() noexcept -> void {

@@ -213,7 +213,15 @@ namespace {
             { new_id("mod")      , Type::mod       },
         });
 
+        static auto const
+            true_id = new_id("true"),
+            false_id = new_id("false");
+
         lexer::Identifier const identifier { view };
+
+        if (identifier == true_id || identifier == false_id) {
+            return context.success({ view.front() == 't', Type::boolean });
+        }
 
         for (auto const [keyword, keyword_type] : options) {
             if (identifier == keyword) {

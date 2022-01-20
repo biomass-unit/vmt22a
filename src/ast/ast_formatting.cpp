@@ -71,7 +71,19 @@ namespace {
     };
 
     struct Pattern_format_visitor : Visitor_base {
-        auto operator()(ast::pattern::Wildcard) { return format("_"); }
+        auto operator()(ast::pattern::Wildcard) {
+            return format("_");
+        }
+        template <class T>
+        auto operator()(ast::pattern::Literal<T> literal) {
+            return std::invoke(Expression_format_visitor { { out } }, literal);
+        }
+        auto operator()(ast::pattern::Name name) {
+            return format("{}", name.identifier);
+        }
+        auto operator()(ast::pattern::Tuple const& tuple) {
+            return format("({})", tuple.patterns);
+        }
     };
 
     struct Type_format_visitor : Visitor_base {
