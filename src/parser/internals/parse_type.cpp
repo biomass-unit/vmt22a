@@ -17,7 +17,7 @@ namespace {
             boolean   = hasher("Bool"),
             string    = hasher("String");
 
-        auto const id = context.pointer[-1].as_identifier();
+        auto const id = context.previous().as_identifier();
         auto const hash = id.hash();
 
         if (hash == integer) {

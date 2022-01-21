@@ -9,7 +9,7 @@ namespace {
 
     template <class T>
     auto extract_literal(Parse_context& context) -> ast::Pattern {
-        return ast::pattern::Literal<T> { context.pointer[-1].value_as<T>() };
+        return ast::pattern::Literal<T> { context.previous().value_as<T>() };
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Pattern {
@@ -38,7 +38,7 @@ auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern
     case Token::Type::paren_open:
         return extract_tuple(context);
     case Token::Type::lower_name:
-        return ast::pattern::Name { context.pointer[-1].as_identifier() };
+        return ast::pattern::Name { context.previous().as_identifier() };
     default:
         --context.pointer;
         return std::nullopt;

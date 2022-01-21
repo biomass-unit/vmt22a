@@ -3,7 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/source.hpp"
 #include "bu/textual_error.hpp"
-#include "lexer/token.hpp"
+#include "lexer/lexer.hpp"
 #include "lexer/token_formatting.hpp"
 #include "ast/ast.hpp"
 
@@ -13,8 +13,14 @@ namespace parser {
     using lexer::Token;
 
     struct Parse_context {
+        Token* start;
         Token* pointer;
         bu::Source* source;
+
+        explicit Parse_context(lexer::Tokenized_source& ts) noexcept
+            : start   { ts.tokens.data() }
+            , pointer { start }
+            , source  { &ts.source } {}
 
         inline auto is_finished() const noexcept -> bool {
             return pointer->type == Token::Type::end_of_input;
@@ -26,6 +32,11 @@ namespace parser {
 
         inline auto extract() noexcept -> Token& {
             return *pointer++;
+        }
+
+        inline auto previous() noexcept -> Token& {
+            assert(pointer != start);
+            return pointer[-1];
         }
 
         inline auto consume_required(Token::Type const type) -> void {

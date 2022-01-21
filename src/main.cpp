@@ -45,12 +45,8 @@ namespace {
 
     [[maybe_unused]]
     auto parser_repl = generic_repl([](bu::Source src) {
-        auto [source, tokens] = lexer::lex(std::move(src));
-
-        parser::Parse_context context {
-            .pointer = tokens.data(),
-            .source  = &source
-        };
+        auto tokenized_source = lexer::lex(std::move(src));
+        parser::Parse_context context { tokenized_source };
 
         auto result = parser::parse_expression(context);
         bu::print("Result: {}\nRemaining input: '{}'\n", result, context.pointer->source_view.data());

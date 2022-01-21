@@ -9,7 +9,7 @@ namespace {
 
     template <class T>
     auto extract_literal(Parse_context& context) -> ast::Expression {
-        return ast::Literal<T> { context.pointer[-1].value_as<T>() };
+        return ast::Literal<T> { context.previous().value_as<T>() };
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Expression {
