@@ -74,6 +74,11 @@ namespace ast {
         DEFAULTED_EQUALITY(For_loop);
     };
 
+    struct Size_of {
+        bu::Wrapper<Type> type;
+        DEFAULTED_EQUALITY(Size_of);
+    };
+
 
     struct Expression {
         using Variant = std::variant<
@@ -92,7 +97,8 @@ namespace ast {
             Let_binding,
             Infinite_loop,
             While_loop,
-            For_loop
+            For_loop,
+            Size_of
         >;
         Variant value;
 

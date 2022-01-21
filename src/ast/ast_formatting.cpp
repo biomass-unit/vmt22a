@@ -68,6 +68,9 @@ namespace {
         auto operator()(ast::For_loop const& loop) {
             return format("for {} in {} {}", loop.iterator, loop.iterable, loop.body);
         }
+        auto operator()(ast::Size_of const& size_of) {
+            return format("size_of({})", size_of.type);
+        }
     };
 
     struct Pattern_format_visitor : Visitor_base {
@@ -98,6 +101,9 @@ namespace {
         }
         auto operator()(ast::type::Function const& function) {
             return format("fn({}): {}", function.argument_types, function.return_type);
+        }
+        auto operator()(ast::type::Type_of const& type_of) {
+            return format("type_of({})", type_of.expression);
         }
     };
 

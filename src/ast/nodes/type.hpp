@@ -25,6 +25,11 @@ namespace ast {
             DEFAULTED_EQUALITY(Function);
         };
 
+        struct Type_of {
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Type_of);
+        };
+
     }
 
 
@@ -36,7 +41,8 @@ namespace ast {
             type::Bool,
             type::String,
             type::Tuple,
-            type::Function
+            type::Function,
+            type::Type_of
         >;
         Variant value;
 

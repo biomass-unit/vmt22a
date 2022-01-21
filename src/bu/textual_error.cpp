@@ -108,9 +108,7 @@ bu::Textual_error::Textual_error(Arguments const arguments)
         position.column
     );
 
-    auto const lines = lines_of_occurrence(file, view);
-    assert(!lines.empty());
-
+    auto const lines       = lines_of_occurrence(file, view);
     auto const digits      = digit_count(find_position(file, lines.back().data()).line);
     auto       line_number = position.line;
 
@@ -125,11 +123,18 @@ bu::Textual_error::Textual_error(Arguments const arguments)
     }
 
     if (lines.size() == 1) {
+        auto whitespace_length =
+            view.size() + digits + bu::unsigned_distance(lines.front().data(), view.data());
+
+        if (view.size() == 0) { // only reached if the error occurs at EOI
+            whitespace_length += 2;
+        }
+
         std::format_to(
             out,
             "\n    {:>{}} here",
             std::string(std::max(view.size(), 1_uz), '^'),
-            bu::unsigned_distance(lines.front().data(), view.data()) + view.size() + digits
+            whitespace_length
         );
     }
 

@@ -39,6 +39,17 @@ namespace {
         bu::unimplemented();
     }
 
+    auto extract_type_of(Parse_context& context) -> ast::Type {
+        if (context.try_consume(Token::Type::paren_open)) {
+            auto type = extract_expression(context);
+            context.consume_required(Token::Type::paren_close);
+            return ast::type::Type_of { std::move(type) };
+        }
+        else {
+            throw context.expected("a parenthesized expression");
+        }
+    }
+
 }
 
 
@@ -46,6 +57,8 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
     switch (context.extract().type) {
     case Token::Type::upper_name:
         return extract_typename(context);
+    case Token::Type::type_of:
+        return extract_type_of(context);
     default:
         --context.pointer;
         return std::nullopt;

@@ -100,6 +100,17 @@ namespace {
         };
     }
 
+    auto extract_size_of(Parse_context& context) -> ast::Expression {
+        if (context.try_consume(Token::Type::paren_open)) {
+            auto type = extract_type(context);
+            context.consume_required(Token::Type::paren_close);
+            return ast::Size_of { std::move(type) };
+        }
+        else {
+            throw context.expected("a parenthesized type");
+        }
+    }
+
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
         switch (context.extract().type) {
@@ -125,6 +136,8 @@ namespace {
             return extract_while_loop(context);
         case Token::Type::for_:
             return extract_for_loop(context);
+        case Token::Type::size_of:
+            return extract_size_of(context);
         default:
             --context.pointer;
             return std::nullopt;
