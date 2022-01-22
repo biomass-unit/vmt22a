@@ -162,27 +162,21 @@ namespace bu {
     concept instance_of = dtl::Is_instance_of<T, F>::value;
 
 
-    constexpr auto string_length(char const* string) noexcept -> bu::Usize {
-        bu::Usize length = 0;
-        for (; *string++; ++length);
-        return length;
-    }
-
-    static_assert(string_length("") == 0);
-    static_assert(string_length("hello") == 5);
-
+    template <Usize length>
     struct [[nodiscard]] Metastring {
-        char const* pointer;
-        Usize length;
+        char string[length];
 
-        consteval Metastring(char const* string) noexcept
-            : pointer { string }
-            , length { string_length(string) } {}
+        consteval Metastring(char const* pointer) noexcept {
+            std::copy_n(pointer, length, string);
+        }
 
         constexpr auto view() const noexcept -> std::string_view {
-            return { pointer, length };
+            return { string, length };
         }
     };
+
+    template <Usize length>
+    Metastring(char const(&)[length]) -> Metastring<length - 1>;
 
 
     struct Formatter_base {

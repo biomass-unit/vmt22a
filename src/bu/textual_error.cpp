@@ -4,26 +4,24 @@
 
 namespace {
 
-    constexpr auto whitespace_prefix_length(std::string_view string) noexcept -> bu::Usize {
-        bu::Usize prefix = 0;
-        for (char const character : string) {
-            if (character != ' ') {
-                break;
-            }
-            ++prefix;
-        }
-        return prefix;
-    }
+    auto remove_surrounding_whitespace(std::vector<std::string_view>& lines) -> void {
+        constexpr auto prefix_length = [](std::string_view string) {
+            return string.find_first_not_of(' ');
+        };
+        static_assert(prefix_length("test") == 0);
+        static_assert(prefix_length("  test") == 2);
 
-    static_assert(whitespace_prefix_length("test") == 0);
-    static_assert(whitespace_prefix_length("  test") == 2);
+        constexpr auto suffix_length = [](std::string_view string) {
+            return string.size() - string.find_last_not_of(' ') - 1;
+        };
+        static_assert(suffix_length("test") == 0);
+        static_assert(suffix_length("test  ") == 2);
 
-
-    auto remove_whitespace_prefix(std::vector<std::string_view>& lines) -> void {
-        auto const shortest_prefix_length = std::ranges::min(lines | std::views::transform(whitespace_prefix_length));
+        auto const shortest_prefix_length = std::ranges::min(lines | std::views::transform(prefix_length));
 
         for (auto& line : lines) {
             line.remove_prefix(shortest_prefix_length);
+            line.remove_suffix(suffix_length(line));
         }
     }
 
@@ -47,7 +45,7 @@ namespace {
             }
         }
 
-        remove_whitespace_prefix(lines);
+        remove_surrounding_whitespace(lines);
         return lines;
     }
 
@@ -109,7 +107,7 @@ bu::Textual_error::Textual_error(Arguments const arguments)
     );
 
     auto const lines       = lines_of_occurrence(file, view);
-    auto const digits      = digit_count(find_position(file, lines.back().data()).line);
+    auto const digit_count = ::digit_count(find_position(file, lines.back().data()).line);
     auto       line_number = position.line;
 
     for (auto line : lines) {
@@ -117,17 +115,17 @@ bu::Textual_error::Textual_error(Arguments const arguments)
             out,
             "\n {:<{}} | {}",
             line_number++,
-            digits,
+            digit_count,
             line
         );
     }
 
     if (lines.size() == 1) {
         auto whitespace_length =
-            view.size() + digits + bu::unsigned_distance(lines.front().data(), view.data());
+            view.size() + digit_count + bu::unsigned_distance(lines.front().data(), view.data());
 
         if (view.size() == 0) { // only reached if the error occurs at EOI
-            whitespace_length += 2;
+            ++whitespace_length;
         }
 
         std::format_to(

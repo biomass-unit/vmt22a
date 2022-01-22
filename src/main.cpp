@@ -1,4 +1,5 @@
 #include "bu/utilities.hpp"
+#include "bu/color.hpp"
 
 #include "lexer/lexer.hpp"
 #include "lexer/lexer_test.hpp"
@@ -39,13 +40,13 @@ namespace {
     }
 
     [[maybe_unused]]
-    auto lexer_repl = generic_repl([](bu::Source src) {
-        bu::print("Tokens: {}\n", lexer::lex(std::move(src)).tokens);
+    auto lexer_repl = generic_repl([](bu::Source source) {
+        bu::print("Tokens: {}\n", lexer::lex(std::move(source)).tokens);
     });
 
     [[maybe_unused]]
-    auto parser_repl = generic_repl([](bu::Source src) {
-        auto tokenized_source = lexer::lex(std::move(src));
+    auto parser_repl = generic_repl([](bu::Source source) {
+        auto tokenized_source = lexer::lex(std::move(source));
         parser::Parse_context context { tokenized_source };
 
         auto result = parser::parse_expression(context);

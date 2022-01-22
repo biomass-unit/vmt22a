@@ -14,11 +14,9 @@ namespace {
 
     struct Visitor_base {
         std::format_context::iterator out;
+
         auto format(std::string_view fmt, auto const&... args) {
             return std::format_to(out, fmt, args...);
-        }
-        auto operator()(auto const&) -> std::format_context::iterator {
-            bu::unimplemented();
         }
     };
 
