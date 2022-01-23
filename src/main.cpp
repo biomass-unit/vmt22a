@@ -57,14 +57,15 @@ namespace {
 
 
 auto main() -> int try {
+    bu::enable_color_formatting();
     lexer::run_tests();
     parser_repl();
 }
 
 catch (std::bad_alloc const&) {
-    std::cerr << "Error: bad allocation\n";
+    std::cerr << bu::Color::red << "Error:" << bu::Color::white << " bad allocation\n";
 }
 
 catch (std::exception const& exception) {
-    bu::print<std::cerr>("{}Error: {}{}\n", bu::Color::red, exception.what(), bu::Color::white);
+    bu::print<std::cerr>("{}Error:{} {}\n", bu::Color::red, bu::Color::white, exception.what());
 }

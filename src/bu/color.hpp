@@ -27,9 +27,12 @@ namespace bu {
         _color_count
     };
 
-    auto use_color_formatting(bool) -> void;
+    auto  enable_color_formatting() noexcept -> void;
+    auto disable_color_formatting() noexcept -> void;
 
 }
 
+
+auto operator<<(std::ostream&, bu::Color) -> std::ostream&;
 
 DECLARE_FORMATTER_FOR(bu::Color);

@@ -4,14 +4,25 @@
 
 namespace {
 
-    constinit bool color_formatting_state = true;
+    constinit bool color_formatting_state = false;
 
-    constexpr auto color_code(bu::Color const color) noexcept -> std::string_view {
-        // ANSI color codes
+    constexpr auto color_string(bu::Color const color) noexcept -> std::string_view {
         constexpr auto color_map = std::to_array<std::string_view>({
-            "31", "32", "33", "34", "35", "36",
-            "91", "92", "93", "94", "95", "96",
-            "30", "0", "90"
+            "\033[31m",
+            "\033[32m",
+            "\033[33m",
+            "\033[34m",
+            "\033[35m",
+            "\033[36m",
+            "\033[91m",
+            "\033[92m",
+            "\033[93m",
+            "\033[94m",
+            "\033[95m",
+            "\033[96m",
+            "\033[30m",
+            "\033[0m" ,
+            "\033[90m",
         });
         static_assert(color_map.size() == static_cast<bu::Usize>(bu::Color::_color_count));
 
@@ -80,21 +91,24 @@ namespace {
 #endif
 
 
-auto bu::use_color_formatting(bool const state) -> void {
-    color_formatting_state = state;
+auto bu::enable_color_formatting() noexcept -> void {
+    enable_virtual_terminal_processing();
+    color_formatting_state = true;
+}
+
+auto bu::disable_color_formatting() noexcept -> void {
+    color_formatting_state = false;
 }
 
 
+auto operator<<(std::ostream& os, bu::Color const color) -> std::ostream& {
+    return color_formatting_state
+        ? os << color_string(color)
+        : os;
+}
+
 DEFINE_FORMATTER_FOR(bu::Color) {
-    if (!color_formatting_state) {
-        return context.out();
-    }
-
-    enable_virtual_terminal_processing();
-
-    if (!color_formatting_state) { // must be checked twice
-        return context.out();
-    }
-
-    return std::format_to(context.out(), "\033[{}m", color_code(value));
+    return color_formatting_state
+        ? std::format_to(context.out(), color_string(value))
+        : context.out();
 }
