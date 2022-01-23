@@ -4,9 +4,18 @@
 
 namespace {
 
-    auto do_color_formatting() noexcept -> bool& {
-        static bool state = true; // Avoids SIOF
-        return state;
+    constinit bool color_formatting_state = true;
+
+    constexpr auto color_code(bu::Color const color) noexcept -> std::string_view {
+        // ANSI color codes
+        constexpr auto color_map = std::to_array<std::string_view>({
+            "31", "32", "33", "34", "35", "36",
+            "91", "92", "93", "94", "95", "96",
+            "30", "0", "90"
+        });
+        static_assert(color_map.size() == static_cast<bu::Usize>(bu::Color::_color_count));
+
+        return color_map[static_cast<bu::Usize>(color)];
     }
 
 }
@@ -29,15 +38,15 @@ extern "C" {
 }
 
 #define STD_OUTPUT_HANDLE                  ((DWORD)-11)
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 #define INVALID_HANDLE_VALUE               ((HANDLE)(LONG_PTR)-1)
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
 
 
 namespace {
 
-    bool has_been_enabled = false;
-
     auto enable_virtual_terminal_processing() -> void {
+        static bool has_been_enabled = false;
+
         if (!has_been_enabled) {
             has_been_enabled = true;
 
@@ -45,19 +54,19 @@ namespace {
 
             HANDLE const console = GetStdHandle(STD_OUTPUT_HANDLE);
             if (console == INVALID_HANDLE_VALUE) {
-                do_color_formatting() = false;
+                color_formatting_state = false;
                 return;
             }
 
             DWORD mode;
             if (!GetConsoleMode(console, &mode)) {
-                do_color_formatting() = false;
+                color_formatting_state = false;
                 return;
             }
 
             if (!(mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
                 if (!SetConsoleMode(console, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING)) {
-                    do_color_formatting() = false;
+                    color_formatting_state = false;
                     return;
                 }
             }
@@ -72,28 +81,20 @@ namespace {
 
 
 auto bu::use_color_formatting(bool const state) -> void {
-    do_color_formatting() = state;
+    color_formatting_state = state;
 }
 
 
 DEFINE_FORMATTER_FOR(bu::Color) {
-    if (!do_color_formatting()) {
+    if (!color_formatting_state) {
         return context.out();
     }
 
     enable_virtual_terminal_processing();
 
-    if (!do_color_formatting()) { // must be checked before and after
+    if (!color_formatting_state) { // must be checked twice
         return context.out();
     }
 
-    // ANSI color codes
-    static constexpr auto color_map = std::to_array<std::string_view>({
-        "31", "32", "33", "34", "35", "36",
-        "91", "92", "93", "94", "95", "96",
-        "30", "0", "90"
-    });
-    static_assert(color_map.size() == static_cast<bu::Usize>(bu::Color::_color_count));
-
-    return std::format_to(context.out(), "\033[{}m", color_map[static_cast<bu::Usize>(value)]);
+    return std::format_to(context.out(), "\033[{}m", color_code(value));
 }

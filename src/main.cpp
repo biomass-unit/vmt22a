@@ -66,5 +66,5 @@ catch (std::bad_alloc const&) {
 }
 
 catch (std::exception const& exception) {
-    bu::print<std::cerr>("Error: {}\n", exception.what());
+    bu::print<std::cerr>("{}Error: {}{}\n", bu::Color::red, exception.what(), bu::Color::white);
 }

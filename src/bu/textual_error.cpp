@@ -130,9 +130,11 @@ bu::Textual_error::Textual_error(Arguments const arguments)
 
         std::format_to(
             out,
-            "\n    {:>{}} here",
+            "\n    {}{:>{}} {}here",
+            bu::Color::red,
             std::string(std::max(view.size(), 1_uz), '^'),
-            whitespace_length
+            whitespace_length,
+            bu::Color::white
         );
     }
 
