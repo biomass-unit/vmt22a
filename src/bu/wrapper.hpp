@@ -58,8 +58,8 @@ namespace bu {
     };
 
 
-    template <class A, std::equality_comparable_with<A> B>
-    constexpr auto operator==(Wrapper<A> const a, Wrapper<B> const b)
+    template <class T>
+    constexpr auto operator==(Wrapper<T> const a, Wrapper<T> const b)
         noexcept(noexcept(*a == *b)) -> bool
     {
         return *a == *b;

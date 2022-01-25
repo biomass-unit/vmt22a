@@ -140,6 +140,12 @@ namespace bu {
         return vector;
     }
 
+    inline constexpr auto string_without_sso() noexcept -> std::string {
+        std::string string;
+        string.reserve(sizeof string);
+        return string;
+    }
+
     [[nodiscard]]
     constexpr auto unsigned_distance(auto const start, auto const stop) noexcept -> Usize {
         return static_cast<Usize>(std::distance(start, stop));
@@ -160,6 +166,9 @@ namespace bu {
 
     template <class T, template <class...> class F>
     concept instance_of = dtl::Is_instance_of<T, F>::value;
+
+    template <class T, class U>
+    concept similar_to = std::same_as<std::decay_t<T>, std::decay_t<U>>;
 
 
     template <Usize length>

@@ -6,7 +6,9 @@ namespace ast {
     namespace type {
 
         template <class>
-        struct Primitive {};
+        struct Primitive {
+            DEFAULTED_EQUALITY(Primitive);
+        };
 
         using Int    = Primitive<bu::Isize>;
         using Float  = Primitive<bu::Float>;
@@ -46,10 +48,7 @@ namespace ast {
         >;
         Variant value;
 
-        template <class X>
-        Type(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>)
-            : value { std::forward<X>(x) } {}
-
+        DEFINE_NODE_CTOR(Type);
         DEFAULTED_EQUALITY(Type);
     };
 

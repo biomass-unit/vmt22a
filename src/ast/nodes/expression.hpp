@@ -102,10 +102,7 @@ namespace ast {
         >;
         Variant value;
 
-        template <class X>
-        Expression(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>)
-            : value { std::forward<X>(x) } {}
-
+        DEFINE_NODE_CTOR(Expression);
         DEFAULTED_EQUALITY(Expression);
     };
 

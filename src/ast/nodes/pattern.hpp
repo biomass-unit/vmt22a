@@ -38,10 +38,7 @@ namespace ast {
         >;
         Variant value;
 
-        template <class X>
-        Pattern(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>)
-            : value { std::forward<X>(x) } {}
-
+        DEFINE_NODE_CTOR(Pattern);
         DEFAULTED_EQUALITY(Pattern);
     };
 

@@ -19,7 +19,14 @@ namespace ast {
 }
 
 
+#define DEFINE_NODE_CTOR(name)                                            \
+template <class X> requires (!bu::similar_to<X, name>)                    \
+name(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>) \
+    : value { std::forward<X>(x) } {}
+
 #include "nodes/expression.hpp"
 #include "nodes/pattern.hpp"
 #include "nodes/type.hpp"
 #include "nodes/definition.hpp"
+
+#undef DEFINE_NODE_CTOR

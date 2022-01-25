@@ -18,8 +18,7 @@ namespace {
     auto generic_repl(std::invocable<bu::Source> auto f) {
         return [=] {
             for (;;) {
-                std::string string;
-                string.reserve(sizeof string); // disable SSO
+                auto string = bu::string_without_sso();
 
                 bu::print(" >>> ");
                 std::getline(std::cin, string);
@@ -59,6 +58,7 @@ namespace {
 auto main() -> int try {
     bu::enable_color_formatting();
     lexer::run_tests();
+    parser::run_tests();
     parser_repl();
 }
 
