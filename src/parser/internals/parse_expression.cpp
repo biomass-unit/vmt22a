@@ -146,6 +146,28 @@ namespace {
         }
     }
 
+    auto extract_continue(Parse_context&) -> ast::Expression {
+        return ast::Continue {};
+    }
+
+    auto extract_break(Parse_context& context) -> ast::Expression {
+        if (auto expression = parse_expression(context)) {
+            return ast::Break { std::move(*expression) };
+        }
+        else {
+            return ast::Break {};
+        }
+    }
+
+    auto extract_ret(Parse_context& context) -> ast::Expression {
+        if (auto expression = parse_expression(context)) {
+            return ast::Ret { std::move(*expression) };
+        }
+        else {
+            return ast::Ret {};
+        }
+    }
+
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
         switch (context.extract().type) {
@@ -175,6 +197,15 @@ namespace {
             return extract_size_of(context);
         case Token::Type::match:
             return extract_match(context);
+        case Token::Type::continue_:
+            return extract_continue(context);
+        case Token::Type::break_:
+            return extract_break(context);
+        case Token::Type::ret:
+            return extract_ret(context);
+        case Token::Type::brace_open: // fix
+            --context.pointer;
+            return parse_compound_expression(context);
         default:
             --context.pointer;
             return std::nullopt;

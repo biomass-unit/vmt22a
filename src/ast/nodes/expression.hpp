@@ -74,6 +74,20 @@ namespace ast {
         DEFAULTED_EQUALITY(For_loop);
     };
 
+    struct Continue {
+        DEFAULTED_EQUALITY(Continue);
+    };
+
+    struct Break {
+        std::optional<bu::Wrapper<Expression>> expression;
+        DEFAULTED_EQUALITY(Break);
+    };
+
+    struct Ret {
+        std::optional<bu::Wrapper<Expression>> expression;
+        DEFAULTED_EQUALITY(Ret);
+    };
+
     struct Size_of {
         bu::Wrapper<Type> type;
         DEFAULTED_EQUALITY(Size_of);
@@ -98,6 +112,9 @@ namespace ast {
             Infinite_loop,
             While_loop,
             For_loop,
+            Continue,
+            Break,
+            Ret,
             Size_of
         >;
         Variant value;

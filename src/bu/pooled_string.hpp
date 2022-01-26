@@ -55,9 +55,6 @@ namespace bu {
         static auto release() noexcept -> void {
             decltype(vector){}.swap(vector);
         }
-        static auto clear() noexcept -> void {
-            vector.clear();
-        }
     };
 
 }

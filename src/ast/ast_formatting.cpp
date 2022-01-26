@@ -66,6 +66,15 @@ namespace {
         auto operator()(ast::For_loop const& loop) {
             return format("for {} in {} {}", loop.iterator, loop.iterable, loop.body);
         }
+        auto operator()(ast::Continue) {
+            return format("continue");
+        }
+        auto operator()(ast::Break const& break_) {
+            return format("break {}", break_.expression);
+        }
+        auto operator()(ast::Ret const& ret) {
+            return format("ret {}", ret.expression);
+        }
         auto operator()(ast::Size_of const& size_of) {
             return format("size_of({})", size_of.type);
         }

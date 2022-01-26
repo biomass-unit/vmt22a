@@ -1,5 +1,12 @@
 #include "bu/utilities.hpp"
 #include "parser_test.hpp"
+
+#ifdef NDEBUG
+
+auto parser::run_tests() -> void {} // No testing in release
+
+#else
+
 #include "ast/ast_formatting.hpp"
 #include "internals/parser_internals.hpp"
 
@@ -144,3 +151,5 @@ auto parser::run_tests() -> void {
 
     bu::print("Parser tests passed!\n");
 }
+
+#endif

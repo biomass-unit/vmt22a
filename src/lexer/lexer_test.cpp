@@ -1,5 +1,12 @@
 #include "bu/utilities.hpp"
 #include "lexer_test.hpp"
+
+#ifdef NDEBUG
+
+auto lexer::run_tests() -> void {} // No testing in release
+
+#else
+
 #include "lexer.hpp"
 #include "token_formatting.hpp"
 
@@ -56,3 +63,5 @@ auto lexer::run_tests() -> void {
 
     bu::print("Lexer tests passed!\n");
 }
+
+#endif
