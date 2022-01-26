@@ -21,6 +21,17 @@ namespace ast {
             DEFAULTED_EQUALITY(Tuple);
         };
 
+        struct Array {
+            bu::Wrapper<Type> element_type;
+            bu::Usize length;
+            DEFAULTED_EQUALITY(Array);
+        };
+
+        struct List {
+            bu::Wrapper<Type> element_type;
+            DEFAULTED_EQUALITY(List);
+        };
+
         struct Function {
             std::vector<bu::Wrapper<Type>> argument_types;
             bu::Wrapper<Type> return_type;
@@ -43,6 +54,8 @@ namespace ast {
             type::Bool,
             type::String,
             type::Tuple,
+            type::Array,
+            type::List,
             type::Function,
             type::Type_of
         >;

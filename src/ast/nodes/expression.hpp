@@ -93,6 +93,11 @@ namespace ast {
         DEFAULTED_EQUALITY(Size_of);
     };
 
+    struct Meta {
+        bu::Wrapper<Expression> expression;
+        DEFAULTED_EQUALITY(Meta);
+    };
+
 
     struct Expression {
         using Variant = std::variant<
@@ -115,7 +120,8 @@ namespace ast {
             Continue,
             Break,
             Ret,
-            Size_of
+            Size_of,
+            Meta
         >;
         Variant value;
 

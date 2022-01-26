@@ -168,6 +168,17 @@ namespace {
         }
     }
 
+    auto extract_meta(Parse_context& context) -> ast::Expression {
+        if (context.try_consume(Token::Type::paren_open)) {
+            auto expression = extract_expression(context);
+            context.consume_required(Token::Type::paren_close);
+            return ast::Meta { std::move(expression) };
+        }
+        else {
+            throw context.expected("a parenthesized expression");
+        }
+    }
+
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
         switch (context.extract().type) {
@@ -203,6 +214,8 @@ namespace {
             return extract_break(context);
         case Token::Type::ret:
             return extract_ret(context);
+        case Token::Type::meta:
+            return extract_meta(context);
         case Token::Type::brace_open: // fix
             --context.pointer;
             return parse_compound_expression(context);

@@ -50,6 +50,31 @@ namespace {
         }
     }
 
+    auto extract_array_or_list(Parse_context& context) -> ast::Type {
+        auto element_type = extract_type(context);
+        std::optional<ast::Type> type;
+
+        if (context.try_consume(Token::Type::semicolon)) {
+            if (auto token = context.try_extract(Token::Type::integer)) {
+                type.emplace(
+                    ast::type::Array {
+                        std::move(element_type),
+                        static_cast<bu::Usize>(token->as_integer())
+                    }
+                );
+            }
+            else {
+                throw context.expected("the array length");
+            }
+        }
+        else {
+            type.emplace(ast::type::List { std::move(element_type) });
+        }
+
+        context.consume_required(Token::Type::bracket_close);
+        return std::move(*type);
+    }
+
 }
 
 
@@ -59,6 +84,8 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
         return extract_typename(context);
     case Token::Type::type_of:
         return extract_type_of(context);
+    case Token::Type::bracket_open:
+        return extract_array_or_list(context);
     default:
         --context.pointer;
         return std::nullopt;

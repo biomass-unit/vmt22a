@@ -78,6 +78,9 @@ namespace {
         auto operator()(ast::Size_of const& size_of) {
             return format("size_of({})", size_of.type);
         }
+        auto operator()(ast::Meta const& meta) {
+            return format("meta({})", meta.expression);
+        }
     };
 
     struct Pattern_format_visitor : Visitor_base {
@@ -105,6 +108,12 @@ namespace {
 
         auto operator()(ast::type::Tuple const& tuple) {
             return format("({})", tuple.types);
+        }
+        auto operator()(ast::type::Array const& array) {
+            return format("[{}; {}]", array.element_type, array.length);
+        }
+        auto operator()(ast::type::List const& list) {
+            return format("[{}]", list.element_type);
         }
         auto operator()(ast::type::Function const& function) {
             return format("fn({}): {}", function.argument_types, function.return_type);
