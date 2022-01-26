@@ -1,4 +1,5 @@
 #include "bu/utilities.hpp"
+#include "bu/uninitialized.hpp"
 #include "parser_internals.hpp"
 
 
@@ -52,11 +53,11 @@ namespace {
 
     auto extract_array_or_list(Parse_context& context) -> ast::Type {
         auto element_type = extract_type(context);
-        std::optional<ast::Type> type;
+        bu::Uninitialized<ast::Type> type;
 
         if (context.try_consume(Token::Type::semicolon)) {
             if (auto token = context.try_extract(Token::Type::integer)) {
-                type.emplace(
+                type.initialize(
                     ast::type::Array {
                         std::move(element_type),
                         static_cast<bu::Usize>(token->as_integer())
@@ -68,11 +69,11 @@ namespace {
             }
         }
         else {
-            type.emplace(ast::type::List { std::move(element_type) });
+            type.initialize(ast::type::List { std::move(element_type) });
         }
 
         context.consume_required(Token::Type::bracket_close);
-        return std::move(*type);
+        return std::move(type.read_initialized());
     }
 
 }
