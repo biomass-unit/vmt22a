@@ -34,6 +34,7 @@ namespace lexer {
             ampersand,
             equals,
             pipe,
+            right_arrow,
 
             paren_open,
             paren_close,

@@ -6,7 +6,7 @@
 
 namespace {
 
-    auto test(std::vector<lexer::Token> tokens, ast::Expression const& expression) -> void {
+    auto test(std::vector<lexer::Token> tokens, ast::Expression const& expected_expression) -> void {
         tokens.push_back({ .type = lexer::Token::Type::end_of_input });
 
         lexer::Tokenized_source source {
@@ -18,16 +18,30 @@ namespace {
         };
         parser::Parse_context context { source };
 
-        auto const result = parser::parse_expression(context);
+        std::optional<ast::Expression> parse_result;
 
-        if (result) {
-            if (*result != expression) {
+        try {
+            parse_result = parser::parse_expression(context);
+        }
+        catch (std::exception const& exception) {
+            bu::abort(
+                std::format(
+                    "Parser test case failed, with\n\texpected"
+                    " expression: {}\n\tthrown exception: {}",
+                    expected_expression,
+                    exception.what()
+                )
+            );
+        }
+
+        if (parse_result) {
+            if (*parse_result != expected_expression) {
                 bu::abort(
                     std::format(
                         "Parser test case failed, with\n\texpected "
                         "expression: {}\n\tactual expression: {}",
-                        expression,
-                        *result
+                        expected_expression,
+                        *parse_result
                     )
                 );
             }
@@ -36,7 +50,7 @@ namespace {
                     std::format(
                         "Parser test case succeeded, but with remaining input."
                         "\n\texpected expression: {}\nremaining input: {}",
-                        expression,
+                        expected_expression,
                         std::vector<lexer::Token> {
                             context.pointer,
                             source.tokens.data() + source.tokens.size()
@@ -50,7 +64,7 @@ namespace {
                 std::format(
                     "Parser test case failed, with\n\texpected "
                     "expression: {}\n\tinput tokens: {}",
-                    expression,
+                    expected_expression,
                     source.tokens
                 )
             );
@@ -64,6 +78,9 @@ auto parser::run_tests() -> void {
     bu::Wrapper_context<ast::Expression> expression_context { 32 };
     bu::Wrapper_context<ast::Pattern   >    pattern_context { 32 };
     bu::Wrapper_context<ast::Type      >       type_context { 32 };
+
+    using namespace lexer::literals;
+    using namespace bu::literals;
 
     using lexer::Token;
     using Type = Token::Type;
@@ -105,6 +122,23 @@ auto parser::run_tests() -> void {
                     ast::Literal<char> { 'a' }
                 }
             }
+        }
+    );
+
+    test
+    (
+        {
+            Token { .type = Type::for_ },
+            Token { "x"_id, Type::lower_name },
+            Token { .type = Type::in },
+            Token { lexer::String { "hello"sv }, Type::string },
+            Token { .type = Type::brace_open },
+            Token { .type = Type::brace_close }
+        },
+        ast::For_loop {
+            ast::pattern::Name { "x"_id },
+            ast::Literal { lexer::String { "hello"sv } },
+            ast::Compound_expression {}
         }
     );
 

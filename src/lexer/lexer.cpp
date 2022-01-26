@@ -255,6 +255,7 @@ namespace {
             { "|" , Type::pipe         },
             { "=" , Type::equals       },
             { "&" , Type::ampersand    },
+            { "->", Type::right_arrow  },
         });
 
         for (auto [punctuation, punctuation_type] : clashing) {

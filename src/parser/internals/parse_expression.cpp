@@ -67,7 +67,6 @@ namespace {
         };
     }
 
-
     auto extract_loop_body(Parse_context& context) -> ast::Expression {
         if (auto body = parse_compound_expression(context)) {
             return std::move(*body);
@@ -111,6 +110,42 @@ namespace {
         }
     }
 
+    auto parse_match_case(Parse_context& context) -> std::optional<ast::Match::Case> {
+        if (auto pattern = parse_pattern(context)) {
+            context.consume_required(Token::Type::right_arrow);
+            return ast::Match::Case {
+                std::move(*pattern),
+                extract_expression(context)
+            };
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    auto extract_match(Parse_context& context) -> ast::Expression {
+        constexpr auto parse_cases = braced<
+            parse_separated_one_or_more<
+                parse_match_case,
+                Token::Type::semicolon,
+                "a match case"
+            >,
+            "one or more match cases delimited by ';'"
+        >;
+
+        auto expression = extract_expression(context);
+
+        if (auto cases = parse_cases(context)) {
+            return ast::Match {
+                std::move(*cases),
+                std::move(expression)
+            };
+        }
+        else {
+            throw context.expected("a '{' followed by match cases");
+        }
+    }
+
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
         switch (context.extract().type) {
@@ -138,6 +173,8 @@ namespace {
             return extract_for_loop(context);
         case Token::Type::size_of:
             return extract_size_of(context);
+        case Token::Type::match:
+            return extract_match(context);
         default:
             --context.pointer;
             return std::nullopt;
