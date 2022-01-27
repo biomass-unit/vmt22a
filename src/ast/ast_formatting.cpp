@@ -47,6 +47,15 @@ namespace {
         auto operator()(ast::Binary_operator_invocation const& invocation) {
             return format("({} {} {})", invocation.left, invocation.op, invocation.right);
         }
+        auto operator()(ast::Member_access const& expression) {
+            return format("({}.{})", expression.expression, expression.member_name);
+        }
+        auto operator()(ast::Member_function_invocation const& invocation) {
+            return format("{}.{}()", invocation.expression, invocation.member_name, invocation.arguments);
+        }
+        auto operator()(ast::Tuple_member_access const& expression) {
+            return format("({}.{})", expression.expression, expression.member_index);
+        }
         auto operator()(ast::Compound_expression const& compound) {
             return format("{{ {} }}", compound.expressions);
         }
@@ -58,7 +67,7 @@ namespace {
             return format("match {} {{ {} }}", match.expression, match.cases);
         }
         auto operator()(ast::Type_cast const& cast) {
-            return format("({} as {})", cast.expression, cast.target);
+            return format("{} as {}", cast.expression, cast.target);
         }
         auto operator()(ast::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);

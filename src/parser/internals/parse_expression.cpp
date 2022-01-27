@@ -254,17 +254,21 @@ namespace {
     }
 
 
+    auto extract_arguments(Parse_context& context) -> std::vector<ast::Expression> {
+        constexpr auto extract_arguments =
+            extract_comma_separated_zero_or_more<parse_expression, "a function argument">;
+        auto arguments = extract_arguments(context);
+
+        context.consume_required(Token::Type::paren_close);
+        return arguments;
+    }
+
+
     auto parse_potential_invocation(Parse_context& context) -> std::optional<ast::Expression> {
         if (auto potential_invocable = parse_normal_expression(context)) {
             while (context.try_consume(Token::Type::paren_open)) {
-                constexpr auto extract_arguments =
-                    extract_comma_separated_zero_or_more<parse_expression, "a function argument">;
-                auto arguments = extract_arguments(context);
-
-                context.consume_required(Token::Type::paren_close);
-
                 *potential_invocable = ast::Invocation {
-                    std::move(arguments),
+                    extract_arguments(context),
                     std::move(*potential_invocable)
                 };
             }
@@ -276,8 +280,38 @@ namespace {
     }
 
 
-    auto parse_potential_type_cast(Parse_context& context) -> std::optional<ast::Expression> {
+    auto parse_potential_member_access(Parse_context& context) -> std::optional<ast::Expression> {
         if (auto expression = parse_potential_invocation(context)) {
+            while (context.try_consume(Token::Type::dot)) {
+                if (auto member_name = parse_lower_id(context)) {
+                    if (context.try_consume(Token::Type::paren_open)) {
+                        *expression = ast::Member_function_invocation {
+                            extract_arguments(context),
+                            std::move(*expression),
+                            *member_name
+                        };
+                    }
+                    else {
+                        *expression = ast::Member_access {
+                            std::move(*expression),
+                            *member_name
+                        };
+                    }
+                }
+                else {
+                    throw context.expected("a member name");
+                }
+            }
+            return expression;
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+
+    auto parse_potential_type_cast(Parse_context& context) -> std::optional<ast::Expression> {
+        if (auto expression = parse_potential_member_access(context)) {
             while (context.try_consume(Token::Type::as)) {
                 *expression = ast::Type_cast {
                     std::move(*expression),

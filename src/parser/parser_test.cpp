@@ -82,6 +82,9 @@ namespace {
 
 
 auto parser::run_tests() -> void {
+    assert(lexer::Identifier::string_count() > 16 // should probably work maybe
+        && "Parser tests may only be run after the lexer has been invoked");
+
     bu::Wrapper_context<ast::Expression> expression_context { 32 };
     bu::Wrapper_context<ast::Pattern   >    pattern_context { 32 };
     bu::Wrapper_context<ast::Type      >       type_context { 32 };
@@ -172,6 +175,53 @@ auto parser::run_tests() -> void {
                 }
             },
             "+$+"_id
+        }
+    );
+
+    test
+    (
+        {
+            Token { 'x', Type::character },
+            Token { .type = Type::as },
+            Token { "Int"_id, Type::upper_name },
+            Token { .type = Type::as },
+            Token { "Bool"_id, Type::upper_name },
+            Token { "+"_id, Type::operator_name },
+            Token { 5, Type::integer }
+        },
+        ast::Binary_operator_invocation {
+            ast::Type_cast {
+                ast::Expression {
+                    ast::Type_cast {
+                        ast::Literal<char> { 'x' },
+                        ast::type::Int {}
+                    }
+                },
+                ast::type::Bool {}
+            },
+            ast::Literal<bu::Isize> { 5 },
+            "+"_id
+        }
+    );
+
+    test
+    (
+        {
+            Token { "x"_id, Type::lower_name },
+            Token { .type = Type::dot },
+            Token { "y"_id, Type::lower_name },
+            Token { .type = Type::dot },
+            Token { "f"_id, Type::lower_name },
+            Token { .type = Type::paren_open },
+            Token { .type = Type::paren_close },
+        },
+        ast::Member_function_invocation {
+            .arguments = {},
+            .expression = ast::Member_access {
+                ast::Variable { "x"_id },
+                "y"_id
+            },
+            .member_name = "f"_id
         }
     );
 

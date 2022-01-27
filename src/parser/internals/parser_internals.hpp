@@ -200,4 +200,18 @@ namespace parser {
 
     auto parse_compound_expression(Parse_context&) -> std::optional<ast::Expression>;
 
+
+    template <Token::Type id_type>
+    auto parse_id(Parse_context& context) -> std::optional<lexer::Identifier> {
+        if (auto token = context.try_extract(id_type)) {
+            return token->as_identifier();
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    inline constexpr auto parse_lower_id = parse_id<Token::Type::lower_name>;
+    inline constexpr auto parse_upper_id = parse_id<Token::Type::upper_name>;
+
 }

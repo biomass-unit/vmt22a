@@ -55,6 +55,10 @@ namespace bu {
         static auto release() noexcept -> void {
             decltype(vector){}.swap(vector);
         }
+
+        static auto string_count() noexcept -> Usize {
+            return vector.size();
+        }
     };
 
 }

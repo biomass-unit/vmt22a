@@ -37,6 +37,25 @@ namespace ast {
         DEFAULTED_EQUALITY(Binary_operator_invocation);
     };
 
+    struct Member_access {
+        bu::Wrapper<Expression> expression;
+        lexer::Identifier member_name;
+        DEFAULTED_EQUALITY(Member_access);
+    };
+
+    struct Member_function_invocation {
+        std::vector<Expression> arguments;
+        bu::Wrapper<Expression> expression;
+        lexer::Identifier member_name;
+        DEFAULTED_EQUALITY(Member_function_invocation);
+    };
+
+    struct Tuple_member_access {
+        bu::Wrapper<Expression> expression;
+        bu::Usize member_index;
+        DEFAULTED_EQUALITY(Tuple_member_access);
+    };
+
     struct Conditional {
         bu::Wrapper<Expression> condition;
         bu::Wrapper<Expression> true_branch;
@@ -124,6 +143,9 @@ namespace ast {
             Compound_expression,
             Invocation,
             Binary_operator_invocation,
+            Member_access,
+            Member_function_invocation,
+            Tuple_member_access,
             Conditional,
             Match,
             Type_cast,
