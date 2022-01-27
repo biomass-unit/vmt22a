@@ -24,9 +24,7 @@ namespace bu {
         ~Uninitialized()
             noexcept(std::is_nothrow_destructible_v<T>)
         {
-#ifndef NDEBUG
             assert(is_initialized);
-#endif
             reinterpret_cast<T const*>(&buffer)->~T();
         }
 
@@ -34,17 +32,15 @@ namespace bu {
         auto initialize(Args&&... args)
             noexcept(std::is_nothrow_constructible_v<T, Args&&...>) -> void
         {
-#ifndef NDEBUG
             assert(!is_initialized);
+#ifndef NDEBUG
             is_initialized = true;
 #endif
             ::new(&buffer) T(std::forward<Args>(args)...);
         }
 
         auto read_initialized() const noexcept -> T const& {
-#ifndef NDEBUG
             assert(is_initialized);
-#endif
             return *reinterpret_cast<T const*>(&buffer);
         }
         auto read_initialized() noexcept -> T& {

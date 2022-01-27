@@ -152,7 +152,7 @@ namespace bu {
     }
 
     [[nodiscard]]
-    constexpr auto to_pointers(std::string_view const view) noexcept -> Pair<char const*> {
+    inline constexpr auto to_pointers(std::string_view const view) noexcept -> Pair<char const*> {
         return { view.data(), view.data() + view.size() };
     }
 

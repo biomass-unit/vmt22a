@@ -239,6 +239,7 @@
     <ClInclude Include="src\ast\nodes\type.hpp" />
     <ClInclude Include="src\bu\color.hpp" />
     <ClInclude Include="src\bu\disable_unnecessary_warnings.hpp" />
+    <ClInclude Include="src\bu\noisy.hpp" />
     <ClInclude Include="src\bu\pooled_string.hpp" />
     <ClInclude Include="src\bu\source.hpp" />
     <ClInclude Include="src\bu\uninitialized.hpp" />
