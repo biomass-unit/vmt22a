@@ -189,7 +189,7 @@ namespace {
                     expressions.push_back(std::move(*expression));
                 }
                 else {
-                    expressions.push_back(ast::Tuple {});
+                    expressions.push_back(ast::unit_value);
                 }
             }
         }
@@ -198,7 +198,7 @@ namespace {
 
         switch (expressions.size()) {
         case 0:
-            return ast::Tuple {};
+            return ast::unit_value;
         case 1:
             return std::move(expressions.front());
         default:
@@ -249,6 +249,28 @@ namespace {
             return extract_compound_expression(context);
         default:
             --context.pointer;
+            return std::nullopt;
+        }
+    }
+
+
+    auto parse_invocation(Parse_context& context) -> std::optional<ast::Expression> {
+        if (auto potential_invocable = parse_normal_expression(context)) {
+            while (context.try_consume(Token::Type::paren_open)) {
+                constexpr auto extract_arguments =
+                    extract_comma_separated_zero_or_more<parse_expression, "a function argument">;
+                auto arguments = extract_arguments(context);
+
+                context.consume_required(Token::Type::paren_close);
+
+                *potential_invocable = ast::Invocation {
+                    std::move(arguments),
+                    std::move(*potential_invocable)
+                };
+            }
+            return potential_invocable;
+        }
+        else {
             return std::nullopt;
         }
     }
@@ -319,7 +341,7 @@ namespace {
     auto parse_binary_operator_invocation_with_precedence<std::numeric_limits<bu::Usize>::max()>(Parse_context& context)
         -> std::optional<ast::Expression>
     {
-        return parse_normal_expression(context);
+        return parse_invocation(context);
     }
 
 }

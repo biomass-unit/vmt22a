@@ -25,8 +25,8 @@ namespace ast {
     };
 
     struct Invocation {
-        bu::Wrapper<Expression> invocable;
         std::vector<Expression> arguments;
+        bu::Wrapper<Expression> invocable;
         DEFAULTED_EQUALITY(Invocation);
     };
 

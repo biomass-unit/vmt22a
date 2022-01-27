@@ -30,3 +30,11 @@ name(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>) \
 #include "nodes/definition.hpp"
 
 #undef DEFINE_NODE_CTOR
+
+
+namespace ast {
+
+    inline Expression unit_value = Tuple {};
+    inline Type unit_type = type::Tuple {};
+
+}
