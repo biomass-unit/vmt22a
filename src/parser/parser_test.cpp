@@ -149,6 +149,36 @@ auto parser::run_tests() -> void {
         }
     );
 
+    test
+    (
+        {
+            Token { 1, Type::integer },
+            Token { "*"_id, Type::operator_name },
+            Token { 2, Type::integer },
+            Token { "+$+"_id, Type::operator_name },
+            Token { 3, Type::integer },
+            Token { "+"_id, Type::operator_name },
+            Token { 4, Type::integer }
+        },
+        ast::Binary_operator_invocation {
+            ast::Expression {
+                ast::Binary_operator_invocation {
+                    ast::Literal<bu::Isize> { 1 },
+                    ast::Literal<bu::Isize> { 2 },
+                    "*"_id
+                }
+            },
+            ast::Expression {
+                ast::Binary_operator_invocation {
+                    ast::Literal<bu::Isize> { 3 },
+                    ast::Literal<bu::Isize> { 4 },
+                    "+"_id
+                }
+            },
+            "+$+"_id
+        }
+    );
+
     bu::print("Parser tests passed!\n");
 }
 

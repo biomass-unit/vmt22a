@@ -35,6 +35,9 @@ namespace {
         auto operator()(lexer::Identifier const identifier) {
             return format("{}", identifier);
         }
+        auto operator()(ast::Variable variable) {
+            return format("{}", variable.name);
+        }
         auto operator()(ast::Tuple const& tuple) {
             return format("({})", tuple.expressions);
         }

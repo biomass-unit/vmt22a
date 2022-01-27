@@ -12,6 +12,10 @@ namespace {
         return ast::Literal<T> { context.previous().value_as<T>() };
     }
 
+    auto extract_variable(Parse_context& context) -> ast::Expression {
+        return ast::Variable { context.previous().as_identifier() };
+    }
+
     auto extract_tuple(Parse_context& context) -> ast::Expression {
         auto expressions = extract_comma_separated_zero_or_more<parse_expression, "an expression">(context);
         context.consume_required(Token::Type::paren_close);
@@ -191,6 +195,8 @@ namespace {
             return extract_literal<bool>(context);
         case Token::Type::string:
             return extract_literal<lexer::String>(context);
+        case Token::Type::lower_name:
+            return extract_variable(context);
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::if_:
@@ -230,9 +236,13 @@ namespace {
     };
 
     std::tuple precedence_table {
-        id_array<"*", "/">,
+        id_array<"*", "/", "%">,
         id_array<"+", "-">,
-        std::monostate {}
+        id_array<"<<", ">>">,
+        id_array<"?=", "!=">,
+        id_array<"<", "<=", ">=", ">">,
+        id_array<"&&", "||">,
+        id_array<":=", "+=", "*=", "/=", "%=", "<<=", ">>=">
     };
 
     constexpr auto lowest_precedence = std::tuple_size_v<decltype(precedence_table)> - 1;

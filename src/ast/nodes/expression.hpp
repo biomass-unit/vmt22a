@@ -9,6 +9,11 @@ namespace ast {
         DEFAULTED_EQUALITY(Literal);
     };
 
+    struct Variable {
+        lexer::Identifier name;
+        DEFAULTED_EQUALITY(Variable);
+    };
+
     struct Tuple {
         std::vector<Expression> expressions;
         DEFAULTED_EQUALITY(Tuple);
@@ -114,6 +119,7 @@ namespace ast {
             Literal<bool>,
             Literal<lexer::String>,
             lexer::Identifier,
+            Variable,
             Tuple,
             Compound_expression,
             Invocation,
