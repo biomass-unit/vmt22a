@@ -25,6 +25,13 @@ namespace ast {
         DEFAULTED_EQUALITY(Invocation);
     };
 
+    struct Binary_operator_invocation {
+        bu::Wrapper<Expression> left;
+        bu::Wrapper<Expression> right;
+        lexer::Identifier op;
+        DEFAULTED_EQUALITY(Binary_operator_invocation);
+    };
+
     struct Conditional {
         bu::Wrapper<Expression> condition;
         bu::Wrapper<Expression> true_branch;
@@ -110,6 +117,7 @@ namespace ast {
             Tuple,
             Compound_expression,
             Invocation,
+            Binary_operator_invocation,
             Conditional,
             Match,
             Type_cast,

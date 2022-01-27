@@ -223,11 +223,76 @@ namespace {
         }
     }
 
+
+    template <bu::Metastring... strings>
+    std::array id_array {
+        lexer::Identifier { strings.view(), lexer::Identifier::guaranteed_new_string }...
+    };
+
+    std::tuple precedence_table {
+        id_array<"*", "/">,
+        id_array<"+", "-">,
+        std::monostate {}
+    };
+
+    constexpr auto lowest_precedence = std::tuple_size_v<decltype(precedence_table)> - 1;
+
+
+    auto parse_binary_operator(Parse_context& context) -> std::optional<lexer::Identifier> {
+        if (auto token = context.try_extract(Token::Type::operator_name)) {
+            return token->as_identifier();
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    template <bu::Usize precedence>
+    auto parse_binary_operator_invocation_with_precedence(Parse_context& context)
+        -> std::optional<ast::Expression>
+    {
+        constexpr auto recurse =
+            parse_binary_operator_invocation_with_precedence<precedence - 1>;
+
+        if (auto left = recurse(context)) {
+            while (auto op = parse_binary_operator(context)) {
+                if constexpr (precedence != lowest_precedence) {
+                    constexpr auto& ops = std::get<precedence>(precedence_table);
+                    if (std::ranges::find(ops, op) == ops.end()) {
+                        --context.pointer; // not in current operator group
+                        break;
+                    }
+                }
+                if (auto right = recurse(context)) {
+                    *left = ast::Binary_operator_invocation {
+                        std::move(*left),
+                        std::move(*right),
+                        *op
+                    };
+                }
+                else {
+                    throw context.expected("an operand");
+                }
+            }
+            return left;
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    template <>
+    auto parse_binary_operator_invocation_with_precedence<std::numeric_limits<bu::Usize>::max()>(Parse_context& context)
+        -> std::optional<ast::Expression>
+    {
+        return parse_normal_expression(context);
+    }
+
 }
 
 
 auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expression> {
-    return parse_normal_expression(context);
+    return parse_binary_operator_invocation_with_precedence<lowest_precedence>(context);
 }
 
 auto parser::parse_compound_expression(Parse_context& context) -> std::optional<ast::Expression> {

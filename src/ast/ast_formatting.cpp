@@ -41,6 +41,9 @@ namespace {
         auto operator()(ast::Invocation const& invocation) {
             return format("{}({})", invocation.invocable, invocation.arguments);
         }
+        auto operator()(ast::Binary_operator_invocation const& invocation) {
+            return format("({} {} {})", invocation.left, invocation.op, invocation.right);
+        }
         auto operator()(ast::Compound_expression const& compound) {
             return format("{{ {} }}", compound.expressions);
         }
