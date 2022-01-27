@@ -19,7 +19,12 @@ namespace {
     auto extract_tuple(Parse_context& context) -> ast::Expression {
         auto expressions = extract_comma_separated_zero_or_more<parse_expression, "an expression">(context);
         context.consume_required(Token::Type::paren_close);
-        return ast::Tuple { std::move(expressions) };
+        if (expressions.size() == 1) {
+            return std::move(expressions.front());
+        }
+        else {
+            return ast::Tuple { std::move(expressions) };
+        }
     }
 
     auto extract_conditional(Parse_context& context) -> ast::Expression {
@@ -174,12 +179,31 @@ namespace {
     }
 
     auto extract_compound_expression(Parse_context& context) -> ast::Expression {
-        constexpr auto extract_expressions =
-            extract_separated_zero_or_more<parse_expression, Token::Type::semicolon, "an expression">;
+        std::vector<ast::Expression> expressions;
 
-        auto expressions = extract_expressions(context);
+        if (auto head = parse_expression(context)) {
+            expressions.push_back(std::move(*head));
+
+            while (context.try_consume(Token::Type::semicolon)) {
+                if (auto expression = parse_expression(context)) {
+                    expressions.push_back(std::move(*expression));
+                }
+                else {
+                    expressions.push_back(ast::Tuple {});
+                }
+            }
+        }
+
         context.consume_required(Token::Type::brace_close);
-        return ast::Compound_expression { std::move(expressions) };
+
+        switch (expressions.size()) {
+        case 0:
+            return ast::Tuple {};
+        case 1:
+            return std::move(expressions.front());
+        default:
+            return ast::Compound_expression { std::move(expressions) };
+        }
     }
 
 
