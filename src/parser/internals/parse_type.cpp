@@ -36,8 +36,9 @@ namespace {
         else if (hash == string) {
             return ast::type::String {};
         }
-
-        bu::unimplemented();
+        else {
+            return ast::type::Typename { id };
+        }
     }
 
     auto extract_type_of(Parse_context& context) -> ast::Type {

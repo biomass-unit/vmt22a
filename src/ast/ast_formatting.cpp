@@ -106,6 +106,9 @@ namespace {
         auto operator()(ast::type::Bool)   { return format("Bool");   }
         auto operator()(ast::type::String) { return format("String"); }
 
+        auto operator()(ast::type::Typename name) {
+            return format("{}", name.identifier);
+        }
         auto operator()(ast::type::Tuple const& tuple) {
             return format("({})", tuple.types);
         }

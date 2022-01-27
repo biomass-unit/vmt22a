@@ -18,6 +18,10 @@ namespace {
         return ast::pattern::Tuple { std::move(patterns) };
     }
 
+    auto extract_name(Parse_context& context) -> ast::Pattern {
+        return ast::pattern::Name { context.previous().as_identifier() };
+    }
+
 }
 
 
@@ -38,7 +42,7 @@ auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern
     case Token::Type::paren_open:
         return extract_tuple(context);
     case Token::Type::lower_name:
-        return ast::pattern::Name { context.previous().as_identifier() };
+        return extract_name(context);
     default:
         --context.pointer;
         return std::nullopt;

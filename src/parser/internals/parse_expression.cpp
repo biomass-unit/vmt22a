@@ -151,21 +151,11 @@ namespace {
     }
 
     auto extract_break(Parse_context& context) -> ast::Expression {
-        if (auto expression = parse_expression(context)) {
-            return ast::Break { std::move(*expression) };
-        }
-        else {
-            return ast::Break {};
-        }
+        return ast::Break { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
     }
 
     auto extract_ret(Parse_context& context) -> ast::Expression {
-        if (auto expression = parse_expression(context)) {
-            return ast::Ret { std::move(*expression) };
-        }
-        else {
-            return ast::Ret {};
-        }
+        return ast::Ret { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
     }
 
     auto extract_meta(Parse_context& context) -> ast::Expression {
@@ -177,6 +167,15 @@ namespace {
         else {
             throw context.expected("a parenthesized expression");
         }
+    }
+
+    auto extract_compound_expression(Parse_context& context) -> ast::Expression {
+        constexpr auto extract_expressions =
+            extract_separated_zero_or_more<parse_expression, Token::Type::semicolon, "an expression">;
+
+        auto expressions = extract_expressions(context);
+        context.consume_required(Token::Type::brace_close);
+        return ast::Compound_expression { std::move(expressions) };
     }
 
 
@@ -216,9 +215,8 @@ namespace {
             return extract_ret(context);
         case Token::Type::meta:
             return extract_meta(context);
-        case Token::Type::brace_open: // fix
-            --context.pointer;
-            return parse_compound_expression(context);
+        case Token::Type::brace_open:
+            return extract_compound_expression(context);
         default:
             --context.pointer;
             return std::nullopt;
@@ -234,12 +232,7 @@ auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expr
 
 auto parser::parse_compound_expression(Parse_context& context) -> std::optional<ast::Expression> {
     if (context.try_consume(Token::Type::brace_open)) {
-        constexpr auto extract_expressions =
-            extract_separated_zero_or_more<parse_expression, Token::Type::semicolon, "an expression">;
-
-        auto expressions = extract_expressions(context);
-        context.consume_required(Token::Type::brace_close);
-        return ast::Compound_expression { std::move(expressions) };
+        return extract_compound_expression(context);
     }
     else {
         return std::nullopt;

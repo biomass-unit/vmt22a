@@ -133,6 +133,20 @@ namespace bu {
     };
 
 
+    template <class T, std::invocable<T&&> F>
+    constexpr auto map(std::optional<T>&& optional, F&& f)
+        noexcept(std::is_nothrow_invocable_v<F&&, T&&>)
+        -> std::optional<std::invoke_result_t<F&&, T&&>>
+    {
+        if (optional) {
+            return std::invoke(std::move(f), std::move(*optional));
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+
     template <class T>
     constexpr auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
         std::vector<T> vector;

@@ -16,6 +16,11 @@ namespace ast {
         using Bool   = Primitive<bool>;
         using String = Primitive<lexer::String>;
 
+        struct Typename {
+            lexer::Identifier identifier;
+            DEFAULTED_EQUALITY(Typename);
+        };
+
         struct Tuple {
             std::vector<bu::Wrapper<Type>> types;
             DEFAULTED_EQUALITY(Tuple);
@@ -53,6 +58,7 @@ namespace ast {
             type::Char,
             type::Bool,
             type::String,
+            type::Typename,
             type::Tuple,
             type::Array,
             type::List,
