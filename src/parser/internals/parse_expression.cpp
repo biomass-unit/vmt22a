@@ -254,7 +254,7 @@ namespace {
     }
 
 
-    auto parse_invocation(Parse_context& context) -> std::optional<ast::Expression> {
+    auto parse_potential_invocation(Parse_context& context) -> std::optional<ast::Expression> {
         if (auto potential_invocable = parse_normal_expression(context)) {
             while (context.try_consume(Token::Type::paren_open)) {
                 constexpr auto extract_arguments =
@@ -269,6 +269,22 @@ namespace {
                 };
             }
             return potential_invocable;
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+
+    auto parse_potential_type_cast(Parse_context& context) -> std::optional<ast::Expression> {
+        if (auto expression = parse_potential_invocation(context)) {
+            while (context.try_consume(Token::Type::as)) {
+                *expression = ast::Type_cast {
+                    std::move(*expression),
+                    extract_type(context)
+                };
+            }
+            return expression;
         }
         else {
             return std::nullopt;
@@ -294,7 +310,7 @@ namespace {
     constexpr auto lowest_precedence = std::tuple_size_v<decltype(precedence_table)> - 1;
 
 
-    auto parse_binary_operator(Parse_context& context) -> std::optional<lexer::Identifier> {
+    auto parse_operator(Parse_context& context) -> std::optional<lexer::Identifier> {
         if (auto token = context.try_extract(Token::Type::operator_name)) {
             return token->as_identifier();
         }
@@ -311,7 +327,7 @@ namespace {
             parse_binary_operator_invocation_with_precedence<precedence - 1>;
 
         if (auto left = recurse(context)) {
-            while (auto op = parse_binary_operator(context)) {
+            while (auto op = parse_operator(context)) {
                 if constexpr (precedence != lowest_precedence) {
                     constexpr auto& ops = std::get<precedence>(precedence_table);
                     if (std::ranges::find(ops, op) == ops.end()) {
@@ -341,7 +357,7 @@ namespace {
     auto parse_binary_operator_invocation_with_precedence<std::numeric_limits<bu::Usize>::max()>(Parse_context& context)
         -> std::optional<ast::Expression>
     {
-        return parse_invocation(context);
+        return parse_potential_type_cast(context);
     }
 
 }

@@ -121,7 +121,7 @@ auto parser::run_tests() -> void {
             ast::Compound_expression {
                 {
                     ast::Literal<bool> { true },
-                    ast::Tuple {}
+                    ast::unit_value
                 }
             },
             ast::Literal<char> { 'a' }
@@ -141,7 +141,7 @@ auto parser::run_tests() -> void {
         ast::For_loop {
             ast::pattern::Name { "x"_id },
             ast::Literal { lexer::String { "hello"sv } },
-            ast::Tuple {}
+            ast::unit_value
         }
     );
 

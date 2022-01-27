@@ -58,7 +58,7 @@ namespace {
             return format("match {} {{ {} }}", match.expression, match.cases);
         }
         auto operator()(ast::Type_cast const& cast) {
-            return format("({}) as {}", cast.expression, cast.target);
+            return format("({} as {})", cast.expression, cast.target);
         }
         auto operator()(ast::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
