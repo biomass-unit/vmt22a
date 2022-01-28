@@ -25,6 +25,8 @@ DISABLE(4456) // declaration hides previous local declaration
 DISABLE(4514) // unreferenced inline function has been removed
 
 DISABLE(4623) // default constructor was implicitly defined as deleted
+DISABLE(4625) // copy constructor was implicitly defined as deleted
+DISABLE(4626) // copy assignment operator was implicitly defined as deleted
 
 DISABLE(4710) // function not inlined
 DISABLE(4711) // function selected for automatic inline expansion

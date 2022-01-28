@@ -11,6 +11,7 @@
 #include <cassert>
 
 #include <limits>
+#include <memory>
 #include <utility>
 #include <iostream>
 #include <concepts>
@@ -183,6 +184,9 @@ namespace bu {
 
     template <class T, class U>
     concept similar_to = std::same_as<std::decay_t<T>, std::decay_t<U>>;
+
+    template <class T>
+    concept trivial = std::is_trivial_v<T>;
 
 
     template <Usize length>
