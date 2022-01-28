@@ -64,7 +64,19 @@ auto main() -> int try {
     bu::enable_color_formatting();
     lexer::run_tests();
     parser::run_tests();
-    parser_repl();
+
+    vm::Virtual_machine machine { 1000 };
+    using enum vm::Opcode;
+    using namespace bu::literals;
+
+    machine.bytecode.write(
+        ipush, 5_iz,
+        ipush, 1_iz,
+        isub,
+        halt
+    );
+
+    return machine.run();
 }
 
 catch (std::bad_alloc const&) {
