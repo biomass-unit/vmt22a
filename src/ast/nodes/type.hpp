@@ -22,7 +22,7 @@ namespace ast {
         };
 
         struct Tuple {
-            std::vector<bu::Wrapper<Type>> types;
+            std::vector<Type> types;
             DEFAULTED_EQUALITY(Tuple);
         };
 
@@ -38,7 +38,7 @@ namespace ast {
         };
 
         struct Function {
-            std::vector<bu::Wrapper<Type>> argument_types;
+            std::vector<Type> argument_types;
             bu::Wrapper<Type> return_type;
             DEFAULTED_EQUALITY(Function);
         };

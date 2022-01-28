@@ -33,6 +33,10 @@ namespace bu {
 
         constexpr auto operator->() const noexcept -> T const* { return vector->data() + index; }
         constexpr auto operator->()       noexcept -> T      * { return vector->data() + index; }
+
+        constexpr auto clone() const noexcept(std::is_nothrow_copy_constructible_v<T>) -> Wrapper {
+            return Wrapper { **this };
+        }
     };
 
     template <class T>
