@@ -230,6 +230,7 @@
     <ClCompile Include="src\parser\parser.cpp" />
     <ClCompile Include="src\parser\parser_test.cpp" />
     <ClCompile Include="src\vm\virtual_machine.cpp" />
+    <ClCompile Include="src\vm\vm_formatting.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ast\ast.hpp" />
@@ -256,7 +257,9 @@
     <ClInclude Include="src\parser\internals\parser_internals.hpp" />
     <ClInclude Include="src\parser\parser_test.hpp" />
     <ClInclude Include="src\vm\bytecode.hpp" />
+    <ClInclude Include="src\vm\opcode.hpp" />
     <ClInclude Include="src\vm\virtual_machine.hpp" />
+    <ClInclude Include="src\vm\vm_formatting.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
