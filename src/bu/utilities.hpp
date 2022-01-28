@@ -148,6 +148,15 @@ namespace bu {
     }
 
 
+    template <class... Fs>
+    struct Overload : Fs... {
+        using Fs::operator()...;
+    };
+
+    template <class... Fs>
+    Overload(Fs...) -> Overload<Fs...>;
+
+
     template <class T>
     constexpr auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
         std::vector<T> vector;

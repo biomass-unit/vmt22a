@@ -11,9 +11,10 @@ namespace ast {
                 bu::Wrapper<Type> type;
                 DEFAULTED_EQUALITY(Parameter);
             };
-            Expression             body;
-            std::vector<Parameter> parameters;
-            bu::Wrapper<Type>      return_type;
+            Expression                       body;
+            std::vector<Parameter>           parameters;
+            lexer::Identifier                name;
+            std::optional<bu::Wrapper<Type>> return_type;
             DEFAULTED_EQUALITY(Function);
         };
 

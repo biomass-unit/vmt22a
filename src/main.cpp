@@ -61,7 +61,34 @@ namespace {
 
 
 auto main() -> int try {
-    bu::enable_color_formatting();
+    using namespace lexer::literals;
+
+    ast::definition::Struct_template st {
+        .definition {
+            .members {
+                {
+                    .name = "first"_id,
+                    .type = ast::type::Typename { "T"_id }
+                },
+                {
+                    .name = "second"_id,
+                    .type = ast::type::Typename { "T"_id }
+                }
+            },
+            .name = "Test"_id
+        },
+        .parameters {
+            {
+                .value = ast::definition::Template_parameter::Type_parameter {
+                    .name = "T"_id
+                }
+            }
+        }
+    };
+
+    bu::print("{}\n", st);
+
+    /*bu::enable_color_formatting();
 
     lexer::run_tests();
     parser::run_tests();
@@ -78,7 +105,7 @@ auto main() -> int try {
         jump, 0_uz
     );
 
-    return machine.run();
+    return machine.run();*/
 }
 
 catch (std::bad_alloc const&) {

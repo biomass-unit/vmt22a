@@ -141,8 +141,6 @@ namespace {
         }
     };
 
-    struct Definition_format_visitor : Visitor_base {};
-
 }
 
 
@@ -158,7 +156,75 @@ DEFINE_FORMATTER_FOR(ast::Type) {
     return std::visit(Type_format_visitor { { context.out() } }, value.value);
 }
 
-DEFINE_FORMATTER_FOR(ast::Definition) {
-    std::ignore = value, std::ignore = context;
-    bu::unimplemented();
+
+template <>
+struct std::formatter<ast::definition::Function::Parameter> : bu::Formatter_base {
+    auto format(auto const& parameter, std::format_context& context) {
+        return std::format_to(context.out(), "{}: {}", parameter.pattern, parameter.type);
+    }
+};
+
+DEFINE_FORMATTER_FOR(ast::definition::Function) {
+    return std::format_to(
+        context.out(),
+        "fn {}({}): {} = {}",
+        value.name,
+        value.parameters,
+        value.return_type,
+        value.body
+    );
 }
+
+
+template <>
+struct std::formatter<ast::definition::Struct::Member> : bu::Formatter_base {
+    auto format(auto const& member, std::format_context& context) {
+        return std::format_to(context.out(), "{}: {}", member.name, member.type);
+    }
+};
+
+DEFINE_FORMATTER_FOR(ast::definition::Struct) {
+    return std::format_to(context.out(), "struct {} = {}", value.name, value.members);
+}
+
+
+template <>
+struct std::formatter<ast::definition::Data::Constructor> : bu::Formatter_base {
+    auto format(auto const& ctor, std::format_context& context) {
+        return std::format_to(context.out(), "{}({})", ctor.name, ctor.type);
+    }
+};
+
+DEFINE_FORMATTER_FOR(ast::definition::Data) {
+    return std::format_to(context.out(), "data {} = {}", value.name, value.constructors);
+}
+
+
+template <>
+struct std::formatter<ast::definition::Template_parameter> : bu::Formatter_base {
+    auto format(auto const& parameter, std::format_context& context) {
+        return std::visit(
+            bu::Overload {
+                [&](ast::definition::Template_parameter::Type_parameter const& parameter) {
+                    return parameter.classes.empty()
+                        ? std::format_to(context.out(), "{}", parameter.name)
+                        : std::format_to(context.out(), "{}: {}", parameter.name, parameter.classes);
+                },
+                [&](ast::definition::Template_parameter::Value_parameter const& parameter) {
+                    return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
+                }
+            },
+            parameter.value
+        );
+    }
+};
+
+
+template <class T>
+DEFINE_FORMATTER_FOR(ast::definition::Template_definition<T>) {
+    return std::format_to(context.out(), "template [{}] {}", value.parameters, value.definition);
+}
+
+template struct std::formatter<ast::definition::Function_template>;
+template struct std::formatter<ast::definition::Struct_template>;
+template struct std::formatter<ast::definition::Data_template>;
