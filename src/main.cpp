@@ -12,7 +12,6 @@
 #include "parser/parser_test.hpp"
 #include "parser/internals/parser_internals.hpp" // for the repl only
 
-#include "vm/opcode.hpp"
 #include "vm/bytecode.hpp"
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"

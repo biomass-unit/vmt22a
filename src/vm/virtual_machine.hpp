@@ -10,8 +10,8 @@ namespace vm {
     using Jump_offset_type = bu::Usize;
 
     struct [[nodiscard]] Virtual_machine {
-        bu::Bytestack stack;
         Bytecode      bytecode;
+        bu::Bytestack stack;
         std::byte*    instruction_pointer = nullptr;
         std::byte*    instruction_anchor  = nullptr;
         bool          keep_running        = true;
