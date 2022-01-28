@@ -41,6 +41,18 @@ namespace {
     template <class T> constexpr auto mul = binary_op<T, std::multiplies>;
     template <class T> constexpr auto div = binary_op<T, std::divides>;
 
+    auto jump(VM& vm) noexcept -> void {
+        vm.jump_to(vm.extract_argument<vm::Jump_offset_type>());
+    }
+
+    template <bool value>
+    auto jump_bool(VM& vm) noexcept -> void {
+        auto const offset = vm.extract_argument<vm::Jump_offset_type>();
+        if (vm.stack.pop<bool>() == value) {
+            vm.jump_to(offset);
+        }
+    }
+
     auto halt(VM& vm) noexcept -> void {
         vm.keep_running = false;
     }
@@ -56,6 +68,8 @@ namespace {
         mul<bu::Isize>, mul<bu::Float>, mul<char>,
         div<bu::Isize>, div<bu::Float>, div<char>,
 
+        jump, jump_bool<true>, jump_bool<false>,
+
         halt
     };
 
@@ -66,6 +80,7 @@ namespace {
 
 auto vm::Virtual_machine::run() -> int {
     instruction_pointer = bytecode.bytes.data();
+    instruction_anchor = instruction_pointer;
 
     while (keep_running) {
         auto const opcode = extract_argument<Opcode>();
@@ -74,6 +89,11 @@ auto vm::Virtual_machine::run() -> int {
     }
 
     return static_cast<int>(stack.pop<bu::Isize>());
+}
+
+
+auto vm::Virtual_machine::jump_to(Jump_offset_type const offset) noexcept -> void {
+    instruction_pointer = instruction_anchor + offset;
 }
 
 

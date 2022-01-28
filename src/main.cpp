@@ -75,9 +75,8 @@ auto main() -> int try {
 
     machine.bytecode.write(
         ipush, 5_iz,
-        ipush, 1_iz,
-        isub,
-        halt
+        iprint,
+        jump, 0_uz
     );
 
     return machine.run();

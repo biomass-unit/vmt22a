@@ -14,6 +14,8 @@ namespace vm {
         idiv, fdiv, cdiv,
         //iexp, fexp, cexp,
 
+        jump, jump_true, jump_false,
+
         halt,
 
         _opcode_count

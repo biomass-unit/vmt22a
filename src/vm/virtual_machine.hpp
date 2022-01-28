@@ -7,13 +7,18 @@
 
 namespace vm {
 
+    using Jump_offset_type = bu::Usize;
+
     struct [[nodiscard]] Virtual_machine {
         bu::Bytestack stack;
         Bytecode      bytecode;
         std::byte*    instruction_pointer = nullptr;
+        std::byte*    instruction_anchor  = nullptr;
         bool          keep_running        = true;
 
         auto run() -> int;
+
+        auto jump_to(Jump_offset_type) noexcept -> void;
 
         template <bu::trivial T>
         auto extract_argument() noexcept -> T;
