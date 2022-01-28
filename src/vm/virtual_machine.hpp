@@ -13,8 +13,6 @@ namespace vm {
         std::byte*    instruction_pointer = nullptr;
         bool          keep_running        = true;
 
-        explicit Virtual_machine(bu::Usize stack_size) noexcept;
-
         auto run() -> int;
 
         template <bu::trivial T>

@@ -64,10 +64,6 @@ namespace {
 }
 
 
-vm::Virtual_machine::Virtual_machine(bu::Usize const stack_size) noexcept
-    : stack { stack_size } {}
-
-
 auto vm::Virtual_machine::run() -> int {
     instruction_pointer = bytecode.bytes.data();
 

@@ -16,6 +16,7 @@
 #include "vm/bytecode.hpp"
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
+#include "vm/vm_test.hpp"
 
 
 namespace {
@@ -62,10 +63,13 @@ namespace {
 
 auto main() -> int try {
     bu::enable_color_formatting();
+
     lexer::run_tests();
     parser::run_tests();
+    vm::run_tests();
 
-    vm::Virtual_machine machine { 1000 };
+    vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+
     using enum vm::Opcode;
     using namespace bu::literals;
 
