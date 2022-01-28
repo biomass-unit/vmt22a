@@ -34,7 +34,7 @@ name(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>) \
 
 namespace ast {
 
-    inline Expression unit_value = Tuple {};
-    inline Type unit_type = type::Tuple {};
+    inline Expression const unit_value =       Tuple {};
+    inline Type       const unit_type  = type::Tuple {};
 
 }

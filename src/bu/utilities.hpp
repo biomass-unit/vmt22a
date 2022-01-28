@@ -189,6 +189,18 @@ namespace bu {
     concept trivial = std::is_trivial_v<T>;
 
 
+    auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto... args)
+        noexcept -> void
+    {
+        ([=]() mutable noexcept {
+            auto const memory = reinterpret_cast<std::byte const*>(&args);
+            for (Usize i = 0; i != sizeof args; ++i) {
+                *out++ = memory[i];
+            }
+        }(), ...);
+    }
+
+
     template <Usize length>
     struct [[nodiscard]] Metastring {
         char string[length];
