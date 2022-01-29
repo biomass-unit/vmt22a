@@ -200,6 +200,8 @@ namespace parser {
 
     auto parse_compound_expression(Parse_context&) -> std::optional<ast::Expression>;
 
+    auto parse_definition(Parse_context&, ast::Module&) -> bool;
+
 
     template <Token::Type id_type>
     auto parse_id(Parse_context& context) -> std::optional<lexer::Identifier> {

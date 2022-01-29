@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
+#include "bu/source.hpp"
 #include "lexer/token.hpp"
 
 
@@ -34,7 +35,8 @@ namespace ast {
     inline Type       const unit_type  = type::Tuple {};
 
     struct [[nodiscard]] Module {
-        DEFAULTED_EQUALITY(Module);
+        bu::Source source;
+        Namespace  global_namespace;
     };
 
 }
