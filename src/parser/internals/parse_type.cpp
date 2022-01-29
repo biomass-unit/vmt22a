@@ -69,7 +69,7 @@ namespace {
         }
 
         context.consume_required(Token::Type::bracket_close);
-        return std::move(type.read_initialized());
+        return std::move(*type);
     }
 
     auto extract_function(Parse_context& context) -> ast::Type {

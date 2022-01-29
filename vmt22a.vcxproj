@@ -230,7 +230,6 @@
     <ClCompile Include="src\parser\internals\parse_type.cpp" />
     <ClCompile Include="src\parser\parser.cpp" />
     <ClCompile Include="src\parser\parser_test.cpp" />
-    <ClCompile Include="src\parser\parse_definition.cpp" />
     <ClCompile Include="src\vm\virtual_machine.cpp" />
     <ClCompile Include="src\vm\vm_formatting.cpp" />
     <ClCompile Include="src\vm\vm_test.cpp" />

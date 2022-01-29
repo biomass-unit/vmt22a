@@ -8,10 +8,7 @@ namespace bu {
     template <class T>
     class [[nodiscard]] Uninitialized {
         std::aligned_storage_t<sizeof(T), alignof(T)> buffer;
-
-#ifndef NDEBUG
         bool is_initialized = false;
-#endif
     public:
         Uninitialized() noexcept = default;
 
@@ -24,8 +21,9 @@ namespace bu {
         ~Uninitialized()
             noexcept(std::is_nothrow_destructible_v<T>)
         {
-            assert(is_initialized);
-            reinterpret_cast<T const*>(&buffer)->~T();
+            if (is_initialized) [[likely]] {
+                reinterpret_cast<T const*>(&buffer)->~T();
+            }
         }
 
         template <class... Args>
@@ -33,18 +31,16 @@ namespace bu {
             noexcept(std::is_nothrow_constructible_v<T, Args&&...>) -> void
         {
             assert(!is_initialized);
-#ifndef NDEBUG
             is_initialized = true;
-#endif
             ::new(&buffer) T(std::forward<Args>(args)...);
         }
 
-        auto read_initialized() const noexcept -> T const& {
+        auto operator*() const noexcept -> T const& {
             assert(is_initialized);
             return *reinterpret_cast<T const*>(&buffer);
         }
-        auto read_initialized() noexcept -> T& {
-            return const_cast<T&>(const_cast<Uninitialized const*>(this)->read_initialized());
+        auto operator*() noexcept -> T& {
+            return const_cast<T&>(*const_cast<Uninitialized const&>(*this));
         }
     };
 

@@ -57,6 +57,12 @@ namespace {
         bu::print("Result: {}\nRemaining input: '{}'\n", result, context.pointer->source_view.data());
     });
 
+    [[maybe_unused]]
+    auto program_parser_repl = generic_repl([](bu::Source source) {
+        auto module = parser::parse(lexer::lex(std::move(source)));
+        bu::print("Functions: {}\n", module.global_namespace->function_definitions);
+    });
+
 }
 
 
@@ -71,7 +77,9 @@ auto main() -> int try {
     parser :: run_tests();
     vm     :: run_tests();
 
-    vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+    program_parser_repl();
+
+    /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
     using enum vm::Opcode;
     machine.bytecode.write(
@@ -80,7 +88,7 @@ auto main() -> int try {
         jump, 0_uz
     );
 
-    return machine.run();
+    return machine.run();*/
 }
 
 catch (std::bad_alloc const&) {
