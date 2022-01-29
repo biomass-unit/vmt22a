@@ -71,10 +71,52 @@ namespace {
     }
 
 
+    auto parse_struct_member(Parse_context& context)
+        -> std::optional<ast::definition::Struct::Member>
+    {
+        if (auto name = parse_lower_id(context)) {
+            context.consume_required(Token::Type::colon);
+            return ast::definition::Struct::Member {
+                *name,
+                extract_type(context)
+            };
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    auto extract_struct(Parse_context& context) -> void {
+        if (auto name = parse_upper_id(context)) {
+            constexpr auto parse_members =
+                parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
+
+            context.consume_required(Token::Type::equals);
+            if (auto members = parse_members(context)) {
+                (*current_namespace)->struct_definitions.push_back(
+                    ast::definition::Struct {
+                        std::move(*members),
+                        *name
+                    }
+                );
+            }
+            else {
+                throw context.expected("one or more struct members");
+            }
+        }
+        else {
+            throw context.expected("a struct name");
+        }
+    }
+
+
     auto parse_definition(Parse_context& context) -> bool {
         switch (context.extract().type) {
         case Token::Type::fn:
             extract_function(context);
+            break;
+        case Token::Type::struct_:
+            extract_struct(context);
             break;
         default:
             --context.pointer;
