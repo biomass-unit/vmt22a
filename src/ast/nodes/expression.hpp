@@ -165,4 +165,6 @@ namespace ast {
         DEFAULTED_EQUALITY(Expression);
     };
 
+    static_assert(std::is_trivially_copyable_v<bu::Wrapper<Expression>>);
+
 }

@@ -194,10 +194,10 @@ auto parser::run_tests() -> void {
                 ast::Expression {
                     ast::Type_cast {
                         ast::Literal<char> { 'x' },
-                        ast::type::Int {}
+                        ast::type::integer
                     }
                 },
-                ast::type::Bool {}
+                ast::type::boolean
             },
             ast::Literal<bu::Isize> { 5 },
             "+"_id

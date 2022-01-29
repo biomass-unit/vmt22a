@@ -60,52 +60,27 @@ namespace {
 }
 
 
+using namespace bu::literals;
+using namespace lexer::literals;
+
+
 auto main() -> int try {
-    using namespace lexer::literals;
+    bu::enable_color_formatting();
 
-    ast::definition::Struct_template st {
-        .definition {
-            .members {
-                {
-                    .name = "first"_id,
-                    .type = ast::type::Typename { "T"_id }
-                },
-                {
-                    .name = "second"_id,
-                    .type = ast::type::Typename { "T"_id }
-                }
-            },
-            .name = "Test"_id
-        },
-        .parameters {
-            {
-                .value = ast::definition::Template_parameter::Type_parameter {
-                    .name = "T"_id
-                }
-            }
-        }
-    };
-
-    bu::print("{}\n", st);
-
-    /*bu::enable_color_formatting();
-
-    lexer::run_tests();
-    parser::run_tests();
-    vm::run_tests();
+    lexer  :: run_tests();
+    parser :: run_tests();
+    vm     :: run_tests();
 
     vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
     using enum vm::Opcode;
-    using namespace bu::literals;
-
     machine.bytecode.write(
         ipush, 5_iz,
         iprint,
         jump, 0_uz
     );
 
-    return machine.run();*/
+    return machine.run();
 }
 
 catch (std::bad_alloc const&) {

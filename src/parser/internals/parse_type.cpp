@@ -22,19 +22,19 @@ namespace {
         auto const hash = id.hash();
 
         if (hash == integer) {
-            return ast::type::Int {};
+            return ast::type::integer;
         }
         else if (hash == floating) {
-            return ast::type::Float {};
+            return ast::type::floating;
         }
         else if (hash == character) {
-            return ast::type::Char {};
+            return ast::type::character;
         }
         else if (hash == boolean) {
-            return ast::type::Bool {};
+            return ast::type::boolean;
         }
         else if (hash == string) {
-            return ast::type::String {};
+            return ast::type::string;
         }
         else {
             return ast::type::Typename { id };

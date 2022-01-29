@@ -18,7 +18,7 @@ namespace bu {
         inline static std::vector<T>* vector = nullptr;
         inline static Wrapper_context<T> default_context { 0 };
     public:
-        template <class... Args>
+        template <class... Args> requires (!similar_to<Wrapper, Args> && ...)
         constexpr Wrapper(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
             : index { vector->size() }
         {

@@ -10,11 +10,11 @@ namespace ast {
             DEFAULTED_EQUALITY(Primitive);
         };
 
-        using Int    = Primitive<bu::Isize>;
-        using Float  = Primitive<bu::Float>;
-        using Char   = Primitive<bu::Char>;
-        using Bool   = Primitive<bool>;
-        using String = Primitive<lexer::String>;
+        using Integer   = Primitive<bu::Isize>;
+        using Floating  = Primitive<bu::Float>;
+        using Character = Primitive<bu::Char>;
+        using Boolean   = Primitive<bool>;
+        using String    = Primitive<lexer::String>;
 
         struct Typename {
             lexer::Identifier identifier;
@@ -53,10 +53,10 @@ namespace ast {
 
     struct Type {
         using Variant = std::variant<
-            type::Int,
-            type::Float,
-            type::Char,
-            type::Bool,
+            type::Integer,
+            type::Floating,
+            type::Character,
+            type::Boolean,
             type::String,
             type::Typename,
             type::Tuple,
@@ -70,5 +70,17 @@ namespace ast {
         DEFINE_NODE_CTOR(Type);
         DEFAULTED_EQUALITY(Type);
     };
+
+
+    namespace type {
+
+        inline Type const
+            integer   = Integer   {},
+            floating  = Floating  {},
+            character = Character {},
+            boolean   = Boolean   {},
+            string    = String    {};
+
+    }
 
 }

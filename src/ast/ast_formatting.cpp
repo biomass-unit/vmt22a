@@ -115,11 +115,11 @@ namespace {
     };
 
     struct Type_format_visitor : Visitor_base {
-        auto operator()(ast::type::Int)    { return format("Int");    }
-        auto operator()(ast::type::Float)  { return format("Float");  }
-        auto operator()(ast::type::Char)   { return format("Char");   }
-        auto operator()(ast::type::Bool)   { return format("Bool");   }
-        auto operator()(ast::type::String) { return format("String"); }
+        auto operator()(ast::type::Integer)   { return format("Int");    }
+        auto operator()(ast::type::Floating)  { return format("Float");  }
+        auto operator()(ast::type::Character) { return format("Char");   }
+        auto operator()(ast::type::Boolean)   { return format("Bool");   }
+        auto operator()(ast::type::String)    { return format("String"); }
 
         auto operator()(ast::type::Typename name) {
             return format("{}", name.identifier);
@@ -218,7 +218,6 @@ struct std::formatter<ast::definition::Template_parameter> : bu::Formatter_base 
         );
     }
 };
-
 
 template <class T>
 DEFINE_FORMATTER_FOR(ast::definition::Template_definition<T>) {

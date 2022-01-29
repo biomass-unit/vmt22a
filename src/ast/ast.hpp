@@ -23,6 +23,7 @@ name(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>) \
 #include "nodes/pattern.hpp"
 #include "nodes/type.hpp"
 #include "nodes/definition.hpp"
+#include "nodes/namespace.hpp"
 
 #undef DEFINE_NODE_CTOR
 
@@ -33,12 +34,6 @@ namespace ast {
     inline Type       const unit_type  = type::Tuple {};
 
     struct [[nodiscard]] Module {
-        std::vector<definition::Function>          function_definitions;
-        std::vector<definition::Function_template> function_template_definitions;
-        std::vector<definition::Data>              data_definitions;
-        std::vector<definition::Data_template>     data_template_definitions;
-        std::vector<definition::Struct>            struct_definitions;
-        std::vector<definition::Struct_template>   struct_template_definitions;
         DEFAULTED_EQUALITY(Module);
     };
 
