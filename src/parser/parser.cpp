@@ -95,8 +95,8 @@ namespace {
             if (auto members = parse_members(context)) {
                 (*current_namespace)->struct_definitions.push_back(
                     ast::definition::Struct {
-                        std::move(*members),
-                        *name
+                        .members = std::move(*members),
+                        .name    = *name
                     }
                 );
             }
@@ -106,6 +106,57 @@ namespace {
         }
         else {
             throw context.expected("a struct name");
+        }
+    }
+
+
+    auto parse_data_constructor(Parse_context& context)
+        -> std::optional<ast::definition::Data::Constructor>
+    {
+        if (auto name = parse_upper_id(context)) {
+            std::optional<bu::Wrapper<ast::Type>> type;
+
+            if (context.try_consume(Token::Type::paren_open)) {
+                auto types = extract_comma_separated_zero_or_more<parse_type, "a type">(context);
+                switch (types.size()) {
+                case 0:
+                    break;
+                case 1:
+                    type.emplace(std::move(types.front()));
+                    break;
+                default:
+                    type.emplace(ast::type::Tuple { std::move(types) });
+                }
+                context.consume_required(Token::Type::paren_close);
+            }
+
+            return ast::definition::Data::Constructor { *name, type };
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    auto extract_data(Parse_context& context) -> void {
+        if (auto name = parse_upper_id(context)) {
+            constexpr auto parse_constructors =
+                parse_separated_one_or_more<parse_data_constructor, Token::Type::pipe, "a data constructor">;
+
+            context.consume_required(Token::Type::equals);
+            if (auto constructors = parse_constructors(context)) {
+                (*current_namespace)->data_definitions.push_back(
+                    ast::definition::Data {
+                        .constructors = std::move(*constructors),
+                        .name         = *name
+                    }
+                );
+            }
+            else {
+                throw context.expected("one or more data constructors");
+            }
+        }
+        else {
+            throw context.expected("a data name");
         }
     }
 
@@ -138,6 +189,9 @@ namespace {
             break;
         case Token::Type::struct_:
             extract_struct(context);
+            break;
+        case Token::Type::data:
+            extract_data(context);
             break;
         case Token::Type::module:
             extract_namespace(context);
