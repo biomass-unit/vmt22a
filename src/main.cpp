@@ -60,11 +60,7 @@ namespace {
     [[maybe_unused]]
     auto program_parser_repl = generic_repl([](bu::Source source) {
         auto module = parser::parse(lexer::lex(std::move(source)));
-        bu::print(
-            "Functions: {}\nStructs: {}\n",
-            module.global_namespace->function_definitions,
-            module.global_namespace->struct_definitions
-        );
+        bu::print("{}\n", module.global_namespace);
     });
 
 }

@@ -18,3 +18,5 @@ DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Template_definition<T>);
 extern template struct std::formatter<ast::definition::Function_template>;
 extern template struct std::formatter<ast::definition::Struct_template>;
 extern template struct std::formatter<ast::definition::Data_template>;
+
+DECLARE_FORMATTER_FOR(ast::Namespace);

@@ -21,7 +21,7 @@ namespace ast {
 
         auto make_child(lexer::Identifier) noexcept -> Namespace;
 
-        auto operator->() noexcept -> bu::Wrapper<Namespace_data>;
+        auto operator->() const noexcept -> bu::Wrapper<Namespace_data>;
     };
 
 }

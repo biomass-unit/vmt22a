@@ -12,6 +12,6 @@ auto ast::Namespace::make_child(lexer::Identifier const name) noexcept -> Namesp
     return data->children.emplace_back(child);
 }
 
-auto ast::Namespace::operator->() noexcept -> bu::Wrapper<Namespace_data> {
+auto ast::Namespace::operator->() const noexcept -> bu::Wrapper<Namespace_data> {
     return data;
 }

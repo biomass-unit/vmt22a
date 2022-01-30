@@ -63,10 +63,10 @@ namespace lexer {
             inst,
             alias,
             import,
+            module,
             size_of,
             type_of,
             meta,
-            mod,
 
             underscore,
             lower_name,

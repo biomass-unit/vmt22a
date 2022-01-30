@@ -207,10 +207,10 @@ namespace {
             { new_id("inst")     , Type::inst      },
             { new_id("alias")    , Type::alias     },
             { new_id("import")   , Type::import    },
+            { new_id("module")   , Type::module    },
             { new_id("size_of")  , Type::size_of   },
             { new_id("type_of")  , Type::type_of   },
             { new_id("meta")     , Type::meta      },
-            { new_id("mod")      , Type::mod       },
         });
 
         static auto const

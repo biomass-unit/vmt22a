@@ -227,3 +227,25 @@ DEFINE_FORMATTER_FOR(ast::definition::Template_definition<T>) {
 template struct std::formatter<ast::definition::Function_template>;
 template struct std::formatter<ast::definition::Struct_template>;
 template struct std::formatter<ast::definition::Data_template>;
+
+
+DEFINE_FORMATTER_FOR(ast::Namespace) {
+    auto out = context.out();
+    std::format_to(out, "module {} {{", value->name);
+
+    auto fmt = [out]<class T>(std::vector<T> const& xs) {
+        for (auto& x : xs) {
+            std::format_to(out, "\n{}", x);
+        }
+    };
+
+    fmt(value->function_definitions);
+    fmt(value->function_template_definitions);
+    fmt(value->struct_definitions);
+    fmt(value->struct_template_definitions);
+    fmt(value->data_definitions);
+    fmt(value->data_template_definitions);
+    fmt(value->children);
+
+    return std::format_to(out, "\n}}\n");
+}

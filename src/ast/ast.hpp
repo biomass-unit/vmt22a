@@ -36,7 +36,7 @@ namespace ast {
 
     struct [[nodiscard]] Module {
         bu::Source source;
-        Namespace  global_namespace;
+        Namespace global_namespace;
     };
 
 }

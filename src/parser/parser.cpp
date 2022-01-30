@@ -110,6 +110,27 @@ namespace {
     }
 
 
+    auto parse_definition(Parse_context&) -> bool;
+
+    auto extract_namespace(Parse_context& context) -> void {
+        if (auto name = parse_lower_id(context)) {
+            context.consume_required(Token::Type::brace_open);
+
+            auto previous = ::current_namespace;
+            auto child = previous->make_child(*name);
+
+            ::current_namespace = &child;
+            while (parse_definition(context));
+            ::current_namespace = previous;
+
+            context.consume_required(Token::Type::brace_close);
+        }
+        else {
+            throw context.expected("a module name");
+        }
+    }
+
+
     auto parse_definition(Parse_context& context) -> bool {
         switch (context.extract().type) {
         case Token::Type::fn:
@@ -117,6 +138,9 @@ namespace {
             break;
         case Token::Type::struct_:
             extract_struct(context);
+            break;
+        case Token::Type::module:
+            extract_namespace(context);
             break;
         default:
             --context.pointer;
