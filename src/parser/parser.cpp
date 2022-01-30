@@ -167,12 +167,12 @@ namespace {
         if (auto name = parse_lower_id(context)) {
             context.consume_required(Token::Type::brace_open);
 
-            auto previous = ::current_namespace;
-            auto child = previous->make_child(*name);
+            auto parent_namespace = ::current_namespace;
+            auto child_namespace = parent_namespace->make_child(*name);
 
-            ::current_namespace = &child;
+            ::current_namespace = &child_namespace;
             while (parse_definition(context));
-            ::current_namespace = previous;
+            ::current_namespace = parent_namespace;
 
             context.consume_required(Token::Type::brace_close);
         }

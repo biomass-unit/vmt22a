@@ -43,7 +43,7 @@ namespace ast {
 
         struct Template_parameter {
             struct Type_parameter {
-                lexer::Identifier name;
+                lexer::Identifier              name;
                 std::vector<lexer::Identifier> classes; // todo: add way to reference typeclass
                 DEFAULTED_EQUALITY(Type_parameter);
             };
@@ -72,6 +72,30 @@ namespace ast {
         using Function_template = Template_definition<Function>;
         using Struct_template   = Template_definition<Struct>;
         using Data_template     = Template_definition<Data>;
+
+    }
+
+    struct Function_signature {
+        std::optional<std::vector<definition::Template_parameter>> template_parameters;
+        type::Function                                             type;
+        lexer::Identifier                                          name;
+        DEFAULTED_EQUALITY(Function_signature);
+    };
+
+    struct Type_signature {
+        std::optional<std::vector<definition::Template_parameter>> template_parameters;
+        lexer::Identifier                                          name;
+        DEFAULTED_EQUALITY(Type_signature);
+    };
+
+    namespace definition {
+
+        struct Typeclass {
+            std::vector<Function_signature> function_signatures;
+            std::vector<Type_signature>     type_signatures;
+            lexer::Identifier               name;
+            DEFAULTED_EQUALITY(Typeclass);
+        };
 
     }
 

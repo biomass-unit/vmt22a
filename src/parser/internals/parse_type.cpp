@@ -44,7 +44,12 @@ namespace {
     auto extract_tuple(Parse_context& context) -> ast::Type {
         auto types = extract_comma_separated_zero_or_more<parse_type, "a type">(context);
         context.consume_required(Token::Type::paren_close);
-        return ast::type::Tuple { std::move(types) };
+        if (types.size() == 1) {
+            return std::move(types.front());
+        }
+        else {
+            return ast::type::Tuple { std::move(types) };
+        }
     }
 
     auto extract_array_or_list(Parse_context& context) -> ast::Type {

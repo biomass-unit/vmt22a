@@ -11,6 +11,7 @@ namespace ast {
             std::vector<definition::Data_template>     data_template_definitions;
             std::vector<definition::Struct>            struct_definitions;
             std::vector<definition::Struct_template>   struct_template_definitions;
+            std::vector<definition::Typeclass>         class_definitions;
             std::vector<Namespace>                     children;
             Namespace_data*                            parent;
             lexer::Identifier                          name;

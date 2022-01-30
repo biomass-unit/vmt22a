@@ -200,6 +200,27 @@ DEFINE_FORMATTER_FOR(ast::definition::Data) {
 }
 
 
+DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
+    auto out = context.out();
+    std::format_to(out, "class {} {{");
+
+    for (auto& signature : value.function_signatures) {
+        std::format_to(
+            out,
+            "\nfn {}({}): {}",
+            signature.name,
+            signature.type.argument_types,
+            signature.type.return_type
+        );
+    }
+    for (auto& signature : value.type_signatures) {
+        std::format_to(out, "\n{}", signature.name);
+    }
+
+    return std::format_to(out, "}}");
+}
+
+
 template <>
 struct std::formatter<ast::definition::Template_parameter> : bu::Formatter_base {
     auto format(auto const& parameter, std::format_context& context) {
