@@ -55,8 +55,8 @@ namespace ast {
 
     struct Template_parameter {
         struct Type_parameter {
-            lexer::Identifier            name;
             std::vector<Class_reference> classes;
+            lexer::Identifier            name;
             DEFAULTED_EQUALITY(Type_parameter);
         };
         struct Value_parameter {

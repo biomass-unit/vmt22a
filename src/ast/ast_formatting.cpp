@@ -202,19 +202,26 @@ DEFINE_FORMATTER_FOR(ast::definition::Data) {
 
 DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
     auto out = context.out();
-    std::format_to(out, "class {} {{");
+    std::format_to(out, "class {} {{", value.name);
 
     for (auto& signature : value.function_signatures) {
         std::format_to(
             out,
-            "\nfn {}({}): {}",
+            "\nfn {}[{}]({}): {}",
             signature.name,
+            signature.template_parameters,
             signature.type.argument_types,
             signature.type.return_type
         );
     }
     for (auto& signature : value.type_signatures) {
-        std::format_to(out, "\n{}", signature.name);
+        std::format_to(
+            out,
+            "alias {}[{}]: {}",
+            signature.name,
+            signature.template_parameters,
+            signature.classes
+        );
     }
 
     return std::format_to(out, "}}");
@@ -274,6 +281,7 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     fmt(value->struct_template_definitions);
     fmt(value->data_definitions);
     fmt(value->data_template_definitions);
+    fmt(value->class_definitions);
     fmt(value->children);
 
     return std::format_to(out, "\n}}\n");

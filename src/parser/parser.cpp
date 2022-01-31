@@ -12,6 +12,92 @@ namespace {
     thread_local ast::Namespace* current_namespace;
 
 
+    auto parse_class_reference(Parse_context&) -> std::optional<ast::Class_reference>;
+
+    auto extract_classes(Parse_context& context) -> std::vector<ast::Class_reference> {
+        constexpr auto extract_classes =
+            extract_comma_separated_zero_or_more<parse_class_reference, "a class name">;
+
+        auto classes = extract_classes(context);
+        if (classes.empty()) {
+            throw context.expected("one or more class names");
+        }
+        else {
+            return classes;
+        }
+    }
+
+    auto parse_template_arguments(Parse_context& context)
+        -> std::optional<std::vector<ast::Template_argument>>
+    {
+        constexpr auto extract_arguments = extract_comma_separated_zero_or_more<[](Parse_context& context)
+            -> std::optional<ast::Template_argument>
+        {
+            if (auto expression = parse_expression(context)) {
+                return ast::Template_argument { std::move(*expression) };
+            }
+            else if (auto type = parse_type(context)) {
+                return ast::Template_argument { std::move(*type) };
+            }
+            else {
+                return std::nullopt;
+            }
+        }, "a template argument">;
+
+        if (context.try_consume(Token::Type::bracket_open)) {
+            auto arguments = extract_arguments(context);
+            context.consume_required(Token::Type::bracket_close);
+            return std::move(arguments);
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    auto parse_template_parameters(Parse_context& context)
+        -> std::optional<std::vector<ast::Template_parameter>>
+    {
+        constexpr auto extract_parameters = extract_comma_separated_zero_or_more<[](Parse_context& context)
+            -> std::optional<ast::Template_parameter>
+        {
+            if (auto name = parse_lower_id(context)) {
+                context.consume_required(Token::Type::colon);
+                return ast::Template_parameter {
+                    ast::Template_parameter::Value_parameter {
+                        *name,
+                        extract_type(context)
+                    }
+                };
+            }
+            else if (auto name = parse_upper_id(context)) {
+                std::vector<ast::Class_reference> classes;
+                if (context.try_consume(Token::Type::colon)) {
+                    classes = extract_classes(context);
+                }
+
+                return ast::Template_parameter {
+                    ast::Template_parameter::Type_parameter {
+                        std::move(classes),
+                        *name
+                    }
+                };
+            }
+            else {
+                return std::nullopt;
+            }
+        }, "a template parameter">;
+
+        if (context.try_consume(Token::Type::bracket_open)) {
+            auto parameters = extract_parameters(context);
+            context.consume_required(Token::Type::bracket_close);
+            return std::move(parameters);
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+
     auto parse_function_parameter(Parse_context& context)
         -> std::optional<ast::definition::Function::Parameter>
     {
@@ -52,7 +138,7 @@ namespace {
                     throw context.expected("the function body", "'=' or '{'");
                 }
 
-                (*current_namespace)->function_definitions.push_back(
+                (*::current_namespace)->function_definitions.push_back(
                     ast::definition::Function {
                         .body        = std::move(*body),
                         .parameters  = std::move(parameters),
@@ -93,7 +179,7 @@ namespace {
 
             context.consume_required(Token::Type::equals);
             if (auto members = parse_members(context)) {
-                (*current_namespace)->struct_definitions.push_back(
+                (*::current_namespace)->struct_definitions.push_back(
                     ast::definition::Struct {
                         .members = std::move(*members),
                         .name    = *name
@@ -144,7 +230,7 @@ namespace {
 
             context.consume_required(Token::Type::equals);
             if (auto constructors = parse_constructors(context)) {
-                (*current_namespace)->data_definitions.push_back(
+                (*::current_namespace)->data_definitions.push_back(
                     ast::definition::Data {
                         .constructors = std::move(*constructors),
                         .name         = *name
@@ -157,6 +243,71 @@ namespace {
         }
         else {
             throw context.expected("a data name");
+        }
+    }
+
+
+    auto parse_class_reference(Parse_context& context)
+        -> std::optional<ast::Class_reference>
+    {
+        if (auto name = parse_upper_id(context)) {
+            return ast::Class_reference {
+                parse_template_arguments(context),
+                *name
+            };
+        }
+        else {
+            throw context.expected("a class name");
+        }
+    }
+
+    auto extract_function_signature(Parse_context&) -> ast::Function_signature {
+        bu::unimplemented();
+    }
+
+    auto extract_type_signature(Parse_context& context) -> ast::Type_signature {
+        if (auto name = parse_upper_id(context)) {
+            auto template_parameters = parse_template_parameters(context);
+
+            std::vector<ast::Class_reference> classes;
+            if (context.try_consume(Token::Type::colon)) {
+                classes = extract_classes(context);
+            }
+
+            return ast::Type_signature {
+                std::move(template_parameters),
+                std::move(classes),
+                *name
+            };
+        }
+        else {
+            throw context.expected("an alias name");
+        }
+    }
+
+    auto extract_class(Parse_context& context) -> void {
+        if (auto name = parse_upper_id(context)) {
+            ast::definition::Typeclass typeclass { .name = *name };
+            context.consume_required(Token::Type::brace_open);
+
+            for (;;) {
+                switch (context.extract().type) {
+                case Token::Type::fn:
+                    typeclass.function_signatures.push_back(extract_function_signature(context));
+                    continue;
+                case Token::Type::alias:
+                    typeclass.type_signatures.push_back(extract_type_signature(context));
+                    continue;
+                default:
+                    --context.pointer;
+                    context.consume_required(Token::Type::brace_close);
+                    (*::current_namespace)->class_definitions.push_back(std::move(typeclass));
+                    return;
+                }
+            }
+        }
+        else {
+            throw context.expected("a class name");
         }
     }
 
@@ -192,6 +343,9 @@ namespace {
             break;
         case Token::Type::data:
             extract_data(context);
+            break;
+        case Token::Type::class_:
+            extract_class(context);
             break;
         case Token::Type::module:
             extract_namespace(context);
