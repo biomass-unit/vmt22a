@@ -59,6 +59,7 @@ namespace {
 
     [[maybe_unused]]
     auto program_parser_repl = generic_repl([](bu::Source source) {
+        ast::AST_context context { 32 };
         auto module = parser::parse(lexer::lex(std::move(source)));
         bu::print("{}\n", module.global_namespace);
     });

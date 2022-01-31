@@ -40,27 +40,36 @@ namespace ast {
             DEFAULTED_EQUALITY(Data);
         };
 
+    }
 
-        struct Template_parameter {
-            struct Type_parameter {
-                lexer::Identifier              name;
-                std::vector<lexer::Identifier> classes; // todo: add way to reference typeclass
-                DEFAULTED_EQUALITY(Type_parameter);
-            };
-            struct Value_parameter {
-                lexer::Identifier name;
-                bu::Wrapper<Type> type;
-                DEFAULTED_EQUALITY(Value_parameter);
-            };
-            std::variant<Type_parameter, Value_parameter> value;
-            DEFAULTED_EQUALITY(Template_parameter);
+
+    struct Template_argument {
+        std::variant<Type, Expression> value;
+        DEFAULTED_EQUALITY(Template_argument);
+    };
+
+    struct Class_reference {
+        std::optional<std::vector<Template_argument>> arguments;
+        lexer::Identifier                             name;
+    };
+
+    struct Template_parameter {
+        struct Type_parameter {
+            lexer::Identifier            name;
+            std::vector<Class_reference> classes;
+            DEFAULTED_EQUALITY(Type_parameter);
         };
-
-        struct Template_argument {
-            std::variant<Type, Expression> value;
-            DEFAULTED_EQUALITY(Template_argument);
+        struct Value_parameter {
+            lexer::Identifier name;
+            bu::Wrapper<Type> type;
+            DEFAULTED_EQUALITY(Value_parameter);
         };
+        std::variant<Type_parameter, Value_parameter> value;
+        DEFAULTED_EQUALITY(Template_parameter);
+    };
 
+
+    namespace definition {
 
         template <class Definition>
         struct Template_definition {
@@ -75,18 +84,21 @@ namespace ast {
 
     }
 
+
     struct Function_signature {
-        std::optional<std::vector<definition::Template_parameter>> template_parameters;
-        type::Function                                             type;
-        lexer::Identifier                                          name;
+        std::optional<std::vector<Template_parameter>> template_parameters;
+        type::Function                                 type;
+        lexer::Identifier                              name;
         DEFAULTED_EQUALITY(Function_signature);
     };
 
     struct Type_signature {
-        std::optional<std::vector<definition::Template_parameter>> template_parameters;
-        lexer::Identifier                                          name;
+        std::optional<std::vector<Template_parameter>> template_parameters;
+        std::vector<Class_reference>                   classes;
+        lexer::Identifier                              name;
         DEFAULTED_EQUALITY(Type_signature);
     };
+
 
     namespace definition {
 

@@ -37,6 +37,10 @@ namespace bu {
         constexpr auto clone() const noexcept(std::is_nothrow_copy_constructible_v<T>) -> Wrapper {
             return Wrapper { **this };
         }
+
+        static constexpr auto object_count() noexcept -> Usize {
+            return vector->size();
+        }
     };
 
     template <class T>

@@ -221,24 +221,32 @@ DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
 }
 
 
-template <>
-struct std::formatter<ast::definition::Template_parameter> : bu::Formatter_base {
-    auto format(auto const& parameter, std::format_context& context) {
-        return std::visit(
-            bu::Overload {
-                [&](ast::definition::Template_parameter::Type_parameter const& parameter) {
-                    return parameter.classes.empty()
-                        ? std::format_to(context.out(), "{}", parameter.name)
-                        : std::format_to(context.out(), "{}: {}", parameter.name, parameter.classes);
-                },
-                [&](ast::definition::Template_parameter::Value_parameter const& parameter) {
-                    return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
-                }
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Class_reference) {
+    return value.arguments
+        ? std::format_to(context.out(), "{}[{}]", value.name, value.arguments)
+        : std::format_to(context.out(), "{}", value.name);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
+    return std::visit(
+        bu::Overload {
+            [&](ast::Template_parameter::Type_parameter const& parameter) {
+                return parameter.classes.empty()
+                    ? std::format_to(context.out(), "{}", parameter.name)
+                    : std::format_to(context.out(), "{}: {}", parameter.name, parameter.classes);
             },
-            parameter.value
-        );
-    }
-};
+            [&](ast::Template_parameter::Value_parameter const& parameter) {
+                return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
+            }
+        },
+        value.value
+    );
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
+    return std::format_to(context.out(), "{}", value.value);
+}
+
 
 template <class T>
 DEFINE_FORMATTER_FOR(ast::definition::Template_definition<T>) {

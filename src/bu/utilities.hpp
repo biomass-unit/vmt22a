@@ -253,6 +253,10 @@ template <> DECLARE_FORMATTER_FOR_TEMPLATE(__VA_ARGS__)
 auto std::formatter<__VA_ARGS__>::format(__VA_ARGS__ const& value, std::format_context& context) \
     -> std::format_context::iterator
 
+#define DIRECTLY_DEFINE_FORMATTER_FOR(...) \
+DECLARE_FORMATTER_FOR(__VA_ARGS__);        \
+DEFINE_FORMATTER_FOR(__VA_ARGS__)
+
 
 template <class... Ts>
 DECLARE_FORMATTER_FOR_TEMPLATE(std::variant<Ts...>);

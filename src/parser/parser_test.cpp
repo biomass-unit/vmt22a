@@ -85,9 +85,7 @@ auto parser::run_tests() -> void {
     assert(lexer::Identifier::string_count() > 16 // should probably work maybe
         && "Parser tests may only be run after the lexer has been invoked");
 
-    bu::Wrapper_context<ast::Expression> expression_context { 32 };
-    bu::Wrapper_context<ast::Pattern   >    pattern_context { 32 };
-    bu::Wrapper_context<ast::Type      >       type_context { 32 };
+    ast::AST_context context { 32 };
 
     using namespace lexer::literals;
     using namespace bu::literals;

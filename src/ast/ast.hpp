@@ -39,4 +39,15 @@ namespace ast {
         Namespace global_namespace;
     };
 
+    class AST_context {
+        bu::Wrapper_context<ast::Expression> expr_context {};
+        bu::Wrapper_context<ast::Pattern   > patt_context {};
+        bu::Wrapper_context<ast::Type      > type_context {};
+    public:
+        explicit AST_context(bu::Usize const capacity) noexcept
+            : expr_context { capacity }
+            , patt_context { capacity }
+            , type_context { capacity } {}
+    };
+
 }
