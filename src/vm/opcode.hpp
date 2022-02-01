@@ -14,7 +14,6 @@ namespace vm {
         isub, fsub, csub,
         imul, fmul, cmul,
         idiv, fdiv, cdiv,
-        //iexp, fexp, cexp,
 
         jump, jump_true, jump_false,
 

@@ -331,11 +331,10 @@ namespace {
     std::tuple precedence_table {
         id_array<"*", "/", "%">,
         id_array<"+", "-">,
-        id_array<"<<", ">>">,
         id_array<"?=", "!=">,
         id_array<"<", "<=", ">=", ">">,
         id_array<"&&", "||">,
-        id_array<":=", "+=", "*=", "/=", "%=", "<<=", ">>=">
+        id_array<":=", "+=", "*=", "/=", "%=">
     };
 
     constexpr auto lowest_precedence = std::tuple_size_v<decltype(precedence_table)> - 1;

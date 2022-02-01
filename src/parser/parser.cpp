@@ -248,8 +248,23 @@ namespace {
         };
     }
 
-    auto extract_function_signature(Parse_context&) -> ast::Function_signature {
-        bu::unimplemented();
+    auto extract_function_signature(Parse_context& context) -> ast::Function_signature {
+        auto name = extract_lower_id<"a function name">(context);
+        auto template_parameters = parse_template_parameters(context);
+
+        context.consume_required(Token::Type::paren_open);
+        auto parameters = extract_comma_separated_zero_or_more<parse_type, "a parameter type">(context);
+        context.consume_required(Token::Type::paren_close);
+
+        context.consume_required(Token::Type::colon);
+        return ast::Function_signature {
+            std::move(template_parameters),
+            {
+                .argument_types = std::move(parameters),
+                .return_type    = extract_type(context)
+            },
+            name
+        };
     }
 
     auto extract_type_signature(Parse_context& context) -> ast::Type_signature {
