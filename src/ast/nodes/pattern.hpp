@@ -36,7 +36,8 @@ namespace ast {
             pattern::Name,
             pattern::Tuple
         >;
-        Variant value;
+        Variant          value;
+        std::string_view source_view;
 
         DEFINE_NODE_CTOR(Pattern);
         DEFAULTED_EQUALITY(Pattern);

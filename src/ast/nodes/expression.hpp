@@ -33,56 +33,56 @@ namespace ast {
     struct Binary_operator_invocation {
         bu::Wrapper<Expression> left;
         bu::Wrapper<Expression> right;
-        lexer::Identifier op;
+        lexer::Identifier       op;
         DEFAULTED_EQUALITY(Binary_operator_invocation);
     };
 
     struct Member_access {
         bu::Wrapper<Expression> expression;
-        lexer::Identifier member_name;
+        lexer::Identifier       member_name;
         DEFAULTED_EQUALITY(Member_access);
     };
 
     struct Member_function_invocation {
         std::vector<Expression> arguments;
         bu::Wrapper<Expression> expression;
-        lexer::Identifier member_name;
+        lexer::Identifier       member_name;
         DEFAULTED_EQUALITY(Member_function_invocation);
     };
 
     struct Tuple_member_access {
         bu::Wrapper<Expression> expression;
-        bu::Usize member_index;
+        bu::Usize               member_index;
         DEFAULTED_EQUALITY(Tuple_member_access);
     };
 
     struct Conditional {
-        bu::Wrapper<Expression> condition;
-        bu::Wrapper<Expression> true_branch;
+        bu::Wrapper<Expression>                condition;
+        bu::Wrapper<Expression>                true_branch;
         std::optional<bu::Wrapper<Expression>> false_branch;
         DEFAULTED_EQUALITY(Conditional);
     };
 
     struct Match {
         struct Case {
-            bu::Wrapper<Pattern> pattern;
+            bu::Wrapper<Pattern>    pattern;
             bu::Wrapper<Expression> expression;
             DEFAULTED_EQUALITY(Case);
         };
-        std::vector<Case> cases;
+        std::vector<Case>       cases;
         bu::Wrapper<Expression> expression;
         DEFAULTED_EQUALITY(Match);
     };
 
     struct Type_cast {
         bu::Wrapper<Expression> expression;
-        bu::Wrapper<Type> target;
+        bu::Wrapper<Type>       target;
         DEFAULTED_EQUALITY(Type_cast);
     };
 
     struct Let_binding {
-        bu::Wrapper<Pattern> pattern;
-        bu::Wrapper<Expression> initializer;
+        bu::Wrapper<Pattern>             pattern;
+        bu::Wrapper<Expression>          initializer;
         std::optional<bu::Wrapper<Type>> type;
         DEFAULTED_EQUALITY(Let_binding);
     };
@@ -99,7 +99,7 @@ namespace ast {
     };
 
     struct For_loop {
-        bu::Wrapper<Pattern> iterator;
+        bu::Wrapper<Pattern>    iterator;
         bu::Wrapper<Expression> iterable;
         bu::Wrapper<Expression> body;
         DEFAULTED_EQUALITY(For_loop);
@@ -159,7 +159,8 @@ namespace ast {
             Size_of,
             Meta
         >;
-        Variant value;
+        Variant          value;
+        std::string_view source_view;
 
         DEFINE_NODE_CTOR(Expression);
         DEFAULTED_EQUALITY(Expression);

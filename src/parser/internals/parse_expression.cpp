@@ -281,32 +281,29 @@ namespace {
 
 
     auto parse_potential_member_access(Parse_context& context) -> std::optional<ast::Expression> {
-        if (auto expression = parse_potential_invocation(context)) {
+        auto expression = parse_potential_invocation(context);
+
+        if (expression) {
             while (context.try_consume(Token::Type::dot)) {
-                if (auto member_name = parse_lower_id(context)) {
-                    if (context.try_consume(Token::Type::paren_open)) {
-                        *expression = ast::Member_function_invocation {
-                            extract_arguments(context),
-                            std::move(*expression),
-                            *member_name
-                        };
-                    }
-                    else {
-                        *expression = ast::Member_access {
-                            std::move(*expression),
-                            *member_name
-                        };
-                    }
+                auto member_name = extract_lower_id<"a member name">(context);
+
+                if (context.try_consume(Token::Type::paren_open)) {
+                    *expression = ast::Member_function_invocation {
+                        extract_arguments(context),
+                        std::move(*expression),
+                        member_name
+                    };
                 }
                 else {
-                    throw context.expected("a member name");
+                    *expression = ast::Member_access {
+                        std::move(*expression),
+                        member_name
+                    };
                 }
             }
-            return expression;
         }
-        else {
-            return std::nullopt;
-        }
+
+        return expression;
     }
 
 
@@ -398,14 +395,20 @@ namespace {
 
 
 auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expression> {
-    return parse_binary_operator_invocation_with_precedence<lowest_precedence>(context);
+    return parse_and_add_source_view<
+        parse_binary_operator_invocation_with_precedence<lowest_precedence>
+    >(context);
 }
 
 auto parser::parse_compound_expression(Parse_context& context) -> std::optional<ast::Expression> {
-    if (context.try_consume(Token::Type::brace_open)) {
-        return extract_compound_expression(context);
-    }
-    else {
-        return std::nullopt;
-    }
+    return parse_and_add_source_view<
+        [](Parse_context& context) -> std::optional<ast::Expression> {
+            if (context.try_consume(Token::Type::brace_open)) {
+                return extract_compound_expression(context);
+            }
+            else {
+                return std::nullopt;
+            }
+        }
+    >(context);
 }

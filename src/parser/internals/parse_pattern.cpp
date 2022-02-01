@@ -26,25 +26,29 @@ namespace {
 
 
 auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern> {
-    switch (context.extract().type) {
-    case Token::Type::underscore:
-        return ast::pattern::Wildcard {};
-    case Token::Type::integer:
-        return extract_literal<bu::Isize>(context);
-    case Token::Type::floating:
-        return extract_literal<bu::Float>(context);
-    case Token::Type::character:
-        return extract_literal<char>(context);
-    case Token::Type::boolean:
-        return extract_literal<bool>(context);
-    case Token::Type::string:
-        return extract_literal<lexer::String>(context);
-    case Token::Type::paren_open:
-        return extract_tuple(context);
-    case Token::Type::lower_name:
-        return extract_name(context);
-    default:
-        --context.pointer;
-        return std::nullopt;
-    }
+    return parse_and_add_source_view<
+        [](Parse_context& context) -> std::optional<ast::Pattern> {
+            switch (context.extract().type) {
+            case Token::Type::underscore:
+                return ast::pattern::Wildcard {};
+            case Token::Type::integer:
+                return extract_literal<bu::Isize>(context);
+            case Token::Type::floating:
+                return extract_literal<bu::Float>(context);
+            case Token::Type::character:
+                return extract_literal<char>(context);
+            case Token::Type::boolean:
+                return extract_literal<bool>(context);
+            case Token::Type::string:
+                return extract_literal<lexer::String>(context);
+            case Token::Type::paren_open:
+                return extract_tuple(context);
+            case Token::Type::lower_name:
+                return extract_name(context);
+            default:
+                --context.pointer;
+                return std::nullopt;
+            }
+        }
+    >(context);
 }

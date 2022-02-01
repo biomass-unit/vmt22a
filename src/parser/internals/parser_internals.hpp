@@ -201,6 +201,22 @@ namespace parser {
     auto parse_compound_expression(Parse_context&) -> std::optional<ast::Expression>;
 
 
+    template <Token::Type id_type, bu::Metastring description>
+    auto extract_id(Parse_context& context) -> lexer::Identifier {
+        if (auto token = context.try_extract(id_type)) {
+            return token->as_identifier();
+        }
+        else {
+            throw context.expected(description.view());
+        }
+    }
+
+    template <bu::Metastring description>
+    constexpr auto extract_lower_id = extract_id<Token::Type::lower_name, description>;
+    template <bu::Metastring description>
+    constexpr auto extract_upper_id = extract_id<Token::Type::upper_name, description>;
+
+
     template <Token::Type id_type>
     auto parse_id(Parse_context& context) -> std::optional<lexer::Identifier> {
         if (auto token = context.try_extract(id_type)) {
@@ -213,5 +229,18 @@ namespace parser {
 
     inline constexpr auto parse_lower_id = parse_id<Token::Type::lower_name>;
     inline constexpr auto parse_upper_id = parse_id<Token::Type::upper_name>;
+
+
+    template <parser auto parse>
+    auto parse_and_add_source_view(Parse_context& context) {
+        auto const anchor = context.pointer;
+        auto result = parse(context);
+
+        if (result) {
+            auto const view = context.pointer->source_view;
+            result->source_view = { anchor->source_view.data(), view.data() + view.size() };
+        }
+        return result;
+    }
 
 }

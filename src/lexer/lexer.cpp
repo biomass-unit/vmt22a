@@ -187,7 +187,6 @@ namespace {
 
         static auto const options = std::to_array<bu::Pair<lexer::Identifier, Type>>({
             { new_id("let")      , Type::let       },
-            { new_id("let")      , Type::let       },
             { new_id("mut")      , Type::mut       },
             { new_id("if")       , Type::if_       },
             { new_id("else")     , Type::else_     },

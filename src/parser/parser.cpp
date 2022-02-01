@@ -114,45 +114,42 @@ namespace {
     }
 
     auto extract_function(Parse_context& context) -> void {
-        if (auto name = parse_lower_id(context)) {
-            if (context.try_consume(Token::Type::paren_open)) {
-                constexpr auto parse_parameters =
-                    extract_comma_separated_zero_or_more<parse_function_parameter, "a function parameter">;
-                auto parameters = parse_parameters(context);
-                context.consume_required(Token::Type::paren_close);
+        auto name = extract_lower_id<"a function name">(context);
 
-                std::optional<bu::Wrapper<ast::Type>> return_type;
-                if (context.try_consume(Token::Type::colon)) {
-                    return_type.emplace(extract_type(context));
-                }
+        if (context.try_consume(Token::Type::paren_open)) {
+            constexpr auto parse_parameters =
+                extract_comma_separated_zero_or_more<parse_function_parameter, "a function parameter">;
+            auto parameters = parse_parameters(context);
+            context.consume_required(Token::Type::paren_close);
 
-                bu::Uninitialized<ast::Expression> body;
+            std::optional<bu::Wrapper<ast::Type>> return_type;
+            if (context.try_consume(Token::Type::colon)) {
+                return_type.emplace(extract_type(context));
+            }
 
-                if (auto expression = parse_compound_expression(context)) {
-                    body.initialize(std::move(*expression));
-                }
-                else if (context.try_consume(Token::Type::equals)) {
-                    body.initialize(extract_expression(context));
-                }
-                else {
-                    throw context.expected("the function body", "'=' or '{'");
-                }
+            bu::Uninitialized<ast::Expression> body;
 
-                (*::current_namespace)->function_definitions.push_back(
-                    ast::definition::Function {
-                        .body        = std::move(*body),
-                        .parameters  = std::move(parameters),
-                        .name        = *name,
-                        .return_type = return_type
-                    }
-                );
+            if (auto expression = parse_compound_expression(context)) {
+                body.initialize(std::move(*expression));
+            }
+            else if (context.try_consume(Token::Type::equals)) {
+                body.initialize(extract_expression(context));
             }
             else {
-                throw context.expected("a parenthesized list of function parameters");
+                throw context.expected("the function body", "'=' or '{'");
             }
+
+            (*::current_namespace)->function_definitions.push_back(
+                ast::definition::Function {
+                    .body        = std::move(*body),
+                    .parameters  = std::move(parameters),
+                    .name        = name,
+                    .return_type = return_type
+                }
+            );
         }
         else {
-            throw context.expected("a function name");
+            throw context.expected("a parenthesized list of function parameters");
         }
     }
 
@@ -173,25 +170,22 @@ namespace {
     }
 
     auto extract_struct(Parse_context& context) -> void {
-        if (auto name = parse_upper_id(context)) {
-            constexpr auto parse_members =
-                parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
+        constexpr auto parse_members =
+            parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
 
-            context.consume_required(Token::Type::equals);
-            if (auto members = parse_members(context)) {
-                (*::current_namespace)->struct_definitions.push_back(
-                    ast::definition::Struct {
-                        .members = std::move(*members),
-                        .name    = *name
-                    }
-                );
-            }
-            else {
-                throw context.expected("one or more struct members");
-            }
+        auto name = extract_upper_id<"a struct name">(context);
+
+        context.consume_required(Token::Type::equals);
+        if (auto members = parse_members(context)) {
+            (*::current_namespace)->struct_definitions.push_back(
+                ast::definition::Struct {
+                    .members = std::move(*members),
+                    .name    = name
+                }
+            );
         }
         else {
-            throw context.expected("a struct name");
+            throw context.expected("one or more struct members");
         }
     }
 
@@ -224,25 +218,22 @@ namespace {
     }
 
     auto extract_data(Parse_context& context) -> void {
-        if (auto name = parse_upper_id(context)) {
-            constexpr auto parse_constructors =
-                parse_separated_one_or_more<parse_data_constructor, Token::Type::pipe, "a data constructor">;
+        constexpr auto parse_constructors =
+            parse_separated_one_or_more<parse_data_constructor, Token::Type::pipe, "a data constructor">;
 
-            context.consume_required(Token::Type::equals);
-            if (auto constructors = parse_constructors(context)) {
-                (*::current_namespace)->data_definitions.push_back(
-                    ast::definition::Data {
-                        .constructors = std::move(*constructors),
-                        .name         = *name
-                    }
-                );
-            }
-            else {
-                throw context.expected("one or more data constructors");
-            }
+        auto name = extract_upper_id<"a data name">(context);
+
+        context.consume_required(Token::Type::equals);
+        if (auto constructors = parse_constructors(context)) {
+            (*::current_namespace)->data_definitions.push_back(
+                ast::definition::Data {
+                    .constructors = std::move(*constructors),
+                    .name         = name
+                }
+            );
         }
         else {
-            throw context.expected("a data name");
+            throw context.expected("one or more data constructors");
         }
     }
 
@@ -250,15 +241,11 @@ namespace {
     auto parse_class_reference(Parse_context& context)
         -> std::optional<ast::Class_reference>
     {
-        if (auto name = parse_upper_id(context)) {
-            return ast::Class_reference {
-                parse_template_arguments(context),
-                *name
-            };
-        }
-        else {
-            throw context.expected("a class name");
-        }
+        auto name = extract_upper_id<"a class name">(context);
+        return ast::Class_reference {
+            parse_template_arguments(context),
+            name
+        };
     }
 
     auto extract_function_signature(Parse_context&) -> ast::Function_signature {
@@ -266,48 +253,42 @@ namespace {
     }
 
     auto extract_type_signature(Parse_context& context) -> ast::Type_signature {
-        if (auto name = parse_upper_id(context)) {
-            auto template_parameters = parse_template_parameters(context);
+        auto name = extract_upper_id<"an alias name">(context);
 
-            std::vector<ast::Class_reference> classes;
-            if (context.try_consume(Token::Type::colon)) {
-                classes = extract_classes(context);
-            }
+        auto template_parameters = parse_template_parameters(context);
 
-            return ast::Type_signature {
-                std::move(template_parameters),
-                std::move(classes),
-                *name
-            };
+        std::vector<ast::Class_reference> classes;
+        if (context.try_consume(Token::Type::colon)) {
+            classes = extract_classes(context);
         }
-        else {
-            throw context.expected("an alias name");
-        }
+
+        return ast::Type_signature {
+            std::move(template_parameters),
+            std::move(classes),
+            name
+        };
     }
 
     auto extract_class(Parse_context& context) -> void {
-        if (auto name = parse_upper_id(context)) {
-            ast::definition::Typeclass typeclass { .name = *name };
-            context.consume_required(Token::Type::brace_open);
+        auto name = extract_upper_id<"a class name">(context);
 
-            for (;;) {
-                switch (context.extract().type) {
-                case Token::Type::fn:
-                    typeclass.function_signatures.push_back(extract_function_signature(context));
-                    continue;
-                case Token::Type::alias:
-                    typeclass.type_signatures.push_back(extract_type_signature(context));
-                    continue;
-                default:
-                    --context.pointer;
-                    context.consume_required(Token::Type::brace_close);
-                    (*::current_namespace)->class_definitions.push_back(std::move(typeclass));
-                    return;
-                }
+        ast::definition::Typeclass typeclass { .name = name };
+        context.consume_required(Token::Type::brace_open);
+
+        for (;;) {
+            switch (context.extract().type) {
+            case Token::Type::fn:
+                typeclass.function_signatures.push_back(extract_function_signature(context));
+                continue;
+            case Token::Type::alias:
+                typeclass.type_signatures.push_back(extract_type_signature(context));
+                continue;
+            default:
+                --context.pointer;
+                context.consume_required(Token::Type::brace_close);
+                (*::current_namespace)->class_definitions.push_back(std::move(typeclass));
+                return;
             }
-        }
-        else {
-            throw context.expected("a class name");
         }
     }
 
@@ -315,21 +296,18 @@ namespace {
     auto parse_definition(Parse_context&) -> bool;
 
     auto extract_namespace(Parse_context& context) -> void {
-        if (auto name = parse_lower_id(context)) {
-            context.consume_required(Token::Type::brace_open);
+        auto name = extract_lower_id<"a module name">(context);
 
-            auto parent_namespace = ::current_namespace;
-            auto child_namespace = parent_namespace->make_child(*name);
+        context.consume_required(Token::Type::brace_open);
 
-            ::current_namespace = &child_namespace;
-            while (parse_definition(context));
-            ::current_namespace = parent_namespace;
+        auto parent_namespace = ::current_namespace;
+        auto child_namespace = parent_namespace->make_child(name);
 
-            context.consume_required(Token::Type::brace_close);
-        }
-        else {
-            throw context.expected("a module name");
-        }
+        ::current_namespace = &child_namespace;
+        while (parse_definition(context));
+        ::current_namespace = parent_namespace;
+
+        context.consume_required(Token::Type::brace_close);
     }
 
 
