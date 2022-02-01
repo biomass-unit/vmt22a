@@ -51,7 +51,7 @@ namespace {
             return format("({}.{})", expression.expression, expression.member_name);
         }
         auto operator()(ast::Member_function_invocation const& invocation) {
-            return format("{}.{}()", invocation.expression, invocation.member_name, invocation.arguments);
+            return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
         }
         auto operator()(ast::Tuple_member_access const& expression) {
             return format("({}.{})", expression.expression, expression.member_index);

@@ -1,9 +1,11 @@
 #pragma once
 
+#include "bu/utilities.hpp"
+
 
 namespace vm {
 
-    enum class Opcode : char {
+    enum class Opcode : bu::U8 {
         ipush , fpush , cpush , push_true, push_false,
         idup  , fdup  , cdup  , bdup  ,
         iprint, fprint, cprint, bprint,
@@ -20,5 +22,7 @@ namespace vm {
 
         _opcode_count
     };
+
+    auto argument_bytes(Opcode) noexcept -> bu::Usize;
 
 }

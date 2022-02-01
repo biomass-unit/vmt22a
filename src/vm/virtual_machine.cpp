@@ -104,3 +104,24 @@ auto vm::Virtual_machine::extract_argument() noexcept -> T {
     instruction_pointer += sizeof(T);
     return argument;
 }
+
+
+auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
+    static constexpr auto bytecounts = std::to_array<bu::Usize>({
+        sizeof(bu::Isize), sizeof(bu::Float), 1, 0, 0, // push
+
+        0, 0, 0, 0, // dup
+        0, 0, 0, 0, // print
+
+        0, 0, 0, // add
+        0, 0, 0, // sub
+        0, 0, 0, // mul
+        0, 0, 0, // div
+
+        sizeof(Jump_offset_type), sizeof(Jump_offset_type), sizeof(Jump_offset_type), // jump
+
+        0, // halt
+    });
+    static_assert(bytecounts.size() == static_cast<bu::Usize>(Opcode::_opcode_count));
+    return bytecounts[static_cast<bu::Usize>(opcode)];
+}

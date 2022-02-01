@@ -89,6 +89,8 @@ auto main() -> int try {
         jump, 0_uz
     );
 
+    //bu::print("Bytecode:\n\n{}", machine.bytecode);
+
     return machine.run();*/
 }
 

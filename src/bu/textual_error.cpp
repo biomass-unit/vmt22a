@@ -67,22 +67,6 @@ namespace {
         return position;
     }
 
-
-    constexpr auto digit_count(bu::Usize integer) noexcept -> bu::Usize {
-        bu::Usize digits = 0;
-        do {
-            integer /= 10;
-            ++digits;
-        }
-        while (integer);
-        return digits;
-    }
-
-    static_assert(digit_count(0) == 1);
-    static_assert(digit_count(10) == 2);
-    static_assert(digit_count(999) == 3);
-    static_assert(digit_count(1234) == 4);
-
 }
 
 
@@ -107,7 +91,7 @@ bu::Textual_error::Textual_error(Arguments const arguments)
     );
 
     auto const lines       = lines_of_occurrence(file, view);
-    auto const digit_count = ::digit_count(find_position(file, lines.back().data()).line);
+    auto const digit_count = bu::digit_count(find_position(file, lines.back().data()).line);
     auto       line_number = position.line;
 
     for (auto line : lines) {

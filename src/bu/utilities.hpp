@@ -180,6 +180,22 @@ namespace bu {
         return { view.data(), view.data() + view.size() };
     }
 
+    [[nodiscard]]
+    inline constexpr auto digit_count(Usize integer) noexcept -> Usize {
+        Usize digits = 0;
+        do {
+            integer /= 10;
+            ++digits;
+        }
+        while (integer);
+        return digits;
+    }
+
+    static_assert(digit_count(0) == 1);
+    static_assert(digit_count(10) == 2);
+    static_assert(digit_count(999) == 3);
+    static_assert(digit_count(1234) == 4);
+
 
     namespace dtl {
         template <class, template <class...> class>
