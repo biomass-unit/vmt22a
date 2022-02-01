@@ -36,18 +36,22 @@ namespace {
                             std::byte const*&             start,
                             std::byte const*              stop)
     {
+        auto unary = [=, &start]<class T>(bu::Typetag<T>) {
+            return std::format_to(out, "{} {}", extract<T>(start, stop));
+        };
+
         using enum vm::Opcode;
         switch (auto const opcode = extract<vm::Opcode>(start, stop)) {
         case ipush:
-            return std::format_to(out, "{} {}", opcode, extract<bu::Isize>(start, stop));
+            return unary(bu::typetag<bu::Isize>);
         case fpush:
-            return std::format_to(out, "{} {}", opcode, extract<bu::Float>(start, stop));
+            return unary(bu::typetag<bu::Float>);
         case cpush:
-            return std::format_to(out, "{} {}", opcode, extract<char>(start, stop));
+            return unary(bu::typetag<char>);
         case jump:
         case jump_true:
         case jump_false:
-            return std::format_to(out, "{} {}", opcode, extract<vm::Jump_offset_type>(start, stop));
+            return unary(bu::typetag<vm::Jump_offset_type>);
         default:
             assert(vm::argument_bytes(opcode) == 0);
             return std::format_to(out, "{}", opcode);

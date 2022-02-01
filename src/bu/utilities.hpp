@@ -156,6 +156,11 @@ namespace bu {
     template <class... Fs>
     Overload(Fs...) -> Overload<Fs...>;
 
+    template <class>
+    struct Typetag {};
+    template <class T>
+    constexpr Typetag<T> typetag;
+
 
     template <class T>
     constexpr auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {

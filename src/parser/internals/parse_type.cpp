@@ -112,6 +112,11 @@ namespace {
         }
     }
 
+    auto extract_reference(Parse_context& context) -> ast::Type {
+        bool const is_mutable = context.try_consume(Token::Type::mut);
+        return ast::type::Reference { extract_type(context), is_mutable };
+    }
+
 }
 
 
@@ -127,6 +132,8 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
         return extract_function(context);
     case Token::Type::type_of:
         return extract_type_of(context);
+    case Token::Type::ampersand:
+        return extract_reference(context);
     default:
         --context.pointer;
         return std::nullopt;

@@ -2,12 +2,9 @@
 #include "ast_formatting.hpp"
 
 
-template <>
-struct std::formatter<ast::Match::Case> : bu::Formatter_base {
-    auto format(ast::Match::Case const& match_case, std::format_context& context) {
-        return std::format_to(context.out(), "{} -> {}", match_case.pattern, match_case.expression);
-    }
-};
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Match::Case) {
+    return std::format_to(context.out(), "{} -> {}", value.pattern, value.expression);
+}
 
 
 namespace {
@@ -139,6 +136,9 @@ namespace {
         auto operator()(ast::type::Type_of const& type_of) {
             return format("type_of({})", type_of.expression);
         }
+        auto operator()(ast::type::Reference reference) {
+            return format(reference.is_mutable ? "&mut {}" : "&{}", reference.type);
+        }
     };
 
 }
@@ -157,12 +157,9 @@ DEFINE_FORMATTER_FOR(ast::Type) {
 }
 
 
-template <>
-struct std::formatter<ast::definition::Function::Parameter> : bu::Formatter_base {
-    auto format(auto const& parameter, std::format_context& context) {
-        return std::format_to(context.out(), "{}: {}", parameter.pattern, parameter.type);
-    }
-};
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
+    return std::format_to(context.out(), "{}: {}", value.pattern, value.type);
+}
 
 DEFINE_FORMATTER_FOR(ast::definition::Function) {
     return std::format_to(
@@ -176,24 +173,18 @@ DEFINE_FORMATTER_FOR(ast::definition::Function) {
 }
 
 
-template <>
-struct std::formatter<ast::definition::Struct::Member> : bu::Formatter_base {
-    auto format(auto const& member, std::format_context& context) {
-        return std::format_to(context.out(), "{}: {}", member.name, member.type);
-    }
-};
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
+    return std::format_to(context.out(), "{}: {}", value.name, value.type);
+}
 
 DEFINE_FORMATTER_FOR(ast::definition::Struct) {
     return std::format_to(context.out(), "struct {} = {}", value.name, value.members);
 }
 
 
-template <>
-struct std::formatter<ast::definition::Data::Constructor> : bu::Formatter_base {
-    auto format(auto const& ctor, std::format_context& context) {
-        return std::format_to(context.out(), "{}({})", ctor.name, ctor.type);
-    }
-};
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Data::Constructor) {
+    return std::format_to(context.out(), "{}({})", value.name, value.type);
+}
 
 DEFINE_FORMATTER_FOR(ast::definition::Data) {
     return std::format_to(context.out(), "data {} = {}", value.name, value.constructors);

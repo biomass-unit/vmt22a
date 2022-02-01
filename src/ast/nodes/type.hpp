@@ -48,6 +48,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Type_of);
         };
 
+        struct Reference {
+            bu::Wrapper<Type> type;
+            bool              is_mutable;
+            DEFAULTED_EQUALITY(Reference);
+        };
+
     }
 
 
@@ -63,7 +69,8 @@ namespace ast {
             type::Array,
             type::List,
             type::Function,
-            type::Type_of
+            type::Type_of,
+            type::Reference
         >;
         Variant value;
 
