@@ -40,6 +40,8 @@
 
 namespace bu {
 
+    static_assert(CHAR_BIT == 8);
+
     using I8  = std::int8_t;
     using I16 = std::int16_t;
     using I32 = std::int32_t;

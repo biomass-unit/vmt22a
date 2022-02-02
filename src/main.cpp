@@ -78,20 +78,26 @@ auto main() -> int try {
     parser :: run_tests();
     vm     :: run_tests();
 
-    program_parser_repl();
+    //program_parser_repl();
 
-    /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+    vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
     using enum vm::Opcode;
     machine.bytecode.write(
         ipush, 5_iz,
-        iprint,
-        jump, 0_uz
+        ipush, 4_iz,
+        ineq,
+        push_true,
+        land,
+        bprint,
+
+        ipush, 0_iz,
+        halt
     );
 
-    //bu::print("Bytecode:\n\n{}", machine.bytecode);
+    bu::print("Bytecode:\n\n{}", machine.bytecode);
 
-    return machine.run();*/
+    return machine.run();
 }
 
 catch (std::exception const& exception) {

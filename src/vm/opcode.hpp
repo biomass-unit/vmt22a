@@ -15,6 +15,15 @@ namespace vm {
         imul, fmul, cmul,
         idiv, fdiv, cdiv,
 
+        ieq , feq , ceq , beq ,
+        ineq, fneq, cneq, bneq,
+        ilt , flt , clt ,
+        ilte, flte, clte,
+        igt , fgt , cgt ,
+        igte, fgte, cgte,
+
+        land, lnand, lor, lnor, lnot,
+
         jump, jump_true, jump_false,
 
         halt,

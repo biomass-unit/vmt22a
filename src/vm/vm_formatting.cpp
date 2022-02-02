@@ -15,6 +15,15 @@ namespace {
         "imul", "fmul", "cmul",
         "idiv", "fdiv", "cdiv",
 
+        "ieq" , "feq" , "ceq" , "beq" ,
+        "ineq", "fneq", "cneq", "bneq",
+        "ilt" , "flt" , "clt" ,
+        "ilte", "flte", "clte",
+        "igt" , "fgt" , "cgt" ,
+        "igte", "fgte", "cgte",
+
+        "land", "lnand", "lor", "lnor", "lnot",
+
         "jump", "jump_true", "jump_false",
 
         "halt"
@@ -36,12 +45,14 @@ namespace {
                             std::byte const*&             start,
                             std::byte const*              stop)
     {
+        auto const opcode = extract<vm::Opcode>(start, stop);
+
         auto unary = [=, &start]<class T>(bu::Typetag<T>) {
-            return std::format_to(out, "{} {}", extract<T>(start, stop));
+            return std::format_to(out, "{} {}", opcode, extract<T>(start, stop));
         };
 
         using enum vm::Opcode;
-        switch (auto const opcode = extract<vm::Opcode>(start, stop)) {
+        switch (opcode) {
         case ipush:
             return unary(bu::typetag<bu::Isize>);
         case fpush:
