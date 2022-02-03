@@ -167,6 +167,11 @@ namespace {
         return ast::Ret { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
     }
 
+    auto extract_take_reference(Parse_context& context) -> ast::Expression {
+        bool const is_mutable = context.try_consume(Token::Type::mut);
+        return ast::Take_reference { extract_expression(context), is_mutable };
+    }
+
     auto extract_meta(Parse_context& context) -> ast::Expression {
         if (context.try_consume(Token::Type::paren_open)) {
             auto expression = extract_expression(context);
@@ -243,6 +248,8 @@ namespace {
             return extract_break(context);
         case Token::Type::ret:
             return extract_ret(context);
+        case Token::Type::ampersand:
+            return extract_take_reference(context);
         case Token::Type::meta:
             return extract_meta(context);
         case Token::Type::brace_open:

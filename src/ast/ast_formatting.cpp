@@ -90,6 +90,9 @@ namespace {
         auto operator()(ast::Size_of const& size_of) {
             return format("size_of({})", size_of.type);
         }
+        auto operator()(ast::Take_reference reference) {
+            return format(reference.is_mutable ? "&mut {}" : "&{}", reference.expression);
+        }
         auto operator()(ast::Meta const& meta) {
             return format("meta({})", meta.expression);
         }

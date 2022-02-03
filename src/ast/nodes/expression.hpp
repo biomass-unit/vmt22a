@@ -124,6 +124,12 @@ namespace ast {
         DEFAULTED_EQUALITY(Size_of);
     };
 
+    struct Take_reference {
+        bu::Wrapper<Expression> expression;
+        bool is_mutable;
+        DEFAULTED_EQUALITY(Take_reference);
+    };
+
     struct Meta {
         bu::Wrapper<Expression> expression;
         DEFAULTED_EQUALITY(Meta);
@@ -157,6 +163,7 @@ namespace ast {
             Break,
             Ret,
             Size_of,
+            Take_reference,
             Meta
         >;
         Variant          value;

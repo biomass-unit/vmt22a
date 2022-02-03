@@ -74,6 +74,14 @@ namespace {
         }
     }
 
+    auto call(VM&) -> void {
+        bu::unimplemented();
+    }
+
+    auto ret(VM&) -> void {
+        bu::unimplemented();
+    }
+
     auto halt(VM& vm) -> void {
         vm.keep_running = false;
     }
@@ -89,16 +97,18 @@ namespace {
         mul<bu::Isize>, mul<bu::Float>, mul<bu::Char>,
         div<bu::Isize>, div<bu::Float>, div<bu::Char>,
 
-        eq <bu::Isize>, eq <bu::Float>  , eq <bu::Char>,  eq<bool>,
-        neq<bu::Isize>, neq<bu::Float>  , neq<bu::Char>, neq<bool>,
-        lt <bu::Isize>, lt <bu::Float>  , lt <bu::Char>,
-        lte<bu::Isize>, lte<bu::Float>  , lte<bu::Char>,
-        gt <bu::Isize>, gt <bu::Float>  , gt <bu::Char>,
-        gte<bu::Isize>, gte<bu::Float>  , gte<bu::Char>,
+        eq <bu::Isize>, eq <bu::Float>, eq <bu::Char>, eq <bool>,
+        neq<bu::Isize>, neq<bu::Float>, neq<bu::Char>, neq<bool>,
+        lt <bu::Isize>, lt <bu::Float>, lt <bu::Char>,
+        lte<bu::Isize>, lte<bu::Float>, lte<bu::Char>,
+        gt <bu::Isize>, gt <bu::Float>, gt <bu::Char>,
+        gte<bu::Isize>, gte<bu::Float>, gte<bu::Char>,
 
         land, lnand, lor, lnor, lnot,
 
         jump, jump_bool<true>, jump_bool<false>,
+
+        call, ret,
 
         halt
     };
@@ -111,8 +121,9 @@ namespace {
 auto vm::Virtual_machine::run() -> int {
     instruction_pointer = bytecode.bytes.data();
     instruction_anchor = instruction_pointer;
+    frame_pointer = stack.base();
 
-    while (keep_running) {
+    while (keep_running) [[likely]] {
         auto const opcode = extract_argument<Opcode>();
         //bu::print("running instruction {}\n", opcode);
         instructions[static_cast<bu::Usize>(opcode)](*this);
@@ -158,6 +169,8 @@ auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
         0, 0, 0, 0, 0, // logic
 
         sizeof(Jump_offset_type), sizeof(Jump_offset_type), sizeof(Jump_offset_type), // jump
+
+        sizeof(Jump_offset_type), 0, // call, ret
 
         0, // halt
     });

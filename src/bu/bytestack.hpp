@@ -9,19 +9,19 @@ namespace bu {
 
     class [[nodiscard]] Bytestack {
         std::unique_ptr<std::byte[]> buffer;
-        std::byte* pointer;
 
 #ifndef NDEBUG
         std::byte* top_pointer;
 #endif
     public:
+        std::byte* pointer;
+
         explicit Bytestack(Usize const capacity) noexcept
             : buffer { std::make_unique_for_overwrite<std::byte[]>(capacity) }
-            , pointer { buffer.get() }
 #ifndef NDEBUG
             , top_pointer { pointer + capacity }
 #endif
-        {}
+            , pointer { buffer.get() } {}
 
         template <trivial T>
         auto push(T const x) noexcept -> void {
@@ -49,6 +49,9 @@ namespace bu {
             std::memcpy(&x, pointer - sizeof x, sizeof x);
             return x;
         }
+
+        auto base()       noexcept -> std::byte      * { return buffer.get(); }
+        auto base() const noexcept -> std::byte const* { return buffer.get(); }
     };
 
 }

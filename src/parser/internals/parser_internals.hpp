@@ -231,10 +231,10 @@ namespace parser {
     inline constexpr auto parse_upper_id = parse_id<Token::Type::upper_name>;
 
 
-    template <parser auto parse>
+    template <parser auto p>
     auto parse_and_add_source_view(Parse_context& context) {
         auto const anchor = context.pointer;
-        auto result = parse(context);
+        auto result = p(context);
 
         if (result) {
             auto const view = context.pointer->source_view;

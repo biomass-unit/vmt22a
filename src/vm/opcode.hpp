@@ -26,6 +26,8 @@ namespace vm {
 
         jump, jump_true, jump_false,
 
+        call, ret,
+
         halt,
 
         _opcode_count

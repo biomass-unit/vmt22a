@@ -26,6 +26,8 @@ namespace {
 
         "jump", "jump_true", "jump_false",
 
+        "call", "ret",
+
         "halt"
     });
 
@@ -62,6 +64,7 @@ namespace {
         case jump:
         case jump_true:
         case jump_false:
+        case call:
             return unary(bu::typetag<vm::Jump_offset_type>);
         default:
             assert(vm::argument_bytes(opcode) == 0);

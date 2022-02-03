@@ -14,6 +14,7 @@ namespace vm {
         bu::Bytestack stack;
         std::byte*    instruction_pointer = nullptr;
         std::byte*    instruction_anchor  = nullptr;
+        std::byte*    frame_pointer       = nullptr;
         bool          keep_running        = true;
 
         auto run() -> int;
