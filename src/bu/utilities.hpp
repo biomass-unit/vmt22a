@@ -188,7 +188,7 @@ namespace bu {
     }
 
     [[nodiscard]]
-    inline constexpr auto digit_count(Usize integer) noexcept -> Usize {
+    constexpr auto digit_count(std::integral auto integer) noexcept -> Usize {
         Usize digits = 0;
         do {
             integer /= 10;
@@ -199,9 +199,9 @@ namespace bu {
     }
 
     static_assert(digit_count(0) == 1);
-    static_assert(digit_count(10) == 2);
-    static_assert(digit_count(999) == 3);
-    static_assert(digit_count(1234) == 4);
+    static_assert(digit_count(-10) == 2);
+    static_assert(digit_count(-999) == 3);
+    static_assert(digit_count(12345) == 5);
 
 
     namespace dtl {

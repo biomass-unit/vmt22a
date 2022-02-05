@@ -27,6 +27,14 @@ namespace {
             tokens.reserve(1024);
         }
 
+        struct State {
+            char const* pointer;
+        };
+
+        inline auto state() const noexcept -> State {
+            return { pointer };
+        }
+
         inline auto is_finished() const noexcept -> bool {
             return pointer == stop;
         }
@@ -78,6 +86,11 @@ namespace {
         inline auto success(lexer::Token&& token) noexcept -> std::true_type {
             token.source_view = { token_start, pointer };
             tokens.push_back(std::move(token));
+            return {};
+        }
+
+        inline auto failure(State const state) noexcept -> std::false_type {
+            pointer = state.pointer;
             return {};
         }
 
@@ -299,6 +312,13 @@ namespace {
     }
 
     auto extract_numeric(Lex_context& context) -> bool {
+        auto const old_state = context.state();
+
+        bool negative = false;
+        if (context.try_consume('-')) {
+            negative = true;
+        }
+
         int base = 10;
         if (context.try_consume('0')) {
             switch (context.extract_current()) {
@@ -309,6 +329,10 @@ namespace {
             case 'x': base = 16; break;
             default:
                 context.pointer -= 2;
+            }
+
+            if (base != 10 && context.try_consume('-')) {
+                throw context.error(context.pointer - 1, "'-' must be applied before the base specifier");
             }
         }
 
@@ -325,7 +349,7 @@ namespace {
                 );
             }
             else {
-                return false;
+                return context.failure(old_state);
             }
         }
         else if (*ptr == '.') {
@@ -339,20 +363,59 @@ namespace {
                 bu::unimplemented();
             }
             else if (ec == std::errc::result_out_of_range) {
-                throw context.error({ anchor, ptr }, "Float literal too large");
+                throw context.error({ anchor, ptr }, "Float literal is too large");
             }
             else {
                 assert(ec == std::errc {});
                 context.pointer = ptr;
-                return context.success({ floating, Type::floating });
+                return context.success({ negative ? -floating : floating, Type::floating });
             }
         }
-        else if (ec == std::errc {}) {
-            context.pointer = ptr;
-            return context.success({ integer, Type::integer });
-        }
         else {
-            bu::unimplemented();
+            context.pointer = ptr;
+
+            auto const report_too_large = [&](char const* ptr) {
+                throw context.error({ old_state.pointer, ptr }, "integer literal is too large");
+            };
+
+            if (ec == std::errc::result_out_of_range) {
+                report_too_large(ptr);
+            }
+            else if (integer < 0 && negative) [[unlikely]] {
+                throw context.error(old_state.pointer + 1, "only one '-' may be applied");
+            }
+
+            if (context.try_consume('e') || context.try_consume('E')) {
+                bu::I8 exponent;
+                auto [ptr, ec] = std::from_chars(context.pointer, context.stop, exponent);
+
+                if (context.pointer == ptr) {
+                    throw context.error(ptr, "expected an exponent");
+                }
+                else if (exponent < 0) {
+                    throw context.error(
+                        context.pointer,
+                        "negative exponent",
+                        "use a floating point literal if this was intended"
+                    );
+                }
+                else if (ec == std::errc::result_out_of_range ||
+                    (bu::digit_count(integer) + exponent) >= std::numeric_limits<bu::Isize>::digits10)
+                {
+                    report_too_large(ptr);
+                }
+
+                bu::Isize coefficient = 1;
+                while (exponent--) {
+                    coefficient *= 10;
+                }
+
+                integer *= coefficient;
+                context.pointer = ptr;
+            }
+
+            assert(ec == std::errc {});
+            return context.success({ negative ? -integer : integer, Type::integer });
         }
     }
 
@@ -437,11 +500,11 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
 
     constexpr std::array extractors {
         extract_identifier,
+        extract_numeric,
         extract_operator,
         extract_punctuation,
         extract_string,
         extract_character,
-        extract_numeric,
     };
 
     for (;;) {
