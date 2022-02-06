@@ -51,6 +51,7 @@ auto lexer::run_tests() -> void {
     using enum lexer::Token::Type;
 
     test("50 23.4 0xdeadbeef", { integer, floating, integer });
+    test("0.3e-5 3e3 -0. -0.2e5", { floating, integer, floating, floating });
     test("\n::\t,;(--? @#", { double_colon, comma, semicolon, paren_open, operator_name, operator_name });
     test(". /* , /*::*/! */ in /**/ / //", { dot, in, operator_name });
 

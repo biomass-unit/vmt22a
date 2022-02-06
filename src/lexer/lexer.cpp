@@ -8,10 +8,10 @@
 
 namespace {
 
-    using Type = lexer::Token::Type;
+    using lexer::Token;
 
     struct Lex_context {
-        std::vector<lexer::Token> tokens;
+        std::vector<Token> tokens;
         bu::Source* source;
         char const* start;
         char const* stop;
@@ -25,14 +25,6 @@ namespace {
             , pointer { start }
         {
             tokens.reserve(1024);
-        }
-
-        struct State {
-            char const* pointer;
-        };
-
-        inline auto state() const noexcept -> State {
-            return { pointer };
         }
 
         inline auto is_finished() const noexcept -> bool {
@@ -89,11 +81,6 @@ namespace {
             return {};
         }
 
-        inline auto failure(State const state) noexcept -> std::false_type {
-            pointer = state.pointer;
-            return {};
-        }
-
         inline auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
             return bu::Textual_error { {
                 .error_type     = bu::Textual_error::Type::lexical_error,
@@ -107,6 +94,37 @@ namespace {
 
         inline auto error(char const* location, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
             return error({ location, location + 1 }, message, help);
+        }
+
+        template <bu::trivial T>
+        struct Parse_result {
+            std::from_chars_result result;
+            char const* start_position;
+            T private_value;
+
+            auto did_parse() const noexcept -> bool {
+                return result.ptr != start_position;
+            }
+
+            auto is_too_large() const noexcept -> bool {
+                return result.ec == std::errc::result_out_of_range;
+            }
+
+            auto was_non_numeric() const noexcept -> bool {
+                return result.ec == std::errc::invalid_argument;
+            }
+
+            auto get() const noexcept -> T {
+                assert(result.ec == std::errc {});
+                return private_value;
+            }
+        };
+
+        template <bu::trivial T>
+        inline auto parse(char const* start_position, auto const... args) noexcept -> Parse_result<T> {
+            T value;
+            auto const result = std::from_chars(start_position, stop, value, args...);
+            return { result, start_position, value };
         }
     };
 
@@ -195,34 +213,34 @@ namespace {
         auto const view = context.extract(is_identifier);
 
         if (std::ranges::all_of(view, is_one_of<'_'>)) [[unlikely]] {
-            return context.success({ .type = Type::underscore });
+            return context.success({ .type = Token::Type::underscore });
         }
 
-        static auto const options = std::to_array<bu::Pair<lexer::Identifier, Type>>({
-            { new_id("let")      , Type::let       },
-            { new_id("mut")      , Type::mut       },
-            { new_id("if")       , Type::if_       },
-            { new_id("else")     , Type::else_     },
-            { new_id("for")      , Type::for_      },
-            { new_id("in")       , Type::in        },
-            { new_id("while")    , Type::while_    },
-            { new_id("loop")     , Type::loop      },
-            { new_id("continue") , Type::continue_ },
-            { new_id("break")    , Type::break_    },
-            { new_id("match")    , Type::match     },
-            { new_id("ret")      , Type::ret       },
-            { new_id("fn")       , Type::fn        },
-            { new_id("as")       , Type::as        },
-            { new_id("data")     , Type::data      },
-            { new_id("struct")   , Type::struct_   },
-            { new_id("class")    , Type::class_    },
-            { new_id("inst")     , Type::inst      },
-            { new_id("alias")    , Type::alias     },
-            { new_id("import")   , Type::import    },
-            { new_id("module")   , Type::module    },
-            { new_id("size_of")  , Type::size_of   },
-            { new_id("type_of")  , Type::type_of   },
-            { new_id("meta")     , Type::meta      },
+        static auto const options = std::to_array<bu::Pair<lexer::Identifier, Token::Type>>({
+            { new_id("let")      , Token::Type::let       },
+            { new_id("mut")      , Token::Type::mut       },
+            { new_id("if")       , Token::Type::if_       },
+            { new_id("else")     , Token::Type::else_     },
+            { new_id("for")      , Token::Type::for_      },
+            { new_id("in")       , Token::Type::in        },
+            { new_id("while")    , Token::Type::while_    },
+            { new_id("loop")     , Token::Type::loop      },
+            { new_id("continue") , Token::Type::continue_ },
+            { new_id("break")    , Token::Type::break_    },
+            { new_id("match")    , Token::Type::match     },
+            { new_id("ret")      , Token::Type::ret       },
+            { new_id("fn")       , Token::Type::fn        },
+            { new_id("as")       , Token::Type::as        },
+            { new_id("data")     , Token::Type::data      },
+            { new_id("struct")   , Token::Type::struct_   },
+            { new_id("class")    , Token::Type::class_    },
+            { new_id("inst")     , Token::Type::inst      },
+            { new_id("alias")    , Token::Type::alias     },
+            { new_id("import")   , Token::Type::import    },
+            { new_id("module")   , Token::Type::module    },
+            { new_id("size_of")  , Token::Type::size_of   },
+            { new_id("type_of")  , Token::Type::type_of   },
+            { new_id("meta")     , Token::Type::meta      },
         });
 
         static auto const
@@ -232,7 +250,7 @@ namespace {
         lexer::Identifier const identifier { view };
 
         if (identifier == true_id || identifier == false_id) {
-            return context.success({ view.front() == 't', Type::boolean });
+            return context.success({ view.front() == 't', Token::Type::boolean });
         }
 
         for (auto const [keyword, keyword_type] : options) {
@@ -244,8 +262,8 @@ namespace {
         return context.success({
             identifier,
             is_upper(view.front())
-                ? Type::upper_name
-                : Type::lower_name
+                ? Token::Type::upper_name
+                : Token::Type::lower_name
         });
     }
 
@@ -260,14 +278,14 @@ namespace {
             return false;
         }
 
-        static constexpr auto clashing = std::to_array<bu::Pair<std::string_view, Type>>({
-            { "." , Type::dot          },
-            { ":" , Type::colon        },
-            { "::", Type::double_colon },
-            { "|" , Type::pipe         },
-            { "=" , Type::equals       },
-            { "&" , Type::ampersand    },
-            { "->", Type::right_arrow  },
+        static constexpr auto clashing = std::to_array<bu::Pair<std::string_view, Token::Type>>({
+            { "." , Token::Type::dot          },
+            { ":" , Token::Type::colon        },
+            { "::", Token::Type::double_colon },
+            { "|" , Token::Type::pipe         },
+            { "=" , Token::Type::equals       },
+            { "&" , Token::Type::ampersand    },
+            { "->", Token::Type::right_arrow  },
         });
 
         for (auto [punctuation, punctuation_type] : clashing) {
@@ -276,19 +294,19 @@ namespace {
             }
         }
 
-        return context.success({ lexer::Identifier { view }, Type::operator_name });
+        return context.success({ lexer::Identifier { view }, Token::Type::operator_name });
     }
 
     auto extract_punctuation(Lex_context& context) -> bool {
-        static constexpr auto options = std::to_array<bu::Pair<char, Type>>({
-            { ',', Type::comma         },
-            { ';', Type::semicolon     },
-            { '(', Type::paren_open    },
-            { ')', Type::paren_close   },
-            { '{', Type::brace_open    },
-            { '}', Type::brace_close   },
-            { '[', Type::bracket_open  },
-            { ']', Type::bracket_close },
+        static constexpr auto options = std::to_array<bu::Pair<char, Token::Type>>({
+            { ',', Token::Type::comma         },
+            { ';', Token::Type::semicolon     },
+            { '(', Token::Type::paren_open    },
+            { ')', Token::Type::paren_close   },
+            { '{', Token::Type::brace_open    },
+            { '}', Token::Type::brace_close   },
+            { '[', Token::Type::bracket_open  },
+            { ']', Token::Type::bracket_close },
         });
 
         char const current = context.extract_current();
@@ -302,8 +320,8 @@ namespace {
         if (current == ':') {
             return context.success({
                 .type = context.try_consume(':')
-                    ? Type::double_colon
-                    : Type::colon
+                    ? Token::Type::double_colon
+                    : Token::Type::colon
             });
         }
 
@@ -311,15 +329,10 @@ namespace {
         return false;
     }
 
-    auto extract_numeric(Lex_context& context) -> bool {
-        auto const old_state = context.state();
 
-        bool negative = false;
-        if (context.try_consume('-')) {
-            negative = true;
-        }
-
+    auto extract_numeric_base(Lex_context& context) -> int {
         int base = 10;
+        
         if (context.try_consume('0')) {
             switch (context.extract_current()) {
             case 'b': base = 2; break;
@@ -329,94 +342,131 @@ namespace {
             case 'x': base = 16; break;
             default:
                 context.pointer -= 2;
+                return base;
             }
 
-            if (base != 10 && context.try_consume('-')) {
+            if (context.try_consume('-')) {
                 throw context.error(context.pointer - 1, "'-' must be applied before the base specifier");
             }
         }
 
-        auto const anchor = context.pointer;
+        return base;
+    }
 
-        bu::Isize integer;
-        auto const [ptr, ec] = std::from_chars(anchor, context.stop, integer, base);
+    auto apply_scientific_coefficient(bu::Isize& integer, char const* anchor, Lex_context& context) -> void {
+        if (context.try_consume('e') || context.try_consume('E')) {
+            auto exponent = context.parse<bu::Isize>(context.pointer);
 
-        if (anchor == ptr) {
-            if (base != 10) {
-                throw context.error(
-                    { anchor - 2, anchor },
-                    std::format("Expected an integer literal after the base-{} specifier", base)
-                );
-            }
-            else {
-                return context.failure(old_state);
-            }
-        }
-        else if (*ptr == '.') {
-            if (base != 10) {
-                throw context.error({ anchor - 2, anchor }, "Float literals must be base-10");
-            }
-
-            bu::Float floating;
-            auto const [ptr, ec] = std::from_chars(anchor, context.stop, floating);
-            if (anchor == ptr) {
-                bu::unimplemented();
-            }
-            else if (ec == std::errc::result_out_of_range) {
-                throw context.error({ anchor, ptr }, "Float literal is too large");
-            }
-            else {
-                assert(ec == std::errc {});
-                context.pointer = ptr;
-                return context.success({ negative ? -floating : floating, Type::floating });
-            }
-        }
-        else {
-            context.pointer = ptr;
-
-            auto const report_too_large = [&](char const* ptr) {
-                throw context.error({ old_state.pointer, ptr }, "integer literal is too large");
-            };
-
-            if (ec == std::errc::result_out_of_range) {
-                report_too_large(ptr);
-            }
-            else if (integer < 0 && negative) [[unlikely]] {
-                throw context.error(old_state.pointer + 1, "only one '-' may be applied");
-            }
-
-            if (context.try_consume('e') || context.try_consume('E')) {
-                bu::I8 exponent;
-                auto [ptr, ec] = std::from_chars(context.pointer, context.stop, exponent);
-
-                if (context.pointer == ptr) {
-                    throw context.error(ptr, "expected an exponent");
+            if (exponent.did_parse()) {
+                if (exponent.is_too_large()) {
+                    throw context.error(
+                        { exponent.start_position, exponent.result.ptr },
+                        "Exponent is too large"
+                    );
                 }
-                else if (exponent < 0) {
+                if (exponent.get() < 0) [[unlikely]] {
                     throw context.error(
                         context.pointer,
-                        "negative exponent",
+                        "Negative exponent",
                         "use a floating point literal if this was intended"
                     );
                 }
-                else if (ec == std::errc::result_out_of_range ||
-                    (bu::digit_count(integer) + exponent) >= std::numeric_limits<bu::Isize>::digits10)
-                {
-                    report_too_large(ptr);
+                else if (bu::digit_count(integer) + exponent.get() >= std::numeric_limits<bu::Isize>::digits10) {
+                    throw context.error(
+                        { anchor, exponent.result.ptr },
+                        "Integer literal is too large after applying scientific coefficient"
+                    );
                 }
 
+                auto value = exponent.get();
                 bu::Isize coefficient = 1;
-                while (exponent--) {
+                while (value--) {
                     coefficient *= 10;
                 }
 
                 integer *= coefficient;
-                context.pointer = ptr;
+                context.pointer = exponent.result.ptr;
+            }
+            else if (exponent.was_non_numeric()) {
+                throw context.error(
+                    exponent.start_position,
+                    "Expected an exponent"
+                );
+            }
+            else {
+                bu::unimplemented();
+            }
+        }
+    }
+
+    auto extract_numeric(Lex_context& context) -> bool {
+        auto const anchor = context.pointer;
+
+        bool negative = false;
+        if (context.try_consume('-')) {
+            negative = true;
+        }
+
+        auto const base    = extract_numeric_base(context);
+        auto       integer = context.parse<bu::Isize>(context.pointer, base);
+
+        if (integer.was_non_numeric()) {
+            if (base == 10) {
+                context.pointer = anchor;
+                return false;
+            }
+            else {
+                throw context.error(
+                    { anchor, anchor + 2 }, // view of the base specifier
+                    std::format("Expected an integer literal after the base-{} specifier", base)
+                );
+            }
+        }
+        else if (integer.is_too_large()) {
+            throw context.error(
+                { anchor, integer.result.ptr },
+                "Integer literal is too large"
+            );
+        }
+        else if (!integer.did_parse()) {
+            bu::unimplemented();
+        }
+
+        if (negative && integer.get() < 0) {
+            throw context.error(anchor + 1, "Only one '-' may be applied");
+        }
+
+        if (*integer.result.ptr == '.') {
+            if (base != 10) {
+                throw context.error({ anchor, anchor + 2 }, "Float literals must be base-10");
             }
 
-            assert(ec == std::errc {});
-            return context.success({ negative ? -integer : integer, Type::integer });
+            auto const floating = context.parse<bu::Float>(anchor);
+
+            if (floating.did_parse()) {
+                if (floating.is_too_large()) {
+                    throw context.error(
+                        { anchor, floating.result.ptr },
+                        "Floating-point literal is too large"
+                    );
+                }
+                else {
+                    context.pointer = floating.result.ptr;
+                    return context.success({ floating.get(), Token::Type::floating });
+                }
+            }
+            else {
+                bu::unimplemented();
+            }
         }
+
+        auto value = integer.get();
+        value *= (negative ? -1 : 1);
+
+        context.pointer = integer.result.ptr;
+        apply_scientific_coefficient(value, anchor, context);
+
+        return context.success({ value, Token::Type::integer });
     }
 
 
@@ -456,7 +506,7 @@ namespace {
             }
 
             if (context.try_consume('\'')) {
-                return context.success({ c, Type::character });
+                return context.success({ c, Token::Type::character });
             }
             else {
                 throw context.error(context.pointer, "Expected a closing single-quote");
@@ -478,7 +528,7 @@ namespace {
                 case '\0':
                     throw context.error(anchor, "Unterminating string literal");
                 case '"':
-                    return context.success({ lexer::String { std::move(string) }, Type::string });
+                    return context.success({ lexer::String { std::move(string) }, Token::Type::string });
                 case '\\':
                     c = handle_escape_sequence(context);
                     [[fallthrough]];
@@ -522,7 +572,7 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
 
         if (!did_extract) {
             if (context.is_finished()) {
-                context.tokens.push_back({ .type = Type::end_of_input, .source_view = context.pointer });
+                context.tokens.push_back({ .type = Token::Type::end_of_input, .source_view = context.pointer });
                 return { std::move(source), std::move(context.tokens) };
             }
             else {
