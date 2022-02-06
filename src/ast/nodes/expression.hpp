@@ -52,7 +52,7 @@ namespace ast {
 
     struct Tuple_member_access {
         bu::Wrapper<Expression> expression;
-        bu::Usize               member_index;
+        bu::Isize               member_index;
         DEFAULTED_EQUALITY(Tuple_member_access);
     };
 

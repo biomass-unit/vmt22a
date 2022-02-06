@@ -292,20 +292,29 @@ namespace {
 
         if (expression) {
             while (context.try_consume(Token::Type::dot)) {
-                auto member_name = extract_lower_id<"a member name">(context);
-
-                if (context.try_consume(Token::Type::paren_open)) {
-                    *expression = ast::Member_function_invocation {
-                        extract_arguments(context),
+                if (auto member_name = parse_lower_id(context)) {
+                    if (context.try_consume(Token::Type::paren_open)) {
+                        *expression = ast::Member_function_invocation {
+                            extract_arguments(context),
+                            std::move(*expression),
+                            *member_name
+                        };
+                    }
+                    else {
+                        *expression = ast::Member_access {
+                            std::move(*expression),
+                            *member_name
+                        };
+                    }
+                }
+                else if (auto member_index = context.try_extract(Token::Type::integer)) {
+                    *expression = ast::Tuple_member_access {
                         std::move(*expression),
-                        member_name
+                        member_index->as_integer()
                     };
                 }
                 else {
-                    *expression = ast::Member_access {
-                        std::move(*expression),
-                        member_name
-                    };
+                    throw context.expected("a member name or index");
                 }
             }
         }

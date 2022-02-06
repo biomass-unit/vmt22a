@@ -223,6 +223,27 @@ auto parser::run_tests() -> void {
         }
     );
 
+    test
+    (
+        {
+            Token { .type = Type::paren_open },
+            Token { .type = Type::paren_close },
+            Token { .type = Type::dot },
+            Token { 1, Type::integer },
+            Token { .type = Type::dot },
+            Token { 2, Type::integer },
+        },
+        ast::Tuple_member_access {
+            ast::Expression {
+                ast::Tuple_member_access {
+                    ast::Tuple {},
+                    1
+                }
+            },
+            2
+        }
+    );
+
     bu::print("Parser tests passed!\n");
 }
 

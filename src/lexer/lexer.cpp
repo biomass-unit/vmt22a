@@ -102,6 +102,11 @@ namespace {
             char const* start_position;
             T private_value;
 
+            auto get() const noexcept -> T {
+                assert(result.ec == std::errc {});
+                return private_value;
+            }
+
             auto did_parse() const noexcept -> bool {
                 return result.ptr != start_position;
             }
@@ -112,11 +117,6 @@ namespace {
 
             auto was_non_numeric() const noexcept -> bool {
                 return result.ec == std::errc::invalid_argument;
-            }
-
-            auto get() const noexcept -> T {
-                assert(result.ec == std::errc {});
-                return private_value;
             }
         };
 
@@ -436,7 +436,15 @@ namespace {
             throw context.error(anchor + 1, "Only one '-' may be applied");
         }
 
-        if (*integer.result.ptr == '.') {
+        auto const is_tuple_member_index = [&] {
+            // If the numeric literal is preceded by '.', then don't attempt to
+            // parse a float. This allows nested tuple member-access: tuple.0.0
+            return anchor != context.start
+                ? anchor[-1] == '.'
+                : false;
+        };
+
+        if (*integer.result.ptr == '.' && !is_tuple_member_index()) {
             if (base != 10) {
                 throw context.error({ anchor, anchor + 2 }, "Float literals must be base-10");
             }
