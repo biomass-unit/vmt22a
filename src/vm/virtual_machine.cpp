@@ -82,6 +82,10 @@ namespace {
         bu::unimplemented();
     }
 
+    auto iinc_top(VM& vm) -> void {
+        vm.stack.push(vm.stack.pop<bu::Isize>() + 1);
+    }
+
     auto halt(VM& vm) -> void {
         vm.keep_running = false;
     }
@@ -96,6 +100,8 @@ namespace {
         sub<bu::Isize>, sub<bu::Float>, sub<bu::Char>,
         mul<bu::Isize>, mul<bu::Float>, mul<bu::Char>,
         div<bu::Isize>, div<bu::Float>, div<bu::Char>,
+
+        iinc_top,
 
         eq <bu::Isize>, eq <bu::Float>, eq <bu::Char>, eq <bool>,
         neq<bu::Isize>, neq<bu::Float>, neq<bu::Char>, neq<bool>,
@@ -158,6 +164,8 @@ auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
         0, 0, 0, // sub
         0, 0, 0, // mul
         0, 0, 0, // div
+
+        0, // iinc_top
 
         0, 0, 0, 0, // eq
         0, 0, 0, 0, // neq

@@ -1,14 +1,14 @@
 #include "bu/utilities.hpp"
-#include "lexer_test.hpp"
+
 
 #ifdef NDEBUG
 
-auto lexer::run_tests() -> void {} // No testing in release
+auto run_lexer_tests() -> void {} // No testing in release
 
 #else
 
-#include "lexer.hpp"
-#include "token_formatting.hpp"
+#include "lexer/lexer.hpp"
+#include "lexer/token_formatting.hpp"
 
 
 namespace {
@@ -47,11 +47,12 @@ namespace {
 }
 
 
-auto lexer::run_tests() -> void {
+auto run_lexer_tests() -> void {
     using enum lexer::Token::Type;
 
     test("50 23.4 0xdeadbeef", { integer, floating, integer });
-    test("0.3e-5 3e3 -0. -0.2e5", { floating, integer, floating, floating });
+    test("0.3e-5 3e3 -0. -0.2E5", { floating, integer, floating, floating });
+    test(".0.0, 0.0", { dot, integer, dot, integer, comma, floating });
     test("\n::\t,;(--? @#", { double_colon, comma, semicolon, paren_open, operator_name, operator_name });
     test(". /* , /*::*/! */ in /**/ / //", { dot, in, operator_name });
 
@@ -61,8 +62,6 @@ auto lexer::run_tests() -> void {
     test("a<$>_:\nVec"  , { lower_name, operator_name, underscore, colon, upper_name });
 
     test("\"test\\t\\\",\", 'a', '\\\\'", { string, comma, character, comma, character });
-
-    bu::print("Lexer tests passed!\n");
 }
 
 #endif

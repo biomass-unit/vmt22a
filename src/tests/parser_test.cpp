@@ -1,14 +1,13 @@
 #include "bu/utilities.hpp"
-#include "parser_test.hpp"
 
 #ifdef NDEBUG
 
-auto parser::run_tests() -> void {} // No testing in release
+auto run_parser_tests() -> void {} // No testing in release
 
 #else
 
 #include "ast/ast_formatting.hpp"
-#include "internals/parser_internals.hpp"
+#include "parser/internals/parser_internals.hpp"
 
 
 namespace {
@@ -81,7 +80,7 @@ namespace {
 }
 
 
-auto parser::run_tests() -> void {
+auto run_parser_tests() -> void {
     assert(lexer::Identifier::string_count() > 16 // should probably work maybe
         && "Parser tests may only be run after the lexer has been invoked");
 
@@ -243,8 +242,6 @@ auto parser::run_tests() -> void {
             2
         }
     );
-
-    bu::print("Parser tests passed!\n");
 }
 
 #endif

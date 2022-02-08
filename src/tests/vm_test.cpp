@@ -1,7 +1,6 @@
 #include "bu/utilities.hpp"
-#include "vm_test.hpp"
-#include "opcode.hpp"
-#include "virtual_machine.hpp"
+#include "vm/opcode.hpp"
+#include "vm/virtual_machine.hpp"
 
 
 namespace {
@@ -28,8 +27,8 @@ namespace {
 }
 
 
-auto vm::run_tests() -> void {
-    using enum Opcode;
+auto run_vm_tests() -> void {
+    using enum vm::Opcode;
     using namespace bu::literals;
 
     test
@@ -65,6 +64,4 @@ auto vm::run_tests() -> void {
         iadd,
         halt
     );
-
-    bu::print("VM tests passed!\n");
 }

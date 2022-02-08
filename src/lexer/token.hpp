@@ -10,8 +10,6 @@ namespace lexer {
     using String     = bu::Pooled_string<struct _string_tag>;
     using Identifier = bu::Pooled_string<struct _identifier_tag>;
 
-    static_assert(!std::same_as<String, Identifier>);
-
 
     struct [[nodiscard]] Token {
         using Variant = std::variant<

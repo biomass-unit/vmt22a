@@ -2,20 +2,19 @@
 #include "bu/color.hpp"
 
 #include "lexer/lexer.hpp"
-#include "lexer/lexer_test.hpp"
 #include "lexer/token_formatting.hpp"
 
 #include "ast/ast.hpp"
 #include "ast/ast_formatting.hpp"
 
 #include "parser/parser.hpp"
-#include "parser/parser_test.hpp"
 #include "parser/internals/parser_internals.hpp" // for the repl only
 
 #include "vm/bytecode.hpp"
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
-#include "vm/vm_test.hpp"
+
+#include "tests/tests.hpp"
 
 
 namespace {
@@ -73,11 +72,7 @@ using namespace lexer::literals;
 
 auto main() -> int try {
     bu::enable_color_formatting();
-
-    lexer  :: run_tests();
-    parser :: run_tests();
-    vm     :: run_tests();
-
+    tests::run_all_tests();
     parser_repl();
 }
 

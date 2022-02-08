@@ -24,7 +24,7 @@
     <ClCompile Include="src\lexer\lexer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\lexer\lexer_test.cpp">
+    <ClCompile Include="src\tests\lexer_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\lexer\token_formatting.cpp">
@@ -36,7 +36,7 @@
     <ClCompile Include="src\parser\parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\parser\parser_test.cpp">
+    <ClCompile Include="src\tests\parser_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\parser\internals\parse_expression.cpp">
@@ -63,10 +63,13 @@
     <ClCompile Include="src\vm\vm_formatting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\vm\vm_test.cpp">
+    <ClCompile Include="src\tests\vm_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ast\nodes\namespace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\tests\tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -81,9 +84,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\lexer\lexer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\lexer\lexer_test.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\lexer\token_formatting.hpp">
@@ -114,9 +114,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\parser\parser.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\parser\parser_test.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\parser\internals\parser_internals.hpp">
@@ -152,10 +149,10 @@
     <ClInclude Include="src\vm\vm_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\vm\vm_test.hpp">
+    <ClInclude Include="src\ast\nodes\namespace.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast\nodes\namespace.hpp">
+    <ClInclude Include="src\tests\tests.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

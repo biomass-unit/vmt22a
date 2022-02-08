@@ -83,10 +83,11 @@ namespace bu {
     template <std::ostream& os = std::cout>
     auto print(std::string_view fmt, auto const&... args) -> void {
         if constexpr (sizeof...(args) != 0) {
-            os << std::format(fmt, args...);
+            auto const buffer = std::format(fmt, args...);
+            os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
         }
         else {
-            os << fmt;
+            os.write(fmt.data(), static_cast<std::streamsize>(fmt.size()));
         }
     }
 

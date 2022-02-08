@@ -15,6 +15,8 @@ namespace vm {
         imul, fmul, cmul,
         idiv, fdiv, cdiv,
 
+        iinc_top,
+
         ieq , feq , ceq , beq ,
         ineq, fneq, cneq, bneq,
         ilt , flt , clt ,
