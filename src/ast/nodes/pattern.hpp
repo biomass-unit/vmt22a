@@ -19,6 +19,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Tuple);
         };
 
+        struct Guarded {
+            bu::Wrapper<Pattern> pattern;
+            bu::Wrapper<Expression> guard;
+            DEFAULTED_EQUALITY(Guarded);
+        };
+
         template <class T>
         using Literal = ::ast::Literal<T>;
 
@@ -34,7 +40,8 @@ namespace ast {
             pattern::Literal<bool>,
             pattern::Literal<lexer::String>,
             pattern::Name,
-            pattern::Tuple
+            pattern::Tuple,
+            pattern::Guarded
         >;
         Variant          value;
         std::string_view source_view;

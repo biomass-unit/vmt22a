@@ -48,7 +48,7 @@ namespace {
     });
 
     [[maybe_unused]]
-    auto parser_repl = generic_repl([](bu::Source source) {
+    auto expression_parser_repl = generic_repl([](bu::Source source) {
         auto tokenized_source = lexer::lex(std::move(source));
         parser::Parse_context context { tokenized_source };
 
@@ -71,9 +71,9 @@ using namespace lexer::literals;
 
 
 auto main() -> int try {
-    bu::enable_color_formatting();
-    tests::run_all_tests();
-    parser_repl();
+    bu::enable_color_formatting ();
+    tests::run_all_tests        ();
+    expression_parser_repl      ();
 }
 
 catch (std::exception const& exception) {

@@ -112,6 +112,9 @@ namespace {
         auto operator()(ast::pattern::Tuple const& tuple) {
             return format("({})", tuple.patterns);
         }
+        auto operator()(ast::pattern::Guarded const& guarded) {
+            return format("{} if {}", guarded.pattern, guarded.guard);
+        }
     };
 
     struct Type_format_visitor : Visitor_base {
