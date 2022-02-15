@@ -146,10 +146,15 @@ auto vm::Virtual_machine::jump_to(Jump_offset_type const offset) noexcept -> voi
 
 template <bu::trivial T>
 auto vm::Virtual_machine::extract_argument() noexcept -> T {
-    T argument;
-    std::memcpy(&argument, instruction_pointer, sizeof(T));
-    instruction_pointer += sizeof(T);
-    return argument;
+    if constexpr (sizeof(T) == 1) {
+        return static_cast<T>(*reinterpret_cast<std::byte*>(instruction_pointer++));
+    }
+    else {
+        T argument;
+        std::memcpy(&argument, instruction_pointer, sizeof(T));
+        instruction_pointer += sizeof(T);
+        return argument;
+    }
 }
 
 

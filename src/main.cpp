@@ -66,8 +66,8 @@ namespace {
 }
 
 
-using namespace bu::literals;
-using namespace lexer::literals;
+using namespace bu    :: literals;
+using namespace lexer :: literals;
 
 
 auto main() -> int try {

@@ -29,6 +29,23 @@ namespace {
         auto operator()(ast::Literal<lexer::String> const literal) {
             return format("\"{}\"", literal.value);
         }
+        auto operator()(ast::Array_literal const& literal) {
+            switch (literal.elements.size()) {
+            case 0:
+                return format("[;]");
+            case 1:
+                return format("[{};]", literal.elements.front());
+            default:
+                format("[{}", literal.elements.front());
+                for (auto& element : literal.elements | std::views::drop(1)) {
+                    format("; {}", element);
+                }
+                return format("]");
+            }
+        }
+        auto operator()(ast::List_literal const& literal) {
+            return format("[{}]", literal.elements);
+        }
         auto operator()(lexer::Identifier const identifier) {
             return format("{}", identifier);
         }

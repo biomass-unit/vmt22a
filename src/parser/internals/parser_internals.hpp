@@ -76,7 +76,7 @@ namespace parser {
 
 
     template <class P>
-    concept parser = requires (P p, Parse_context& context) {
+    concept parser = requires (P p, Parse_context context) {
         { p(context) } -> bu::instance_of<std::optional>;
     };
 

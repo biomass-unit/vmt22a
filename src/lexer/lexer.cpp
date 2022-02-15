@@ -121,10 +121,11 @@ namespace {
         };
 
         template <bu::trivial T>
-        inline auto parse(char const* start_position, auto const... args) noexcept -> Parse_result<T> {
-            T value;
-            auto const result = std::from_chars(start_position, stop, value, args...);
-            return { result, start_position, value };
+        inline auto parse(auto const... args) noexcept -> Parse_result<T> {
+            static_assert(sizeof...(args) < 2); // The variadic parameter pack is used
+            T value;                            // for the optional base parameter
+            auto const result = std::from_chars(pointer, stop, value, args...);
+            return { result, pointer, value };
         }
     };
 
@@ -355,7 +356,7 @@ namespace {
 
     auto apply_scientific_coefficient(bu::Isize& integer, char const* anchor, Lex_context& context) -> void {
         if (context.try_consume('e') || context.try_consume('E')) {
-            auto exponent = context.parse<bu::Isize>(context.pointer);
+            auto exponent = context.parse<bu::Isize>();
 
             if (exponent.did_parse()) {
                 if (exponent.is_too_large()) {
@@ -408,7 +409,7 @@ namespace {
         }
 
         auto const base    = extract_numeric_base(context);
-        auto       integer = context.parse<bu::Isize>(context.pointer, base);
+        auto       integer = context.parse<bu::Isize>(base);
 
         if (integer.was_non_numeric()) {
             if (base == 10) {
@@ -449,7 +450,8 @@ namespace {
                 throw context.error({ anchor, anchor + 2 }, "Float literals must be base-10");
             }
 
-            auto const floating = context.parse<bu::Float>(anchor);
+            context.pointer = anchor;
+            auto const floating = context.parse<bu::Float>();
 
             if (floating.did_parse()) {
                 if (floating.is_too_large()) {

@@ -9,6 +9,16 @@ namespace ast {
         DEFAULTED_EQUALITY(Literal);
     };
 
+    struct Array_literal {
+        std::vector<Expression> elements;
+        DEFAULTED_EQUALITY(Array_literal);
+    };
+
+    struct List_literal {
+        std::vector<Expression> elements;
+        DEFAULTED_EQUALITY(List_literal);
+    };
+
     struct Variable {
         lexer::Identifier name;
         DEFAULTED_EQUALITY(Variable);
@@ -143,6 +153,8 @@ namespace ast {
             Literal<char>,
             Literal<bool>,
             Literal<lexer::String>,
+            Array_literal,
+            List_literal,
             lexer::Identifier,
             Variable,
             Tuple,
