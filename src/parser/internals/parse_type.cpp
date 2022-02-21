@@ -36,6 +36,9 @@ namespace {
         else if (hash == string) {
             return ast::type::string;
         }
+        else if (auto arguments = parse_template_arguments(context)) {
+            return ast::type::Template_instantiation { std::move(*arguments), id };
+        }
         else {
             return ast::type::Typename { id };
         }
@@ -135,7 +138,7 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
     case Token::Type::ampersand:
         return extract_reference(context);
     default:
-        --context.pointer;
+        context.retreat();
         return std::nullopt;
     }
 }

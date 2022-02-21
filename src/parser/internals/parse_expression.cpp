@@ -46,14 +46,14 @@ namespace {
             case Token::Type::bracket_close:
                 return ast::List_literal { { std::move(*head) } };
             default:
-                --context.pointer;
+                context.retreat();
                 throw context.expected("a ',', a ';', or a closing ']'");
             }
 
             auto elements = bu::vector_with_capacity<ast::Expression>(8);
             elements.push_back(std::move(*head));
 
-            --context.pointer;
+            context.retreat();
             while (context.try_consume(delimiter)) {
                 if (auto element = parse_expression(context)) {
                     elements.push_back(std::move(*element));
@@ -328,7 +328,7 @@ namespace {
         case Token::Type::brace_open:
             return extract_compound_expression(context);
         default:
-            --context.pointer;
+            context.retreat();
             return std::nullopt;
         }
     }
@@ -450,7 +450,7 @@ namespace {
                 if constexpr (precedence != lowest_precedence) {
                     constexpr auto& ops = std::get<precedence>(precedence_table);
                     if (std::ranges::find(ops, op) == ops.end()) {
-                        --context.pointer; // not in current operator group
+                        context.retreat(); // not in current operator group
                         break;
                     }
                 }

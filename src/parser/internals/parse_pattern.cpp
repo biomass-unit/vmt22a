@@ -41,7 +41,7 @@ namespace {
         case Token::Type::lower_name:
             return extract_name(context);
         default:
-            --context.pointer;
+            context.retreat();
             return std::nullopt;
         }
     }

@@ -162,6 +162,17 @@ namespace {
         auto operator()(ast::type::Reference reference) {
             return format(reference.is_mutable ? "&mut {}" : "&{}", reference.type);
         }
+        auto operator()(ast::type::Template_instantiation const& instantiation) {
+            return format("{}[{}]", instantiation.name, instantiation.arguments);
+        }
+    };
+
+
+    auto format_template_parameters(auto const& definition) {
+        return std::format(
+            definition.template_parameters ? "[{}]" : "",
+            definition.template_parameters
+        );
     };
 
 }
@@ -187,8 +198,9 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
 DEFINE_FORMATTER_FOR(ast::definition::Function) {
     return std::format_to(
         context.out(),
-        "fn {}({}): {} = {}",
+        "fn {}{}({}): {} = {}",
         value.name,
+        format_template_parameters(value),
         value.parameters,
         value.return_type,
         value.body
@@ -201,7 +213,13 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
 }
 
 DEFINE_FORMATTER_FOR(ast::definition::Struct) {
-    return std::format_to(context.out(), "struct {} = {}", value.name, value.members);
+    return std::format_to(
+        context.out(),
+        "struct {}{} = {}",
+        value.name,
+        format_template_parameters(value),
+        value.members
+    );
 }
 
 
@@ -210,13 +228,19 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Data::Constructor) {
 }
 
 DEFINE_FORMATTER_FOR(ast::definition::Data) {
-    return std::format_to(context.out(), "data {} = {}", value.name, value.constructors);
+    return std::format_to(
+        context.out(),
+        "data {}{} = {}",
+        value.name,
+        format_template_parameters(value),
+        value.constructors
+    );
 }
 
 
 DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
     auto out = context.out();
-    std::format_to(out, "class {} {{", value.name);
+    std::format_to(out, value.self_is_template ? "class {} []" : "class {}", value.name);
 
     for (auto& signature : value.function_signatures) {
         std::format_to(
@@ -243,8 +267,8 @@ DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
 
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Class_reference) {
-    return value.arguments
-        ? std::format_to(context.out(), "{}[{}]", value.name, value.arguments)
+    return value.template_arguments
+        ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
         : std::format_to(context.out(), "{}", value.name);
 }
 
@@ -269,16 +293,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
 }
 
 
-template <class T>
-DEFINE_FORMATTER_FOR(ast::definition::Template_definition<T>) {
-    return std::format_to(context.out(), "template [{}] {}", value.parameters, value.definition);
-}
-
-template struct std::formatter<ast::definition::Function_template>;
-template struct std::formatter<ast::definition::Struct_template>;
-template struct std::formatter<ast::definition::Data_template>;
-
-
 DEFINE_FORMATTER_FOR(ast::Namespace) {
     auto out = context.out();
     std::format_to(out, "module {} {{", value->name);
@@ -290,11 +304,8 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     };
 
     fmt(value->function_definitions);
-    fmt(value->function_template_definitions);
     fmt(value->struct_definitions);
-    fmt(value->struct_template_definitions);
     fmt(value->data_definitions);
-    fmt(value->data_template_definitions);
     fmt(value->class_definitions);
     fmt(value->children);
 

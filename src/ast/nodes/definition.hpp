@@ -3,53 +3,13 @@
 
 namespace ast {
 
-    namespace definition {
-
-        struct Function {
-            struct Parameter {
-                Pattern           pattern;
-                bu::Wrapper<Type> type;
-                DEFAULTED_EQUALITY(Parameter);
-            };
-            Expression                       body;
-            std::vector<Parameter>           parameters;
-            lexer::Identifier                name;
-            std::optional<bu::Wrapper<Type>> return_type;
-            DEFAULTED_EQUALITY(Function);
-        };
-
-        struct Struct {
-            struct Member {
-                lexer::Identifier name;
-                bu::Wrapper<Type> type;
-                DEFAULTED_EQUALITY(Member);
-            };
-            std::vector<Member> members;
-            lexer::Identifier   name;
-            DEFAULTED_EQUALITY(Struct);
-        };
-
-        struct Data {
-            struct Constructor {
-                lexer::Identifier                name;
-                std::optional<bu::Wrapper<Type>> type;
-                DEFAULTED_EQUALITY(Constructor);
-            };
-            std::vector<Constructor> constructors;
-            lexer::Identifier        name;
-            DEFAULTED_EQUALITY(Data);
-        };
-
-    }
-
-
     struct Template_argument {
         std::variant<Type, Expression> value;
         DEFAULTED_EQUALITY(Template_argument);
     };
 
     struct Class_reference {
-        std::optional<std::vector<Template_argument>> arguments;
+        std::optional<std::vector<Template_argument>> template_arguments;
         lexer::Identifier                             name;
     };
 
@@ -71,16 +31,43 @@ namespace ast {
 
     namespace definition {
 
-        template <class Definition>
-        struct Template_definition {
-            Definition                      definition;
-            std::vector<Template_parameter> parameters;
-            DEFAULTED_EQUALITY(Template_definition);
+        struct Function {
+            struct Parameter {
+                Pattern           pattern;
+                bu::Wrapper<Type> type;
+                DEFAULTED_EQUALITY(Parameter);
+            };
+            Expression                                      body;
+            std::vector<Parameter>                          parameters;
+            std::optional<std::vector<Template_parameter>>  template_parameters;
+            lexer::Identifier                               name;
+            std::optional<bu::Wrapper<Type>>                return_type;
+            DEFAULTED_EQUALITY(Function);
         };
 
-        using Function_template = Template_definition<Function>;
-        using Struct_template   = Template_definition<Struct>;
-        using Data_template     = Template_definition<Data>;
+        struct Struct {
+            struct Member {
+                lexer::Identifier name;
+                bu::Wrapper<Type> type;
+                DEFAULTED_EQUALITY(Member);
+            };
+            std::optional<std::vector<Template_parameter>> template_parameters;
+            std::vector<Member>                            members;
+            lexer::Identifier                              name;
+            DEFAULTED_EQUALITY(Struct);
+        };
+
+        struct Data {
+            struct Constructor {
+                lexer::Identifier                name;
+                std::optional<bu::Wrapper<Type>> type;
+                DEFAULTED_EQUALITY(Constructor);
+            };
+            std::optional<std::vector<Template_parameter>> template_parameters;
+            std::vector<Constructor>                       constructors;
+            lexer::Identifier                              name;
+            DEFAULTED_EQUALITY(Data);
+        };
 
     }
 
@@ -106,6 +93,7 @@ namespace ast {
             std::vector<Function_signature> function_signatures;
             std::vector<Type_signature>     type_signatures;
             lexer::Identifier               name;
+            bool                            self_is_template;
             DEFAULTED_EQUALITY(Typeclass);
         };
 

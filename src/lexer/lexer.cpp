@@ -242,6 +242,7 @@ namespace {
             { new_id("size_of")  , Token::Type::size_of   },
             { new_id("type_of")  , Token::Type::type_of   },
             { new_id("meta")     , Token::Type::meta      },
+            { new_id("where")    , Token::Type::where     },
         });
 
         static auto const

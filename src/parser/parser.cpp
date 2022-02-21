@@ -4,6 +4,34 @@
 #include "internals/parser_internals.hpp"
 
 
+auto parser::parse_template_arguments(Parse_context& context)
+-> std::optional<std::vector<ast::Template_argument>>
+{
+    constexpr auto extract_arguments = extract_comma_separated_zero_or_more<[](Parse_context& context)
+        -> std::optional<ast::Template_argument>
+    {
+        if (auto expression = parse_expression(context)) {
+            return ast::Template_argument { std::move(*expression) };
+        }
+        else if (auto type = parse_type(context)) {
+            return ast::Template_argument { std::move(*type) };
+        }
+        else {
+            return std::nullopt;
+        }
+    }, "a template argument">;
+
+    if (context.try_consume(Token::Type::bracket_open)) {
+        auto arguments = extract_arguments(context);
+        context.consume_required(Token::Type::bracket_close);
+        return std::move(arguments);
+    }
+    else {
+        return std::nullopt;
+    }
+}
+
+
 namespace {
 
     using namespace parser;
@@ -27,37 +55,10 @@ namespace {
         }
     }
 
-    auto parse_template_arguments(Parse_context& context)
-        -> std::optional<std::vector<ast::Template_argument>>
-    {
-        constexpr auto extract_arguments = extract_comma_separated_zero_or_more<[](Parse_context& context)
-            -> std::optional<ast::Template_argument>
-        {
-            if (auto expression = parse_expression(context)) {
-                return ast::Template_argument { std::move(*expression) };
-            }
-            else if (auto type = parse_type(context)) {
-                return ast::Template_argument { std::move(*type) };
-            }
-            else {
-                return std::nullopt;
-            }
-        }, "a template argument">;
-
-        if (context.try_consume(Token::Type::bracket_open)) {
-            auto arguments = extract_arguments(context);
-            context.consume_required(Token::Type::bracket_close);
-            return std::move(arguments);
-        }
-        else {
-            return std::nullopt;
-        }
-    }
-
     auto parse_template_parameters(Parse_context& context)
         -> std::optional<std::vector<ast::Template_parameter>>
     {
-        constexpr auto extract_parameters = extract_comma_separated_zero_or_more<[](Parse_context& context)
+        constexpr auto extract_parameters = parse_comma_separated_one_or_more<[](Parse_context& context)
             -> std::optional<ast::Template_parameter>
         {
             if (auto name = parse_lower_id(context)) {
@@ -88,9 +89,13 @@ namespace {
         }, "a template parameter">;
 
         if (context.try_consume(Token::Type::bracket_open)) {
-            auto parameters = extract_parameters(context);
-            context.consume_required(Token::Type::bracket_close);
-            return std::move(parameters);
+            if (auto parameters = extract_parameters(context)) {
+                context.consume_required(Token::Type::bracket_close);
+                return parameters;
+            }
+            else {
+                throw context.expected("one or more template parameters");
+            }
         }
         else {
             return std::nullopt;
@@ -117,6 +122,8 @@ namespace {
         auto name = extract_lower_id<"a function name">(context);
 
         if (context.try_consume(Token::Type::paren_open)) {
+            auto template_parameters = parse_template_parameters(context);
+
             constexpr auto parse_parameters =
                 extract_comma_separated_zero_or_more<parse_function_parameter, "a function parameter">;
             auto parameters = parse_parameters(context);
@@ -139,13 +146,12 @@ namespace {
                 throw context.expected("the function body", "'=' or '{'");
             }
 
-            (*::current_namespace)->function_definitions.push_back(
-                ast::definition::Function {
-                    .body        = std::move(*body),
-                    .parameters  = std::move(parameters),
-                    .name        = name,
-                    .return_type = return_type
-                }
+            (*::current_namespace)->function_definitions.emplace_back(
+                std::move(*body),
+                std::move(parameters),
+                std::move(template_parameters),
+                name,
+                return_type
             );
         }
         else {
@@ -174,14 +180,14 @@ namespace {
             parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
 
         auto name = extract_upper_id<"a struct name">(context);
+        auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
         if (auto members = parse_members(context)) {
-            (*::current_namespace)->struct_definitions.push_back(
-                ast::definition::Struct {
-                    .members = std::move(*members),
-                    .name    = name
-                }
+            (*::current_namespace)->struct_definitions.emplace_back(
+                std::move(template_parameters),
+                std::move(*members),
+                name
             );
         }
         else {
@@ -287,21 +293,34 @@ namespace {
     auto extract_class(Parse_context& context) -> void {
         auto name = extract_upper_id<"a class name">(context);
 
-        ast::definition::Typeclass typeclass { .name = name };
+        bool self_is_template = false;
+        if (context.try_consume(Token::Type::bracket_open)) {
+            self_is_template = true;
+            context.consume_required(Token::Type::bracket_close);
+        }
+
+        std::vector<ast::Type_signature>     type_signatures;
+        std::vector<ast::Function_signature> function_signatures;
+
         context.consume_required(Token::Type::brace_open);
 
         for (;;) {
             switch (context.extract().type) {
             case Token::Type::fn:
-                typeclass.function_signatures.push_back(extract_function_signature(context));
+                function_signatures.push_back(extract_function_signature(context));
                 continue;
             case Token::Type::alias:
-                typeclass.type_signatures.push_back(extract_type_signature(context));
+                type_signatures.push_back(extract_type_signature(context));
                 continue;
             default:
-                --context.pointer;
+                context.retreat();
                 context.consume_required(Token::Type::brace_close);
-                (*::current_namespace)->class_definitions.push_back(std::move(typeclass));
+                (*::current_namespace)->class_definitions.emplace_back(
+                    std::move(function_signatures),
+                    std::move(type_signatures),
+                    name,
+                    self_is_template
+                );
                 return;
             }
         }
@@ -344,7 +363,7 @@ namespace {
             extract_namespace(context);
             break;
         default:
-            --context.pointer;
+            context.retreat();
             return false;
         }
         return true;

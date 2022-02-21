@@ -54,6 +54,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Reference);
         };
 
+        struct Template_instantiation {
+            std::vector<ast::Template_argument> arguments;
+            lexer::Identifier                   name;
+            DEFAULTED_EQUALITY(Template_instantiation);
+        };
+
     }
 
 
@@ -70,7 +76,8 @@ namespace ast {
             type::List,
             type::Function,
             type::Type_of,
-            type::Reference
+            type::Reference,
+            type::Template_instantiation
         >;
         Variant value;
 

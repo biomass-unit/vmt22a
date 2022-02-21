@@ -65,6 +65,7 @@ namespace lexer {
             size_of,
             type_of,
             meta,
+            where,
 
             underscore,
             lower_name,

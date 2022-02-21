@@ -73,7 +73,7 @@ using namespace lexer :: literals;
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
-    expression_parser_repl      ();
+    program_parser_repl         ();
 }
 
 catch (std::exception const& exception) {

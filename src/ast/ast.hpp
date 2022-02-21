@@ -12,6 +12,8 @@ namespace ast {
     struct [[nodiscard]] Pattern;
     struct [[nodiscard]] Type;
 
+    struct Template_argument;
+
 }
 
 

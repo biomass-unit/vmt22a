@@ -58,6 +58,10 @@ namespace parser {
             }
         }
 
+        inline auto retreat() noexcept -> void {
+            --pointer;
+        }
+
         inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
             return bu::Textual_error { {
                 .error_type     = bu::Textual_error::Type::parse_error,
@@ -199,6 +203,8 @@ namespace parser {
     inline constexpr auto extract_type       = extract_required<parse_type      , "a type"       >;
 
     auto parse_compound_expression(Parse_context&) -> std::optional<ast::Expression>;
+
+    auto parse_template_arguments(Parse_context&) -> std::optional<std::vector<ast::Template_argument>>;
 
 
     template <Token::Type id_type, bu::Metastring description>
