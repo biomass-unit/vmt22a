@@ -62,6 +62,10 @@ namespace {
         vm.stack.push(!vm.stack.pop<bool>());
     }
 
+    auto iinc_top(VM& vm) -> void {
+        vm.stack.push(vm.stack.pop<bu::Isize>() + 1);
+    }
+
     auto jump(VM& vm) -> void {
         vm.jump_to(vm.extract_argument<vm::Jump_offset_type>());
     }
@@ -74,8 +78,16 @@ namespace {
         }
     }
 
-    auto iinc_top(VM& vm) -> void {
-        vm.stack.push(vm.stack.pop<bu::Isize>() + 1);
+    auto local_jump(VM& vm) -> void {
+        vm.instruction_pointer += vm.extract_argument<vm::Local_offset_type>();
+    }
+
+    template <bool value>
+    auto local_jump_bool(VM& vm) -> void {
+        auto const offset = vm.extract_argument<vm::Local_offset_type>();
+        if (vm.stack.pop<bool>() == value) {
+            vm.instruction_pointer += offset;
+        }
     }
 
     auto bitcopy_from_stack(VM& vm) -> void {
@@ -99,7 +111,7 @@ namespace {
     }
 
     auto push_return_value(VM& vm) -> void {
-        vm.stack.push(vm.activation_record->return_value);
+        vm.stack.push(vm.activation_record->return_value_address);
     }
 
     auto call(VM& vm) -> void {
@@ -116,7 +128,7 @@ namespace {
         );
 
         vm.activation_record = reinterpret_cast<vm::Activation_record*>(tos + return_value_size);
-        vm.activation_record->return_value = tos;
+        vm.activation_record->return_value_address = tos;
         jump(vm);
     }
 
@@ -159,7 +171,9 @@ namespace {
         push_address,
         push_return_value,
 
-        jump, jump_bool<true>, jump_bool<false>,
+        jump            , local_jump,
+        jump_bool<true> , local_jump_bool<true>,
+        jump_bool<false>, local_jump_bool<false>,
 
         call, ret,
 
@@ -175,7 +189,7 @@ auto vm::Virtual_machine::run() -> int {
     instruction_pointer = bytecode.bytes.data();
     instruction_anchor = instruction_pointer;
 
-    activation_record = reinterpret_cast<Activation_record*>(stack.pointer);
+    // The first activation record does not need to be initialized
 
     while (keep_running) [[likely]] {
         auto const opcode = extract_argument<Opcode>();
@@ -234,7 +248,8 @@ auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
         sizeof(Local_offset_type), // push_address
         0,                         // push_return_value
 
-        sizeof(Jump_offset_type), sizeof(Jump_offset_type), sizeof(Jump_offset_type), // jump
+        sizeof(Jump_offset_type), sizeof(Jump_offset_type), sizeof(Jump_offset_type),    // jump
+        sizeof(Local_offset_type), sizeof(Local_offset_type), sizeof(Local_offset_type), // local_jump
 
         sizeof(Local_size_type) + sizeof(Jump_offset_type), // call
         0,                                                  // ret

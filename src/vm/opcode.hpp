@@ -29,9 +29,11 @@ namespace vm {
         bitcopy_from_stack,
         bitcopy_to_stack,
         push_address,
-        push_return_value,
+        push_return_value_address,
 
-        jump, jump_true, jump_false,
+        jump,       local_jump,
+        jump_true,  local_jump_true,
+        jump_false, local_jump_false,
 
         call, ret,
 

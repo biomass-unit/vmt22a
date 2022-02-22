@@ -29,9 +29,11 @@ namespace {
         "bitcopy_from_stack",
         "bitcopy_to_stack",
         "push_address",
-        "push_return_value",
+        "push_return_value_address",
 
-        "jump", "jump_true", "jump_false",
+        "jump",       "local_jump",
+        "jump_true",  "local_jump_true",
+        "jump_false", "local_jump_false",
 
         "call", "ret",
 
@@ -78,6 +80,10 @@ namespace {
         case jump_true:
         case jump_false:
             return unary(bu::typetag<vm::Jump_offset_type>);
+        case local_jump:
+        case local_jump_true:
+        case local_jump_false:
+            return unary(bu::typetag<vm::Local_offset_type>);
         case call:
         {
             auto const return_value_size = extract<vm::Local_size_type>(start, stop);

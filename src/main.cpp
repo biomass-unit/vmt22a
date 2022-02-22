@@ -81,16 +81,27 @@ auto main() -> int try {
 
     using enum vm::Opcode;
     machine.bytecode.write(
-        ipush, 5_iz,
-        ipush, 3_iz,
-        call, 8_u16, 30_uz,
+        ipush, 0_iz,
+        call, 0_u16, 21_uz,
         halt,
 
-        push_address, bu::I16(-24), // 2*int + return value
-        bitcopy_to_stack, 16_u16,
-        isub,
-        push_return_value,
-        bitcopy_from_stack, 8_u16,
+        push_address, bu::I16(-8),
+        bitcopy_to_stack, 8_u16,
+
+        idup,
+        ipush, 10_iz,
+        ieq,
+        
+        local_jump_false, 1_i16,
+        ret,
+
+        idup,
+        iprint,
+
+        ipush, 1_iz,
+        iadd,
+
+        call, 0_u16, 21_uz,
         ret
     );
 

@@ -13,7 +13,7 @@ namespace vm {
 
 
     struct Activation_record {
-        std::byte*         return_value;
+        std::byte*         return_value_address;
         std::byte*         return_address;
         Activation_record* caller;
 
