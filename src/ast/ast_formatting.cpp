@@ -240,12 +240,12 @@ DEFINE_FORMATTER_FOR(ast::definition::Data) {
 
 DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
     auto out = context.out();
-    std::format_to(out, value.self_is_template ? "class {} []" : "class {}", value.name);
+    std::format_to(out, value.self_is_template ? "class {} [] {{\n" : "class {} {{\n", value.name);
 
     for (auto& signature : value.function_signatures) {
         std::format_to(
             out,
-            "\nfn {}[{}]({}): {}",
+            "fn {}[{}]({}): {}\n",
             signature.name,
             signature.template_parameters,
             signature.type.argument_types,
@@ -255,7 +255,7 @@ DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
     for (auto& signature : value.type_signatures) {
         std::format_to(
             out,
-            "alias {}[{}]: {}",
+            "alias {}[{}]: {}\n",
             signature.name,
             signature.template_parameters,
             signature.classes

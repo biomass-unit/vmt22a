@@ -26,6 +26,11 @@ namespace vm {
 
         land, lnand, lor, lnor, lnot,
 
+        bitcopy_from_stack,
+        bitcopy_to_stack,
+        push_address,
+        push_return_value,
+
         jump, jump_true, jump_false,
 
         call, ret,

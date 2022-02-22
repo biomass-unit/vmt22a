@@ -120,10 +120,9 @@ namespace {
 
     auto extract_function(Parse_context& context) -> void {
         auto name = extract_lower_id<"a function name">(context);
+        auto template_parameters = parse_template_parameters(context);
 
         if (context.try_consume(Token::Type::paren_open)) {
-            auto template_parameters = parse_template_parameters(context);
-
             constexpr auto parse_parameters =
                 extract_comma_separated_zero_or_more<parse_function_parameter, "a function parameter">;
             auto parameters = parse_parameters(context);
@@ -133,6 +132,10 @@ namespace {
             if (context.try_consume(Token::Type::colon)) {
                 return_type.emplace(extract_type(context));
             }
+
+            /*if (context.try_consume(Token::Type::where)) {
+
+            }*/
 
             bu::Uninitialized<ast::Expression> body;
 
@@ -228,14 +231,14 @@ namespace {
             parse_separated_one_or_more<parse_data_constructor, Token::Type::pipe, "a data constructor">;
 
         auto name = extract_upper_id<"a data name">(context);
+        auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
         if (auto constructors = parse_constructors(context)) {
-            (*::current_namespace)->data_definitions.push_back(
-                ast::definition::Data {
-                    .constructors = std::move(*constructors),
-                    .name         = name
-                }
+            (*::current_namespace)->data_definitions.emplace_back(
+                std::move(template_parameters),
+                std::move(*constructors),
+                name
             );
         }
         else {
@@ -302,7 +305,10 @@ namespace {
         std::vector<ast::Type_signature>     type_signatures;
         std::vector<ast::Function_signature> function_signatures;
 
-        context.consume_required(Token::Type::brace_open);
+        bool is_braced = context.try_consume(Token::Type::brace_open);
+        if (!is_braced) {
+            context.consume_required(Token::Type::equals);
+        }
 
         for (;;) {
             switch (context.extract().type) {
@@ -314,7 +320,12 @@ namespace {
                 continue;
             default:
                 context.retreat();
-                context.consume_required(Token::Type::brace_close);
+                if (function_signatures.empty() && type_signatures.empty()) {
+                    throw context.expected("one or more function or type signatures");
+                }
+                if (is_braced) {
+                    context.consume_required(Token::Type::brace_close);
+                }
                 (*::current_namespace)->class_definitions.emplace_back(
                     std::move(function_signatures),
                     std::move(type_signatures),

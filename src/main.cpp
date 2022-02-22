@@ -71,9 +71,32 @@ using namespace lexer :: literals;
 
 
 auto main() -> int try {
-    bu::enable_color_formatting ();
-    tests::run_all_tests        ();
-    program_parser_repl         ();
+    //bu::enable_color_formatting ();
+    //tests::run_all_tests        ();
+    //program_parser_repl         ();
+
+    vm::Virtual_machine machine {
+        .stack { bu::Bytestack { 1000 } }
+    };
+
+    using enum vm::Opcode;
+    machine.bytecode.write(
+        ipush, 5_iz,
+        ipush, 3_iz,
+        call, 8_u16, 30_uz,
+        halt,
+
+        push_address, bu::I16(-24), // 2*int + return value
+        bitcopy_to_stack, 16_u16,
+        isub,
+        push_return_value,
+        bitcopy_from_stack, 8_u16,
+        ret
+    );
+
+    //bu::print("bytecode:\n{}", machine.bytecode);
+
+    return machine.run();
 }
 
 catch (std::exception const& exception) {

@@ -74,17 +74,59 @@ namespace {
         }
     }
 
-    auto call(VM&) -> void {
-        bu::unimplemented();
-    }
-
-    auto ret(VM&) -> void {
-        bu::unimplemented();
-    }
-
     auto iinc_top(VM& vm) -> void {
         vm.stack.push(vm.stack.pop<bu::Isize>() + 1);
     }
+
+    auto bitcopy_from_stack(VM& vm) -> void {
+        auto const size = vm.extract_argument<vm::Local_size_type>();
+        auto const destination = vm.stack.pop<std::byte*>();
+
+        std::memcpy(destination, vm.stack.pointer -= size, size);
+    }
+
+    auto bitcopy_to_stack(VM& vm) -> void {
+        auto const size = vm.extract_argument<vm::Local_size_type>();
+        auto const source = vm.stack.pop<std::byte*>();
+
+        std::memcpy(vm.stack.pointer, source, size);
+        vm.stack.pointer += size;
+    }
+
+    auto push_address(VM& vm) -> void {
+        auto const offset = vm.extract_argument<vm::Local_offset_type>();
+        vm.stack.push(vm.activation_record->pointer() + offset);
+    }
+
+    auto push_return_value(VM& vm) -> void {
+        vm.stack.push(vm.activation_record->return_value);
+    }
+
+    auto call(VM& vm) -> void {
+        auto const return_value_size = vm.extract_argument<vm::Local_size_type>();
+        auto const tos = vm.stack.pointer;
+
+        vm.stack.pointer += return_value_size; // reserve space for the return value
+
+        vm.stack.push(
+            vm::Activation_record {
+                .return_address = vm.instruction_pointer + sizeof(vm::Jump_offset_type),
+                .caller         = vm.activation_record,
+            }
+        );
+
+        vm.activation_record = reinterpret_cast<vm::Activation_record*>(tos + return_value_size);
+        vm.activation_record->return_value = tos;
+        jump(vm);
+    }
+
+    auto ret(VM& vm) -> void {
+        auto const ar = vm.activation_record;
+        vm.stack.pointer       = ar->pointer();      // pop locals
+        vm.activation_record   = ar->caller;         // restore caller state
+        vm.instruction_pointer = ar->return_address; // return control to caller
+    }
+
 
     auto halt(VM& vm) -> void {
         vm.keep_running = false;
@@ -112,6 +154,11 @@ namespace {
 
         land, lnand, lor, lnor, lnot,
 
+        bitcopy_from_stack,
+        bitcopy_to_stack,
+        push_address,
+        push_return_value,
+
         jump, jump_bool<true>, jump_bool<false>,
 
         call, ret,
@@ -127,11 +174,12 @@ namespace {
 auto vm::Virtual_machine::run() -> int {
     instruction_pointer = bytecode.bytes.data();
     instruction_anchor = instruction_pointer;
-    frame_pointer = stack.base();
+
+    activation_record = reinterpret_cast<Activation_record*>(stack.pointer);
 
     while (keep_running) [[likely]] {
         auto const opcode = extract_argument<Opcode>();
-        //bu::print("running instruction {}\n", opcode);
+        bu::print(" -> {}\n", opcode);
         instructions[static_cast<bu::Usize>(opcode)](*this);
     }
 
@@ -181,9 +229,15 @@ auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
 
         0, 0, 0, 0, 0, // logic
 
+        sizeof(Local_size_type),   // bitcopy_from
+        sizeof(Local_size_type),   // bitcopy_to
+        sizeof(Local_offset_type), // push_address
+        0,                         // push_return_value
+
         sizeof(Jump_offset_type), sizeof(Jump_offset_type), sizeof(Jump_offset_type), // jump
 
-        sizeof(Jump_offset_type), 0, // call, ret
+        sizeof(Local_size_type) + sizeof(Jump_offset_type), // call
+        0,                                                  // ret
 
         0, // halt
     });

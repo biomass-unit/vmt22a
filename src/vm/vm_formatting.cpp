@@ -26,6 +26,11 @@ namespace {
 
         "land", "lnand", "lor", "lnor", "lnot",
 
+        "bitcopy_from_stack",
+        "bitcopy_to_stack",
+        "push_address",
+        "push_return_value",
+
         "jump", "jump_true", "jump_false",
 
         "call", "ret",
@@ -64,11 +69,21 @@ namespace {
             return unary(bu::typetag<bu::Float>);
         case cpush:
             return unary(bu::typetag<char>);
+        case bitcopy_from_stack:
+        case bitcopy_to_stack:
+            return unary(bu::typetag<vm::Local_size_type>);
+        case push_address:
+            return unary(bu::typetag<vm::Local_offset_type>);
         case jump:
         case jump_true:
         case jump_false:
-        case call:
             return unary(bu::typetag<vm::Jump_offset_type>);
+        case call:
+        {
+            auto const return_value_size = extract<vm::Local_size_type>(start, stop);
+            auto const function_offset = extract<vm::Jump_offset_type>(start, stop);
+            return std::format_to(out, "{} {} {}", opcode, return_value_size, function_offset);
+        }
         default:
             assert(vm::argument_bytes(opcode) == 0);
             return std::format_to(out, "{}", opcode);
