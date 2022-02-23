@@ -71,43 +71,45 @@ using namespace lexer :: literals;
 
 
 auto main() -> int try {
-    bu::enable_color_formatting ();
-    tests::run_all_tests        ();
-    program_parser_repl         ();
+    //bu::enable_color_formatting ();
+    //tests::run_all_tests        ();
+    //program_parser_repl         ();
 
-    /*vm::Virtual_machine machine {
+    vm::Virtual_machine machine {
         .stack { bu::Bytestack { 1000 } }
     };
 
     using enum vm::Opcode;
     machine.bytecode.write(
         ipush, 0_iz,
-        call, 0_u16, 21_uz,
+        call_0, 19_uz,
         halt,
 
         push_address, bu::I16(-8),
         bitcopy_to_stack, 8_u16,
 
         idup,
-        ipush, 10_iz,
-        ieq,
+        ieq_i, 10_iz,
         
         local_jump_false, 1_i16,
         ret,
 
         idup,
-        iprint,
+        cast_itof,
+        fpush, 0.5,
+        fmul,
+        fprint,
 
         ipush, 1_iz,
         iadd,
 
-        call, 0_u16, 21_uz,
+        call_0, 19_uz,
         ret
     );
 
     //bu::print("bytecode:\n{}", machine.bytecode);
 
-    return machine.run();*/
+    return machine.run();
 }
 
 catch (std::exception const& exception) {

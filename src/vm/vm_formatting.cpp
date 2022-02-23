@@ -10,21 +10,35 @@ namespace {
         "idup"  , "fdup"  , "cdup"  , "bdup"  ,
         "iprint", "fprint", "cprint", "bprint",
 
-        "iadd", "fadd", "cadd",
-        "isub", "fsub", "csub",
-        "imul", "fmul", "cmul",
-        "idiv", "fdiv", "cdiv",
+        "iadd", "fadd",
+        "isub", "fsub",
+        "imul", "fmul",
+        "idiv", "fdiv",
 
         "iinc_top",
 
         "ieq" , "feq" , "ceq" , "beq" ,
         "ineq", "fneq", "cneq", "bneq",
-        "ilt" , "flt" , "clt" ,
-        "ilte", "flte", "clte",
-        "igt" , "fgt" , "cgt" ,
-        "igte", "fgte", "cgte",
+        "ilt" , "flt" ,
+        "ilte", "flte",
+        "igt" , "fgt" ,
+        "igte", "fgte",
+
+        "ieq_i" , "feq_i" , "ceq_i" , "beq_i" ,
+        "ineq_i", "fneq_i", "cneq_i", "bneq_i",
+        "ilt_i" , "flt_i" ,
+        "ilte_i", "flte_i",
+        "igt_i" , "fgt_i" ,
+        "igte_i", "fgte_i",
 
         "land", "lnand", "lor", "lnor", "lnot",
+
+        "cast_itof", "cast_ftoi",
+        "cast_itoc", "cast_ctoi",
+
+        "cast_itob", "cast_btoi",
+        "cast_ftob",
+        "cast_ctob",
 
         "bitcopy_from_stack",
         "bitcopy_to_stack",
@@ -35,7 +49,7 @@ namespace {
         "jump_true",  "local_jump_true",
         "jump_false", "local_jump_false",
 
-        "call", "ret",
+        "call", "call_0", "ret",
 
         "halt"
     });
@@ -66,11 +80,28 @@ namespace {
         using enum vm::Opcode;
         switch (opcode) {
         case ipush:
+        case ieq_i:
+        case ineq_i:
+        case ilt_i:
+        case ilte_i:
+        case igt_i:
+        case igte_i:
             return unary(bu::typetag<bu::Isize>);
         case fpush:
+        case feq_i:
+        case fneq_i:
+        case flt_i:
+        case flte_i:
+        case fgt_i:
+        case fgte_i:
             return unary(bu::typetag<bu::Float>);
         case cpush:
-            return unary(bu::typetag<char>);
+        case ceq_i:
+        case cneq_i:
+            return unary(bu::typetag<bu::Char>);
+        case beq_i:
+        case bneq_i:
+            return unary(bu::typetag<bool>);
         case bitcopy_from_stack:
         case bitcopy_to_stack:
             return unary(bu::typetag<vm::Local_size_type>);
@@ -79,6 +110,7 @@ namespace {
         case jump:
         case jump_true:
         case jump_false:
+        case call_0:
             return unary(bu::typetag<vm::Jump_offset_type>);
         case local_jump:
         case local_jump_true:

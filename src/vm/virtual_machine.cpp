@@ -35,6 +35,13 @@ namespace {
         vm.stack.push(F<T>{}(b, a));
     }
 
+    template <class T, template <class> class F>
+    auto immediate_binary_op(VM& vm) -> void {
+        auto const a = vm.stack.pop<T>();
+        auto const b = vm.extract_argument<T>();
+        vm.stack.push(F<T>{}(b, a));
+    }
+
     template <class T> constexpr auto add = binary_op<T, std::plus>;
     template <class T> constexpr auto sub = binary_op<T, std::minus>;
     template <class T> constexpr auto mul = binary_op<T, std::multiplies>;
@@ -46,6 +53,18 @@ namespace {
     template <class T> constexpr auto lte = binary_op<T, std::less_equal>;
     template <class T> constexpr auto gt  = binary_op<T, std::greater>;
     template <class T> constexpr auto gte = binary_op<T, std::greater_equal>;
+
+    template <class T> constexpr auto add_i = immediate_binary_op<T, std::equal_to>;
+    template <class T> constexpr auto sub_i = immediate_binary_op<T, std::minus>;
+    template <class T> constexpr auto mul_i = immediate_binary_op<T, std::multiplies>;
+    template <class T> constexpr auto div_i = immediate_binary_op<T, std::divides>;
+
+    template <class T> constexpr auto eq_i  = immediate_binary_op<T, std::equal_to>;
+    template <class T> constexpr auto neq_i = immediate_binary_op<T, std::not_equal_to>;
+    template <class T> constexpr auto lt_i  = immediate_binary_op<T, std::less>;
+    template <class T> constexpr auto lte_i = immediate_binary_op<T, std::less_equal>;
+    template <class T> constexpr auto gt_i  = immediate_binary_op<T, std::greater>;
+    template <class T> constexpr auto gte_i = immediate_binary_op<T, std::greater_equal>;
 
     constexpr auto land = binary_op<bool, std::logical_and>;
     constexpr auto lor  = binary_op<bool, std::logical_or>;
@@ -60,6 +79,11 @@ namespace {
 
     auto lnot(VM& vm) -> void {
         vm.stack.push(!vm.stack.pop<bool>());
+    }
+
+    template <bu::trivial From, bu::trivial To>
+    auto cast(VM& vm) -> void {
+        vm.stack.push(static_cast<To>(vm.stack.pop<From>()));
     }
 
     auto iinc_top(VM& vm) -> void {
@@ -119,27 +143,39 @@ namespace {
 
 
     auto call(VM& vm) -> void {
-        auto const return_value_size = vm.extract_argument<vm::Local_size_type>();
-        auto const tos = vm.stack.pointer;
+        auto const return_value_size     = vm.extract_argument<vm::Local_size_type>();
+        auto const return_value_address  = vm.stack.pointer;
+        auto const old_activation_record = vm.activation_record;
 
-        vm.stack.pointer += return_value_size; // reserve space for the return value
+        vm.stack.pointer += return_value_size; // Reserve space for the return value
+        vm.activation_record = reinterpret_cast<vm::Activation_record*>(vm.stack.pointer);
+
+        vm.stack.push(
+            vm::Activation_record {
+                .return_value_address = return_value_address,
+                .return_address       = vm.instruction_pointer + sizeof(vm::Jump_offset_type),
+                .caller               = old_activation_record,
+            }
+        );
+        vm.jump_to(vm.extract_argument<vm::Jump_offset_type>());
+    }
+
+    auto call_0(VM& vm) -> void {
+        auto const old_activation_record = vm.activation_record;
+        vm.activation_record = reinterpret_cast<vm::Activation_record*>(vm.stack.pointer);
 
         vm.stack.push(
             vm::Activation_record {
                 .return_address = vm.instruction_pointer + sizeof(vm::Jump_offset_type),
-                .caller         = vm.activation_record,
+                .caller         = old_activation_record,
             }
         );
-
-        vm.activation_record = reinterpret_cast<vm::Activation_record*>(tos + return_value_size);
-        vm.activation_record->return_value_address = tos;
-
         vm.jump_to(vm.extract_argument<vm::Jump_offset_type>());
     }
 
     auto ret(VM& vm) -> void {
         auto const ar = vm.activation_record;
-        vm.stack.pointer       = ar->pointer();      // pop locals
+        vm.stack.pointer       = ar->pointer();      // pop callee's activation record
         vm.activation_record   = ar->caller;         // restore caller state
         vm.instruction_pointer = ar->return_address; // return control to caller
     }
@@ -155,21 +191,34 @@ namespace {
         dup  <bu::Isize>, dup  <bu::Float>, dup  <bu::Char>, dup  <bool>,
         print<bu::Isize>, print<bu::Float>, print<bu::Char>, print<bool>,
 
-        add<bu::Isize>, add<bu::Float>, add<bu::Char>,
-        sub<bu::Isize>, sub<bu::Float>, sub<bu::Char>,
-        mul<bu::Isize>, mul<bu::Float>, mul<bu::Char>,
-        div<bu::Isize>, div<bu::Float>, div<bu::Char>,
+        add<bu::Isize>, add<bu::Float>,
+        sub<bu::Isize>, sub<bu::Float>,
+        mul<bu::Isize>, mul<bu::Float>,
+        div<bu::Isize>, div<bu::Float>,
 
         iinc_top,
 
         eq <bu::Isize>, eq <bu::Float>, eq <bu::Char>, eq <bool>,
         neq<bu::Isize>, neq<bu::Float>, neq<bu::Char>, neq<bool>,
-        lt <bu::Isize>, lt <bu::Float>, lt <bu::Char>,
-        lte<bu::Isize>, lte<bu::Float>, lte<bu::Char>,
-        gt <bu::Isize>, gt <bu::Float>, gt <bu::Char>,
-        gte<bu::Isize>, gte<bu::Float>, gte<bu::Char>,
+        lt <bu::Isize>, lt <bu::Float>,
+        lte<bu::Isize>, lte<bu::Float>,
+        gt <bu::Isize>, gt <bu::Float>,
+        gte<bu::Isize>, gte<bu::Float>,
+
+        eq_i <bu::Isize>, eq_i <bu::Float>, eq_i <bu::Char>, eq_i <bool>,
+        neq_i<bu::Isize>, neq_i<bu::Float>, neq_i<bu::Char>, neq_i<bool>,
+        lt_i <bu::Isize>, lt_i <bu::Float>,
+        lte_i<bu::Isize>, lte_i<bu::Float>,
+        gt_i <bu::Isize>, gt_i <bu::Float>,
+        gte_i<bu::Isize>, gte_i<bu::Float>,
 
         land, lnand, lor, lnor, lnot,
+
+        cast<bu::Isize, bu::Float>, cast<bu::Float, bu::Isize>,
+        cast<bu::Isize, bu::Char >, cast<bu::Char , bu::Isize>,
+        cast<bu::Isize, bool>, cast<bool, bu::Isize>,
+        cast<bu::Float, bool>,
+        cast<bu::Char , bool>,
 
         bitcopy_from_stack,
         bitcopy_to_stack,
@@ -180,7 +229,7 @@ namespace {
         jump_bool<true> , local_jump_bool<true>,
         jump_bool<false>, local_jump_bool<false>,
 
-        call, ret,
+        call, call_0, ret,
 
         halt
     };
@@ -232,21 +281,34 @@ auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
         0, 0, 0, 0, // dup
         0, 0, 0, 0, // print
 
-        0, 0, 0, // add
-        0, 0, 0, // sub
-        0, 0, 0, // mul
-        0, 0, 0, // div
+        0, 0, // add
+        0, 0, // sub
+        0, 0, // mul
+        0, 0, // div
 
         0, // iinc_top
 
         0, 0, 0, 0, // eq
         0, 0, 0, 0, // neq
-        0, 0, 0,    // lt
-        0, 0, 0,    // lte
-        0, 0, 0,    // gt
-        0, 0, 0,    // gte
+        0, 0,       // lt
+        0, 0,       // lte
+        0, 0,       // gt
+        0, 0,       // gte
+
+        sizeof(bu::Isize), sizeof(bu::Float), sizeof(bu::Char), 1, // eq_i
+        sizeof(bu::Isize), sizeof(bu::Float), sizeof(bu::Char), 1, // neq_i
+        sizeof(bu::Isize), sizeof(bu::Float),                      // lt_i
+        sizeof(bu::Isize), sizeof(bu::Float),                      // lte_i
+        sizeof(bu::Isize), sizeof(bu::Float),                      // gt_i
+        sizeof(bu::Isize), sizeof(bu::Float),                      // gte_i
 
         0, 0, 0, 0, 0, // logic
+
+        0, 0, // itof, ftoi
+        0, 0, // itoc, ctoi
+        0, 0, // itob, btoi
+        0,    // ftob
+        0,    // ctob
 
         sizeof(Local_size_type),   // bitcopy_from
         sizeof(Local_size_type),   // bitcopy_to
@@ -257,6 +319,7 @@ auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
         sizeof(Local_offset_type), sizeof(Local_offset_type), sizeof(Local_offset_type), // local_jump
 
         sizeof(Local_size_type) + sizeof(Jump_offset_type), // call
+        sizeof(Jump_offset_type),                           // call_0
         0,                                                  // ret
 
         0, // halt
