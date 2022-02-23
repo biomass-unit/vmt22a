@@ -6,6 +6,10 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Match::Case) {
     return std::format_to(context.out(), "{} -> {}", value.pattern, value.expression);
 }
 
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
+    return std::format_to(context.out(), value.name ? "{} = {}" : "{1}", value.name, value.expression);
+}
+
 
 namespace {
 
@@ -192,7 +196,7 @@ DEFINE_FORMATTER_FOR(ast::Type) {
 
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
-    return std::format_to(context.out(), "{}: {}", value.pattern, value.type);
+    return std::format_to(context.out(), "{}: {} = {}", value.pattern, value.type, value.default_value);
 }
 
 DEFINE_FORMATTER_FOR(ast::definition::Function) {

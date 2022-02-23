@@ -7,7 +7,7 @@ namespace {
 
     constexpr auto opcode_strings = std::to_array<std::string_view>({
         "ipush" , "fpush" , "cpush" , "push_true", "push_false",
-        "idup"  , "fdup"  , "cpush" , "bpush" ,
+        "idup"  , "fdup"  , "cdup"  , "bdup"  ,
         "iprint", "fprint", "cprint", "bprint",
 
         "iadd", "fadd", "cadd",

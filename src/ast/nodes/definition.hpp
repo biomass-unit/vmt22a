@@ -33,15 +33,16 @@ namespace ast {
 
         struct Function {
             struct Parameter {
-                Pattern           pattern;
-                bu::Wrapper<Type> type;
+                Pattern                                pattern;
+                bu::Wrapper<Type>                      type;
+                std::optional<bu::Wrapper<Expression>> default_value;
                 DEFAULTED_EQUALITY(Parameter);
             };
-            Expression                                      body;
-            std::vector<Parameter>                          parameters;
-            std::optional<std::vector<Template_parameter>>  template_parameters;
-            lexer::Identifier                               name;
-            std::optional<bu::Wrapper<Type>>                return_type;
+            Expression                                     body;
+            std::vector<Parameter>                         parameters;
+            std::optional<std::vector<Template_parameter>> template_parameters;
+            lexer::Identifier                              name;
+            std::optional<bu::Wrapper<Type>>               return_type;
             DEFAULTED_EQUALITY(Function);
         };
 

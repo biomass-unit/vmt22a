@@ -34,9 +34,11 @@ namespace ast {
         DEFAULTED_EQUALITY(Compound_expression);
     };
 
+    struct Function_argument;
+
     struct Invocation {
-        std::vector<Expression> arguments;
-        bu::Wrapper<Expression> invocable;
+        std::vector<Function_argument> arguments;
+        bu::Wrapper<Expression>        invocable;
         DEFAULTED_EQUALITY(Invocation);
     };
 
@@ -54,9 +56,9 @@ namespace ast {
     };
 
     struct Member_function_invocation {
-        std::vector<Expression> arguments;
-        bu::Wrapper<Expression> expression;
-        lexer::Identifier       member_name;
+        std::vector<Function_argument> arguments;
+        bu::Wrapper<Expression>        expression;
+        lexer::Identifier              member_name;
         DEFAULTED_EQUALITY(Member_function_invocation);
     };
 
@@ -188,3 +190,10 @@ namespace ast {
     static_assert(std::is_trivially_copyable_v<bu::Wrapper<Expression>>);
 
 }
+
+
+struct ast::Function_argument {
+    Expression                       expression;
+    std::optional<lexer::Identifier> name;
+    DEFAULTED_EQUALITY(Function_argument);
+};

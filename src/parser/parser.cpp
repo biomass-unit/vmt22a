@@ -5,7 +5,7 @@
 
 
 auto parser::parse_template_arguments(Parse_context& context)
--> std::optional<std::vector<ast::Template_argument>>
+    -> std::optional<std::vector<ast::Template_argument>>
 {
     constexpr auto extract_arguments = extract_comma_separated_zero_or_more<[](Parse_context& context)
         -> std::optional<ast::Template_argument>
@@ -108,9 +108,17 @@ namespace {
     {
         if (auto pattern = parse_pattern(context)) {
             context.consume_required(Token::Type::colon);
+            auto return_type = extract_type(context);
+
+            std::optional<bu::Wrapper<ast::Expression>> default_value;
+            if (context.try_consume(Token::Type::equals)) {
+                default_value.emplace(extract_expression(context));
+            }
+
             return ast::definition::Function::Parameter {
                 std::move(*pattern),
-                extract_type(context)
+                std::move(return_type),
+                std::move(default_value)
             };
         }
         else {

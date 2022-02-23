@@ -66,6 +66,7 @@ namespace {
         vm.stack.push(vm.stack.pop<bu::Isize>() + 1);
     }
 
+
     auto jump(VM& vm) -> void {
         vm.jump_to(vm.extract_argument<vm::Jump_offset_type>());
     }
@@ -90,6 +91,7 @@ namespace {
         }
     }
 
+
     auto bitcopy_from_stack(VM& vm) -> void {
         auto const size = vm.extract_argument<vm::Local_size_type>();
         auto const destination = vm.stack.pop<std::byte*>();
@@ -105,6 +107,7 @@ namespace {
         vm.stack.pointer += size;
     }
 
+
     auto push_address(VM& vm) -> void {
         auto const offset = vm.extract_argument<vm::Local_offset_type>();
         vm.stack.push(vm.activation_record->pointer() + offset);
@@ -113,6 +116,7 @@ namespace {
     auto push_return_value(VM& vm) -> void {
         vm.stack.push(vm.activation_record->return_value_address);
     }
+
 
     auto call(VM& vm) -> void {
         auto const return_value_size = vm.extract_argument<vm::Local_size_type>();
@@ -129,7 +133,8 @@ namespace {
 
         vm.activation_record = reinterpret_cast<vm::Activation_record*>(tos + return_value_size);
         vm.activation_record->return_value_address = tos;
-        jump(vm);
+
+        vm.jump_to(vm.extract_argument<vm::Jump_offset_type>());
     }
 
     auto ret(VM& vm) -> void {
@@ -193,7 +198,7 @@ auto vm::Virtual_machine::run() -> int {
 
     while (keep_running) [[likely]] {
         auto const opcode = extract_argument<Opcode>();
-        bu::print(" -> {}\n", opcode);
+        //bu::print(" -> {}\n", opcode);
         instructions[static_cast<bu::Usize>(opcode)](*this);
     }
 

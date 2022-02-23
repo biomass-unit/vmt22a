@@ -71,11 +71,11 @@ using namespace lexer :: literals;
 
 
 auto main() -> int try {
-    //bu::enable_color_formatting ();
-    //tests::run_all_tests        ();
-    //program_parser_repl         ();
+    bu::enable_color_formatting ();
+    tests::run_all_tests        ();
+    program_parser_repl         ();
 
-    vm::Virtual_machine machine {
+    /*vm::Virtual_machine machine {
         .stack { bu::Bytestack { 1000 } }
     };
 
@@ -107,7 +107,7 @@ auto main() -> int try {
 
     //bu::print("bytecode:\n{}", machine.bytecode);
 
-    return machine.run();
+    return machine.run();*/
 }
 
 catch (std::exception const& exception) {

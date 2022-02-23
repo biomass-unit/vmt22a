@@ -334,9 +334,23 @@ namespace {
     }
 
 
-    auto extract_arguments(Parse_context& context) -> std::vector<ast::Expression> {
+    auto parse_argument(Parse_context& context) -> std::optional<ast::Function_argument> {
+        if (auto name = parse_lower_id(context)) {
+            if (context.try_consume(Token::Type::equals)) {
+                return ast::Function_argument { extract_expression(context), *name };
+            }
+            else {
+                return ast::Function_argument { ast::Variable { *name } };
+            }
+        }
+        else {
+            return bu::map(parse_expression(context), bu::make<ast::Function_argument>);
+        }
+    }
+
+    auto extract_arguments(Parse_context& context) -> std::vector<ast::Function_argument> {
         constexpr auto extract_arguments =
-            extract_comma_separated_zero_or_more<parse_expression, "a function argument">;
+            extract_comma_separated_zero_or_more<parse_argument, "a function argument">;
         auto arguments = extract_arguments(context);
 
         context.consume_required(Token::Type::paren_close);
