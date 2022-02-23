@@ -157,7 +157,7 @@ namespace {
                 throw context.expected("the function body", "'=' or '{'");
             }
 
-            (*::current_namespace)->function_definitions.emplace_back(
+            current_namespace->function_definitions.emplace_back(
                 std::move(*body),
                 std::move(parameters),
                 std::move(template_parameters),
@@ -195,7 +195,7 @@ namespace {
 
         context.consume_required(Token::Type::equals);
         if (auto members = parse_members(context)) {
-            (*::current_namespace)->struct_definitions.emplace_back(
+            current_namespace->struct_definitions.emplace_back(
                 std::move(template_parameters),
                 std::move(*members),
                 name
@@ -243,7 +243,7 @@ namespace {
 
         context.consume_required(Token::Type::equals);
         if (auto constructors = parse_constructors(context)) {
-            (*::current_namespace)->data_definitions.emplace_back(
+            current_namespace->data_definitions.emplace_back(
                 std::move(template_parameters),
                 std::move(*constructors),
                 name
@@ -334,7 +334,7 @@ namespace {
                 if (is_braced) {
                     context.consume_required(Token::Type::brace_close);
                 }
-                (*::current_namespace)->class_definitions.emplace_back(
+                current_namespace->class_definitions.emplace_back(
                     std::move(function_signatures),
                     std::move(type_signatures),
                     name,
@@ -353,12 +353,11 @@ namespace {
 
         context.consume_required(Token::Type::brace_open);
 
-        auto parent_namespace = ::current_namespace;
-        auto child_namespace = parent_namespace->make_child(name);
+        auto parent_namespace = current_namespace;
 
-        ::current_namespace = &child_namespace;
+        current_namespace =  parent_namespace->make_child(name);
         while (parse_definition(context));
-        ::current_namespace = parent_namespace;
+        current_namespace = parent_namespace;
 
         context.consume_required(Token::Type::brace_close);
     }

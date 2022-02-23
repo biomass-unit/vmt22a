@@ -3,14 +3,12 @@
 
 
 ast::Namespace::Namespace(lexer::Identifier const name) noexcept
-    : data { Namespace_data { .parent = nullptr, .name = name } } {}
+    : parent { nullptr }
+    , name   { name    } {}
 
 
-auto ast::Namespace::make_child(lexer::Identifier const name) noexcept -> Namespace {
-    Namespace child { name };
-    child->parent = data.operator->();
-    return data->children.emplace_back(child);
+auto ast::Namespace::make_child(lexer::Identifier const child_name) noexcept -> Namespace* {
+    Namespace child { child_name };
+    child.parent = this;
+    return &children.emplace_back(std::move(child));
 }
-
-auto ast::Namespace::operator->()       noexcept -> Namespace_data      * { return data.operator->(); }
-auto ast::Namespace::operator->() const noexcept -> Namespace_data const* { return data.operator->(); }

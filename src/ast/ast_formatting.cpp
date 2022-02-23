@@ -299,7 +299,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
 
 DEFINE_FORMATTER_FOR(ast::Namespace) {
     auto out = context.out();
-    std::format_to(out, "module {} {{", value->name);
+    std::format_to(out, "module {} {{", value.name);
 
     auto fmt = [out]<class T>(std::vector<T> const& xs) {
         for (auto& x : xs) {
@@ -307,11 +307,11 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
         }
     };
 
-    fmt(value->function_definitions);
-    fmt(value->struct_definitions);
-    fmt(value->data_definitions);
-    fmt(value->class_definitions);
-    fmt(value->children);
+    fmt(value.function_definitions);
+    fmt(value.struct_definitions);
+    fmt(value.data_definitions);
+    fmt(value.class_definitions);
+    fmt(value.children);
 
     return std::format_to(out, "\n}}\n");
 }

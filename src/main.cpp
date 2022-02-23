@@ -14,6 +14,8 @@
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
 
+#include "compiler/size_of.hpp"
+
 #include "tests/tests.hpp"
 
 
@@ -75,41 +77,14 @@ auto main() -> int try {
     //tests::run_all_tests        ();
     //program_parser_repl         ();
 
-    vm::Virtual_machine machine {
-        .stack { bu::Bytestack { 1000 } }
-    };
+    auto string =
+        "struct S = a: Int, b: (Int, Bool)"
+        "data Test = Left(Int, Int) | Right(S, S)";
 
-    using enum vm::Opcode;
-    machine.bytecode.write(
-        ipush, 0_iz,
-        call_0, 19_uz,
-        halt,
+    auto module = parser::parse(lexer::lex(bu::Source { bu::Source::Mock_tag {}, string }));
+    ast::Type type { ast::type::Typename { lexer::Identifier { std::string { "Test" } } } };
 
-        push_address, bu::I16(-8),
-        bitcopy_to_stack, 8_u16,
-
-        idup,
-        ieq_i, 10_iz,
-        
-        local_jump_false, 1_i16,
-        ret,
-
-        idup,
-        cast_itof,
-        fpush, 0.5,
-        fmul,
-        fprint,
-
-        ipush, 1_iz,
-        iadd,
-
-        call_0, 19_uz,
-        ret
-    );
-
-    //bu::print("bytecode:\n{}", machine.bytecode);
-
-    return machine.run();
+    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));
 }
 
 catch (std::exception const& exception) {

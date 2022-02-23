@@ -79,7 +79,8 @@ namespace ast {
             type::Reference,
             type::Template_instantiation
         >;
-        Variant value;
+        Variant                value;
+        std::optional<bu::U16> size;
 
         DEFINE_NODE_CTOR(Type);
         DEFAULTED_EQUALITY(Type);
