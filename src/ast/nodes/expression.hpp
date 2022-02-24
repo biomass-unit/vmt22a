@@ -152,7 +152,7 @@ namespace ast {
         using Variant = std::variant<
             Literal<bu::Isize>,
             Literal<bu::Float>,
-            Literal<char>,
+            Literal<bu::Char>,
             Literal<bool>,
             Literal<lexer::String>,
             Array_literal,
@@ -180,11 +180,15 @@ namespace ast {
             Take_reference,
             Meta
         >;
-        Variant          value;
-        std::string_view source_view;
+        Variant                          value;
+        std::string_view                 source_view;
+        std::optional<bu::Wrapper<Type>> type;
 
         DEFINE_NODE_CTOR(Expression);
-        DEFAULTED_EQUALITY(Expression);
+
+        auto operator==(Expression const& other) const noexcept -> bool {
+            return value == other.value;
+        }
     };
 
     static_assert(std::is_trivially_copyable_v<bu::Wrapper<Expression>>);

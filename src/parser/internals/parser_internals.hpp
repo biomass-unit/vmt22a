@@ -238,6 +238,12 @@ namespace parser {
 
 
     template <parser auto p>
+    auto parse_wrapped(Parse_context& context) {
+        return bu::map(p(context), bu::make_wrapper<Parse_result<p>>);
+    }
+
+
+    template <parser auto p>
     auto parse_and_add_source_view(Parse_context& context) {
         auto const anchor = context.pointer;
         auto result = p(context);

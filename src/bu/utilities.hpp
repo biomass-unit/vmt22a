@@ -166,7 +166,7 @@ namespace bu {
 
 
     template <class T>
-    constexpr auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
+    /*constexpr*/ auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
         std::vector<T> vector;
         vector.reserve(capacity);
         return vector;

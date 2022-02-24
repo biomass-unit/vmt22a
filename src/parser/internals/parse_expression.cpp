@@ -12,6 +12,11 @@ namespace {
         return ast::Literal<T> { context.previous().value_as<T>() };
     }
 
+    template <>
+    auto extract_literal<char>(Parse_context& context) -> ast::Expression {
+        return ast::Literal { static_cast<bu::Char>(context.previous().as_character()) };
+    }
+
     auto extract_variable(Parse_context& context) -> ast::Expression {
         return ast::Variable { context.previous().as_identifier() };
     }

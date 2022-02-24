@@ -38,8 +38,8 @@ namespace ast {
         };
 
         struct Function {
-            std::vector<Type> argument_types;
-            bu::Wrapper<Type> return_type;
+            std::vector<bu::Wrapper<Type>> argument_types;
+            bu::Wrapper<Type>              return_type;
             DEFAULTED_EQUALITY(Function);
         };
 
@@ -83,7 +83,10 @@ namespace ast {
         std::optional<bu::U16> size;
 
         DEFINE_NODE_CTOR(Type);
-        DEFAULTED_EQUALITY(Type);
+
+        auto operator==(Type const& other) const noexcept -> bool {
+            return value == other.value;
+        }
     };
 
 

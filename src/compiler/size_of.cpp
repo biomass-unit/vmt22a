@@ -61,10 +61,12 @@ namespace {
             };
         }
 
+
         template <class T>
         auto operator()(ast::type::Primitive<T>&) -> bu::Usize {
             return sizeof(T);
         }
+
         auto operator()(ast::type::Tuple& tuple) -> bu::Usize {
             return std::transform_reduce(
                 tuple.types.begin(),
@@ -74,15 +76,19 @@ namespace {
                 recurse()
             );
         }
+
         auto operator()(ast::type::Typename& name) -> bu::Usize {
             return size_of_user_defined(name.identifier, space);
         }
+
         auto operator()(ast::type::Reference&) -> bu::Usize {
             return sizeof(std::byte*);
         }
+
         auto operator()(ast::type::Array& array) -> bu::Usize {
             return recurse()(array.element_type) * array.length;
         }
+
         auto operator()(auto&) -> bu::Usize {
             bu::abort(std::format("compiler::size_of has not been implemented for {}", this_type));
         }

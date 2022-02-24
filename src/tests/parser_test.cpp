@@ -84,8 +84,6 @@ auto run_parser_tests() -> void {
     assert(lexer::Identifier::string_count() > 16 // should probably work maybe
         && "Parser tests may only be run after the lexer has been invoked");
 
-    ast::AST_context context { 32 };
-
     using namespace lexer::literals;
     using namespace bu::literals;
 
@@ -124,7 +122,7 @@ auto run_parser_tests() -> void {
                     ast::unit_value
                 }
             },
-            ast::Literal<char> { 'a' }
+            ast::Literal { static_cast<bu::Char>('a') }
         }
     );
 
@@ -190,7 +188,7 @@ auto run_parser_tests() -> void {
             ast::Type_cast {
                 ast::Expression {
                     ast::Type_cast {
-                        ast::Literal<char> { 'x' },
+                        ast::Literal { static_cast<bu::Char>('x') },
                         ast::type::integer
                     }
                 },

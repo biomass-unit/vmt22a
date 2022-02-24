@@ -15,6 +15,7 @@
 #include "vm/vm_formatting.hpp"
 
 #include "compiler/size_of.hpp"
+#include "compiler/type_of.hpp"
 
 #include "tests/tests.hpp"
 
@@ -60,7 +61,6 @@ namespace {
 
     [[maybe_unused]]
     auto program_parser_repl = generic_repl([](bu::Source source) {
-        ast::AST_context context { 32 };
         auto module = parser::parse(lexer::lex(std::move(source)));
         bu::print("{}\n", module.global_namespace);
     });
@@ -77,14 +77,30 @@ auto main() -> int try {
     //tests::run_all_tests        ();
     //program_parser_repl         ();
 
-    auto string =
+    /*auto string =
         "struct S = a: Int, b: (Int, Bool)"
         "data Test = Left(Int, Int) | Right(S, S)";
 
     auto module = parser::parse(lexer::lex(bu::Source { bu::Source::Mock_tag {}, string }));
     ast::Type type { ast::type::Typename { lexer::Identifier { std::string { "Test" } } } };
 
-    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));
+    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));*/
+
+    auto string = "fn f(n: Int): Int = n * n";
+
+    auto module = parser::parse(lexer::lex(bu::Source { bu::Source::Mock_tag {}, string }));
+
+    ast::Expression expression {
+        ast::Invocation {
+            .arguments { ast::Function_argument { ast::Literal<bu::Isize> { 5 } } },
+            .invocable { ast::Variable { "f"_id } }
+        }
+    };
+
+    auto type = compiler::type_of(expression, module.global_namespace);
+    auto size = compiler::size_of(*type, module.global_namespace);
+
+    bu::print("type: {}, size: {}\n", type, size);
 }
 
 catch (std::exception const& exception) {

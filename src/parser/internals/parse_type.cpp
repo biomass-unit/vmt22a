@@ -82,8 +82,12 @@ namespace {
 
     auto extract_function(Parse_context& context) -> ast::Type {
         if (context.try_consume(Token::Type::paren_open)) {
-            auto argument_types = extract_comma_separated_zero_or_more<parse_type, "a type">(context);
+            static constexpr auto parse_argument_types =
+                extract_comma_separated_zero_or_more<parse_wrapped<parse_type>, "a type">;
+
+            auto argument_types = parse_argument_types(context);
             context.consume_required(Token::Type::paren_close);
+
             if (context.try_consume(Token::Type::colon)) {
                 if (auto return_type = parse_type(context)) {
                     return ast::type::Function {

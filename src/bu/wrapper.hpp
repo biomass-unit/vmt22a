@@ -5,65 +5,40 @@
 
 namespace bu {
 
-    template <class>
-    class [[nodiscard]] Wrapper_context;
-
-
     template <class T>
     class [[nodiscard]] Wrapper {
+        inline static auto vector = bu::vector_with_capacity<T>(256);
+
         Usize index;
-
-        friend class Wrapper_context<T>;
-
-        inline static std::vector<T>* vector = nullptr;
-        inline static Wrapper_context<T> default_context { 0 };
     public:
-        template <class... Args> requires (!similar_to<Wrapper, Args> && ...)
+        template <class... Args> // The constraint ensures that the copy constructor isn't deleted
+            requires ((sizeof...(Args) != 1) || (!similar_to<Wrapper, Args> && ...))
         constexpr Wrapper(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
-            : index { vector->size() }
+            : index { vector.size() }
         {
-            vector->emplace_back(std::forward<Args>(args)...);
+            vector.emplace_back(std::forward<Args>(args)...);
         }
 
-        constexpr explicit(false) operator T const&() const noexcept { return vector->operator[](index); }
-        constexpr explicit(false) operator T      &()       noexcept { return vector->operator[](index); }
+        constexpr explicit(false) operator T const&() const noexcept { return vector[index]; }
+        constexpr explicit(false) operator T      &()       noexcept { return vector[index]; }
 
         constexpr auto operator*() const noexcept -> T const& { return *this; }
         constexpr auto operator*()       noexcept -> T      & { return *this; }
 
-        constexpr auto operator->() const noexcept -> T const* { return vector->data() + index; }
-        constexpr auto operator->()       noexcept -> T      * { return vector->data() + index; }
+        constexpr auto operator->() const noexcept -> T const* { return vector.data() + index; }
+        constexpr auto operator->()       noexcept -> T      * { return vector.data() + index; }
 
         constexpr auto clone() const noexcept(std::is_nothrow_copy_constructible_v<T>) -> Wrapper {
             return Wrapper { **this };
         }
 
         static constexpr auto object_count() noexcept -> Usize {
-            return vector->size();
+            return vector.size();
         }
     };
 
     template <class T>
     Wrapper(T) -> Wrapper<T>;
-
-
-    template <class T>
-    class [[nodiscard]] Wrapper_context {
-        std::vector<T>  vector;
-        std::vector<T>* old_vector;
-    public:
-        constexpr explicit Wrapper_context(Usize const initial_capacity = 256) noexcept
-            : old_vector { std::exchange(Wrapper<T>::vector, &vector) }
-        {
-            vector.reserve(initial_capacity);
-        }
-
-        Wrapper_context(Wrapper_context const&) = delete;
-
-        constexpr ~Wrapper_context() {
-            Wrapper<T>::vector = old_vector;
-        }
-    };
 
 
     template <class T>
