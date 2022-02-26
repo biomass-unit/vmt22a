@@ -82,7 +82,7 @@ namespace {
 
 auto run_parser_tests() -> void {
     assert(lexer::Identifier::string_count() > 16 // should probably work maybe
-        && "Parser tests may only be run after the lexer has been invoked");
+        && "Parser tests may only be run after the lexer tests have also been run");
 
     using namespace lexer::literals;
     using namespace bu::literals;
@@ -199,7 +199,7 @@ auto run_parser_tests() -> void {
         }
     );
 
-    /*test
+    test
     (
         {
             Token { "x"_id, Type::lower_name },
@@ -213,12 +213,12 @@ auto run_parser_tests() -> void {
         ast::Member_function_invocation {
             .arguments = {},
             .expression = ast::Member_access {
-                ast::Variable { "x"_id },
+                ast::Variable { ast::Qualified_name { .identifier = "x"_id } },
                 "y"_id
             },
             .member_name = "f"_id
         }
-    );*/
+    );
 
     test
     (
@@ -238,6 +238,55 @@ auto run_parser_tests() -> void {
                 }
             },
             2
+        }
+    );
+
+    ast::Middle_qualifier::Upper namespace_access_test_qualifier {
+        .template_arguments = std::vector {
+            ast::Template_argument {
+                ast::Type {
+                    ast::type::Typename {
+                        ast::Qualified_name {
+                            .identifier = "Long"_id
+                        }
+                    }
+                }
+            }
+        },
+        .name = "Vector"_id,
+    };
+    std::vector<ast::Middle_qualifier> namespace_access_test_qualifiers;
+    namespace_access_test_qualifiers.emplace_back(std::move(namespace_access_test_qualifier));
+
+    // ^^^ this isn't done inline because it caused an ICE on MSVC for some reason
+
+    test
+    (
+        {
+            Token { .type = Type::let },
+            Token { .type = Type::underscore },
+            Token { .type = Type::colon },
+            Token { "std"_id, Type::lower_name },
+            Token { .type = Type::double_colon },
+            Token { "Vector"_id, Type::upper_name },
+            Token { .type = Type::bracket_open },
+            Token { "Long"_id, Type::upper_name },
+            Token { .type = Type::bracket_close },
+            Token { .type = Type::double_colon },
+            Token { "Element"_id, Type::upper_name },
+            Token { .type = Type::equals },
+            Token { 5, Type::integer }
+        },
+        ast::Let_binding {
+            .pattern = ast::pattern::Wildcard {},
+            .initializer = ast::Literal<bu::Isize> { 5 },
+            .type = ast::type::Typename {
+                ast::Qualified_name {
+                    .root_qualifier = "std"_id,
+                    .qualifiers     = std::move(namespace_access_test_qualifiers),
+                    .identifier     = "Element"_id
+                }
+            }
         }
     );
 }

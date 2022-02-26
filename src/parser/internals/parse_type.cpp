@@ -8,7 +8,61 @@ namespace {
     using namespace parser;
 
 
-    auto extract_typename(Parse_context& context) -> ast::Type {
+    auto parse_qualified(lexer::Token* anchor, ast::Root_qualifier&& root, Parse_context& context)
+        -> std::optional<ast::Type>
+    {
+        auto qualifiers = extract_qualifiers(context);
+
+        if (qualifiers.empty()) {
+            using R = std::optional<ast::Type>;
+
+            return std::visit(bu::Overload {
+                [](std::monostate) -> R {
+                    bu::unimplemented();
+                },
+                [&](ast::Root_qualifier::Global) -> R {
+                    throw context.expected("a type");
+                },
+                [&](lexer::Identifier) -> R {
+                    context.pointer = anchor;
+                    return std::nullopt;
+                },
+                [](ast::Type& type) -> R {
+                    return std::move(type);
+                }
+            }, root.qualifier);
+        }
+        else {
+            auto back = std::move(qualifiers.back().qualifier);
+            qualifiers.pop_back();
+
+            static_assert(std::variant_size_v<decltype(back)> == 2);
+
+            if (auto* upper = std::get_if<ast::Middle_qualifier::Upper>(&back)) {
+                ast::Qualified_name name {
+                    .root_qualifier = std::move(root),
+                    .qualifiers     = std::move(qualifiers),
+                    .identifier     = upper->name
+                };
+                if (upper->template_arguments) {
+                    return ast::type::Template_instantiation {
+                        std::move(*upper->template_arguments),
+                        std::move(name)
+                    };
+                }
+                else {
+                    return ast::type::Typename { std::move(name) };
+                }
+            }
+            else {
+                context.pointer = anchor;
+                return std::nullopt;
+            }
+        }
+    }
+
+
+    auto parse_typename(Parse_context& context) -> std::optional<ast::Type> {
         constexpr std::hash<std::string_view> hasher;
 
         static auto const
@@ -22,28 +76,40 @@ namespace {
         auto const hash = id.hash();
 
         if (hash == integer) {
-            return ast::type::integer;
+            return *ast::type::integer;
         }
         else if (hash == floating) {
-            return ast::type::floating;
+            return *ast::type::floating;
         }
         else if (hash == character) {
-            return ast::type::character;
+            return *ast::type::character;
         }
         else if (hash == boolean) {
-            return ast::type::boolean;
+            return *ast::type::boolean;
         }
         else if (hash == string) {
-            return ast::type::string;
-        }
-        else if (auto arguments = parse_template_arguments(context)) {
-            bu::unimplemented();
-            //return ast::type::Template_instantiation { std::move(*arguments), id };
+            return *ast::type::string;
         }
         else {
-            bu::unimplemented();
-            //return ast::type::Typename { id };
+            auto anchor    = &context.previous();
+            auto name      = ast::Qualified_name { .identifier = id };
+            auto arguments = parse_template_arguments(context);
+
+            auto root = arguments
+                ? ast::Type { ast::type::Template_instantiation { std::move(*arguments), std::move(name) } }
+                : ast::Type { ast::type::Typename { std::move(name) } };
+
+            return parse_qualified(anchor, { std::move(root) }, context);
         }
+    }
+
+    auto parse_lower_qualified_typename(Parse_context& context) -> std::optional<ast::Type> {
+        return parse_qualified(&context.previous(), { context.previous().as_identifier() }, context);
+    }
+
+    auto parse_global_typename(Parse_context& context) -> std::optional<ast::Type> {
+        context.retreat();
+        return parse_qualified(context.pointer, { ast::Root_qualifier::Global{} }, context);
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Type {
@@ -126,25 +192,40 @@ namespace {
         return ast::type::Reference { extract_type(context), is_mutable };
     }
 
+
+    auto parse_normal_type(Parse_context& context) -> std::optional<ast::Type> {
+        switch (context.extract().type) {
+        case Token::Type::paren_open:
+            return extract_tuple(context);
+        case Token::Type::bracket_open:
+            return extract_array_or_list(context);
+        case Token::Type::fn:
+            return extract_function(context);
+        case Token::Type::type_of:
+            return extract_type_of(context);
+        case Token::Type::ampersand:
+            return extract_reference(context);
+        case Token::Type::upper_name:
+            return parse_typename(context);
+        case Token::Type::lower_name:
+            return parse_lower_qualified_typename(context);
+        case Token::Type::double_colon:
+            return parse_global_typename(context);
+        default:
+            context.retreat();
+            return std::nullopt;
+        }
+    }
+
 }
 
 
 auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
-    switch (context.extract().type) {
-    case Token::Type::upper_name:
-        return extract_typename(context);
-    case Token::Type::paren_open:
-        return extract_tuple(context);
-    case Token::Type::bracket_open:
-        return extract_array_or_list(context);
-    case Token::Type::fn:
-        return extract_function(context);
-    case Token::Type::type_of:
-        return extract_type_of(context);
-    case Token::Type::ampersand:
-        return extract_reference(context);
-    default:
-        context.retreat();
-        return std::nullopt;
+    auto type = parse_normal_type(context);
+
+    if (type && context.pointer->type == Token::Type::double_colon) {
+        type = parse_qualified(nullptr, { std::move(*type) }, context);
     }
+
+    return type;
 }

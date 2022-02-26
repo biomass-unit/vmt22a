@@ -1,7 +1,7 @@
 #include "bu/utilities.hpp"
 #include "bu/uninitialized.hpp"
-#include "parser.hpp"
 #include "internals/parser_internals.hpp"
+#include "parser.hpp"
 
 
 auto parser::parse_template_arguments(Parse_context& context)
@@ -10,11 +10,11 @@ auto parser::parse_template_arguments(Parse_context& context)
     constexpr auto extract_arguments = extract_comma_separated_zero_or_more<[](Parse_context& context)
         -> std::optional<ast::Template_argument>
     {
-        if (auto expression = parse_expression(context)) {
-            return ast::Template_argument { std::move(*expression) };
-        }
-        else if (auto type = parse_type(context)) {
+        if (auto type = parse_type(context)) {
             return ast::Template_argument { std::move(*type) };
+        }
+        else if (auto expression = parse_expression(context)) {
+            return ast::Template_argument { std::move(*expression) };
         }
         else {
             return std::nullopt;
@@ -29,6 +29,35 @@ auto parser::parse_template_arguments(Parse_context& context)
     else {
         return std::nullopt;
     }
+}
+
+auto parser::extract_qualifiers(Parse_context& context) -> std::vector<ast::Middle_qualifier> {
+    std::vector<ast::Middle_qualifier> qualifiers;
+
+    while (context.try_consume(Token::Type::double_colon)) {
+        switch (auto& token = context.extract(); token.type) {
+        case Token::Type::lower_name:
+            qualifiers.emplace_back(
+                ast::Middle_qualifier::Lower {
+                    token.as_identifier()
+                }
+            );
+            break;
+        case Token::Type::upper_name:
+            qualifiers.emplace_back(
+                ast::Middle_qualifier::Upper {
+                    parse_template_arguments(context),
+                    token.as_identifier()
+                }
+            );
+            break;
+        default:
+            context.retreat();
+            throw context.expected("an identifier");
+        }
+    }
+
+    return qualifiers;
 }
 
 
@@ -141,9 +170,9 @@ namespace {
                 return_type.emplace(extract_type(context));
             }
 
-            /*if (context.try_consume(Token::Type::where)) {
-
-            }*/
+            if (context.try_consume(Token::Type::where)) {
+                bu::unimplemented(); // TODO: add support for where clauses
+            }
 
             bu::Uninitialized<ast::Expression> body;
 

@@ -65,7 +65,12 @@ struct ast::Function_argument {
 
 struct ast::Root_qualifier {
     struct Global { DEFAULTED_EQUALITY(Global); };
-    std::variant<std::monostate, Global, lexer::Identifier, bu::Wrapper<Type>> qualifier;
+    std::variant<
+        std::monostate,    // id
+        Global,            // ::id
+        lexer::Identifier, // id::id
+        Type               // Type::id
+    > qualifier;
     DEFAULTED_EQUALITY(Root_qualifier);
 };
 

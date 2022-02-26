@@ -206,6 +206,8 @@ namespace parser {
 
     auto parse_template_arguments(Parse_context&) -> std::optional<std::vector<ast::Template_argument>>;
 
+    auto extract_qualifiers(Parse_context&) -> std::vector<ast::Middle_qualifier>;
+
 
     template <Token::Type id_type, bu::Metastring description>
     auto extract_id(Parse_context& context) -> lexer::Identifier {

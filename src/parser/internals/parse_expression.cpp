@@ -19,51 +19,16 @@ namespace {
     }
 
 
-    auto extract_lower_identifier(Parse_context& context) -> ast::Expression {
-        auto const root = context.previous().as_identifier();
-        std::vector<ast::Middle_qualifier> qualifiers;
-
-        while (context.try_consume(Token::Type::double_colon)) {
-            auto& token = context.extract();
-
-            switch (token.type) {
-            case Token::Type::lower_name:
-            {
-                if (auto template_arguments = parse_template_arguments(context)) {
-                    return ast::Template_instantiation {
-                        ast::Qualified_name {
-                            .root_qualifier = root,
-                            .qualifiers     = std::move(qualifiers),
-                            .identifier     = token.as_identifier()
-                        },
-                        std::move(*template_arguments)
-                    };
-                }
-                else {
-                    qualifiers.emplace_back(
-                        ast::Middle_qualifier::Lower { token.as_identifier() }
-                    );
-                }
-                break;
-            }
-            case Token::Type::upper_name:
-            {
-                qualifiers.emplace_back(
-                    ast::Middle_qualifier::Upper {
-                        parse_template_arguments(context),
-                        token.as_identifier()
-                    }
-                );
-                break;
-            }
-            default:
-                context.retreat();
-                throw context.expected("an identifier");
-            }
-        }
+    auto extract_qualified(ast::Root_qualifier&& root, Parse_context& context) -> ast::Expression {
+        auto qualifiers = extract_qualifiers(context);
         
         if (qualifiers.empty()) {
-            return ast::Variable { ast::Qualified_name { .identifier = root } };
+            if (auto* name = std::get_if<lexer::Identifier>(&root.qualifier)) {
+                return ast::Variable { ast::Qualified_name { .identifier = *name } };
+            }
+            else {
+                throw context.expected("an identifier");
+            }
         }
         else {
             auto back = std::move(qualifiers.back().qualifier);
@@ -74,7 +39,7 @@ namespace {
             if (auto* upper = std::get_if<ast::Middle_qualifier::Upper>(&back)) {
                 return ast::Data_constructor_reference {
                     ast::Qualified_name {
-                        .root_qualifier = root,
+                        .root_qualifier = std::move(root),
                         .qualifiers     = std::move(qualifiers),
                         .identifier     = upper->name
                     },
@@ -84,7 +49,7 @@ namespace {
             else {
                 return ast::Variable {
                     ast::Qualified_name {
-                        .root_qualifier = root,
+                        .root_qualifier = std::move(root),
                         .qualifiers     = std::move(qualifiers),
                         .identifier     = std::get_if<ast::Middle_qualifier::Lower>(&back)->name
                     }
@@ -93,12 +58,14 @@ namespace {
         }
     }
 
-    auto extract_upper_identifier(Parse_context& /*context*/) -> ast::Expression {
-        bu::unimplemented();
+
+    auto extract_identifier(Parse_context& context) -> ast::Expression {
+        return extract_qualified(ast::Root_qualifier { context.previous().as_identifier() }, context);
     }
 
-    auto extract_global_identifier(Parse_context& /*context*/) -> ast::Expression {
-        bu::unimplemented();
+    auto extract_global_identifier(Parse_context& context) -> ast::Expression {
+        context.retreat();
+        return extract_qualified(ast::Root_qualifier { ast::Root_qualifier::Global {} }, context);
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Expression {
@@ -381,9 +348,9 @@ namespace {
         case Token::Type::string:
             return extract_literal<lexer::String>(context);
         case Token::Type::lower_name:
-            return extract_lower_identifier(context);
-        case Token::Type::upper_name:
-            return extract_upper_identifier(context);
+            return extract_identifier(context);
+        //case Token::Type::upper_name:
+            //return extract_upper_identifier(context);
         case Token::Type::double_colon:
             return extract_global_identifier(context);
         case Token::Type::paren_open:
@@ -418,7 +385,12 @@ namespace {
             return extract_compound_expression(context);
         default:
             context.retreat();
-            return std::nullopt;
+            if (auto root = parse_type(context)) {
+                return extract_qualified(ast::Root_qualifier { std::move(*root) }, context);
+            }
+            else {
+                return std::nullopt;
+            }
         }
     }
 
@@ -582,7 +554,7 @@ namespace {
     }
 
     template <>
-    auto parse_binary_operator_invocation_with_precedence<std::numeric_limits<bu::Usize>::max()>(Parse_context& context)
+    auto parse_binary_operator_invocation_with_precedence<static_cast<bu::Usize>(-1)>(Parse_context& context)
         -> std::optional<ast::Expression>
     {
         return parse_potential_type_cast(context);
