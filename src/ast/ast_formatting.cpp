@@ -10,6 +10,34 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
     return std::format_to(context.out(), value.name ? "{} = {}" : "{1}", value.name, value.expression);
 }
 
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
+    auto out = context.out();
+
+    std::visit(bu::Overload {
+        [   ](std::monostate)              {},
+        [out](ast::Root_qualifier::Global) { std::format_to(out, "::"        ); },
+        [out](auto const& root)            { std::format_to(out, "{}::", root); }
+    }, value.root_qualifier->qualifier);
+
+    for (auto& qualifier : value.qualifiers) {
+        std::visit(bu::Overload {
+            [out](ast::Middle_qualifier::Lower const& lower) {
+                std::format_to(out, "{}::", lower.name);
+            },
+            [out](ast::Middle_qualifier::Upper const& upper) {
+                std::format_to(
+                    out,
+                    upper.template_arguments ? "{}[{}]::" : "{}::",
+                    upper.name,
+                    upper.template_arguments
+                );
+            }
+        }, qualifier.qualifier);
+    }
+
+    return std::format_to(out, "{}", value.identifier);
+}
+
 
 namespace {
 
@@ -53,8 +81,18 @@ namespace {
         auto operator()(lexer::Identifier const identifier) {
             return format("{}", identifier);
         }
-        auto operator()(ast::Variable variable) {
+        auto operator()(ast::Variable const& variable) {
             return format("{}", variable.name);
+        }
+        auto operator()(ast::Data_constructor_reference const& constructor) {
+            return format(
+                constructor.template_arguments ? "{}[{}]" : "{}",
+                constructor.name,
+                constructor.template_arguments
+            );
+        }
+        auto operator()(ast::Template_instantiation const& instantiation) {
+            return format("{}[{}]", instantiation.name, instantiation.template_arguments);
         }
         auto operator()(ast::Tuple const& tuple) {
             return format("({})", tuple.expressions);
@@ -301,17 +339,17 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     auto out = context.out();
     std::format_to(out, "module {} {{", value.name);
 
-    auto fmt = [out]<class T>(std::vector<T> const& xs) {
+    auto fmt = [out]<class T>(std::span<T> const& xs) {
         for (auto& x : xs) {
             std::format_to(out, "\n{}", x);
         }
     };
 
-    fmt(value.function_definitions);
-    fmt(value.struct_definitions);
-    fmt(value.data_definitions);
-    fmt(value.class_definitions);
-    fmt(value.children);
+    fmt(value.function_definitions.span());
+    fmt(value.struct_definitions.span());
+    fmt(value.data_definitions.span());
+    fmt(value.class_definitions.span());
+    fmt(value.children.span());
 
     return std::format_to(out, "\n}}\n");
 }

@@ -120,17 +120,23 @@ namespace bu {
             noexcept(noexcept(first == first, second == second)) -> bool = default;
     };
 
-    inline constexpr auto first  = [](auto& pair) noexcept -> auto& { return pair.first ; };
-    inline constexpr auto second = [](auto& pair) noexcept -> auto& { return pair.second; };
+    constexpr auto first  = [](auto& pair) noexcept -> auto& { return pair.first ; };
+    constexpr auto second = [](auto& pair) noexcept -> auto& { return pair.second; };
 
 
-    inline constexpr auto move = []<class X>(X&& x) noexcept -> std::remove_reference_t<X>&& {
+    constexpr auto move = []<class X>(X&& x) noexcept -> std::remove_reference_t<X>&& {
         static_assert(!std::is_const_v<std::remove_reference_t<X>>, "Attempted to move from const");
         return static_cast<std::remove_reference_t<X>&&>(x);
     };
 
+    constexpr auto copy = []<std::copyable X>(X const& x)
+        noexcept(std::is_nothrow_copy_constructible_v<X>) -> X
+    {
+        return x;
+    };
+
     template <class T>
-    inline constexpr auto make = []<class... Args>(Args&&... args)
+    constexpr auto make = []<class... Args>(Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args&&...>) -> T
     {
         return T { std::forward<Args>(args)... };
@@ -151,6 +157,31 @@ namespace bu {
     }
 
 
+    constexpr auto compose = []<class F, class G>(F&& f, G&& g) noexcept {
+        return [f = std::forward<F>(f), g = std::forward<G>(g)]<class... Args>(Args&&... args)
+            mutable noexcept(
+                std::is_nothrow_invocable_v<G&&, Args&&...> &&
+                std::is_nothrow_invocable_v<F&&, std::invoke_result_t<G&&, Args&&...>>
+            ) -> decltype(auto)
+        {
+            return std::invoke(
+                std::forward<F>(f),
+                std::invoke(
+                    std::forward<G>(g),
+                    std::forward<Args>(args)...
+                )
+            );
+        };
+    };
+
+    static_assert(
+        compose(
+            [](int x) { return x * x; },
+            [](int a, int b) { return a + b; }
+        )(2, 3) == 25
+    );
+
+
     template <class... Fs>
     struct Overload : Fs... {
         using Fs::operator()...;
@@ -159,10 +190,18 @@ namespace bu {
     template <class... Fs>
     Overload(Fs...) -> Overload<Fs...>;
 
+
     template <class>
     struct Typetag {};
     template <class T>
     constexpr Typetag<T> typetag;
+
+
+    template <class, class>
+    constexpr Usize alternative_index;
+    template <class... Ts, class T>
+    constexpr Usize alternative_index<std::variant<Ts...>, T> =
+        std::variant<Typetag<Ts>...> { Typetag<T> {} }.index();
 
 
     template <class T>
@@ -181,11 +220,6 @@ namespace bu {
     [[nodiscard]]
     constexpr auto unsigned_distance(auto const start, auto const stop) noexcept -> Usize {
         return static_cast<Usize>(std::distance(start, stop));
-    }
-
-    [[nodiscard]]
-    inline constexpr auto to_pointers(std::string_view const view) noexcept -> Pair<char const*> {
-        return { view.data(), view.data() + view.size() };
     }
 
     [[nodiscard]]
@@ -301,12 +335,9 @@ DEFINE_FORMATTER_FOR(std::variant<Ts...>) {
 
 template <class T>
 DEFINE_FORMATTER_FOR(std::optional<T>) {
-    if (value) {
-        return std::format_to(context.out(), "{}", *value);
-    }
-    else {
-        return std::format_to(context.out(), "std::nullopt");
-    }
+    return value
+        ? std::format_to(context.out(), "{}", *value)
+        : std::format_to(context.out(), "std::nullopt");
 }
 
 template <class T>

@@ -199,7 +199,7 @@ auto run_parser_tests() -> void {
         }
     );
 
-    test
+    /*test
     (
         {
             Token { "x"_id, Type::lower_name },
@@ -218,7 +218,7 @@ auto run_parser_tests() -> void {
             },
             .member_name = "f"_id
         }
-    );
+    );*/
 
     test
     (

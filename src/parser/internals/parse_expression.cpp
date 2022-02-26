@@ -1,4 +1,5 @@
 #include "bu/utilities.hpp"
+#include "bu/uninitialized.hpp"
 #include "parser_internals.hpp"
 
 
@@ -17,8 +18,87 @@ namespace {
         return ast::Literal { static_cast<bu::Char>(context.previous().as_character()) };
     }
 
-    auto extract_variable(Parse_context& context) -> ast::Expression {
-        return ast::Variable { context.previous().as_identifier() };
+
+    auto extract_lower_identifier(Parse_context& context) -> ast::Expression {
+        auto const root = context.previous().as_identifier();
+        std::vector<ast::Middle_qualifier> qualifiers;
+
+        while (context.try_consume(Token::Type::double_colon)) {
+            auto& token = context.extract();
+
+            switch (token.type) {
+            case Token::Type::lower_name:
+            {
+                if (auto template_arguments = parse_template_arguments(context)) {
+                    return ast::Template_instantiation {
+                        ast::Qualified_name {
+                            .root_qualifier = root,
+                            .qualifiers     = std::move(qualifiers),
+                            .identifier     = token.as_identifier()
+                        },
+                        std::move(*template_arguments)
+                    };
+                }
+                else {
+                    qualifiers.emplace_back(
+                        ast::Middle_qualifier::Lower { token.as_identifier() }
+                    );
+                }
+                break;
+            }
+            case Token::Type::upper_name:
+            {
+                qualifiers.emplace_back(
+                    ast::Middle_qualifier::Upper {
+                        parse_template_arguments(context),
+                        token.as_identifier()
+                    }
+                );
+                break;
+            }
+            default:
+                context.retreat();
+                throw context.expected("an identifier");
+            }
+        }
+        
+        if (qualifiers.empty()) {
+            return ast::Variable { ast::Qualified_name { .identifier = root } };
+        }
+        else {
+            auto back = std::move(qualifiers.back().qualifier);
+            qualifiers.pop_back();
+
+            static_assert(std::variant_size_v<decltype(back)> == 2);
+
+            if (auto* upper = std::get_if<ast::Middle_qualifier::Upper>(&back)) {
+                return ast::Data_constructor_reference {
+                    ast::Qualified_name {
+                        .root_qualifier = root,
+                        .qualifiers     = std::move(qualifiers),
+                        .identifier     = upper->name
+                    },
+                    std::move(upper->template_arguments)
+                };
+            }
+            else {
+                return ast::Variable {
+                    ast::Qualified_name {
+                        .root_qualifier = root,
+                        .qualifiers     = std::move(qualifiers),
+                        .identifier     = std::get_if<ast::Middle_qualifier::Lower>(&back)->name
+                    }
+                };
+            }
+        }
+    }
+
+    auto extract_upper_identifier(Parse_context& /*context*/) -> ast::Expression {
+        bu::unimplemented();
+    }
+
+    auto extract_global_identifier(Parse_context& /*context*/) -> ast::Expression {
+        bu::unimplemented();
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Expression {
@@ -301,7 +381,11 @@ namespace {
         case Token::Type::string:
             return extract_literal<lexer::String>(context);
         case Token::Type::lower_name:
-            return extract_variable(context);
+            return extract_lower_identifier(context);
+        case Token::Type::upper_name:
+            return extract_upper_identifier(context);
+        case Token::Type::double_colon:
+            return extract_global_identifier(context);
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::bracket_open:
@@ -345,7 +429,13 @@ namespace {
                 return ast::Function_argument { extract_expression(context), *name };
             }
             else {
-                return ast::Function_argument { ast::Variable { *name } };
+                return ast::Function_argument {
+                    ast::Variable {
+                        ast::Qualified_name {
+                            .identifier = *name
+                        }
+                    }
+                };
             }
         }
         else {

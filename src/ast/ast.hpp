@@ -3,6 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "bu/source.hpp"
+#include "bu/flatmap.hpp"
 #include "lexer/token.hpp"
 
 
@@ -13,6 +14,31 @@ namespace ast {
     struct [[nodiscard]] Type;
 
     struct Template_argument;
+
+    struct Function_argument;
+
+    struct Root_qualifier;
+
+    struct Middle_qualifier {
+        struct Lower {
+            lexer::Identifier name;
+            DEFAULTED_EQUALITY(Lower);
+        };
+        struct Upper {
+            std::optional<std::vector<Template_argument>> template_arguments;
+            lexer::Identifier                             name;
+            DEFAULTED_EQUALITY(Upper);
+        };
+        std::variant<Lower, Upper> qualifier;
+        DEFAULTED_EQUALITY(Middle_qualifier);
+    };
+
+    struct Qualified_name {
+        bu::Wrapper<Root_qualifier>   root_qualifier;
+        std::vector<Middle_qualifier> qualifiers;
+        lexer::Identifier             identifier;
+        DEFAULTED_EQUALITY(Qualified_name);
+    };
 
 }
 
@@ -31,10 +57,23 @@ name(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>) \
 #undef DEFINE_NODE_CTOR
 
 
+struct ast::Function_argument {
+    Expression                       expression;
+    std::optional<lexer::Identifier> name;
+    DEFAULTED_EQUALITY(Function_argument);
+};
+
+struct ast::Root_qualifier {
+    struct Global { DEFAULTED_EQUALITY(Global); };
+    std::variant<std::monostate, Global, lexer::Identifier, bu::Wrapper<Type>> qualifier;
+    DEFAULTED_EQUALITY(Root_qualifier);
+};
+
+
 namespace ast {
 
-    inline Expression const unit_value =       Tuple {};
-    inline Type       const unit_type  = type::Tuple {};
+    inline bu::Wrapper<Expression> const unit_value =       Tuple {};
+    inline bu::Wrapper<Type      > const unit_type  = type::Tuple {};
 
     struct [[nodiscard]] Module {
         bu::Source source;

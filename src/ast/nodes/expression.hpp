@@ -20,8 +20,20 @@ namespace ast {
     };
 
     struct Variable {
-        lexer::Identifier name;
+        Qualified_name name;
         DEFAULTED_EQUALITY(Variable);
+    };
+
+    struct Data_constructor_reference {
+        Qualified_name                                name;
+        std::optional<std::vector<Template_argument>> template_arguments;
+        DEFAULTED_EQUALITY(Data_constructor_reference);
+    };
+
+    struct Template_instantiation {
+        Qualified_name                 name;
+        std::vector<Template_argument> template_arguments;
+        DEFAULTED_EQUALITY(Template_instantiation);
     };
 
     struct Tuple {
@@ -33,8 +45,6 @@ namespace ast {
         std::vector<Expression> expressions;
         DEFAULTED_EQUALITY(Compound_expression);
     };
-
-    struct Function_argument;
 
     struct Invocation {
         std::vector<Function_argument> arguments;
@@ -157,8 +167,9 @@ namespace ast {
             Literal<lexer::String>,
             Array_literal,
             List_literal,
-            lexer::Identifier,
             Variable,
+            Data_constructor_reference,
+            Template_instantiation,
             Tuple,
             Compound_expression,
             Invocation,
@@ -194,10 +205,3 @@ namespace ast {
     static_assert(std::is_trivially_copyable_v<bu::Wrapper<Expression>>);
 
 }
-
-
-struct ast::Function_argument {
-    Expression                       expression;
-    std::optional<lexer::Identifier> name;
-    DEFAULTED_EQUALITY(Function_argument);
-};

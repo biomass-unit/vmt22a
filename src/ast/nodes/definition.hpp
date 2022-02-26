@@ -10,7 +10,8 @@ namespace ast {
 
     struct Class_reference {
         std::optional<std::vector<Template_argument>> template_arguments;
-        lexer::Identifier                             name;
+        Qualified_name                                name;
+        DEFAULTED_EQUALITY(Class_reference);
     };
 
     struct Template_parameter {
@@ -55,6 +56,7 @@ namespace ast {
             std::optional<std::vector<Template_parameter>> template_parameters;
             std::vector<Member>                            members;
             lexer::Identifier                              name;
+            std::optional<bu::Usize>                       size;
             DEFAULTED_EQUALITY(Struct);
         };
 
@@ -67,6 +69,7 @@ namespace ast {
             std::optional<std::vector<Template_parameter>> template_parameters;
             std::vector<Constructor>                       constructors;
             lexer::Identifier                              name;
+            std::optional<bu::Usize>                       size;
             DEFAULTED_EQUALITY(Data);
         };
 

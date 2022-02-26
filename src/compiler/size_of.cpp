@@ -25,29 +25,17 @@ namespace {
         return std::accumulate(range.begin(), range.end(), 0_uz);
     }
 
-    auto size_of_user_defined(lexer::Identifier const name, ast::Namespace& space) -> bu::Usize {
-        static auto sizes =
-            bu::vector_with_capacity<bu::Pair<lexer::Identifier, bu::Usize>>(16);
-
-        if (auto it = std::ranges::find(sizes, name, bu::first); it != sizes.end()) {
-            return it->second;
-        }
-
-        {
-            auto it = std::ranges::find(space.data_definitions, name, &ast::definition::Data::name);
-            if (it != space.data_definitions.end()) {
-                return sizes.emplace_back(name, size_of_data(*it, space)).second;
-            }
-        }
-
-        {
-            auto it = std::ranges::find(space.struct_definitions, name, &ast::definition::Struct::name);
-            if (it != space.struct_definitions.end()) {
-                return sizes.emplace_back(name, size_of_struct(*it, space)).second;
-            }
-        }
-
-        bu::abort(std::format("compiler::size_of: {} is not a type", name));
+    auto size_of_user_defined(ast::Qualified_name const name, ast::Namespace& space) -> bu::Usize {
+        return std::visit(bu::Overload {
+            [&](ast::definition::Struct* structure) {
+                return structure->size.emplace(size_of_struct(*structure, space));
+            },
+            [&](ast::definition::Data* data) {
+                return data->size.emplace(size_of_data(*data, space));
+            },
+            [](ast::definition::Typeclass*) -> bu::Usize { bu::unimplemented(); },
+            [](std::monostate)              -> bu::Usize { bu::unimplemented(); }
+        }, space.find_type_or_typeclass(name));
     }
 
 
@@ -59,6 +47,9 @@ namespace {
             return [&](ast::Type& type) {
                 return compiler::size_of(type, space);
             };
+        }
+        auto recurse(ast::Type& type) {
+            return recurse()(type);
         }
 
 
@@ -86,7 +77,7 @@ namespace {
         }
 
         auto operator()(ast::type::Array& array) -> bu::Usize {
-            return recurse()(array.element_type) * array.length;
+            return recurse(array.element_type) * array.length;
         }
 
         auto operator()(auto&) -> bu::Usize {

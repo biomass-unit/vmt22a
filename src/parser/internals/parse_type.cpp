@@ -37,10 +37,12 @@ namespace {
             return ast::type::string;
         }
         else if (auto arguments = parse_template_arguments(context)) {
-            return ast::type::Template_instantiation { std::move(*arguments), id };
+            bu::unimplemented();
+            //return ast::type::Template_instantiation { std::move(*arguments), id };
         }
         else {
-            return ast::type::Typename { id };
+            bu::unimplemented();
+            //return ast::type::Typename { id };
         }
     }
 

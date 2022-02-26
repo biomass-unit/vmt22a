@@ -73,9 +73,9 @@ using namespace lexer :: literals;
 
 
 auto main() -> int try {
-    //bu::enable_color_formatting ();
-    //tests::run_all_tests        ();
-    //program_parser_repl         ();
+    bu::enable_color_formatting ();
+    tests::run_all_tests        ();
+    expression_parser_repl      ();
 
     /*auto string =
         "struct S = a: Int, b: (Int, Bool)"
@@ -86,7 +86,7 @@ auto main() -> int try {
 
     bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));*/
 
-    auto string = "fn f(n: Int): Int = n * n";
+    /*auto string = "fn f(n: Int): [Int; 10] {}";
 
     auto module = parser::parse(lexer::lex(bu::Source { bu::Source::Mock_tag {}, string }));
 
@@ -100,7 +100,7 @@ auto main() -> int try {
     auto type = compiler::type_of(expression, module.global_namespace);
     auto size = compiler::size_of(*type, module.global_namespace);
 
-    bu::print("type: {}, size: {}\n", type, size);
+    bu::print("type: {}, size: {}\n", type, size);*/
 }
 
 catch (std::exception const& exception) {

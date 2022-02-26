@@ -17,7 +17,7 @@ namespace ast {
         using String    = Primitive<lexer::String>;
 
         struct Typename {
-            lexer::Identifier identifier;
+            Qualified_name identifier;
             DEFAULTED_EQUALITY(Typename);
         };
 
@@ -56,7 +56,7 @@ namespace ast {
 
         struct Template_instantiation {
             std::vector<ast::Template_argument> arguments;
-            lexer::Identifier                   name;
+            Qualified_name                      name;
             DEFAULTED_EQUALITY(Template_instantiation);
         };
 
@@ -92,7 +92,7 @@ namespace ast {
 
     namespace type {
 
-        inline Type const
+        inline bu::Wrapper<Type> const
             integer   = Integer   {},
             floating  = Floating  {},
             character = Character {},

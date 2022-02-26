@@ -198,9 +198,9 @@ namespace parser {
     auto parse_pattern   (Parse_context&) -> std::optional<ast::Pattern   >;
     auto parse_type      (Parse_context&) -> std::optional<ast::Type      >;
 
-    inline constexpr auto extract_expression = extract_required<parse_expression, "an expression">;
-    inline constexpr auto extract_pattern    = extract_required<parse_pattern   , "a pattern"    >;
-    inline constexpr auto extract_type       = extract_required<parse_type      , "a type"       >;
+    constexpr auto extract_expression = extract_required<parse_expression, "an expression">;
+    constexpr auto extract_pattern    = extract_required<parse_pattern   , "a pattern"    >;
+    constexpr auto extract_type       = extract_required<parse_type      , "a type"       >;
 
     auto parse_compound_expression(Parse_context&) -> std::optional<ast::Expression>;
 
@@ -233,8 +233,8 @@ namespace parser {
         }
     }
 
-    inline constexpr auto parse_lower_id = parse_id<Token::Type::lower_name>;
-    inline constexpr auto parse_upper_id = parse_id<Token::Type::upper_name>;
+    constexpr auto parse_lower_id = parse_id<Token::Type::lower_name>;
+    constexpr auto parse_upper_id = parse_id<Token::Type::upper_name>;
 
 
     template <parser auto p>

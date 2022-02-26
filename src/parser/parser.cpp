@@ -157,12 +157,15 @@ namespace {
                 throw context.expected("the function body", "'=' or '{'");
             }
 
-            current_namespace->function_definitions.emplace_back(
-                std::move(*body),
-                std::move(parameters),
-                std::move(template_parameters),
-                name,
-                return_type
+            current_namespace->function_definitions.add(
+                bu::copy(name),
+                ast::definition::Function {
+                    std::move(*body),
+                    std::move(parameters),
+                    std::move(template_parameters),
+                    name,
+                    return_type
+                }
             );
         }
         else {
@@ -195,10 +198,13 @@ namespace {
 
         context.consume_required(Token::Type::equals);
         if (auto members = parse_members(context)) {
-            current_namespace->struct_definitions.emplace_back(
-                std::move(template_parameters),
-                std::move(*members),
-                name
+            current_namespace->struct_definitions.add(
+                bu::copy(name),
+                ast::definition::Struct {
+                    std::move(template_parameters),
+                    std::move(*members),
+                    name
+                }
             );
         }
         else {
@@ -243,10 +249,13 @@ namespace {
 
         context.consume_required(Token::Type::equals);
         if (auto constructors = parse_constructors(context)) {
-            current_namespace->data_definitions.emplace_back(
-                std::move(template_parameters),
-                std::move(*constructors),
-                name
+            current_namespace->data_definitions.add(
+                bu::copy(name),
+                ast::definition::Data {
+                    std::move(template_parameters),
+                    std::move(*constructors),
+                    name
+                }
             );
         }
         else {
@@ -255,14 +264,15 @@ namespace {
     }
 
 
-    auto parse_class_reference(Parse_context& context)
+    auto parse_class_reference(Parse_context& /*context*/)
         -> std::optional<ast::Class_reference>
     {
-        auto name = extract_upper_id<"a class name">(context);
+        bu::unimplemented();
+        /*auto name = extract_upper_id<"a class name">(context);
         return ast::Class_reference {
             parse_template_arguments(context),
             name
-        };
+        };*/
     }
 
     auto extract_function_signature(Parse_context& context) -> ast::Function_signature {
@@ -334,11 +344,14 @@ namespace {
                 if (is_braced) {
                     context.consume_required(Token::Type::brace_close);
                 }
-                current_namespace->class_definitions.emplace_back(
-                    std::move(function_signatures),
-                    std::move(type_signatures),
-                    name,
-                    self_is_template
+                current_namespace->class_definitions.add(
+                    bu::copy(name),
+                    ast::definition::Typeclass {
+                        std::move(function_signatures),
+                        std::move(type_signatures),
+                        name,
+                        self_is_template
+                    }
                 );
                 return;
             }

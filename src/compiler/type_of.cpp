@@ -14,6 +14,9 @@ namespace {
                 return compiler::type_of(expression, space);
             };
         }
+        auto recurse(ast::Expression& expression) {
+            return recurse()(expression);
+        }
 
 
         template <class T>
@@ -21,8 +24,8 @@ namespace {
             return ast::Type { ast::type::Primitive<T> {} };
         }
 
-        auto operator()(ast::Variable& variable) -> bu::Wrapper<ast::Type> {
-            auto it = std::ranges::find(
+        auto operator()(ast::Variable& /*variable*/) -> bu::Wrapper<ast::Type> {
+            /*auto it = std::ranges::find(
                 space.function_definitions,
                 variable.name,
                 &ast::definition::Function::name
@@ -38,9 +41,9 @@ namespace {
                     .return_type    { *it->return_type }
                 };
             }
-            else {
+            else {*/
                 bu::unimplemented();
-            }
+            //}
         }
 
         auto operator()(ast::Invocation& invocation) -> bu::Wrapper<ast::Type> {
