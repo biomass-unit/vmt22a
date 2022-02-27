@@ -68,6 +68,28 @@ namespace {
     thread_local ast::Namespace* current_namespace;
 
 
+    template <auto ast::Namespace::* concrete, auto ast::Namespace::* non_concrete>
+    auto add_definition(auto&& definition, std::optional<std::vector<ast::Template_parameter>>&& parameters)
+        -> void
+    {
+        if (parameters) {
+            (current_namespace->*non_concrete).add(
+                bu::copy(definition.name),
+                ast::definition::Template_definition {
+                    std::forward<decltype(definition)>(definition),
+                    std::move(*parameters)
+                }
+            );
+        }
+        else {
+            (current_namespace->*concrete).add(
+                bu::copy(definition.name),
+                std::forward<decltype(definition)>(definition)
+            );
+        }
+    }
+
+
     auto parse_class_reference(Parse_context&) -> std::optional<ast::Class_reference>;
 
     auto extract_classes(Parse_context& context) -> std::vector<ast::Class_reference> {
@@ -185,15 +207,16 @@ namespace {
                 throw context.expected("the function body", "'=' or '{'");
             }
 
-            current_namespace->function_definitions.add(
-                bu::copy(name),
+            add_definition<&ast::Namespace::function_definitions,
+                           &ast::Namespace::function_template_definitions>
+            (
                 ast::definition::Function {
                     std::move(*body),
                     std::move(parameters),
-                    std::move(template_parameters),
                     name,
                     return_type
-                }
+                },
+                std::move(template_parameters)
             );
         }
         else {
@@ -226,13 +249,14 @@ namespace {
 
         context.consume_required(Token::Type::equals);
         if (auto members = parse_members(context)) {
-            current_namespace->struct_definitions.add(
-                bu::copy(name),
+            add_definition<&ast::Namespace::struct_definitions,
+                           &ast::Namespace::struct_template_definitions>
+            (
                 ast::definition::Struct {
-                    std::move(template_parameters),
                     std::move(*members),
                     name
-                }
+                },
+                std::move(template_parameters)
             );
         }
         else {
@@ -298,13 +322,14 @@ namespace {
                 );
             }
 
-            current_namespace->data_definitions.add(
-                bu::copy(name),
+            add_definition<&ast::Namespace::data_definitions,
+                           &ast::Namespace::data_template_definitions>
+            (
                 ast::definition::Data {
-                    std::move(template_parameters),
                     std::move(*constructors),
                     name
-                }
+                },
+                std::move(template_parameters)
             );
         }
         else {
@@ -319,13 +344,14 @@ namespace {
 
         context.consume_required(Token::Type::equals);
 
-        current_namespace->alias_definitions.add(
-            bu::copy(name),
+        add_definition<&ast::Namespace::alias_definitions,
+                       &ast::Namespace::alias_template_definitions>
+        (
             ast::definition::Alias {
-                std::move(template_parameters),
                 name,
                 extract_type(context)
-            }
+            },
+            std::move(template_parameters)
         );
     }
 

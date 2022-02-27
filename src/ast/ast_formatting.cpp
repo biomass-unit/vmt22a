@@ -203,12 +203,71 @@ namespace {
     };
 
 
-    auto format_template_parameters(auto const& definition) {
-        return std::format(
-            definition.template_parameters ? "[{}]" : "",
-            definition.template_parameters
-        );
-    };
+    using Definition_variant = std::variant<
+        ast::definition::Function          const*,
+        ast::definition::Struct            const*,
+        ast::definition::Data              const*,
+        ast::definition::Alias             const*,
+        ast::definition::Function_template const*,
+        ast::definition::Struct_template   const*,
+        ast::definition::Data_template     const*,
+        ast::definition::Alias_template    const*
+    >;
+
+    auto format_definition(
+        std::format_context&                        context,
+        Definition_variant                          definition,
+        std::vector<ast::Template_parameter> const* parameters = nullptr
+    )
+        -> std::format_context::iterator
+    {
+        auto const template_parameters = [&]() noexcept -> std::string {
+            return parameters ? std::format("[{}]", *parameters) : "";
+        };
+        auto const format = [out = context.out()](std::string_view fmt, auto const&... args){
+            return std::format_to(out, fmt, args...);
+        };
+
+        return std::visit(bu::Overload {
+            [&](ast::definition::Function const* function) {
+                return format(
+                    "fn {}{}({}): {} = {}",
+                    function->name,
+                    template_parameters(),
+                    function->parameters,
+                    function->return_type,
+                    function->body
+                );
+            },
+            [&](ast::definition::Struct const* structure) {
+                return format(
+                    "struct {}{} = {}",
+                    structure->name,
+                    template_parameters(),
+                    structure->members
+                );
+            },
+            [&](ast::definition::Data const* data) {
+                return format(
+                    "data {}{} = {}",
+                    data->name,
+                    template_parameters(),
+                    data->constructors
+                );
+            },
+            [&](ast::definition::Alias const* alias) {
+                return format(
+                    "alias {}{} = {}",
+                    alias->name,
+                    template_parameters(),
+                    alias->type
+                );
+            },
+            [&](auto const* pointer) { // This overload catches the template versions
+                return format_definition(context, &pointer->definition, &pointer->parameters);
+            }
+        }, definition);
+    }
 
 }
 
@@ -231,15 +290,10 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
 }
 
 DEFINE_FORMATTER_FOR(ast::definition::Function) {
-    return std::format_to(
-        context.out(),
-        "fn {}{}({}): {} = {}",
-        value.name,
-        format_template_parameters(value),
-        value.parameters,
-        value.return_type,
-        value.body
-    );
+    return format_definition(context, &value);
+}
+DEFINE_FORMATTER_FOR(ast::definition::Function_template) {
+    return format_definition(context, &value);
 }
 
 
@@ -248,13 +302,10 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
 }
 
 DEFINE_FORMATTER_FOR(ast::definition::Struct) {
-    return std::format_to(
-        context.out(),
-        "struct {}{} = {}",
-        value.name,
-        format_template_parameters(value),
-        value.members
-    );
+    return format_definition(context, &value);
+}
+DEFINE_FORMATTER_FOR(ast::definition::Struct_template) {
+    return format_definition(context, &value);
 }
 
 
@@ -263,24 +314,18 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Data::Constructor) {
 }
 
 DEFINE_FORMATTER_FOR(ast::definition::Data) {
-    return std::format_to(
-        context.out(),
-        "data {}{} = {}",
-        value.name,
-        format_template_parameters(value),
-        value.constructors
-    );
+    return format_definition(context, &value);
+}
+DEFINE_FORMATTER_FOR(ast::definition::Data_template) {
+    return format_definition(context, &value);
 }
 
 
 DEFINE_FORMATTER_FOR(ast::definition::Alias) {
-    return std::format_to(
-        context.out(),
-        "alias {}{} = {}",
-        value.name,
-        format_template_parameters(value),
-        value.type
-    );
+    return format_definition(context, &value);
+}
+DEFINE_FORMATTER_FOR(ast::definition::Alias_template) {
+    return format_definition(context, &value);
 }
 
 
@@ -350,10 +395,19 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     };
 
     fmt(value.function_definitions);
+    fmt(value.function_template_definitions);
+
     fmt(value.struct_definitions);
+    fmt(value.struct_template_definitions);
+
     fmt(value.data_definitions);
+    fmt(value.data_template_definitions);
+
     fmt(value.alias_definitions);
+    fmt(value.alias_template_definitions);
+
     fmt(value.class_definitions);
+
     fmt(value.children);
 
     return std::format_to(out, "\n}}\n");

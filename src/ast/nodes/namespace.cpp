@@ -18,10 +18,10 @@ auto ast::Namespace::make_child(lexer::Identifier const child_name) noexcept -> 
 
 namespace {
 
-    auto root_namespace(ast::Namespace* current, ast::Qualified_name& name)
+    auto apply_qualifiers(ast::Namespace* current, ast::Qualified_name& name)
         -> ast::Namespace*
     {
-        auto* root = std::visit(bu::Overload {
+        auto* space = std::visit(bu::Overload {
             [&](std::monostate) {
                 return current; // current namespace or above
             },
@@ -41,40 +41,45 @@ namespace {
             }
             else {
                 auto& lower = *std::get_if<ast::Middle_qualifier::Lower>(&qualifier.value);
-                if (auto* child = root->children.find(lower.name)) {
-                    root = child;
+                if (auto* child = space->children.find(lower.name)) {
+                    space = child;
                 }
                 else {
-                    bu::abort(std::format("{} does not have a sub-namespace with the name {}", root->name, lower.name));
+                    bu::abort(std::format("{} does not have a sub-namespace with the name {}", space->name, lower.name));
                 }
             }
         }
 
-        return root;
+        return space;
     }
 
 }
 
 
-auto ast::Namespace::find_type_or_typeclass(Qualified_name& qualified_name)
-    -> std::variant<std::monostate, definition::Struct*, definition::Data*, definition::Typeclass*>
+auto ast::Namespace::find_upper(Qualified_name& qualified_name)
+    -> Upper_variant
 {
-    auto* space = root_namespace(this, qualified_name);
+    auto* const space = apply_qualifiers(this, qualified_name);
 
     auto* structure = space -> struct_definitions . find(qualified_name.identifier);
     auto* data      = space -> data_definitions   . find(qualified_name.identifier);
+    auto* alias     = space -> alias_definitions  . find(qualified_name.identifier);
     auto* typeclass = space -> class_definitions  . find(qualified_name.identifier);
 
     if (structure) {
-        assert(!data && !typeclass);
+        assert(!data && !alias && !typeclass);
         return structure;
     }
     else if (data) {
-        assert(!structure && !typeclass);
+        assert(!structure && !alias && !typeclass);
         return data;
     }
+    else if (alias) {
+        assert(!structure && !data && !typeclass);
+        return alias;
+    }
     else if (typeclass) {
-        assert(!data && !structure);
+        assert(!data && !alias && !structure);
         return typeclass;
     }
     else {
@@ -83,10 +88,10 @@ auto ast::Namespace::find_type_or_typeclass(Qualified_name& qualified_name)
 }
 
 
-auto ast::Namespace::find_function_or_constructor(Qualified_name& qualified_name)
-    -> std::variant<std::monostate, definition::Function*/*, ast::definition::Data::Constructor**/>
+auto ast::Namespace::find_lower(Qualified_name& qualified_name)
+    -> Lower_variant
 {
-    auto* space = root_namespace(this, qualified_name);
+    auto* const space = apply_qualifiers(this, qualified_name);
 
     auto* function = space->function_definitions.find(qualified_name.identifier);
 

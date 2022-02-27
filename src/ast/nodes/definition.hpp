@@ -39,11 +39,10 @@ namespace ast {
                 std::optional<bu::Wrapper<Expression>> default_value;
                 DEFAULTED_EQUALITY(Parameter);
             };
-            Expression                                     body;
-            std::vector<Parameter>                         parameters;
-            std::optional<std::vector<Template_parameter>> template_parameters;
-            lexer::Identifier                              name;
-            std::optional<bu::Wrapper<Type>>               return_type;
+            Expression                       body;
+            std::vector<Parameter>           parameters;
+            lexer::Identifier                name;
+            std::optional<bu::Wrapper<Type>> return_type;
             DEFAULTED_EQUALITY(Function);
         };
 
@@ -53,10 +52,9 @@ namespace ast {
                 bu::Wrapper<Type> type;
                 DEFAULTED_EQUALITY(Member);
             };
-            std::optional<std::vector<Template_parameter>> template_parameters;
-            std::vector<Member>                            members;
-            lexer::Identifier                              name;
-            std::optional<bu::Usize>                       size;
+            std::vector<Member>      members;
+            lexer::Identifier        name;
+            std::optional<bu::Usize> size;
             DEFAULTED_EQUALITY(Struct);
         };
 
@@ -66,19 +64,30 @@ namespace ast {
                 std::optional<bu::Wrapper<Type>> type;
                 DEFAULTED_EQUALITY(Constructor);
             };
-            std::optional<std::vector<Template_parameter>> template_parameters;
-            std::vector<Constructor>                       constructors;
-            lexer::Identifier                              name;
-            std::optional<bu::Usize>                       size;
+            std::vector<Constructor> constructors;
+            lexer::Identifier        name;
+            std::optional<bu::Usize> size;
             DEFAULTED_EQUALITY(Data);
         };
 
         struct Alias {
-            std::optional<std::vector<Template_parameter>> template_parameters;
-            lexer::Identifier                              name;
-            bu::Wrapper<Type>                              type;
+            lexer::Identifier name;
+            bu::Wrapper<Type> type;
             DEFAULTED_EQUALITY(Alias);
         };
+
+
+        template <class Definition>
+        struct Template_definition {
+            Definition                      definition;
+            std::vector<Template_parameter> parameters;
+            DEFAULTED_EQUALITY(Template_definition);
+        };
+
+        using Function_template = Template_definition<Function>;
+        using Struct_template   = Template_definition<Struct  >;
+        using Data_template     = Template_definition<Data    >;
+        using Alias_template    = Template_definition<Alias   >;
 
     }
 

@@ -84,15 +84,22 @@ auto main() -> int try {
 R"(
 
     module std {
-        struct Test = a: Int, b: (Int, Int, Char)
+        struct Test = a: Int, b: (Int, Int)
     }
+
+
+    alias A = std::Test
+    alias B = A
+    alias C = B
+
+    data T = a(A, B) | b(C)
 
 )"
             }
         )
     );
 
-    auto tokens = lexer::lex(bu::Source { bu::Source::Mock_tag {}, "std::Test" });
+    auto tokens = lexer::lex(bu::Source { bu::Source::Mock_tag {}, "T" });
     parser::Parse_context context { tokens };
     auto type = parser::extract_type(context);
 

@@ -33,9 +33,13 @@ namespace {
             [&](ast::definition::Data* data) {
                 return data->size.emplace(size_of_data(*data, space));
             },
-            [](ast::definition::Typeclass*) -> bu::Usize { bu::unimplemented(); },
-            [](std::monostate)              -> bu::Usize { bu::unimplemented(); }
-        }, space.find_type_or_typeclass(name));
+            [&](ast::definition::Alias* alias) {
+                return static_cast<bu::Usize>(compiler::size_of(alias->type, space));
+            },
+            [](ast::definition::Typeclass*)                       -> bu::Usize { bu::unimplemented(); },
+            []<class T>(ast::definition::Template_definition<T>*) -> bu::Usize { bu::unimplemented(); },
+            [](std::monostate)                                    -> bu::Usize { bu::unimplemented(); },
+        }, space.find_upper(name));
     }
 
 
