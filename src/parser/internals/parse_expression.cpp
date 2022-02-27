@@ -25,29 +25,24 @@ namespace {
         auto qualifiers = extract_qualifiers(context);
         
         if (qualifiers.empty()) {
-            if (auto* name = std::get_if<lexer::Identifier>(&root.qualifier)) {
-                return ast::Variable {
-                    ast::Qualified_name {
-                        .identifier = *name
-                    }
-                };
+            if (std::holds_alternative<ast::Root_qualifier::Global>(root.value)) {
+                bu::unimplemented();
             }
         }
-        else {
-            auto back = std::move(qualifiers.back().qualifier);
-            qualifiers.pop_back();
 
-            static_assert(std::variant_size_v<decltype(back)> == 2);
+        auto back = std::move(qualifiers.back().value);
+        qualifiers.pop_back();
 
-            if (auto* lower = std::get_if<ast::Middle_qualifier::Lower>(&back)) {
-                return ast::Variable {
-                    ast::Qualified_name {
-                        .root_qualifier = std::move(root),
-                        .qualifiers     = std::move(qualifiers),
-                        .identifier     = std::get_if<ast::Middle_qualifier::Lower>(&back)->name
-                    }
-                };
-            }
+        static_assert(std::variant_size_v<decltype(back)> == 2);
+
+        if (auto* lower = std::get_if<ast::Middle_qualifier::Lower>(&back)) {
+            return ast::Variable {
+                ast::Qualified_name {
+                    .root_qualifier = std::move(root),
+                    .qualifiers     = std::move(qualifiers),
+                    .identifier     = std::get_if<ast::Middle_qualifier::Lower>(&back)->name
+                }
+            };
         }
 
         throw context.expected({ anchor, context.pointer }, "an expression, not a type");
@@ -55,20 +50,12 @@ namespace {
 
 
     auto extract_identifier(Parse_context& context) -> ast::Expression {
-        return extract_qualified(
-            &context.previous(),
-            ast::Root_qualifier { context.previous().as_identifier() },
-            context
-        );
+        context.retreat();
+        return extract_qualified(context.pointer, {}, context);
     }
 
     auto extract_global_identifier(Parse_context& context) -> ast::Expression {
-        context.retreat();
-        return extract_qualified(
-            context.pointer,
-            ast::Root_qualifier { ast::Root_qualifier::Global {} },
-            context
-        );
+        return extract_qualified(&context.previous(), { ast::Root_qualifier::Global {} }, context);
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Expression {

@@ -29,7 +29,7 @@ namespace ast {
             lexer::Identifier                             name;
             DEFAULTED_EQUALITY(Upper);
         };
-        std::variant<Lower, Upper> qualifier;
+        std::variant<Lower, Upper> value;
         DEFAULTED_EQUALITY(Middle_qualifier);
     };
 
@@ -68,9 +68,8 @@ struct ast::Root_qualifier {
     std::variant<
         std::monostate,    // id
         Global,            // ::id
-        lexer::Identifier, // id::id
         Type               // Type::id
-    > qualifier;
+    > value;
     DEFAULTED_EQUALITY(Root_qualifier);
 };
 

@@ -25,7 +25,7 @@ namespace {
         return std::accumulate(range.begin(), range.end(), 0_uz);
     }
 
-    auto size_of_user_defined(ast::Qualified_name const name, ast::Namespace& space) -> bu::Usize {
+    auto size_of_user_defined(ast::Qualified_name& name, ast::Namespace& space) -> bu::Usize {
         return std::visit(bu::Overload {
             [&](ast::definition::Struct* structure) {
                 return structure->size.emplace(size_of_struct(*structure, space));

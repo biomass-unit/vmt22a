@@ -13,23 +13,18 @@ namespace ast {
         Table<definition::Typeclass> class_definitions;
         Table<Namespace>             children;
         Namespace*                   parent;
+        Namespace*                   global;
         lexer::Identifier            name;
 
         explicit Namespace(lexer::Identifier) noexcept;
 
         auto make_child(lexer::Identifier) noexcept -> Namespace*;
 
-        auto find_type_or_typeclass(Qualified_name const&)
-            -> std::variant<std::monostate, definition::Struct*, definition::Data*, definition::Typeclass*>
-        {
-            bu::unimplemented();
-        }
+        auto find_type_or_typeclass(Qualified_name&)
+            -> std::variant<std::monostate, definition::Struct*, definition::Data*, definition::Typeclass*>;
 
-        auto find_function(Qualified_name const&)
-            -> std::variant<std::monostate, definition::Function* /*, global var? */>
-        {
-            bu::unimplemented();
-        }
+        auto find_function_or_constructor(Qualified_name&)
+            -> std::variant<std::monostate, definition::Function*, ast::definition::Data::Constructor*>;
     };
 
 }

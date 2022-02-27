@@ -17,7 +17,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
         [   ](std::monostate)              {},
         [out](ast::Root_qualifier::Global) { std::format_to(out, "::"        ); },
         [out](auto const& root)            { std::format_to(out, "{}::", root); }
-    }, value.root_qualifier->qualifier);
+    }, value.root_qualifier->value);
 
     for (auto& qualifier : value.qualifiers) {
         std::visit(bu::Overload {
@@ -32,7 +32,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
                     upper.template_arguments
                 );
             }
-        }, qualifier.qualifier);
+        }, qualifier.value);
     }
 
     return std::format_to(out, "{}", value.identifier);
@@ -332,17 +332,17 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     auto out = context.out();
     std::format_to(out, "module {} {{", value.name);
 
-    auto fmt = [out]<class T>(std::span<T> const& xs) {
-        for (auto& x : xs) {
+    auto fmt = [out](auto const& xs) {
+        for (auto& x : xs.span() | std::views::transform(bu::second)) {
             std::format_to(out, "\n{}", x);
         }
     };
 
-    fmt(value.function_definitions.span());
-    fmt(value.struct_definitions.span());
-    fmt(value.data_definitions.span());
-    fmt(value.class_definitions.span());
-    fmt(value.children.span());
+    fmt(value.function_definitions);
+    fmt(value.struct_definitions);
+    fmt(value.data_definitions);
+    fmt(value.class_definitions);
+    fmt(value.children);
 
     return std::format_to(out, "\n}}\n");
 }

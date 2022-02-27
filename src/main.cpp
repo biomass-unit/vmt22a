@@ -75,16 +75,28 @@ using namespace lexer :: literals;
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
-    expression_parser_repl      ();
+    //expression_parser_repl      ();
 
-    /*auto string =
-        "struct S = a: Int, b: (Int, Bool)"
-        "data Test = Left(Int, Int) | Right(S, S)";
+    auto module = parser::parse(
+        lexer::lex(
+            bu::Source {
+                bu::Source::Mock_tag {},
+R"(
 
-    auto module = parser::parse(lexer::lex(bu::Source { bu::Source::Mock_tag {}, string }));
-    ast::Type type { ast::type::Typename { lexer::Identifier { std::string { "Test" } } } };
+    module std {
+        struct Test = a: Int, b: (Int, Int, Char)
+    }
 
-    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));*/
+)"
+            }
+        )
+    );
+
+    auto tokens = lexer::lex(bu::Source { bu::Source::Mock_tag {}, "std::Test" });
+    parser::Parse_context context { tokens };
+    auto type = parser::extract_type(context);
+
+    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));
 
     /*auto string = "fn f(n: Int): [Int; 10] {}";
 

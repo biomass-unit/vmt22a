@@ -30,10 +30,10 @@ namespace {
                 [](ast::Type& type) -> R {
                     return std::move(type);
                 }
-            }, root.qualifier);
+            }, root.value);
         }
         else {
-            auto back = std::move(qualifiers.back().qualifier);
+            auto back = std::move(qualifiers.back().value);
             qualifiers.pop_back();
 
             static_assert(std::variant_size_v<decltype(back)> == 2);
@@ -91,39 +91,18 @@ namespace {
             return *ast::type::string;
         }
         else {
-            auto const anchor    = &context.previous();
-            auto       name      = ast::Qualified_name { .identifier = id };
-            auto       arguments = parse_template_arguments(context);
-
-            auto root = arguments
-                ? ast::Type { ast::type::Template_instantiation { std::move(*arguments), std::move(name) } }
-                : ast::Type { ast::type::Typename { std::move(name) } };
-
-            if (context.pointer->type == Token::Type::double_colon) {
-                auto       root_copy = root;
-                auto const root_anchor = context.pointer;
-
-                if (auto qualified = parse_qualified(anchor, { std::move(root) }, context)) {
-                    return qualified;
-                }
-                else {
-                    context.pointer = root_anchor;
-                    return root_copy;
-                }
-            }
-            else {
-                return root;
-            }
+            context.retreat();
+            return parse_qualified(context.pointer, {}, context);
         }
     }
 
     auto parse_lower_qualified_typename(Parse_context& context) -> std::optional<ast::Type> {
-        return parse_qualified(&context.previous(), { context.previous().as_identifier() }, context);
+        context.retreat();
+        return parse_qualified(context.pointer, {}, context);
     }
 
     auto parse_global_typename(Parse_context& context) -> std::optional<ast::Type> {
-        context.retreat();
-        return parse_qualified(context.pointer, { ast::Root_qualifier::Global{} }, context);
+        return parse_qualified(&context.previous(), { ast::Root_qualifier::Global{} }, context);
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Type {

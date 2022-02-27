@@ -20,6 +20,7 @@
 DISABLE(4061) // enumerator is not explicitly handled by a case label
 DISABLE(4065) // switch statement contains default but no case labels
 
+DISABLE(4355) // 'this' used in member initializer list
 DISABLE(4371) // layout of class may have changed from a previous version of the compiler
 
 DISABLE(4456) // declaration hides previous local declaration

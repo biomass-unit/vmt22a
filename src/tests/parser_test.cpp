@@ -241,7 +241,7 @@ auto run_parser_tests() -> void {
         }
     );
 
-    ast::Middle_qualifier::Upper namespace_access_test_qualifier {
+    ast::Middle_qualifier::Upper namespace_access_test_vector {
         .template_arguments = std::vector {
             ast::Template_argument {
                 ast::Type {
@@ -256,7 +256,9 @@ auto run_parser_tests() -> void {
         .name = "Vector"_id,
     };
     std::vector<ast::Middle_qualifier> namespace_access_test_qualifiers;
-    namespace_access_test_qualifiers.emplace_back(std::move(namespace_access_test_qualifier));
+
+    namespace_access_test_qualifiers.emplace_back(ast::Middle_qualifier::Lower { "std"_id });
+    namespace_access_test_qualifiers.emplace_back(std::move(namespace_access_test_vector));
 
     // ^^^ this isn't done inline because it caused an ICE on MSVC for some reason
 
@@ -282,7 +284,6 @@ auto run_parser_tests() -> void {
             .initializer = ast::Literal<bu::Isize> { 5 },
             .type = ast::type::Typename {
                 ast::Qualified_name {
-                    .root_qualifier = "std"_id,
                     .qualifiers     = std::move(namespace_access_test_qualifiers),
                     .identifier     = "Element"_id
                 }

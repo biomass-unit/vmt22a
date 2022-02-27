@@ -34,7 +34,7 @@ auto parser::parse_template_arguments(Parse_context& context)
 auto parser::extract_qualifiers(Parse_context& context) -> std::vector<ast::Middle_qualifier> {
     std::vector<ast::Middle_qualifier> qualifiers;
 
-    while (context.try_consume(Token::Type::double_colon)) {
+    do {
         switch (auto& token = context.extract(); token.type) {
         case Token::Type::lower_name:
             qualifiers.emplace_back(
@@ -52,10 +52,9 @@ auto parser::extract_qualifiers(Parse_context& context) -> std::vector<ast::Midd
             );
             break;
         default:
-            context.retreat();
-            throw context.expected("a qualifier");
+            bu::unimplemented();
         }
-    }
+    } while (context.try_consume(Token::Type::double_colon));
 
     return qualifiers;
 }
@@ -245,7 +244,7 @@ namespace {
     auto parse_data_constructor(Parse_context& context)
         -> std::optional<ast::definition::Data::Constructor>
     {
-        if (auto name = parse_upper_id(context)) {
+        if (auto name = parse_lower_id(context)) {
             std::optional<bu::Wrapper<ast::Type>> type;
 
             if (context.try_consume(Token::Type::paren_open)) {
