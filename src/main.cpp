@@ -75,9 +75,9 @@ using namespace lexer :: literals;
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
-    //expression_parser_repl      ();
+    program_parser_repl         ();
 
-    auto module = parser::parse(
+    /*auto module = parser::parse(
         lexer::lex(
             bu::Source {
                 bu::Source::Mock_tag {},
@@ -96,7 +96,7 @@ R"(
     parser::Parse_context context { tokens };
     auto type = parser::extract_type(context);
 
-    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));
+    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));*/
 
     /*auto string = "fn f(n: Int): [Int; 10] {}";
 

@@ -155,8 +155,8 @@ namespace {
     }
 
     auto extract_function(Parse_context& context) -> void {
-        auto name = extract_lower_id<"a function name">(context);
-        auto template_parameters = parse_template_parameters(context);
+        auto const name                = extract_lower_id<"a function name">(context);
+        auto       template_parameters = parse_template_parameters(context);
 
         if (context.try_consume(Token::Type::paren_open)) {
             constexpr auto parse_parameters =
@@ -221,8 +221,8 @@ namespace {
         constexpr auto parse_members =
             parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
 
-        auto name = extract_upper_id<"a struct name">(context);
-        auto template_parameters = parse_template_parameters(context);
+        auto const name                = extract_upper_id<"a struct name">(context);
+        auto       template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
         if (auto members = parse_members(context)) {
@@ -272,11 +272,32 @@ namespace {
         constexpr auto parse_constructors =
             parse_separated_one_or_more<parse_data_constructor, Token::Type::pipe, "a data constructor">;
 
-        auto name = extract_upper_id<"a data name">(context);
-        auto template_parameters = parse_template_parameters(context);
+        auto* anchor = context.pointer;
+
+        auto const name                = extract_upper_id<"a data name">(context);
+        auto       template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
         if (auto constructors = parse_constructors(context)) {
+            static constexpr auto max =
+                std::numeric_limits<bu::U8>::max();
+
+            if (constructors->size() > max) {
+                // This allows the tag to always be a single byte
+                throw context.error(
+                    { anchor - 1, anchor + 1 },
+                    std::format(
+                        "A data-definition must not define more "
+                        "than {} constructors, but {} defines {}",
+                        max,
+                        name,
+                        constructors->size()
+                    ),
+                    "If this is truly necessary, consider categorizing "
+                    "the constructors under several simpler types"
+                );
+            }
+
             current_namespace->data_definitions.add(
                 bu::copy(name),
                 ast::definition::Data {
@@ -289,6 +310,23 @@ namespace {
         else {
             throw context.expected("one or more data constructors");
         }
+    }
+
+
+    auto extract_alias(Parse_context& context) -> void {
+        auto const name                = extract_upper_id<"an alias name">(context);
+        auto       template_parameters = parse_template_parameters(context);
+
+        context.consume_required(Token::Type::equals);
+
+        current_namespace->alias_definitions.add(
+            bu::copy(name),
+            ast::definition::Alias {
+                std::move(template_parameters),
+                name,
+                extract_type(context)
+            }
+        );
     }
 
 
@@ -414,6 +452,9 @@ namespace {
             break;
         case Token::Type::data:
             extract_data(context);
+            break;
+        case Token::Type::alias:
+            extract_alias(context);
             break;
         case Token::Type::class_:
             extract_class(context);

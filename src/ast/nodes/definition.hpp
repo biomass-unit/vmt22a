@@ -73,6 +73,13 @@ namespace ast {
             DEFAULTED_EQUALITY(Data);
         };
 
+        struct Alias {
+            std::optional<std::vector<Template_parameter>> template_parameters;
+            lexer::Identifier                              name;
+            bu::Wrapper<Type>                              type;
+            DEFAULTED_EQUALITY(Alias);
+        };
+
     }
 
 

@@ -10,6 +10,7 @@ namespace ast {
         Table<definition::Function>  function_definitions;
         Table<definition::Data>      data_definitions;
         Table<definition::Struct>    struct_definitions;
+        Table<definition::Alias>     alias_definitions;
         Table<definition::Typeclass> class_definitions;
         Table<Namespace>             children;
         Namespace*                   parent;
@@ -24,7 +25,7 @@ namespace ast {
             -> std::variant<std::monostate, definition::Struct*, definition::Data*, definition::Typeclass*>;
 
         auto find_function_or_constructor(Qualified_name&)
-            -> std::variant<std::monostate, definition::Function*, ast::definition::Data::Constructor*>;
+            -> std::variant<std::monostate, definition::Function*/*, ast::definition::Data::Constructor**/>;
     };
 
 }

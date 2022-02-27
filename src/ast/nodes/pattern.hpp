@@ -47,7 +47,10 @@ namespace ast {
         std::string_view source_view;
 
         DEFINE_NODE_CTOR(Pattern);
-        DEFAULTED_EQUALITY(Pattern);
+
+        auto operator==(Pattern const& other) const noexcept -> bool {
+            return value == other.value;
+        }
     };
 
 }

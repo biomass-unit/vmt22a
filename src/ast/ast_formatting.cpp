@@ -273,6 +273,17 @@ DEFINE_FORMATTER_FOR(ast::definition::Data) {
 }
 
 
+DEFINE_FORMATTER_FOR(ast::definition::Alias) {
+    return std::format_to(
+        context.out(),
+        "alias {}{} = {}",
+        value.name,
+        format_template_parameters(value),
+        value.type
+    );
+}
+
+
 DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
     auto out = context.out();
     std::format_to(out, value.self_is_template ? "class {} [] {{\n" : "class {} {{\n", value.name);
@@ -341,6 +352,7 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     fmt(value.function_definitions);
     fmt(value.struct_definitions);
     fmt(value.data_definitions);
+    fmt(value.alias_definitions);
     fmt(value.class_definitions);
     fmt(value.children);
 
