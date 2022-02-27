@@ -84,13 +84,6 @@ namespace {
         auto operator()(ast::Variable const& variable) {
             return format("{}", variable.name);
         }
-        auto operator()(ast::Data_constructor_reference const& constructor) {
-            return format(
-                constructor.template_arguments ? "{}[{}]" : "{}",
-                constructor.name,
-                constructor.template_arguments
-            );
-        }
         auto operator()(ast::Template_instantiation const& instantiation) {
             return format("{}[{}]", instantiation.name, instantiation.template_arguments);
         }

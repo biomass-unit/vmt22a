@@ -53,7 +53,7 @@ auto parser::extract_qualifiers(Parse_context& context) -> std::vector<ast::Midd
             break;
         default:
             context.retreat();
-            throw context.expected("an identifier");
+            throw context.expected("a qualifier");
         }
     }
 

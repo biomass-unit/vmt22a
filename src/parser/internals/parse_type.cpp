@@ -91,15 +91,29 @@ namespace {
             return *ast::type::string;
         }
         else {
-            auto anchor    = &context.previous();
-            auto name      = ast::Qualified_name { .identifier = id };
-            auto arguments = parse_template_arguments(context);
+            auto const anchor    = &context.previous();
+            auto       name      = ast::Qualified_name { .identifier = id };
+            auto       arguments = parse_template_arguments(context);
 
             auto root = arguments
                 ? ast::Type { ast::type::Template_instantiation { std::move(*arguments), std::move(name) } }
                 : ast::Type { ast::type::Typename { std::move(name) } };
 
-            return parse_qualified(anchor, { std::move(root) }, context);
+            if (context.pointer->type == Token::Type::double_colon) {
+                auto       root_copy = root;
+                auto const root_anchor = context.pointer;
+
+                if (auto qualified = parse_qualified(anchor, { std::move(root) }, context)) {
+                    return qualified;
+                }
+                else {
+                    context.pointer = root_anchor;
+                    return root_copy;
+                }
+            }
+            else {
+                return root;
+            }
         }
     }
 
@@ -222,9 +236,12 @@ namespace {
 
 auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
     auto type = parse_normal_type(context);
+    auto anchor = context.pointer;
 
     if (type && context.pointer->type == Token::Type::double_colon) {
-        type = parse_qualified(nullptr, { std::move(*type) }, context);
+        if (auto qualified_type = parse_qualified(anchor, { *type }, context)) {
+            type = qualified_type;
+        }
     }
 
     return type;

@@ -62,10 +62,14 @@ namespace parser {
             --pointer;
         }
 
-        inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+        inline auto error(std::span<Token const> span, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+            std::string_view view {
+                span.front().source_view.data(),
+                span.back().source_view.data() + span.back().source_view.size()
+            };
             return bu::Textual_error { {
                 .error_type     = bu::Textual_error::Type::parse_error,
-                .erroneous_view = pointer->source_view,
+                .erroneous_view = view,
                 .file_view      = source->string(),
                 .file_name      = source->name(),
                 .message        = message,
@@ -73,8 +77,16 @@ namespace parser {
             } };
         }
 
+        inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+            return error({ pointer, pointer + 1 }, message, help);
+        }
+
+        inline auto expected(std::span<Token const> span, std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+            return error(span, std::format("Expected {}", expectation), help);
+        }
+
         inline auto expected(std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
-            return error(std::format("Expected {}", expectation), help);
+            return expected({ pointer, pointer + 1 }, expectation, help);
         }
     };
 

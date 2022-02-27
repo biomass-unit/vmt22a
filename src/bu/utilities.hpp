@@ -110,11 +110,11 @@ namespace bu {
     }
 
     inline auto trace(std::source_location caller = std::source_location::current()) -> void {
-        std::string_view file = caller.file_name();
+        std::string_view filename = caller.file_name();
 
         auto const trim_if = [&](char const c) {
-            if (auto const pos = file.find_last_of(c); pos != std::string_view::npos) {
-                file.remove_prefix(pos + 1);
+            if (auto const pos = filename.find_last_of(c); pos != std::string_view::npos) {
+                filename.remove_prefix(pos + 1);
             }
         };
 
@@ -122,7 +122,12 @@ namespace bu {
         trim_if('\\');
         trim_if('/');
         
-        print("bu::trace: Reached line {} in {}\n", caller.line(), file);
+        print(
+            "bu::trace: Reached line {} in {}, in function {}\n",
+            caller.line(),
+            filename,
+            caller.function_name()
+        );
     }
 
 

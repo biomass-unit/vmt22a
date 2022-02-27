@@ -24,12 +24,6 @@ namespace ast {
         DEFAULTED_EQUALITY(Variable);
     };
 
-    struct Data_constructor_reference {
-        Qualified_name                                name;
-        std::optional<std::vector<Template_argument>> template_arguments;
-        DEFAULTED_EQUALITY(Data_constructor_reference);
-    };
-
     struct Template_instantiation {
         Qualified_name                 name;
         std::vector<Template_argument> template_arguments;
@@ -168,7 +162,6 @@ namespace ast {
             Array_literal,
             List_literal,
             Variable,
-            Data_constructor_reference,
             Template_instantiation,
             Tuple,
             Compound_expression,

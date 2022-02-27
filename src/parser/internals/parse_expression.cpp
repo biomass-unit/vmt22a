@@ -19,15 +19,18 @@ namespace {
     }
 
 
-    auto extract_qualified(ast::Root_qualifier&& root, Parse_context& context) -> ast::Expression {
+    auto extract_qualified(lexer::Token* anchor, ast::Root_qualifier&& root, Parse_context& context)
+        -> ast::Expression
+    {
         auto qualifiers = extract_qualifiers(context);
         
         if (qualifiers.empty()) {
             if (auto* name = std::get_if<lexer::Identifier>(&root.qualifier)) {
-                return ast::Variable { ast::Qualified_name { .identifier = *name } };
-            }
-            else {
-                throw context.expected("an identifier");
+                return ast::Variable {
+                    ast::Qualified_name {
+                        .identifier = *name
+                    }
+                };
             }
         }
         else {
@@ -36,17 +39,7 @@ namespace {
 
             static_assert(std::variant_size_v<decltype(back)> == 2);
 
-            if (auto* upper = std::get_if<ast::Middle_qualifier::Upper>(&back)) {
-                return ast::Data_constructor_reference {
-                    ast::Qualified_name {
-                        .root_qualifier = std::move(root),
-                        .qualifiers     = std::move(qualifiers),
-                        .identifier     = upper->name
-                    },
-                    std::move(upper->template_arguments)
-                };
-            }
-            else {
+            if (auto* lower = std::get_if<ast::Middle_qualifier::Lower>(&back)) {
                 return ast::Variable {
                     ast::Qualified_name {
                         .root_qualifier = std::move(root),
@@ -56,16 +49,26 @@ namespace {
                 };
             }
         }
+
+        throw context.expected({ anchor, context.pointer }, "an expression, not a type");
     }
 
 
     auto extract_identifier(Parse_context& context) -> ast::Expression {
-        return extract_qualified(ast::Root_qualifier { context.previous().as_identifier() }, context);
+        return extract_qualified(
+            &context.previous(),
+            ast::Root_qualifier { context.previous().as_identifier() },
+            context
+        );
     }
 
     auto extract_global_identifier(Parse_context& context) -> ast::Expression {
         context.retreat();
-        return extract_qualified(ast::Root_qualifier { ast::Root_qualifier::Global {} }, context);
+        return extract_qualified(
+            context.pointer,
+            ast::Root_qualifier { ast::Root_qualifier::Global {} },
+            context
+        );
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Expression {
@@ -349,8 +352,6 @@ namespace {
             return extract_literal<lexer::String>(context);
         case Token::Type::lower_name:
             return extract_identifier(context);
-        //case Token::Type::upper_name:
-            //return extract_upper_identifier(context);
         case Token::Type::double_colon:
             return extract_global_identifier(context);
         case Token::Type::paren_open:
@@ -384,13 +385,20 @@ namespace {
         case Token::Type::brace_open:
             return extract_compound_expression(context);
         default:
+        {
             context.retreat();
+            auto* anchor = context.pointer;
             if (auto root = parse_type(context)) {
-                return extract_qualified(ast::Root_qualifier { std::move(*root) }, context);
+                return extract_qualified(
+                    anchor,
+                    ast::Root_qualifier { std::move(*root) },
+                    context
+                );
             }
             else {
                 return std::nullopt;
             }
+        }
         }
     }
 
