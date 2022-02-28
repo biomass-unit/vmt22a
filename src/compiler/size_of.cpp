@@ -7,6 +7,13 @@ using namespace bu::literals;
 
 namespace {
 
+    auto recurse_with(ast::Namespace& space) noexcept {
+        return [&](ast::Type& type) {
+            return compiler::size_of(type, space);
+        };
+    }
+
+
     auto size_of_data(ast::definition::Data& type, ast::Namespace& space) -> bu::Usize {
         auto const size_of_ctor = [&](auto& constructor) -> bu::Usize {
             return constructor.type ? compiler::size_of(*constructor.type, space) : 0_uz;
@@ -18,11 +25,13 @@ namespace {
     }
 
     auto size_of_struct(ast::definition::Struct& type, ast::Namespace& space) -> bu::Usize {
-        auto const size_of_member = [&](auto& member) -> bu::Usize {
-            return compiler::size_of(member.type, space);
-        };
-        auto range = type.members | std::views::transform(size_of_member);
-        return std::accumulate(range.begin(), range.end(), 0_uz);
+        return std::transform_reduce(
+            type.members.begin(),
+            type.members.end(),
+            0_uz,
+            std::plus<bu::Usize> {},
+            bu::compose(recurse_with(space), &ast::definition::Struct::Member::type)
+        );
     }
 
     auto size_of_user_defined(ast::Qualified_name& name, ast::Namespace& space) -> bu::Usize {
@@ -47,13 +56,8 @@ namespace {
         ast::Namespace& space;
         ast::Type     & this_type;
 
-        auto recurse() {
-            return [&](ast::Type& type) {
-                return compiler::size_of(type, space);
-            };
-        }
         auto recurse(ast::Type& type) {
-            return recurse()(type);
+            return recurse_with(space)(type);
         }
 
 
@@ -68,7 +72,7 @@ namespace {
                 tuple.types.end(),
                 0_uz,
                 std::plus<bu::Usize> {},
-                recurse()
+                recurse_with(space)
             );
         }
 

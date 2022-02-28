@@ -46,12 +46,12 @@ namespace {
     }
 
     [[maybe_unused]]
-    auto lexer_repl = generic_repl([](bu::Source source) {
+    auto const lexer_repl = generic_repl([](bu::Source source) {
         bu::print("Tokens: {}\n", lexer::lex(std::move(source)).tokens);
     });
 
     [[maybe_unused]]
-    auto expression_parser_repl = generic_repl([](bu::Source source) {
+    auto const expression_parser_repl = generic_repl([](bu::Source source) {
         auto tokenized_source = lexer::lex(std::move(source));
         parser::Parse_context context { tokenized_source };
 
@@ -60,7 +60,7 @@ namespace {
     });
 
     [[maybe_unused]]
-    auto program_parser_repl = generic_repl([](bu::Source source) {
+    auto const program_parser_repl = generic_repl([](bu::Source source) {
         auto module = parser::parse(lexer::lex(std::move(source)));
         bu::print("{}\n", module.global_namespace);
     });
@@ -75,9 +75,9 @@ using namespace lexer :: literals;
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
-    program_parser_repl         ();
+    //program_parser_repl         ();
 
-    /*auto module = parser::parse(
+    auto module = parser::parse(
         lexer::lex(
             bu::Source {
                 bu::Source::Mock_tag {},
@@ -103,7 +103,7 @@ R"(
     parser::Parse_context context { tokens };
     auto type = parser::extract_type(context);
 
-    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));*/
+    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));
 
     /*auto string = "fn f(n: Int): [Int; 10] {}";
 

@@ -164,20 +164,6 @@ namespace bu {
     };
 
 
-    template <class T, std::invocable<T&&> F>
-    constexpr auto map(std::optional<T>&& optional, F&& f)
-        noexcept(std::is_nothrow_invocable_v<F&&, T&&>)
-        -> std::optional<std::invoke_result_t<F&&, T&&>>
-    {
-        if (optional) {
-            return std::invoke(std::move(f), std::move(*optional));
-        }
-        else {
-            return std::nullopt;
-        }
-    }
-
-
     constexpr auto compose = []<class F, class G>(F&& f, G&& g) noexcept {
         return [f = std::forward<F>(f), g = std::forward<G>(g)]<class... Args>(Args&&... args)
             mutable noexcept(
@@ -265,7 +251,33 @@ namespace bu {
         struct Is_instance_of : std::false_type {};
         template <class... Args, template <class...> class F>
         struct Is_instance_of<F<Args...>, F> : std::true_type {};
+
+        template <class T, class U>
+        using Copy_reference = std::conditional_t<
+            std::is_rvalue_reference_v<T>,
+            std::remove_reference_t<U>&&,
+            U&
+        >;
+
+        template <class T, class U>
+        using Copy_const = std::conditional_t<
+            std::is_const_v<std::remove_reference_t<T>>,
+            U const,
+            U
+        >;
     }
+
+
+    template <class T, class U>
+    using Like = dtl::Copy_reference<T&&, dtl::Copy_const<T, std::remove_reference_t<U>>>;
+
+    template <class T>
+    constexpr auto forward_like(auto&& x) noexcept -> Like<T, decltype(x)> {
+        return static_cast<Like<T, decltype(x)>>(x);
+    }
+
+    // ^^^ These are only necessary until the major compilers start supporting C++23
+
 
     template <class T, template <class...> class F>
     concept instance_of = dtl::Is_instance_of<T, F>::value;
@@ -275,6 +287,19 @@ namespace bu {
 
     template <class T>
     concept trivial = std::is_trivial_v<T>;
+
+
+    constexpr auto map = []<class Optional, class F>(Optional&& optional, F&& f)
+        noexcept(std::is_nothrow_invocable_v<F&&, decltype(forward_like<Optional>(*optional))>)
+        requires instance_of<std::decay_t<Optional>, std::optional>
+    {
+        if (optional) {
+            return std::optional { std::invoke(std::move(f), forward_like<Optional>(*optional)) };
+        }
+        else {
+            return decltype(std::optional { std::invoke(std::move(f), forward_like<Optional>(*optional)) }) {};
+        }
+    };
 
 
     auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto... args)
