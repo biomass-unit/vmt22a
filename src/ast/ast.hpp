@@ -40,6 +40,14 @@ namespace ast {
         DEFAULTED_EQUALITY(Qualified_name);
     };
 
+    struct Mutability {
+        enum class Type { mut, immut, parameterized };
+
+        std::optional<lexer::Identifier> parameter_name;
+        Type                             type;
+        DEFAULTED_EQUALITY(Mutability);
+    };
+
 }
 
 

@@ -30,6 +30,7 @@ namespace lexer {
             double_colon,
 
             ampersand,
+            asterisk,
             equals,
             pipe,
             right_arrow,
@@ -43,6 +44,7 @@ namespace lexer {
 
             let,
             mut,
+            immut,
             if_,
             else_,
             for_,

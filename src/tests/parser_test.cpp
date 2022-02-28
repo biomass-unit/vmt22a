@@ -137,7 +137,7 @@ auto run_parser_tests() -> void {
             Token { .type = Type::brace_close }
         },
         ast::For_loop {
-            ast::pattern::Name { "x"_id },
+            ast::pattern::Name { "x"_id, { .type = ast::Mutability::Type::immut } },
             ast::Literal { lexer::String { "hello"sv } },
             ast::unit_value
         }

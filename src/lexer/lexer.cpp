@@ -243,10 +243,11 @@ namespace {
             { new_id("type_of")  , Token::Type::type_of   },
             { new_id("meta")     , Token::Type::meta      },
             { new_id("where")    , Token::Type::where     },
+            { new_id("immut")    , Token::Type::immut     },
         });
 
         static auto const
-            true_id = new_id("true"),
+            true_id  = new_id("true" ),
             false_id = new_id("false");
 
         lexer::Identifier const identifier { view };
@@ -287,6 +288,7 @@ namespace {
             { "|" , Token::Type::pipe         },
             { "=" , Token::Type::equals       },
             { "&" , Token::Type::ampersand    },
+            { "*" , Token::Type::asterisk     },
             { "->", Token::Type::right_arrow  },
         });
 
@@ -317,14 +319,6 @@ namespace {
             if (character == current) {
                 return context.success({ .type = punctuation_type });
             }
-        }
-
-        if (current == ':') {
-            return context.success({
-                .type = context.try_consume(':')
-                    ? Token::Type::double_colon
-                    : Token::Type::colon
-            });
         }
 
         --context.pointer;

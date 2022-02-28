@@ -506,10 +506,19 @@ namespace {
 
 
     auto parse_operator(Parse_context& context) -> std::optional<lexer::Identifier> {
-        if (auto token = context.try_extract(Token::Type::operator_name)) {
-            return token->as_identifier();
-        }
-        else {
+        static auto const asterisk = [] {
+            auto const identifier = std::get<0>(precedence_table).front();
+            assert(identifier.view() == "*");
+            return identifier;
+        }();
+
+        switch (context.extract().type) {
+        case Token::Type::operator_name:
+            return context.previous().as_identifier();
+        case Token::Type::asterisk:
+            return asterisk;
+        default:
+            context.retreat();
             return std::nullopt;
         }
     }

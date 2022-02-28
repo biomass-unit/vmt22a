@@ -181,8 +181,13 @@ namespace {
     }
 
     auto extract_reference(Parse_context& context) -> ast::Type {
-        bool const is_mutable = context.try_consume(Token::Type::mut);
-        return ast::type::Reference { extract_type(context), is_mutable };
+        auto const mutability = extract_mutability(context);
+        return ast::type::Reference { extract_type(context), mutability };
+    }
+
+    auto extract_pointer(Parse_context& context) -> ast::Type {
+        auto const mutability = extract_mutability(context);
+        return ast::type::Pointer { extract_type(context), mutability };
     }
 
 
@@ -198,6 +203,8 @@ namespace {
             return extract_type_of(context);
         case Token::Type::ampersand:
             return extract_reference(context);
+        case Token::Type::asterisk:
+            return extract_pointer(context);
         case Token::Type::upper_name:
             return parse_typename(context);
         case Token::Type::lower_name:

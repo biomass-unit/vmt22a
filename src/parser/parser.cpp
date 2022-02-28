@@ -59,6 +59,23 @@ auto parser::extract_qualifiers(Parse_context& context) -> std::vector<ast::Midd
     return qualifiers;
 }
 
+auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
+    switch (context.extract().type) {
+    case Token::Type::lower_name:
+        return {
+            .parameter_name = context.previous().as_identifier(),
+            .type           = ast::Mutability::Type::parameterized
+        };
+    case Token::Type::mut:
+        return { .type = ast::Mutability::Type::mut };
+    default:
+        context.retreat();
+        [[fallthrough]];
+    case Token::Type::immut:
+        return { .type = ast::Mutability::Type::immut };
+    }
+}
+
 
 namespace {
 

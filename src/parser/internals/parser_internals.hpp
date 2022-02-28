@@ -220,6 +220,8 @@ namespace parser {
 
     auto extract_qualifiers(Parse_context&) -> std::vector<ast::Middle_qualifier>;
 
+    auto extract_mutability(Parse_context&) -> ast::Mutability;
+
 
     template <Token::Type id_type, bu::Metastring description>
     auto extract_id(Parse_context& context) -> lexer::Identifier {

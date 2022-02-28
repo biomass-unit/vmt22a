@@ -50,8 +50,14 @@ namespace ast {
 
         struct Reference {
             bu::Wrapper<Type> type;
-            bool              is_mutable;
+            Mutability        mutability;
             DEFAULTED_EQUALITY(Reference);
+        };
+
+        struct Pointer {
+            bu::Wrapper<Type> type;
+            Mutability        mutability;
+            DEFAULTED_EQUALITY(Pointer);
         };
 
         struct Template_instantiation {
@@ -77,6 +83,7 @@ namespace ast {
             type::Function,
             type::Type_of,
             type::Reference,
+            type::Pointer,
             type::Template_instantiation
         >;
         Variant                value;

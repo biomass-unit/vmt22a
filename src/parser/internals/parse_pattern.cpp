@@ -18,8 +18,35 @@ namespace {
         return ast::pattern::Tuple { std::move(patterns) };
     }
 
-    auto extract_name(Parse_context& context) -> ast::Pattern {
-        return ast::pattern::Name { context.previous().as_identifier() };
+    auto extract_name(Parse_context& context, ast::Mutability::Type const type) -> ast::Pattern {
+        auto const previous = &context.previous();
+
+        switch (type) {
+        case ast::Mutability::Type::mut:
+        case ast::Mutability::Type::immut:
+            return ast::pattern::Name {
+                .identifier = extract_lower_id<"a lower-case identifier">(context),
+                .mutability = ast::Mutability { .type = type }
+            };
+        case ast::Mutability::Type::parameterized:
+            if (auto name = parse_lower_id(context)) {
+                return ast::pattern::Name {
+                    .identifier = *name,
+                    .mutability {
+                        .parameter_name = previous->as_identifier(),
+                        .type           = type
+                    }
+                };
+            }
+            else {
+                return ast::pattern::Name {
+                    .identifier = previous->as_identifier(),
+                    .mutability = ast::Mutability { .type = ast::Mutability::Type::immut }
+                };
+            }
+        default:
+            bu::unimplemented();
+        }
     }
 
     auto parse_normal_pattern(Parse_context& context) -> std::optional<ast::Pattern> {
@@ -39,7 +66,11 @@ namespace {
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::lower_name:
-            return extract_name(context);
+            return extract_name(context, ast::Mutability::Type::parameterized /* possibly parameterized */);
+        case Token::Type::mut:
+            return extract_name(context, ast::Mutability::Type::mut);
+        case Token::Type::immut:
+            return extract_name(context, ast::Mutability::Type::immut);
         default:
             context.retreat();
             return std::nullopt;

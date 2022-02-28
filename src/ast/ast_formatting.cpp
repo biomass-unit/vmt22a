@@ -38,6 +38,22 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     return std::format_to(out, "{}", value.identifier);
 }
 
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
+    using enum ast::Mutability::Type;
+    auto const out = context.out();
+
+    switch (value.type) {
+    case mut:
+        return std::format_to(out, "mut ");
+    case immut:
+        return out;
+    case parameterized:
+        return std::format_to(out, "{} ", value.parameter_name);
+    default:
+        bu::unimplemented();
+    }
+}
+
 
 namespace {
 
@@ -155,11 +171,11 @@ namespace {
             return format("_");
         }
         template <class T>
-        auto operator()(ast::pattern::Literal<T> literal) {
+        auto operator()(ast::pattern::Literal<T> const& literal) {
             return std::invoke(Expression_format_visitor { { out } }, literal);
         }
-        auto operator()(ast::pattern::Name name) {
-            return format("{}", name.identifier);
+        auto operator()(ast::pattern::Name const& name) {
+            return format("{}{}", name.mutability, name.identifier);
         }
         auto operator()(ast::pattern::Tuple const& tuple) {
             return format("({})", tuple.patterns);
@@ -194,8 +210,11 @@ namespace {
         auto operator()(ast::type::Type_of const& type_of) {
             return format("type_of({})", type_of.expression);
         }
-        auto operator()(ast::type::Reference reference) {
-            return format(reference.is_mutable ? "&mut {}" : "&{}", reference.type);
+        auto operator()(ast::type::Reference const& reference) {
+            return format("&{}{}", reference.mutability, reference.type);
+        }
+        auto operator()(ast::type::Pointer const& pointer) {
+            return format("*{}{}", pointer.mutability, pointer.type);
         }
         auto operator()(ast::type::Template_instantiation const& instantiation) {
             return format("{}[{}]", instantiation.name, instantiation.arguments);
