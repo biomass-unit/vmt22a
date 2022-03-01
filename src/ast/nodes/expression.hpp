@@ -142,7 +142,7 @@ namespace ast {
 
     struct Take_reference {
         bu::Wrapper<Expression> expression;
-        bool is_mutable;
+        Mutability              mutability;
         DEFAULTED_EQUALITY(Take_reference);
     };
 

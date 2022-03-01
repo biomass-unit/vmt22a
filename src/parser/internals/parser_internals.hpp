@@ -12,6 +12,9 @@ namespace parser {
 
     using lexer::Token;
 
+    auto token_description(Token::Type) -> std::string_view;
+
+
     struct Parse_context {
         Token* start;
         Token* pointer;
@@ -82,7 +85,15 @@ namespace parser {
         }
 
         inline auto expected(std::span<Token const> span, std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
-            return error(span, std::format("Expected {}", expectation), help);
+            return error(
+                span,
+                std::format(
+                    "Expected {}, but found {}",
+                    expectation,
+                    token_description(pointer->type)
+                ),
+                help
+            );
         }
 
         inline auto expected(std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {

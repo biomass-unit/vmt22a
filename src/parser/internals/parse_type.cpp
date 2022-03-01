@@ -186,8 +186,8 @@ namespace {
     }
 
     auto extract_pointer(Parse_context& context) -> ast::Type {
-        auto const mutability = extract_mutability(context);
-        return ast::type::Pointer { extract_type(context), mutability };
+        auto mutability = extract_mutability(context);
+        return ast::type::Pointer { extract_type(context), std::move(mutability) };
     }
 
 

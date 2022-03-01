@@ -31,6 +31,7 @@ namespace lexer {
 
             ampersand,
             asterisk,
+            question,
             equals,
             pipe,
             right_arrow,
@@ -44,7 +45,6 @@ namespace lexer {
 
             let,
             mut,
-            immut,
             if_,
             else_,
             for_,

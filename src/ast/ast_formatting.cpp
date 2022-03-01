@@ -39,16 +39,13 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
-    using enum ast::Mutability::Type;
-    auto const out = context.out();
-
     switch (value.type) {
-    case mut:
-        return std::format_to(out, "mut ");
-    case immut:
-        return out;
-    case parameterized:
-        return std::format_to(out, "{} ", value.parameter_name);
+    case ast::Mutability::Type::mut:
+        return std::format_to(context.out(), "mut ");
+    case ast::Mutability::Type::immut:
+        return context.out();
+    case ast::Mutability::Type::parameterized:
+        return std::format_to(context.out(), "mut?{} ", value.parameter_name);
     default:
         bu::unimplemented();
     }
@@ -158,8 +155,8 @@ namespace {
         auto operator()(ast::Size_of const& size_of) {
             return format("size_of({})", size_of.type);
         }
-        auto operator()(ast::Take_reference reference) {
-            return format(reference.is_mutable ? "&mut {}" : "&{}", reference.expression);
+        auto operator()(ast::Take_reference const& reference) {
+            return format("&{}{}", reference.mutability, reference.expression);
         }
         auto operator()(ast::Meta const& meta) {
             return format("meta({})", meta.expression);

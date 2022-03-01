@@ -60,19 +60,81 @@ auto parser::extract_qualifiers(Parse_context& context) -> std::vector<ast::Midd
 }
 
 auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
-    switch (context.extract().type) {
-    case Token::Type::lower_name:
-        return {
-            .parameter_name = context.previous().as_identifier(),
-            .type           = ast::Mutability::Type::parameterized
-        };
+    ast::Mutability mutability;
+
+    if (context.try_consume(Token::Type::mut)) {
+        if (context.try_consume(Token::Type::question)) {
+            mutability.type           = ast::Mutability::Type::parameterized;
+            mutability.parameter_name = extract_lower_id<"a mutability parameter name">(context);
+        }
+        else {
+            mutability.type = ast::Mutability::Type::mut;
+        }
+    }
+    else {
+        mutability.type = ast::Mutability::Type::immut;
+    }
+
+    return mutability;
+}
+
+auto parser::token_description(Token::Type const type) -> std::string_view {
+    switch (type) {
+    case Token::Type::dot:
+    case Token::Type::comma:
+    case Token::Type::colon:
+    case Token::Type::semicolon:
+    case Token::Type::double_colon:
+    case Token::Type::ampersand:
+    case Token::Type::asterisk:
+    case Token::Type::equals:
+    case Token::Type::pipe:
+    case Token::Type::right_arrow:
+    case Token::Type::paren_open:
+    case Token::Type::paren_close:
+    case Token::Type::brace_open:
+    case Token::Type::brace_close:
+    case Token::Type::bracket_open:
+    case Token::Type::bracket_close:
+        return "a punctuation token";
+    case Token::Type::let:
     case Token::Type::mut:
-        return { .type = ast::Mutability::Type::mut };
+    case Token::Type::if_:
+    case Token::Type::else_:
+    case Token::Type::for_:
+    case Token::Type::in:
+    case Token::Type::while_:
+    case Token::Type::loop:
+    case Token::Type::continue_:
+    case Token::Type::break_:
+    case Token::Type::match:
+    case Token::Type::ret:
+    case Token::Type::fn:
+    case Token::Type::as:
+    case Token::Type::data:
+    case Token::Type::struct_:
+    case Token::Type::class_:
+    case Token::Type::inst:
+    case Token::Type::alias:
+    case Token::Type::import:
+    case Token::Type::module:
+    case Token::Type::size_of:
+    case Token::Type::type_of:
+    case Token::Type::meta:
+    case Token::Type::where:
+        return "a keyword";
+    case Token::Type::underscore:    return "a wildcard pattern";
+    case Token::Type::lower_name:    return "an uncapitalized identifier";
+    case Token::Type::upper_name:    return "a capitalized identifier";
+    case Token::Type::operator_name: return "an operator";
+    case Token::Type::string:        return "a string literal";
+    case Token::Type::integer:       return "an integer literal";
+    case Token::Type::floating:      return "a floating-point literal";
+    case Token::Type::character:     return "a character literal";
+    case Token::Type::boolean:       return "a boolean literal";
+    case Token::Type::end_of_input:  return "the end of input";
     default:
-        context.retreat();
-        [[fallthrough]];
-    case Token::Type::immut:
-        return { .type = ast::Mutability::Type::immut };
+        bu::unimplemented();
     }
 }
 
