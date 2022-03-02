@@ -17,7 +17,34 @@ auto parser::parse_template_arguments(Parse_context& context)
             return ast::Template_argument { std::move(*expression) };
         }
         else {
-            return std::nullopt;
+            std::optional<ast::Mutability> mutability;
+
+            if (context.try_consume(Token::Type::mut)) {
+                if (context.try_consume(Token::Type::question)) {
+                    mutability.emplace(
+                        ast::Mutability {
+                            .parameter_name = extract_lower_id<"a mutability parameter name">(context),
+                            .type           = ast::Mutability::Type::parameterized
+                        }
+                    );
+                }
+                else {
+                    mutability.emplace(
+                        ast::Mutability {
+                            .type = ast::Mutability::Type::mut
+                        }
+                    );
+                }
+            }
+            else if (context.try_consume(Token::Type::immut)) {
+                mutability.emplace(
+                    ast::Mutability {
+                        .type = ast::Mutability::Type::immut
+                    }
+                );
+            }
+
+            return bu::map(std::move(mutability), bu::make<ast::Template_argument>);
         }
     }, "a template argument">;
 
@@ -87,6 +114,7 @@ auto parser::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::double_colon:
     case Token::Type::ampersand:
     case Token::Type::asterisk:
+    case Token::Type::question:
     case Token::Type::equals:
     case Token::Type::pipe:
     case Token::Type::right_arrow:
@@ -99,6 +127,7 @@ auto parser::token_description(Token::Type const type) -> std::string_view {
         return "a punctuation token";
     case Token::Type::let:
     case Token::Type::mut:
+    case Token::Type::immut:
     case Token::Type::if_:
     case Token::Type::else_:
     case Token::Type::for_:
@@ -134,7 +163,7 @@ auto parser::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::boolean:       return "a boolean literal";
     case Token::Type::end_of_input:  return "the end of input";
     default:
-        bu::unimplemented();
+        bu::abort(std::format("Unimplemented for {}", type));
     }
 }
 
@@ -192,12 +221,25 @@ namespace {
         {
             if (auto name = parse_lower_id(context)) {
                 context.consume_required(Token::Type::colon);
-                return ast::Template_parameter {
-                    ast::Template_parameter::Value_parameter {
-                        *name,
-                        extract_type(context)
-                    }
-                };
+
+                if (context.try_consume(Token::Type::mut)) {
+                    return ast::Template_parameter {
+                        ast::Template_parameter::Mutability_parameter {
+                            *name
+                        }
+                    };
+                }
+                else if (auto type = parse_type(context)) {
+                    return ast::Template_parameter {
+                        ast::Template_parameter::Value_parameter {
+                            *name,
+                            std::move(*type)
+                        }
+                    };
+                }
+                else {
+                    throw context.expected("'mut' or a type");
+                }
             }
             else if (auto name = parse_upper_id(context)) {
                 std::vector<ast::Class_reference> classes;

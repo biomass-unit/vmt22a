@@ -4,7 +4,7 @@
 namespace ast {
 
     struct Template_argument {
-        std::variant<Type, Expression> value;
+        std::variant<Type, Expression, Mutability> value;
         DEFAULTED_EQUALITY(Template_argument);
     };
 
@@ -25,7 +25,15 @@ namespace ast {
             bu::Wrapper<Type> type;
             DEFAULTED_EQUALITY(Value_parameter);
         };
-        std::variant<Type_parameter, Value_parameter> value;
+        struct Mutability_parameter {
+            lexer::Identifier name;
+            DEFAULTED_EQUALITY(Mutability_parameter);
+        };
+        std::variant<
+            Type_parameter,
+            Value_parameter,
+            Mutability_parameter
+        > value;
         DEFAULTED_EQUALITY(Template_parameter);
     };
 

@@ -45,6 +45,7 @@ namespace lexer {
 
             let,
             mut,
+            immut,
             if_,
             else_,
             for_,

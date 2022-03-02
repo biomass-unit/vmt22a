@@ -243,6 +243,7 @@ namespace {
             { new_id("type_of")  , Token::Type::type_of   },
             { new_id("meta")     , Token::Type::meta      },
             { new_id("where")    , Token::Type::where     },
+            { new_id("immut")    , Token::Type::immut     },
         });
 
         static auto const

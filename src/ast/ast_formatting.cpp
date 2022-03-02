@@ -39,16 +39,20 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
+    std::string_view format;
+
     switch (value.type) {
     case ast::Mutability::Type::mut:
-        return std::format_to(context.out(), "mut ");
+        format = "mut ";
+        break;
     case ast::Mutability::Type::immut:
-        return context.out();
-    case ast::Mutability::Type::parameterized:
-        return std::format_to(context.out(), "mut?{} ", value.parameter_name);
+        format = "";
+        break;
     default:
-        bu::unimplemented();
+        format = "mut?{} ";
     }
+
+    return std::format_to(context.out(), format, value.parameter_name);
 }
 
 
@@ -389,6 +393,9 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
             },
             [&](ast::Template_parameter::Value_parameter const& parameter) {
                 return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
+            },
+            [&](ast::Template_parameter::Mutability_parameter const& parameter) {
+                return std::format_to(context.out(), "{}: mut", parameter.name);
             }
         },
         value.value
@@ -396,7 +403,27 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
-    return std::format_to(context.out(), "{}", value.value);
+    return std::visit(bu::Overload {
+        [&](ast::Mutability const& mutability) {
+            std::string_view format;
+
+            switch (mutability.type) {
+            case ast::Mutability::Type::mut:
+                format = "mut";
+                break;
+            case ast::Mutability::Type::immut:
+                format = "immut";
+                break;
+            default:
+                format = "mut?{}";
+            }
+
+            return std::format_to(context.out(), format, mutability.parameter_name);
+        },
+        [&](auto const& argument) {
+            return std::format_to(context.out(), "{}", argument);
+        }
+    }, value.value);
 }
 
 

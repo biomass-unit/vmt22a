@@ -45,7 +45,6 @@ namespace {
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::lower_name:
-            return extract_name(context);
         case Token::Type::mut:
             return extract_name(context);
         default:
