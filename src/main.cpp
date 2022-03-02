@@ -61,8 +61,7 @@ namespace {
 
     [[maybe_unused]]
     auto const program_parser_repl = generic_repl([](bu::Source source) {
-        auto module = parser::parse(lexer::lex(std::move(source)));
-        bu::print("{}\n", module.global_namespace);
+        bu::print("{}\n", parser::parse(lexer::lex(std::move(source))));
     });
 
 }
@@ -75,8 +74,8 @@ using namespace lexer :: literals;
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
-    //program_parser_repl         ();
-    expression_parser_repl      ();
+    program_parser_repl         ();
+    //expression_parser_repl      ();
 
     /*auto module = parser::parse(
         lexer::lex(

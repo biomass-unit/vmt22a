@@ -15,8 +15,10 @@ namespace bu {
     class [[nodiscard]] Flatmap<K, V, Flatmap_strategy::store_keys> {
         std::vector<Pair<K, V>> pairs;
     public:
-        explicit constexpr Flatmap(Usize const capacity = 32) noexcept
+        explicit constexpr Flatmap(Usize const capacity) noexcept
             : pairs { bu::vector_with_capacity<Pair<K, V>>(capacity) } {}
+
+        constexpr Flatmap() noexcept : Flatmap { 32 } {}
 
         constexpr auto add(K&& k, V&& v) &
             noexcept(std::is_nothrow_move_constructible_v<Pair<K, V>>) -> V*

@@ -4,9 +4,6 @@
 namespace ast {
 
     struct [[nodiscard]] Namespace {
-        template <class T>
-        using Table = bu::Flatmap<lexer::Identifier, T, bu::Flatmap_strategy::store_keys>;
-
         Table<definition::Function>          function_definitions;
         Table<definition::Function_template> function_template_definitions;
         Table<definition::Struct>            struct_definitions;

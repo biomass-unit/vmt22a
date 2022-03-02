@@ -224,14 +224,16 @@ namespace {
 
 
     using Definition_variant = std::variant<
-        ast::definition::Function          const*,
-        ast::definition::Struct            const*,
-        ast::definition::Data              const*,
-        ast::definition::Alias             const*,
-        ast::definition::Function_template const*,
-        ast::definition::Struct_template   const*,
-        ast::definition::Data_template     const*,
-        ast::definition::Alias_template    const*
+        ast::definition::Function               const*,
+        ast::definition::Struct                 const*,
+        ast::definition::Data                   const*,
+        ast::definition::Alias                  const*,
+        ast::definition::Instantiation          const*,
+        ast::definition::Function_template      const*,
+        ast::definition::Struct_template        const*,
+        ast::definition::Data_template          const*,
+        ast::definition::Alias_template         const*,
+        ast::definition::Instantiation_template const*
     >;
 
     auto format_definition(
@@ -283,7 +285,28 @@ namespace {
                     alias->type
                 );
             },
-            [&](auto const* pointer) { // This overload catches the template versions
+            [&](ast::definition::Instantiation const* instantiation) {
+                auto fmt = [&](auto const& xs) {
+                    for (auto& x : xs.span() | std::views::transform(bu::second)) {
+                        std::format_to(context.out(), "\n{}", x);
+                    }
+                };
+
+                format(
+                    "inst{} {} {} {{",
+                    template_parameters(),
+                    instantiation->typeclass,
+                    instantiation->instance
+                );
+
+                fmt(instantiation->function_definitions);
+                fmt(instantiation->function_template_definitions);
+                fmt(instantiation->alias_definitions);
+                fmt(instantiation->alias_template_definitions);
+
+                return format("\n}}");
+            },
+            [&]<class T>(ast::definition::Template_definition<T> const* pointer) {
                 return format_definition(context, &pointer->definition, &pointer->parameters);
             }
         }, definition);
@@ -345,6 +368,13 @@ DEFINE_FORMATTER_FOR(ast::definition::Alias) {
     return format_definition(context, &value);
 }
 DEFINE_FORMATTER_FOR(ast::definition::Alias_template) {
+    return format_definition(context, &value);
+}
+
+DEFINE_FORMATTER_FOR(ast::definition::Instantiation) {
+    return format_definition(context, &value);
+}
+DEFINE_FORMATTER_FOR(ast::definition::Instantiation_template) {
     return format_definition(context, &value);
 }
 
@@ -454,4 +484,15 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     fmt(value.children);
 
     return std::format_to(out, "\n}}\n");
+}
+
+
+DEFINE_FORMATTER_FOR(ast::Module) {
+    return std::format_to(
+        context.out(),
+        "{}\n{}\n{}",
+        value.global_namespace,
+        value.instantiations,
+        value.instantiation_templates
+    );
 }

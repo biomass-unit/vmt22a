@@ -97,6 +97,19 @@ namespace ast {
         using Data_template     = Template_definition<Data    >;
         using Alias_template    = Template_definition<Alias   >;
 
+
+        struct Instantiation {
+            Class_reference          typeclass;
+            bu::Wrapper<Type>        instance;
+            Table<Function>          function_definitions;
+            Table<Function_template> function_template_definitions;
+            Table<Alias>             alias_definitions;
+            Table<Alias_template>    alias_template_definitions;
+            DEFAULTED_EQUALITY(Instantiation);
+        };
+
+        using Instantiation_template = Template_definition<Instantiation>;
+
     }
 
 
