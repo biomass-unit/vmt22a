@@ -245,7 +245,7 @@ auto vm::Virtual_machine::run() -> int {
 
     // The first activation record does not need to be initialized
 
-    while (keep_running) [[likely]] {
+    while (keep_running) {
         auto const opcode = extract_argument<Opcode>();
         //bu::print(" -> {}\n", opcode);
         instructions[static_cast<bu::Usize>(opcode)](*this);

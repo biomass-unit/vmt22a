@@ -222,6 +222,7 @@ namespace {
             { new_id("mut")      , Token::Type::mut       },
             { new_id("if")       , Token::Type::if_       },
             { new_id("else")     , Token::Type::else_     },
+            { new_id("elif")     , Token::Type::elif      },
             { new_id("for")      , Token::Type::for_      },
             { new_id("in")       , Token::Type::in        },
             { new_id("while")    , Token::Type::while_    },

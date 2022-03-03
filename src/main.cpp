@@ -74,8 +74,8 @@ using namespace lexer :: literals;
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
-    program_parser_repl         ();
-    //expression_parser_repl      ();
+    //program_parser_repl         ();
+    expression_parser_repl      ();
 
     /*auto module = parser::parse(
         lexer::lex(
@@ -125,3 +125,5 @@ R"(
 catch (std::exception const& exception) {
     std::cerr << bu::Color::red << "Error: " << bu::Color::white << exception.what() << '\n';
 }
+
+// fix scoping issue

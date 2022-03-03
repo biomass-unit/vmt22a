@@ -48,6 +48,7 @@ namespace lexer {
             immut,
             if_,
             else_,
+            elif,
             for_,
             in,
             while_,

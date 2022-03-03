@@ -45,6 +45,7 @@ namespace ast {
             definition::Function_template*
         >;
 
+
         auto find_upper(Qualified_name&) -> Upper_variant;
         auto find_lower(Qualified_name&) -> Lower_variant;
     };

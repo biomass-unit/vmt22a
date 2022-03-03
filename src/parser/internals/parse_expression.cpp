@@ -156,6 +156,9 @@ namespace {
                         throw context.expected("the false branch", help);
                     }
                 }
+                else if (context.try_consume(Token::Type::elif)) {
+                    false_branch.emplace(extract_conditional(context));
+                }
 
                 return ast::Conditional {
                     std::move(*condition),

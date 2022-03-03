@@ -107,24 +107,24 @@ auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
 
 auto parser::token_description(Token::Type const type) -> std::string_view {
     switch (type) {
-    case Token::Type::dot:
-    case Token::Type::comma:
-    case Token::Type::colon:
-    case Token::Type::semicolon:
-    case Token::Type::double_colon:
-    case Token::Type::ampersand:
-    case Token::Type::asterisk:
-    case Token::Type::question:
-    case Token::Type::equals:
-    case Token::Type::pipe:
-    case Token::Type::right_arrow:
-    case Token::Type::paren_open:
-    case Token::Type::paren_close:
-    case Token::Type::brace_open:
-    case Token::Type::brace_close:
-    case Token::Type::bracket_open:
-    case Token::Type::bracket_close:
-        return "a punctuation token";
+    case Token::Type::dot:           return "a '.'";
+    case Token::Type::comma:         return "a ','";
+    case Token::Type::colon:         return "a ':'";
+    case Token::Type::semicolon:     return "a ';'";
+    case Token::Type::double_colon:  return "a '::'";
+    case Token::Type::ampersand:     return "a '&'";
+    case Token::Type::asterisk:      return "a '*'";
+    case Token::Type::question:      return "a '?'";
+    case Token::Type::equals:        return "a '='";
+    case Token::Type::pipe:          return "a '|'";
+    case Token::Type::right_arrow:   return "a '->'";
+    case Token::Type::paren_open:    return "a '('";
+    case Token::Type::paren_close:   return "a ')'";
+    case Token::Type::brace_open:    return "a '{'";
+    case Token::Type::brace_close:   return "a '}'";
+    case Token::Type::bracket_open:  return "a '['";
+    case Token::Type::bracket_close: return "a ']'";
+
     case Token::Type::let:
     case Token::Type::mut:
     case Token::Type::immut:
@@ -152,6 +152,7 @@ auto parser::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::meta:
     case Token::Type::where:
         return "a keyword";
+
     case Token::Type::underscore:    return "a wildcard pattern";
     case Token::Type::lower_name:    return "an uncapitalized identifier";
     case Token::Type::upper_name:    return "a capitalized identifier";
@@ -173,9 +174,9 @@ namespace {
     using namespace parser;
 
 
-    thread_local ast::Namespace                                      * current_namespace;
-    thread_local std::vector<ast::definition::Instantiation>         * instantiations;
-    thread_local std::vector<ast::definition::Instantiation_template>* instantiation_templates;
+    thread_local ast::Namespace                                * current_namespace;
+    thread_local decltype(ast::Module::instantiations)         * instantiations;
+    thread_local decltype(ast::Module::instantiation_templates)* instantiation_templates;
 
     template <class T>
     using Components = bu::Pair<std::optional<std::vector<ast::Template_parameter>>, T>;
@@ -715,8 +716,8 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     Parse_context context { tokenized_source };
     ast::Namespace global_namespace { lexer::Identifier { std::string_view { "" } } };
 
-    std::vector<ast::definition::Instantiation>          instantiations;
-    std::vector<ast::definition::Instantiation_template> instantiation_templates;
+    decltype(ast::Module::instantiations)          instantiations;
+    decltype(ast::Module::instantiation_templates) instantiation_templates;
     ::instantiations          = &instantiations;
     ::instantiation_templates = &instantiation_templates;
 
