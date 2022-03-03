@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "scope.hpp"
+#include "codegen_internals.hpp"
 
 
 auto compiler::Scope::make_child() -> Scope {

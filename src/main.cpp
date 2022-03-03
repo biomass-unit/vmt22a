@@ -14,8 +14,7 @@
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
 
-#include "compiler/size_of.hpp"
-#include "compiler/type_of.hpp"
+#include "compiler/codegen_internals.hpp"
 
 #include "tests/tests.hpp"
 
@@ -75,9 +74,9 @@ auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
     //program_parser_repl         ();
-    expression_parser_repl      ();
+    //expression_parser_repl      ();
 
-    /*auto module = parser::parse(
+    auto module = parser::parse(
         lexer::lex(
             bu::Source {
                 bu::Source::Mock_tag {},
@@ -100,26 +99,12 @@ R"(
     );
 
     auto tokens = lexer::lex(bu::Source { bu::Source::Mock_tag {}, "T" });
-    parser::Parse_context context { tokens };
-    auto type = parser::extract_type(context);
+    parser::Parse_context parse_context { tokens };
+    auto type = parser::extract_type(parse_context);
 
-    bu::print("size: {}\n", compiler::size_of(type, module.global_namespace));*/
+    compiler::Codegen_context context { { .stack = bu::Bytestack { 1000 } }, std::move(module) };
 
-    /*auto string = "fn f(n: Int): [Int; 10] {}";
-
-    auto module = parser::parse(lexer::lex(bu::Source { bu::Source::Mock_tag {}, string }));
-
-    ast::Expression expression {
-        ast::Invocation {
-            .arguments { ast::Function_argument { ast::Literal<bu::Isize> { 5 } } },
-            .invocable { ast::Variable { "f"_id } }
-        }
-    };
-
-    auto type = compiler::type_of(expression, module.global_namespace);
-    auto size = compiler::size_of(*type, module.global_namespace);
-
-    bu::print("type: {}, size: {}\n", type, size);*/
+    bu::print("size: {}\n", compiler::size_of(type, context));
 }
 
 catch (std::exception const& exception) {

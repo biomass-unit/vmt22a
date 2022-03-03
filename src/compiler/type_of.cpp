@@ -1,65 +1,56 @@
 #include "bu/utilities.hpp"
-#include "type_of.hpp"
+#include "codegen_internals.hpp"
 #include "ast/ast_formatting.hpp"
 
 
 namespace {
 
+    using namespace compiler;
+
     struct Type_visitor {
-        ast::Namespace&  space;
+        Codegen_context& context;
         ast::Expression& this_expression;
 
         auto recurse() {
-            return [&](ast::Expression& expression) {
-                return compiler::type_of(expression, space);
+            return [&](ast::Expression& expression) -> ast::Type& {
+                return compiler::type_of(expression, context);
             };
         }
-        auto recurse(ast::Expression& expression) {
+        auto recurse(ast::Expression& expression) -> ast::Type& {
             return recurse()(expression);
         }
 
 
         template <class T>
-        auto operator()(ast::Literal<T>&) -> bu::Wrapper<ast::Type> {
-            return ast::Type { ast::type::Primitive<T> {} };
+        auto operator()(ast::Literal<T>&) -> void {
+            this_expression.type.emplace(ast::type::Primitive<T> {});
         }
 
-        auto operator()(ast::Variable& /*variable*/) -> bu::Wrapper<ast::Type> {
-            /*auto it = std::ranges::find(
-                space.function_definitions,
-                variable.name,
-                &ast::definition::Function::name
-            );
-            if (it != space.function_definitions.end()) {
-                if (!it->return_type) {
-                    bu::unimplemented();
-                }
-                auto parameter_types = it->parameters
-                                     | std::views::transform(&ast::definition::Function::Parameter::type);
-                return ast::type::Function {
-                    .argument_types { std::vector(parameter_types.begin(), parameter_types.end()) },
-                    .return_type    { *it->return_type }
-                };
-            }
-            else {*/
-                bu::unimplemented();
-            //}
+        auto operator()(ast::Variable&) -> void {
+            bu::unimplemented();
         }
 
-        auto operator()(ast::Invocation& invocation) -> bu::Wrapper<ast::Type> {
-            auto invocable_type = recurse()(invocation.invocable);
-            if (auto* function = std::get_if<ast::type::Function>(&invocable_type->value)) {
+        auto operator()(ast::Invocation& invocation) -> void {
+            ast::Type& invocable_type = recurse(invocation.invocable);
+
+            if (auto* function = std::get_if<ast::type::Function>(&invocable_type.value)) {
                 auto const expected_count = function->argument_types.size();
                 auto const actual_count = invocation.arguments.size();
 
                 if (expected_count == actual_count) {
-                    auto const argument_type = [&](ast::Function_argument& arg) noexcept {
-                        return recurse()(arg.expression);
-                    };
-                    if (!std::ranges::equal(invocation.arguments, function->argument_types, {}, argument_type)) {
+                    bool const ok = std::ranges::equal(
+                        invocation.arguments,
+                        function->argument_types,
+                        {},
+                        bu::compose(recurse(), &ast::Function_argument::expression),
+                        bu::dereference
+                    );
+
+                    if (!ok) {
                         bu::unimplemented();
                     }
-                    return function->return_type;
+
+                    this_expression.type.emplace(function->return_type);
                 }
                 else {
                     bu::unimplemented();
@@ -70,11 +61,12 @@ namespace {
             }
         }
 
-        auto operator()(ast::Meta& meta) {
-            return recurse()(meta.expression);
+        auto operator()(ast::Meta& meta) -> void {
+            std::ignore = recurse(meta.expression);
+            this_expression.type = meta.expression->type;
         }
 
-        auto operator()(auto&) -> bu::Wrapper<ast::Type> {
+        auto operator()(auto&) -> void {
             bu::abort(std::format("compiler::type_of has not been implemented for {}", this_expression));
         }
     };
@@ -82,13 +74,10 @@ namespace {
 }
 
 
-auto compiler::type_of(ast::Expression& expression, ast::Namespace& space)
-    -> bu::Wrapper<ast::Type>
-{
+auto compiler::type_of(ast::Expression& expression, Codegen_context& context) -> ast::Type& {
     if (!expression.type) {
-        expression.type.emplace(
-            std::visit(Type_visitor { space, expression }, expression.value)
-        );
+        std::visit(Type_visitor { context, expression }, expression.value);
+        assert(expression.type);
     }
     return *expression.type;
 }
