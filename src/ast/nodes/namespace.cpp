@@ -33,19 +33,24 @@ namespace {
             }
         }, name.root_qualifier->value);
 
-        for (auto& qualifier : name.qualifiers) {
+        for (auto& qualifier : name.middle_qualifiers) {
             static_assert(std::variant_size_v<decltype(qualifier.value)> == 2);
 
-            if (auto* upper = std::get_if<ast::Middle_qualifier::Upper>(&qualifier.value)) {
+            if (auto* upper = qualifier.upper()) {
                 bu::unimplemented();
             }
             else {
-                auto& lower = *std::get_if<ast::Middle_qualifier::Lower>(&qualifier.value);
-                if (auto* child = space->children.find(lower.name)) {
+                if (auto* child = space->children.find(qualifier.lower()->name)) {
                     space = child;
                 }
                 else {
-                    bu::abort(std::format("{} does not have a sub-namespace with the name {}", space->name, lower.name));
+                    bu::abort(
+                        std::format(
+                            "{} does not have a sub-namespace with the name {}",
+                            space->name,
+                            qualifier.lower()->name
+                        )
+                    );
                 }
             }
         }
@@ -61,10 +66,10 @@ auto ast::Namespace::find_upper(Qualified_name& qualified_name)
 {
     auto* const space = apply_qualifiers(this, qualified_name);
 
-    auto* structure = space -> struct_definitions . find(qualified_name.identifier);
-    auto* data      = space -> data_definitions   . find(qualified_name.identifier);
-    auto* alias     = space -> alias_definitions  . find(qualified_name.identifier);
-    auto* typeclass = space -> class_definitions  . find(qualified_name.identifier);
+    auto* structure = space -> struct_definitions . find(qualified_name.primary_qualifier.identifier);
+    auto* data      = space -> data_definitions   . find(qualified_name.primary_qualifier.identifier);
+    auto* alias     = space -> alias_definitions  . find(qualified_name.primary_qualifier.identifier);
+    auto* typeclass = space -> class_definitions  . find(qualified_name.primary_qualifier.identifier);
 
     if (structure) {
         assert(!data && !alias && !typeclass);
@@ -93,7 +98,7 @@ auto ast::Namespace::find_lower(Qualified_name& qualified_name)
 {
     auto* const space = apply_qualifiers(this, qualified_name);
 
-    auto* function = space->function_definitions.find(qualified_name.identifier);
+    auto* function = space->function_definitions.find(qualified_name.primary_qualifier.identifier);
 
     // TODO: add support for data ctors
 

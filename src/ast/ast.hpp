@@ -24,7 +24,7 @@ namespace ast {
 
     struct Root_qualifier;
 
-    struct Middle_qualifier {
+    struct Qualifier {
         struct Lower {
             lexer::Identifier name;
             DEFAULTED_EQUALITY(Lower);
@@ -35,13 +35,25 @@ namespace ast {
             DEFAULTED_EQUALITY(Upper);
         };
         std::variant<Lower, Upper> value;
-        DEFAULTED_EQUALITY(Middle_qualifier);
+        DEFAULTED_EQUALITY(Qualifier);
+
+        auto lower() noexcept -> Lower* { return std::get_if<Lower>(&value); }
+        auto upper() noexcept -> Upper* { return std::get_if<Upper>(&value); }
+    };
+
+    struct Primary_qualifier {
+        lexer::Identifier identifier;
+        bool              uppercase;
+        DEFAULTED_EQUALITY(Primary_qualifier);
+
+        auto is_upper() const noexcept -> bool { return uppercase; }
+        auto is_lower() const noexcept -> bool { return !uppercase; }
     };
 
     struct Qualified_name {
-        bu::Wrapper<Root_qualifier>   root_qualifier;
-        std::vector<Middle_qualifier> qualifiers;
-        lexer::Identifier             identifier;
+        bu::Wrapper<Root_qualifier> root_qualifier;
+        std::vector<Qualifier>      middle_qualifiers;
+        Primary_qualifier           primary_qualifier;
         DEFAULTED_EQUALITY(Qualified_name);
 
         inline auto is_unqualified() const noexcept -> bool;
@@ -81,7 +93,7 @@ struct ast::Function_argument {
 struct ast::Root_qualifier {
     struct Global { DEFAULTED_EQUALITY(Global); };
     std::variant<
-        std::monostate, // id
+        std::monostate, // id, id::id
         Global,         // ::id
         Type            // Type::id
     > value;
@@ -89,7 +101,8 @@ struct ast::Root_qualifier {
 };
 
 auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
-    return std::holds_alternative<std::monostate>(root_qualifier->value);
+    return middle_qualifiers.empty()
+        && std::holds_alternative<std::monostate>(root_qualifier->value);
 }
 
 

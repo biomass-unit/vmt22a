@@ -12,7 +12,13 @@ auto run_parser_tests() -> void {} // No testing in release
 
 namespace {
 
-    auto test(std::vector<lexer::Token> tokens, ast::Expression const& expected_expression) -> void {
+    auto test(
+        std::vector<lexer::Token> tokens, 
+        ast::Expression const&    expected_expression,
+        std::source_location      caller = std::source_location::current()
+    )
+        -> void
+    {
         tokens.push_back({ .type = lexer::Token::Type::end_of_input });
 
         lexer::Tokenized_source source {
@@ -36,7 +42,8 @@ namespace {
                     " expression: {}\n\tthrown exception: {}",
                     expected_expression,
                     exception.what()
-                )
+                ),
+                caller
             );
         }
 
@@ -48,7 +55,8 @@ namespace {
                         "expression: {}\n\tactual expression: {}",
                         expected_expression,
                         *parse_result
-                    )
+                    ),
+                    caller
                 );
             }
             else if (!context.is_finished()) {
@@ -61,7 +69,8 @@ namespace {
                             context.pointer,
                             source.tokens.data() + source.tokens.size()
                         }
-                    )
+                    ),
+                    caller
                 );
             }
         }
@@ -72,7 +81,8 @@ namespace {
                     "expression: {}\n\tinput tokens: {}",
                     expected_expression,
                     source.tokens
-                )
+                ),
+                caller
             );
         }
     }
@@ -89,6 +99,16 @@ auto run_parser_tests() -> void {
 
     using lexer::Token;
     using Type = Token::Type;
+
+    auto make_unqualified = [](std::string_view name) {
+        return ast::Qualified_name {
+            .primary_qualifier {
+                .identifier = lexer::Identifier { name },
+                .uppercase  = std::isupper(name.front()) != 0
+            }
+        };
+    };
+
 
     test
     (
@@ -213,7 +233,7 @@ auto run_parser_tests() -> void {
         ast::Member_function_invocation {
             .arguments = {},
             .expression = ast::Member_access {
-                ast::Variable { ast::Qualified_name { .identifier = "x"_id } },
+                ast::Variable { make_unqualified("x") },
                 "y"_id
             },
             .member_name = "f"_id
@@ -241,23 +261,21 @@ auto run_parser_tests() -> void {
         }
     );
 
-    ast::Middle_qualifier::Upper namespace_access_test_vector {
+    ast::Qualifier::Upper namespace_access_test_vector {
         .template_arguments = std::vector {
             ast::Template_argument {
                 ast::Type {
                     ast::type::Typename {
-                        ast::Qualified_name {
-                            .identifier = "Long"_id
-                        }
+                        make_unqualified("Long")
                     }
                 }
             }
         },
         .name = "Vector"_id,
     };
-    std::vector<ast::Middle_qualifier> namespace_access_test_qualifiers;
+    std::vector<ast::Qualifier> namespace_access_test_qualifiers;
 
-    namespace_access_test_qualifiers.emplace_back(ast::Middle_qualifier::Lower { "std"_id });
+    namespace_access_test_qualifiers.emplace_back(ast::Qualifier::Lower { "std"_id });
     namespace_access_test_qualifiers.emplace_back(std::move(namespace_access_test_vector));
 
     // ^^^ this isn't done inline because it caused an ICE on MSVC for some reason
@@ -284,8 +302,8 @@ auto run_parser_tests() -> void {
             .initializer = ast::Literal<bu::Isize> { 5 },
             .type = ast::type::Typename {
                 ast::Qualified_name {
-                    .qualifiers = std::move(namespace_access_test_qualifiers),
-                    .identifier = "Element"_id
+                    .middle_qualifiers = std::move(namespace_access_test_qualifiers),
+                    .primary_qualifier { .identifier = "Element"_id, .uppercase = true }
                 }
             }
         }

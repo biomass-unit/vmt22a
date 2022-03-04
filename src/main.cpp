@@ -63,6 +63,23 @@ namespace {
         bu::print("{}\n", parser::parse(lexer::lex(std::move(source))));
     });
 
+
+    template <auto extract>
+    auto debug_parse(std::string_view string) {
+        auto input = bu::string_without_sso();
+        input = string;
+
+        auto tokenized_source = lexer::lex(
+            bu::Source {
+                bu::Source::Mock_tag {},
+                std::move(input)
+            }
+        );
+        parser::Parse_context context { tokenized_source };
+
+        return extract(context);
+    }
+
 }
 
 
@@ -72,11 +89,11 @@ using namespace lexer :: literals;
 
 auto main() -> int try {
     bu::enable_color_formatting ();
-    //tests::run_all_tests        ();
+    tests::run_all_tests        ();
     //program_parser_repl         ();
-    //expression_parser_repl      ();
+    expression_parser_repl      ();
 
-    auto module = parser::parse(
+    /*auto module = parser::parse(
         lexer::lex(
             bu::Source {
                 bu::Source::Mock_tag {},
@@ -102,17 +119,13 @@ R"(
         )
     );
 
-    auto tokens = lexer::lex(bu::Source { bu::Source::Mock_tag {}, "G" });
-    parser::Parse_context parse_context { tokens };
-    auto type = parser::extract_type(parse_context);
+    auto type = debug_parse<parser::extract_type>("G");
 
     compiler::Codegen_context context { { .stack = bu::Bytestack { 1000 } }, std::move(module) };
 
-    bu::print("type: {}\n", compiler::size_of(type, context));
+    bu::print("type: {}\n", compiler::size_of(type, context));*/
 }
 
 catch (std::exception const& exception) {
     std::cerr << bu::Color::red << "Error: " << bu::Color::white << exception.what() << '\n';
 }
-
-// fix scoping issue

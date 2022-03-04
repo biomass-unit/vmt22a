@@ -37,12 +37,12 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
         [out](auto const& root)            { std::format_to(out, "{}::", root); }
     }, value.root_qualifier->value);
 
-    for (auto& qualifier : value.qualifiers) {
+    for (auto& qualifier : value.middle_qualifiers) {
         std::visit(bu::Overload {
-            [out](ast::Middle_qualifier::Lower const& lower) {
+            [out](ast::Qualifier::Lower const& lower) {
                 std::format_to(out, "{}::", lower.name);
             },
-            [out](ast::Middle_qualifier::Upper const& upper) {
+            [out](ast::Qualifier::Upper const& upper) {
                 std::format_to(
                     out,
                     upper.template_arguments ? "{}[{}]::" : "{}::",
@@ -53,7 +53,7 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
         }, qualifier.value);
     }
 
-    return std::format_to(out, "{}", value.identifier);
+    return std::format_to(out, "{}", value.primary_qualifier.identifier);
 }
 
 

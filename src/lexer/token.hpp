@@ -31,6 +31,7 @@ namespace lexer {
 
             ampersand,
             asterisk,
+            plus,
             question,
             equals,
             pipe,

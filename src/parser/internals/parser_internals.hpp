@@ -228,7 +228,7 @@ namespace parser {
 
     auto parse_template_arguments(Parse_context&) -> std::optional<std::vector<ast::Template_argument>>;
 
-    auto extract_qualifiers(Parse_context&) -> std::vector<ast::Middle_qualifier>;
+    auto extract_qualified(ast::Root_qualifier&&, Parse_context&) -> ast::Qualified_name;
 
     auto extract_mutability(Parse_context&) -> ast::Mutability;
 

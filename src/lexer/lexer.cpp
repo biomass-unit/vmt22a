@@ -289,6 +289,7 @@ namespace {
             { "=" , Token::Type::equals       },
             { "&" , Token::Type::ampersand    },
             { "*" , Token::Type::asterisk     },
+            { "+" , Token::Type::plus         },
             { "?" , Token::Type::question     },
             { "->", Token::Type::right_arrow  },
         });

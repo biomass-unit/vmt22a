@@ -58,32 +58,79 @@ auto parser::parse_template_arguments(Parse_context& context)
     }
 }
 
-auto parser::extract_qualifiers(Parse_context& context) -> std::vector<ast::Middle_qualifier> {
-    std::vector<ast::Middle_qualifier> qualifiers;
+auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& context)
+    -> ast::Qualified_name
+{
+    std::vector<ast::Qualifier> qualifiers;
+    lexer::Token* template_argument_anchor = nullptr;
 
-    do {
+    auto extract_qualifier = [&]() -> bool {
         switch (auto& token = context.extract(); token.type) {
         case Token::Type::lower_name:
             qualifiers.emplace_back(
-                ast::Middle_qualifier::Lower {
+                ast::Qualifier::Lower {
                     token.as_identifier()
                 }
             );
-            break;
+            return true;
         case Token::Type::upper_name:
+            template_argument_anchor = context.pointer;
+
             qualifiers.emplace_back(
-                ast::Middle_qualifier::Upper {
+                ast::Qualifier::Upper {
                     parse_template_arguments(context),
                     token.as_identifier()
                 }
             );
-            break;
+            return true;
         default:
-            bu::unimplemented();
+            context.retreat();
+            return false;
         }
-    } while (context.try_consume(Token::Type::double_colon));
+    };
 
-    return qualifiers;
+    if (extract_qualifier()) {
+        while (context.try_consume(Token::Type::double_colon)) {
+            if (!extract_qualifier()) {
+                throw context.expected("an identifier");
+            }
+        }
+
+        bu::Uninitialized<lexer::Identifier> identifier;
+        auto back = std::move(qualifiers.back());
+        qualifiers.pop_back();
+
+        if (auto* upper = back.upper()) {
+            // Template arguments are handled separately
+            upper->template_arguments.reset();
+            context.pointer = template_argument_anchor;
+            identifier.initialize(upper->name);
+        }
+        else {
+            identifier.initialize(back.lower()->name);
+        }
+
+        return {
+            .root_qualifier    = std::move(root),
+            .middle_qualifiers = std::move(qualifiers),
+            .primary_qualifier { *identifier, static_cast<bool>(back.upper()) }
+        };
+    }
+    else { // no qualifiers
+        std::visit(bu::Overload {
+            [&](std::monostate) {
+                bu::unimplemented();
+            },
+            [&](ast::Root_qualifier::Global) {
+                throw context.expected("an identifier");
+            },
+            [&](ast::Type&) {
+                bu::unimplemented();
+            }
+        }, root.value);
+    }
+
+    bu::unimplemented();
 }
 
 auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
@@ -209,7 +256,7 @@ namespace {
 
     auto extract_classes(Parse_context& context) -> std::vector<ast::Class_reference> {
         constexpr auto extract_classes =
-            extract_comma_separated_zero_or_more<parse_class_reference, "a class name">;
+            extract_separated_zero_or_more<parse_class_reference, Token::Type::plus, "a class name">;
 
         auto classes = extract_classes(context);
         if (classes.empty()) {
@@ -488,11 +535,23 @@ namespace {
     auto parse_class_reference(Parse_context& context)
         -> std::optional<ast::Class_reference>
     {
-        // fix
-        if (auto name = parse_upper_id(context)) {
+        auto name = [&]() -> std::optional<ast::Qualified_name> {
+            if (context.try_consume(Token::Type::upper_name) || context.try_consume(Token::Type::lower_name)) {
+                context.retreat();
+                return extract_qualified({ std::monostate {} }, context);
+            }
+            else if (context.try_consume(Token::Type::double_colon)) {
+                return extract_qualified({ ast::Root_qualifier::Global {} }, context);
+            }
+            else {
+                return std::nullopt;
+            }
+        }();
+
+        if (name) {
             return ast::Class_reference {
-                parse_template_arguments(context),
-                ast::Qualified_name { .identifier = *name }
+                .template_arguments = parse_template_arguments(context),
+                .name               = std::move(*name)
             };
         }
         else {

@@ -19,43 +19,31 @@ namespace {
     }
 
 
-    auto extract_qualified(lexer::Token* anchor, ast::Root_qualifier&& root, Parse_context& context)
+    auto extract_qualified_lower_name(ast::Root_qualifier&& root, Parse_context& context)
         -> ast::Expression
     {
-        auto qualifiers = extract_qualifiers(context);
-        
-        if (qualifiers.empty()) {
-            if (std::holds_alternative<ast::Root_qualifier::Global>(root.value)) {
-                bu::unimplemented();
-            }
+        auto* const anchor = context.pointer;
+        auto name = extract_qualified(std::move(root), context);
+
+        if (name.primary_qualifier.is_lower()) {
+            return ast::Variable { std::move(name) };
         }
-
-        auto back = std::move(qualifiers.back().value);
-        qualifiers.pop_back();
-
-        static_assert(std::variant_size_v<decltype(back)> == 2);
-
-        if (auto* lower = std::get_if<ast::Middle_qualifier::Lower>(&back)) {
-            return ast::Variable {
-                ast::Qualified_name {
-                    .root_qualifier = std::move(root),
-                    .qualifiers     = std::move(qualifiers),
-                    .identifier     = std::get_if<ast::Middle_qualifier::Lower>(&back)->name
-                }
-            };
+        else {
+            throw context.error(
+                { anchor, context.pointer },
+                "Expected an expression, but found a typename"
+            );
         }
-
-        throw context.expected({ anchor, context.pointer }, "an expression, not a type");
     }
 
 
     auto extract_identifier(Parse_context& context) -> ast::Expression {
         context.retreat();
-        return extract_qualified(context.pointer, {}, context);
+        return extract_qualified_lower_name({ std::monostate {} }, context);
     }
 
     auto extract_global_identifier(Parse_context& context) -> ast::Expression {
-        return extract_qualified(&context.previous(), { ast::Root_qualifier::Global {} }, context);
+        return extract_qualified_lower_name({ ast::Root_qualifier::Global {} }, context);
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Expression {
@@ -344,6 +332,7 @@ namespace {
         case Token::Type::string:
             return extract_literal<lexer::String>(context);
         case Token::Type::lower_name:
+        case Token::Type::upper_name:
             return extract_identifier(context);
         case Token::Type::double_colon:
             return extract_global_identifier(context);
@@ -379,14 +368,19 @@ namespace {
             return extract_compound_expression(context);
         default:
         {
+            auto* const anchor = context.pointer;
             context.retreat();
-            auto* anchor = context.pointer;
+
             if (auto root = parse_type(context)) {
-                return extract_qualified(
-                    anchor,
-                    ast::Root_qualifier { std::move(*root) },
-                    context
-                );
+                if (context.try_consume(Token::Type::double_colon)) {
+                    return extract_qualified_lower_name({ std::move(*root) }, context);
+                }
+                else {
+                    throw context.error(
+                        { anchor, context.pointer },
+                        "Expected a nested lowercase identifier, but found a typename"
+                    );
+                }
             }
             else {
                 return std::nullopt;
@@ -402,13 +396,8 @@ namespace {
                 return ast::Function_argument { extract_expression(context), *name };
             }
             else {
-                return ast::Function_argument {
-                    ast::Variable {
-                        ast::Qualified_name {
-                            .identifier = *name
-                        }
-                    }
-                };
+                context.retreat();
+                return ast::Function_argument { extract_expression(context) };
             }
         }
         else {
@@ -517,12 +506,19 @@ namespace {
             assert(identifier.view() == "*");
             return identifier;
         }();
+        static auto const plus = [] {
+            auto const identifier = std::get<1>(precedence_table).front();
+            assert(identifier.view() == "+");
+            return identifier;
+        }();
 
         switch (context.extract().type) {
         case Token::Type::operator_name:
             return context.previous().as_identifier();
         case Token::Type::asterisk:
             return asterisk;
+        case Token::Type::plus:
+            return plus;
         default:
             context.retreat();
             return std::nullopt;

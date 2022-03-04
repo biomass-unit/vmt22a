@@ -8,56 +8,26 @@ namespace {
     using namespace parser;
 
 
-    auto parse_qualified(lexer::Token* anchor, ast::Root_qualifier&& root, Parse_context& context)
-        -> std::optional<ast::Type>
-    {
-        auto qualifiers = extract_qualifiers(context);
+    auto extract_qualified_upper_name(ast::Root_qualifier&& root, Parse_context& context) -> ast::Type {
+        auto* const anchor = context.pointer;
+        auto name = extract_qualified(std::move(root), context);
 
-        if (qualifiers.empty()) {
-            using R = std::optional<ast::Type>;
-
-            return std::visit(bu::Overload {
-                [](std::monostate) -> R {
-                    bu::unimplemented();
-                },
-                [&](ast::Root_qualifier::Global) -> R {
-                    throw context.expected("a type");
-                },
-                [&](lexer::Identifier) -> R {
-                    context.pointer = anchor;
-                    return std::nullopt;
-                },
-                [](ast::Type& type) -> R {
-                    return std::move(type);
-                }
-            }, root.value);
-        }
-        else {
-            auto back = std::move(qualifiers.back().value);
-            qualifiers.pop_back();
-
-            static_assert(std::variant_size_v<decltype(back)> == 2);
-
-            if (auto* upper = std::get_if<ast::Middle_qualifier::Upper>(&back)) {
-                ast::Qualified_name name {
-                    .root_qualifier = std::move(root),
-                    .qualifiers     = std::move(qualifiers),
-                    .identifier     = upper->name
+        if (name.primary_qualifier.is_upper()) {
+            if (auto template_arguments = parse_template_arguments(context)) {
+                return ast::type::Template_instantiation {
+                    std::move(*template_arguments),
+                    std::move(name)
                 };
-                if (upper->template_arguments) {
-                    return ast::type::Template_instantiation {
-                        std::move(*upper->template_arguments),
-                        std::move(name)
-                    };
-                }
-                else {
-                    return ast::type::Typename { std::move(name) };
-                }
             }
             else {
-                context.pointer = anchor;
-                return std::nullopt;
+                return ast::type::Typename { std::move(name) };
             }
+        }
+        else {
+            throw context.error(
+                { anchor, context.pointer },
+                "Expected a typename, but found a lowercase identifier"
+            );
         }
     }
 
@@ -92,17 +62,17 @@ namespace {
         }
         else {
             context.retreat();
-            return parse_qualified(context.pointer, {}, context);
+            return extract_qualified_upper_name({ std::monostate {} }, context);
         }
     }
 
     auto parse_lower_qualified_typename(Parse_context& context) -> std::optional<ast::Type> {
         context.retreat();
-        return parse_qualified(context.pointer, {}, context);
+        return extract_qualified_upper_name({ std::monostate {} }, context);
     }
 
     auto parse_global_typename(Parse_context& context) -> std::optional<ast::Type> {
-        return parse_qualified(&context.previous(), { ast::Root_qualifier::Global{} }, context);
+        return extract_qualified_upper_name({ ast::Root_qualifier::Global{} }, context);
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Type {
@@ -190,45 +160,31 @@ namespace {
         return ast::type::Pointer { extract_type(context), std::move(mutability) };
     }
 
-
-    auto parse_normal_type(Parse_context& context) -> std::optional<ast::Type> {
-        switch (context.extract().type) {
-        case Token::Type::paren_open:
-            return extract_tuple(context);
-        case Token::Type::bracket_open:
-            return extract_array_or_list(context);
-        case Token::Type::fn:
-            return extract_function(context);
-        case Token::Type::type_of:
-            return extract_type_of(context);
-        case Token::Type::ampersand:
-            return extract_reference(context);
-        case Token::Type::asterisk:
-            return extract_pointer(context);
-        case Token::Type::upper_name:
-            return parse_typename(context);
-        case Token::Type::lower_name:
-            return parse_lower_qualified_typename(context);
-        case Token::Type::double_colon:
-            return parse_global_typename(context);
-        default:
-            context.retreat();
-            return std::nullopt;
-        }
-    }
-
 }
 
 
 auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
-    auto type = parse_normal_type(context);
-    auto anchor = context.pointer;
-
-    if (type && context.pointer->type == Token::Type::double_colon) {
-        if (auto qualified_type = parse_qualified(anchor, { *type }, context)) {
-            type = qualified_type;
-        }
+    switch (context.extract().type) {
+    case Token::Type::paren_open:
+        return extract_tuple(context);
+    case Token::Type::bracket_open:
+        return extract_array_or_list(context);
+    case Token::Type::fn:
+        return extract_function(context);
+    case Token::Type::type_of:
+        return extract_type_of(context);
+    case Token::Type::ampersand:
+        return extract_reference(context);
+    case Token::Type::asterisk:
+        return extract_pointer(context);
+    case Token::Type::upper_name:
+        return parse_typename(context);
+    case Token::Type::lower_name:
+        return parse_lower_qualified_typename(context);
+    case Token::Type::double_colon:
+        return parse_global_typename(context);
+    default:
+        context.retreat();
+        return std::nullopt;
     }
-
-    return type;
 }
