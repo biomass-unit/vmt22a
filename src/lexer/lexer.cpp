@@ -83,7 +83,6 @@ namespace {
 
         inline auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
             return bu::Textual_error { {
-                .error_type     = bu::Textual_error::Type::lexical_error,
                 .erroneous_view = view,
                 .file_view      = source->string(),
                 .file_name      = source->name(),

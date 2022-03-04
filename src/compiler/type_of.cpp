@@ -26,8 +26,39 @@ namespace {
             this_expression.type.emplace(ast::type::Primitive<T> {});
         }
 
-        auto operator()(ast::Variable&) -> void {
-            bu::unimplemented();
+        auto operator()(ast::Variable& variable) -> void {
+            if (variable.name.is_unqualified()) {
+                // try to find in local scope first
+            }
+
+            using ast::definition::Function;
+
+            std::visit(bu::Overload {
+                [&](Function* function) {
+                    assert(function->return_type);
+
+                    ast::type::Function type { .return_type = *function->return_type };
+                    type.argument_types.reserve(function->parameters.size());
+                    std::ranges::copy(
+                        function->parameters | std::views::transform(&Function::Parameter::type),
+                        std::back_inserter(type.argument_types)
+                    );
+
+                    this_expression.type.emplace(std::move(type));
+                },
+                [&](ast::definition::Function_template*) {
+                    bu::unimplemented();
+                },
+                [&](std::monostate) {
+                    throw context.error(
+                        std::format(
+                            "The name {} does not refer to an expression",
+                            variable.name
+                        ),
+                        this_expression
+                    );
+                }
+            }, context.space->find_lower(variable.name));
         }
 
         auto operator()(ast::Invocation& invocation) -> void {
@@ -57,7 +88,10 @@ namespace {
                 }
             }
             else {
-                bu::unimplemented();
+                throw context.error(
+                    std::format("{} is not invocable", invocable_type),
+                    this_expression
+                );
             }
         }
 

@@ -28,3 +28,5 @@ DECLARE_FORMATTER_FOR(ast::definition::Typeclass);
 DECLARE_FORMATTER_FOR(ast::Namespace);
 
 DECLARE_FORMATTER_FOR(ast::Module);
+
+DECLARE_FORMATTER_FOR(ast::Qualified_name);

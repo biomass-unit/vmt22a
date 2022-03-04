@@ -10,7 +10,25 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
     return std::format_to(context.out(), value.name ? "{} = {}" : "{1}", value.name, value.expression);
 }
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
+    std::string_view format;
+
+    switch (value.type) {
+    case ast::Mutability::Type::mut:
+        format = "mut ";
+        break;
+    case ast::Mutability::Type::immut:
+        format = "";
+        break;
+    default:
+        format = "mut?{} ";
+    }
+
+    return std::format_to(context.out(), format, value.parameter_name);
+}
+
+
+DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     auto out = context.out();
 
     std::visit(bu::Overload {
@@ -36,23 +54,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     }
 
     return std::format_to(out, "{}", value.identifier);
-}
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
-    std::string_view format;
-
-    switch (value.type) {
-    case ast::Mutability::Type::mut:
-        format = "mut ";
-        break;
-    case ast::Mutability::Type::immut:
-        format = "";
-        break;
-    default:
-        format = "mut?{} ";
-    }
-
-    return std::format_to(context.out(), format, value.parameter_name);
 }
 
 

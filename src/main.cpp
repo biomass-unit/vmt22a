@@ -72,7 +72,7 @@ using namespace lexer :: literals;
 
 auto main() -> int try {
     bu::enable_color_formatting ();
-    tests::run_all_tests        ();
+    //tests::run_all_tests        ();
     //program_parser_repl         ();
     //expression_parser_repl      ();
 
@@ -91,20 +91,24 @@ R"(
     alias B = A
     alias C = B
 
-    data T = a(A, B) | b(C)
+    // data U = a(A, B) | b(Int)
+    // alias T = type_of(b(3))
+
+    fn g(n: Int): (Int, Int) = n
+    alias G = type_of(g(5))
 
 )"
             }
         )
     );
 
-    auto tokens = lexer::lex(bu::Source { bu::Source::Mock_tag {}, "T" });
+    auto tokens = lexer::lex(bu::Source { bu::Source::Mock_tag {}, "G" });
     parser::Parse_context parse_context { tokens };
     auto type = parser::extract_type(parse_context);
 
     compiler::Codegen_context context { { .stack = bu::Bytestack { 1000 } }, std::move(module) };
 
-    bu::print("size: {}\n", compiler::size_of(type, context));
+    bu::print("type: {}\n", compiler::size_of(type, context));
 }
 
 catch (std::exception const& exception) {

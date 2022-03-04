@@ -43,6 +43,8 @@ namespace ast {
         std::vector<Middle_qualifier> qualifiers;
         lexer::Identifier             identifier;
         DEFAULTED_EQUALITY(Qualified_name);
+
+        inline auto is_unqualified() const noexcept -> bool;
     };
 
     struct Mutability {
@@ -79,12 +81,16 @@ struct ast::Function_argument {
 struct ast::Root_qualifier {
     struct Global { DEFAULTED_EQUALITY(Global); };
     std::variant<
-        std::monostate,    // id
-        Global,            // ::id
-        Type               // Type::id
+        std::monostate, // id
+        Global,         // ::id
+        Type            // Type::id
     > value;
     DEFAULTED_EQUALITY(Root_qualifier);
 };
+
+auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
+    return std::holds_alternative<std::monostate>(root_qualifier->value);
+}
 
 
 namespace ast {

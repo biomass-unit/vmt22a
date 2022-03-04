@@ -210,6 +210,7 @@
       <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DisableLanguageExtensions>
     </ClCompile>
     <ClCompile Include="src\bu\source.cpp" />
+    <ClCompile Include="src\compiler\compiler.cpp" />
     <ClCompile Include="src\compiler\scope.cpp" />
     <ClCompile Include="src\compiler\size_of.cpp" />
     <ClCompile Include="src\compiler\type_of.cpp" />
@@ -257,6 +258,7 @@
     <ClInclude Include="src\bu\utilities.hpp" />
     <ClInclude Include="src\bu\wrapper.hpp" />
     <ClInclude Include="src\compiler\codegen_internals.hpp" />
+    <ClInclude Include="src\compiler\compiler.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\bu\textual_error.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />

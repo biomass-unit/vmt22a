@@ -71,7 +71,6 @@ namespace parser {
                 span.back().source_view.data() + span.back().source_view.size()
             };
             return bu::Textual_error { {
-                .error_type     = bu::Textual_error::Type::parse_error,
                 .erroneous_view = view,
                 .file_view      = source->string(),
                 .file_name      = source->name(),

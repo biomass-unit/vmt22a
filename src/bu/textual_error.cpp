@@ -73,10 +73,8 @@ namespace {
 bu::Textual_error::Textual_error(Arguments const arguments)
     : runtime_error
 { [=] {
-    auto const [type, view, file, filename, message, help] = arguments;
+    auto const [view, file, filename, message, help] = arguments;
     auto const position = find_position(file.data(), view.data());
-
-    std::ignore = type; // for now
 
     std::string string;
     string.reserve(256);

@@ -12,11 +12,8 @@ namespace bu {
     };
 
     struct Textual_error : std::runtime_error {
-        enum class Type { lexical_error, parse_error };
-
         // Packaging the arguments in a struct allows named arguments via designated initializers
         struct Arguments {
-            Type                            error_type;
             std::string_view                erroneous_view;
             std::string_view                file_view;
             std::string_view                file_name;

@@ -284,9 +284,38 @@ auto run_parser_tests() -> void {
             .initializer = ast::Literal<bu::Isize> { 5 },
             .type = ast::type::Typename {
                 ast::Qualified_name {
-                    .qualifiers     = std::move(namespace_access_test_qualifiers),
-                    .identifier     = "Element"_id
+                    .qualifiers = std::move(namespace_access_test_qualifiers),
+                    .identifier = "Element"_id
                 }
+            }
+        }
+    );
+
+    test
+    (
+        {
+            Token { .type = Type::if_ },
+            Token { true, Type::boolean },
+            Token { .type = Type::brace_open },
+            Token { 50, Type::integer },
+            Token { .type = Type::brace_close },
+            Token { .type = Type::elif },
+            Token { false, Type::boolean },
+            Token { .type = Type::brace_open },
+            Token { 75, Type::integer },
+            Token { .type = Type::brace_close },
+            Token { .type = Type::else_ },
+            Token { .type = Type::brace_open },
+            Token { 100, Type::integer },
+            Token { .type = Type::brace_close }
+        },
+        ast::Conditional {
+            ast::Literal<bool> { true },
+            ast::Literal<bu::Isize> { 50 },
+            ast::Conditional {
+                ast::Literal<bool> { false },
+                ast::Literal<bu::Isize> { 75 },
+                ast::Literal<bu::Isize> { 100 }
             }
         }
     );
