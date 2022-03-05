@@ -160,31 +160,59 @@ namespace {
         return ast::type::Pointer { extract_type(context), std::move(mutability) };
     }
 
+    auto parse_normal_type(Parse_context& context) -> std::optional<ast::Type> {
+        switch (context.extract().type) {
+        case Token::Type::paren_open:
+            return extract_tuple(context);
+        case Token::Type::bracket_open:
+            return extract_array_or_list(context);
+        case Token::Type::fn:
+            return extract_function(context);
+        case Token::Type::type_of:
+            return extract_type_of(context);
+        case Token::Type::ampersand:
+            return extract_reference(context);
+        case Token::Type::asterisk:
+            return extract_pointer(context);
+        case Token::Type::upper_name:
+            return parse_typename(context);
+        case Token::Type::lower_name:
+            return parse_lower_qualified_typename(context);
+        case Token::Type::double_colon:
+            return parse_global_typename(context);
+        default:
+            context.retreat();
+            return std::nullopt;
+        }
+    }
+
 }
 
 
 auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
-    switch (context.extract().type) {
-    case Token::Type::paren_open:
-        return extract_tuple(context);
-    case Token::Type::bracket_open:
-        return extract_array_or_list(context);
-    case Token::Type::fn:
-        return extract_function(context);
-    case Token::Type::type_of:
-        return extract_type_of(context);
-    case Token::Type::ampersand:
-        return extract_reference(context);
-    case Token::Type::asterisk:
-        return extract_pointer(context);
-    case Token::Type::upper_name:
-        return parse_typename(context);
-    case Token::Type::lower_name:
-        return parse_lower_qualified_typename(context);
-    case Token::Type::double_colon:
-        return parse_global_typename(context);
-    default:
-        context.retreat();
-        return std::nullopt;
+    auto type = parse_normal_type(context);
+    auto* const anchor = context.pointer;
+
+    if (type && context.try_consume(Token::Type::double_colon)) {
+        auto name = extract_qualified({ std::move(*type) }, context);
+
+        if (name.primary_qualifier.is_upper()) {
+            if (auto template_arguments = parse_template_arguments(context)) {
+                return ast::type::Template_instantiation {
+                    std::move(*template_arguments),
+                    std::move(name)
+                };
+            }
+            else {
+                return ast::type::Typename { std::move(name) };
+            }
+        }
+        else {
+            // Not a qualified type, retreat
+            context.pointer = anchor;
+            type = std::move(std::get<ast::Type>(name.root_qualifier->value));
+        }
     }
+
+    return type;
 }

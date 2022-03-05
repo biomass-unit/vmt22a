@@ -116,21 +116,10 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
             .primary_qualifier { *identifier, static_cast<bool>(back.upper()) }
         };
     }
-    else { // no qualifiers
-        std::visit(bu::Overload {
-            [&](std::monostate) {
-                bu::unimplemented();
-            },
-            [&](ast::Root_qualifier::Global) {
-                throw context.expected("an identifier");
-            },
-            [&](ast::Type&) {
-                bu::unimplemented();
-            }
-        }, root.value);
+    else {
+        // root:: followed by no qualifiers
+        throw context.expected("an identifier");
     }
-
-    bu::unimplemented();
 }
 
 auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {

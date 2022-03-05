@@ -26,12 +26,20 @@ namespace {
         auto name = extract_qualified(std::move(root), context);
 
         if (name.primary_qualifier.is_lower()) {
-            return ast::Variable { std::move(name) };
+            if (auto template_arguments = parse_template_arguments(context)) {
+                return ast::Template_instantiation {
+                    std::move(name),
+                    std::move(*template_arguments)
+                };
+            }
+            else {
+                return ast::Variable { std::move(name) };
+            }
         }
         else {
             throw context.error(
                 { anchor, context.pointer },
-                "Expected an expression, but found a typename"
+                "Expected a lowercase identifier, but found a typename"
             );
         }
     }
@@ -368,8 +376,8 @@ namespace {
             return extract_compound_expression(context);
         default:
         {
-            auto* const anchor = context.pointer;
             context.retreat();
+            auto* const anchor = context.pointer;
 
             if (auto root = parse_type(context)) {
                 if (context.try_consume(Token::Type::double_colon)) {
@@ -378,7 +386,7 @@ namespace {
                 else {
                     throw context.error(
                         { anchor, context.pointer },
-                        "Expected a nested lowercase identifier, but found a typename"
+                        "Expected an expression, but found a type"
                     );
                 }
             }
