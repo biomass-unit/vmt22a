@@ -525,15 +525,29 @@ namespace {
         -> std::optional<ast::Class_reference>
     {
         auto name = [&]() -> std::optional<ast::Qualified_name> {
+            ast::Root_qualifier root;
+            auto* const anchor = context.pointer;
+
             if (context.try_consume(Token::Type::upper_name) || context.try_consume(Token::Type::lower_name)) {
                 context.retreat();
-                return extract_qualified({ std::monostate {} }, context);
             }
             else if (context.try_consume(Token::Type::double_colon)) {
-                return extract_qualified({ ast::Root_qualifier::Global {} }, context);
+                root.value = ast::Root_qualifier::Global{};
             }
             else {
                 return std::nullopt;
+            }
+
+            auto name = extract_qualified(std::move(root), context);
+
+            if (name.primary_qualifier.is_upper()) {
+                return name;
+            }
+            else {
+                throw context.error(
+                    { anchor, context.pointer },
+                    "Expected a class name, but found a lowercase identifier"
+                );
             }
         }();
 
@@ -774,7 +788,11 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     while (parse_definition(context));
 
     if (!context.is_finished()) {
-        throw context.expected("a definition");
+        throw context.expected(
+            "a definition",
+            "Definitions must begin with 'fn', 'struct', "
+            "'data', 'alias', 'inst', or 'class'"
+        );
     }
 
     ast::Module module {
