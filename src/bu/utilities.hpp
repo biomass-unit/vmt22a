@@ -209,6 +209,11 @@ namespace bu {
     template <class T>
     constexpr Typetag<T> typetag;
 
+    template <auto>
+    struct Value {};
+    template <auto x>
+    constexpr Value<x> value;
+
 
     template <class, class>
     constexpr Usize alternative_index;

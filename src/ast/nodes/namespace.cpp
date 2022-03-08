@@ -34,8 +34,6 @@ namespace {
         }, name.root_qualifier->value);
 
         for (auto& qualifier : name.middle_qualifiers) {
-            static_assert(std::variant_size_v<decltype(qualifier.value)> == 2);
-
             if (auto* upper = qualifier.upper()) {
                 bu::unimplemented();
             }
@@ -58,54 +56,55 @@ namespace {
         return space;
     }
 
+
+    template <class Variant, auto ast::Namespace::* head, auto ast::Namespace::*... tail>
+    auto find_one_of(ast::Namespace& space, lexer::Identifier const identifier)
+        -> Variant
+    {
+        if (auto* const pointer = (space.*head).find(identifier)) {
+            return pointer;
+        }
+        else {
+            if constexpr (sizeof...(tail) != 0) {
+                return find_one_of<Variant, tail...>(space, identifier);
+            }
+            else {
+                return std::monostate {};
+            }
+        }
+    }
+
 }
 
 
 auto ast::Namespace::find_upper(Qualified_name& qualified_name)
     -> Upper_variant
 {
+    static constexpr auto find = find_one_of<
+        Upper_variant,
+        &ast::Namespace::struct_definitions,
+        &ast::Namespace::data_definitions,
+        &ast::Namespace::alias_definitions,
+        &ast::Namespace::struct_template_definitions,
+        &ast::Namespace::data_template_definitions,
+        &ast::Namespace::alias_template_definitions,
+        &ast::Namespace::class_definitions
+    >;
+
     auto* const space = apply_qualifiers(this, qualified_name);
-
-    auto* structure = space -> struct_definitions . find(qualified_name.primary_qualifier.identifier);
-    auto* data      = space -> data_definitions   . find(qualified_name.primary_qualifier.identifier);
-    auto* alias     = space -> alias_definitions  . find(qualified_name.primary_qualifier.identifier);
-    auto* typeclass = space -> class_definitions  . find(qualified_name.primary_qualifier.identifier);
-
-    if (structure) {
-        assert(!data && !alias && !typeclass);
-        return structure;
-    }
-    else if (data) {
-        assert(!structure && !alias && !typeclass);
-        return data;
-    }
-    else if (alias) {
-        assert(!structure && !data && !typeclass);
-        return alias;
-    }
-    else if (typeclass) {
-        assert(!data && !alias && !structure);
-        return typeclass;
-    }
-    else {
-        return {};
-    }
+    return find(*space, qualified_name.primary_qualifier.identifier);
 }
 
 
 auto ast::Namespace::find_lower(Qualified_name& qualified_name)
     -> Lower_variant
 {
+    static constexpr auto find = find_one_of<
+        Lower_variant,
+        &ast::Namespace::function_definitions,
+        &ast::Namespace::function_template_definitions
+    >;
+
     auto* const space = apply_qualifiers(this, qualified_name);
-
-    auto* function = space->function_definitions.find(qualified_name.primary_qualifier.identifier);
-
-    // TODO: add support for data ctors
-
-    if (function) {
-        return function;
-    }
-    else {
-        return {};
-    }
+    return find(*space, qualified_name.primary_qualifier.identifier);
 }

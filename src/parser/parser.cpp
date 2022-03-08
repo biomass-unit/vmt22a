@@ -1,5 +1,4 @@
 #include "bu/utilities.hpp"
-#include "bu/uninitialized.hpp"
 #include "internals/parser_internals.hpp"
 #include "parser.hpp"
 
@@ -96,24 +95,24 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
             }
         }
 
-        bu::Uninitialized<lexer::Identifier> identifier;
-        auto back = std::move(qualifiers.back());
+        auto primary = std::move(qualifiers.back());
         qualifiers.pop_back();
 
-        if (auto* upper = back.upper()) {
-            // Template arguments are handled separately
-            upper->template_arguments.reset();
-            context.pointer = template_argument_anchor;
-            identifier.initialize(upper->name);
-        }
-        else {
-            identifier.initialize(back.lower()->name);
-        }
+        auto const make_primary = [&]() -> ast::Primary_qualifier {
+            if (auto* upper = primary.upper()) {
+                upper->template_arguments.reset();
+                context.pointer = template_argument_anchor;
+                return { .identifier = upper->name, .uppercase = true };
+            }
+            else {
+                return { .identifier = primary.lower()->name, .uppercase = false };
+            }
+        };
 
         return {
             .root_qualifier    = std::move(root),
             .middle_qualifiers = std::move(qualifiers),
-            .primary_qualifier { *identifier, static_cast<bool>(back.upper()) }
+            .primary_qualifier = make_primary()
         };
     }
     else {
@@ -361,22 +360,22 @@ namespace {
                 bu::unimplemented(); // TODO: add support for where clauses
             }
 
-            bu::Uninitialized<ast::Expression> body;
-
-            if (auto expression = parse_compound_expression(context)) {
-                body.initialize(std::move(*expression));
-            }
-            else if (context.try_consume(Token::Type::equals)) {
-                body.initialize(extract_expression(context));
-            }
-            else {
-                throw context.expected("the function body", "'=' or '{'");
-            }
+            auto body = [&] {
+                if (auto expression = parse_compound_expression(context)) {
+                    return std::move(*expression);
+                }
+                else if (context.try_consume(Token::Type::equals)) {
+                    return extract_expression(context);
+                }
+                else {
+                    throw context.expected("the function body", "'=' or '{'");
+                }
+            }();
 
             return {
                 std::move(template_parameters),
                 ast::definition::Function {
-                    std::move(*body),
+                    std::move(body),
                     std::move(parameters),
                     name,
                     return_type

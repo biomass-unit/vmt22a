@@ -83,7 +83,17 @@ namespace {
         }
 
         auto operator()(ast::type::Array& array) -> bu::Usize {
-            return recurse(array.element_type) * array.length;
+            if (auto* length = std::get_if<ast::Literal<bu::Isize>>(&array.length->value)) {
+                if (length->value >= 0) {
+                    return recurse(array.element_type) * static_cast<bu::Usize>(length->value);
+                }
+                else {
+                    bu::unimplemented();
+                }
+            }
+            else {
+                bu::unimplemented();
+            }
         }
 
         auto operator()(ast::type::Function&) noexcept -> bu::Usize {

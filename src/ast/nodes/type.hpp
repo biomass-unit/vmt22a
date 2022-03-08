@@ -27,8 +27,8 @@ namespace ast {
         };
 
         struct Array {
-            bu::Wrapper<Type> element_type;
-            bu::Usize length;
+            bu::Wrapper<Type>       element_type;
+            bu::Wrapper<Expression> length;
             DEFAULTED_EQUALITY(Array);
         };
 
