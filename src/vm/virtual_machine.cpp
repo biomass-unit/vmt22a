@@ -30,16 +30,16 @@ namespace {
 
     template <class T, template <class> class F>
     auto binary_op(VM& vm) -> void {
-        auto const a = vm.stack.pop<T>();
-        auto const b = vm.stack.pop<T>();
-        vm.stack.push(F<T>{}(b, a));
+        auto const right = vm.stack.pop<T>();
+        auto const left  = vm.stack.pop<T>();
+        vm.stack.push(F<T>{}(left, right));
     }
 
     template <class T, template <class> class F>
     auto immediate_binary_op(VM& vm) -> void {
-        auto const a = vm.stack.pop<T>();
-        auto const b = vm.extract_argument<T>();
-        vm.stack.push(F<T>{}(b, a));
+        auto const right = vm.stack.pop<T>();
+        auto const left  = vm.extract_argument<T>();
+        vm.stack.push(F<T>{}(left, right));
     }
 
     template <class T> constexpr auto add = binary_op<T, std::plus>;
@@ -114,6 +114,26 @@ namespace {
             vm.instruction_pointer += offset;
         }
     }
+
+
+    template <class T, template <class> class F>
+        requires std::is_same_v<std::invoke_result_t<F<T>, T, T>, bool>
+    auto local_jump_immediate(VM& vm) -> void {
+        auto const offset = vm.extract_argument<vm::Local_offset_type>();
+        auto const right  = vm.stack.pop<T>();
+        auto const left   = vm.extract_argument<T>();
+
+        if (F<T>{}(left, right)) {
+            vm.instruction_pointer += offset;
+        }
+    }
+
+    template <class T> constexpr auto local_jump_eq_i  = local_jump_immediate<T, std::equal_to>;
+    template <class T> constexpr auto local_jump_neq_i = local_jump_immediate<T, std::not_equal_to>;
+    template <class T> constexpr auto local_jump_lt_i  = local_jump_immediate<T, std::less>;
+    template <class T> constexpr auto local_jump_lte_i = local_jump_immediate<T, std::less_equal>;
+    template <class T> constexpr auto local_jump_gt_i  = local_jump_immediate<T, std::greater>;
+    template <class T> constexpr auto local_jump_gte_i = local_jump_immediate<T, std::greater_equal>;
 
 
     auto bitcopy_from_stack(VM& vm) -> void {
@@ -229,6 +249,13 @@ namespace {
         jump_bool<true> , local_jump_bool<true>,
         jump_bool<false>, local_jump_bool<false>,
 
+        local_jump_eq_i <bu::Isize>, local_jump_eq_i <bu::Float>, local_jump_eq_i <bu::Char>, local_jump_eq_i <bool>,
+        local_jump_neq_i<bu::Isize>, local_jump_neq_i<bu::Float>, local_jump_neq_i<bu::Char>, local_jump_neq_i<bool>,
+        local_jump_lt_i <bu::Isize>, local_jump_lt_i <bu::Float>,
+        local_jump_lte_i<bu::Isize>, local_jump_lte_i<bu::Float>,
+        local_jump_gt_i <bu::Isize>, local_jump_gt_i <bu::Float>,
+        local_jump_gte_i<bu::Isize>, local_jump_gte_i<bu::Float>,
+
         call, call_0, ret,
 
         halt
@@ -242,6 +269,7 @@ namespace {
 auto vm::Virtual_machine::run() -> int {
     instruction_pointer = bytecode.bytes.data();
     instruction_anchor = instruction_pointer;
+    keep_running = true;
 
     // The first activation record does not need to be initialized
 
@@ -313,10 +341,17 @@ auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
         sizeof(Local_size_type),   // bitcopy_from
         sizeof(Local_size_type),   // bitcopy_to
         sizeof(Local_offset_type), // push_address
-        0,                         // push_return_value
+        0,                         // push_return_value_address
 
         sizeof(Jump_offset_type), sizeof(Jump_offset_type), sizeof(Jump_offset_type),    // jump
         sizeof(Local_offset_type), sizeof(Local_offset_type), sizeof(Local_offset_type), // local_jump
+
+        sizeof(Local_offset_type) + sizeof(bu::Isize), sizeof(Local_offset_type) + sizeof(bu::Float), sizeof(Local_offset_type) + sizeof(bu::Char), sizeof(Local_offset_type) + 1, // local_jump_eq
+        sizeof(Local_offset_type) + sizeof(bu::Isize), sizeof(Local_offset_type) + sizeof(bu::Float), sizeof(Local_offset_type) + sizeof(bu::Char), sizeof(Local_offset_type) + 1, // local_jump_neq
+        sizeof(Local_offset_type) + sizeof(bu::Isize), sizeof(Local_offset_type) + sizeof(bu::Float), // local_jump_lt
+        sizeof(Local_offset_type) + sizeof(bu::Isize), sizeof(Local_offset_type) + sizeof(bu::Float), // local_jump_lte
+        sizeof(Local_offset_type) + sizeof(bu::Isize), sizeof(Local_offset_type) + sizeof(bu::Float), // local_jump_gt
+        sizeof(Local_offset_type) + sizeof(bu::Isize), sizeof(Local_offset_type) + sizeof(bu::Float), // local_jump_gte
 
         sizeof(Local_size_type) + sizeof(Jump_offset_type), // call
         sizeof(Jump_offset_type),                           // call_0

@@ -254,6 +254,7 @@
     <ClInclude Include="src\bu\noisy.hpp" />
     <ClInclude Include="src\bu\pooled_string.hpp" />
     <ClInclude Include="src\bu\source.hpp" />
+    <ClInclude Include="src\bu\timer.hpp" />
     <ClInclude Include="src\bu\uninitialized.hpp" />
     <ClInclude Include="src\bu\utilities.hpp" />
     <ClInclude Include="src\bu\wrapper.hpp" />

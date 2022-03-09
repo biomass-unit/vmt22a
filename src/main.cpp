@@ -87,11 +87,34 @@ using namespace bu    :: literals;
 using namespace lexer :: literals;
 
 
+#include "bu/timer.hpp"
+
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
     //program_parser_repl         ();
-    expression_parser_repl      ();
+    //expression_parser_repl      ();
+
+    vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+
+    constexpr auto max = 1'000'000'000_iz;
+
+    using enum vm::Opcode;
+    machine.bytecode.write(
+        ipush, 0_iz,
+        iinc_top,
+        idup,
+        local_jump_ineq_i, vm::Local_offset_type(-13), max,
+        //ieq_i, max,
+        //local_jump_false, vm::Local_offset_type(-14),
+        halt
+    );
+
+    for (auto i : std::views::iota(1)) {
+        bu::Timer timer { false };
+        std::ignore = machine.run();
+        bu::print("Iteration {}, elapsed: {}\n", i, timer.elapsed());
+    }
 
     /*auto module = parser::parse(
         lexer::lex(

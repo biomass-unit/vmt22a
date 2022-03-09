@@ -48,6 +48,13 @@ namespace vm {
         jump_true,  local_jump_true,
         jump_false, local_jump_false,
 
+        local_jump_ieq_i , local_jump_feq_i , local_jump_ceq_i , local_jump_beq_i ,
+        local_jump_ineq_i, local_jump_fneq_i, local_jump_cneq_i, local_jump_bneq_i,
+        local_jump_ilt_i , local_jump_flt_i ,
+        local_jump_ilte_i, local_jump_flte_i,
+        local_jump_igt_i , local_jump_fgt_i ,
+        local_jump_igte_i, local_jump_fgte_i,
+
         call, call_0, ret,
 
         halt,

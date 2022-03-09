@@ -95,24 +95,25 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
             }
         }
 
-        auto primary = std::move(qualifiers.back());
+        auto back = std::move(qualifiers.back());
         qualifiers.pop_back();
 
-        auto const make_primary = [&]() -> ast::Primary_qualifier {
-            if (auto* upper = primary.upper()) {
+        auto primary = [&]() -> ast::Primary_qualifier {
+            if (auto* upper = back.upper()) {
+                // Template arguments are handled separately
                 upper->template_arguments.reset();
                 context.pointer = template_argument_anchor;
                 return { .identifier = upper->name, .uppercase = true };
             }
             else {
-                return { .identifier = primary.lower()->name, .uppercase = false };
+                return { .identifier = back.lower()->name, .uppercase = false };
             }
-        };
+        }();
 
         return {
             .root_qualifier    = std::move(root),
             .middle_qualifiers = std::move(qualifiers),
-            .primary_qualifier = make_primary()
+            .primary_qualifier = std::move(primary)
         };
     }
     else {
@@ -714,9 +715,9 @@ namespace {
 
         context.consume_required(Token::Type::brace_open);
 
-        auto parent_namespace = current_namespace;
+        auto* parent_namespace = current_namespace;
 
-        current_namespace =  parent_namespace->make_child(name);
+        current_namespace = parent_namespace->make_child(name);
         while (parse_definition(context));
         current_namespace = parent_namespace;
 
