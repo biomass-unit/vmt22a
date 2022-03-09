@@ -13,7 +13,7 @@ namespace ast {
         Table<definition::Alias>             alias_definitions;
         Table<definition::Alias_template>    alias_template_definitions;
         Table<definition::Typeclass>         class_definitions;
-        Table<Namespace>                     children;
+        Table<Namespace, std::list>          children; // std::list used to avoid pointer invalidation
         Namespace*                           parent;
         Namespace*                           global;
         lexer::Identifier                    name;

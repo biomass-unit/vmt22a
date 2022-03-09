@@ -28,10 +28,6 @@ namespace bu {
         constexpr auto operator->() const noexcept -> T const* { return vector.data() + index; }
         constexpr auto operator->()       noexcept -> T      * { return vector.data() + index; }
 
-        constexpr auto clone() const noexcept(std::is_nothrow_copy_constructible_v<T>) -> Wrapper {
-            return Wrapper { **this };
-        }
-
         static constexpr auto object_count() noexcept -> Usize {
             return vector.size();
         }
@@ -49,11 +45,7 @@ namespace bu {
     }
 
     template <class T>
-    constexpr auto make_wrapper = []<class... Args>(Args&&... args)
-        noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
-    {
-        return bu::Wrapper<T> { std::forward<Args>(args)... };
-    };
+    constexpr auto make_wrapper = make<Wrapper<T>>;
 
 }
 

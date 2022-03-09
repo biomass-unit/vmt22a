@@ -23,6 +23,7 @@
 #include <stdexcept>
 
 #include <span>
+#include <list>
 #include <tuple>
 #include <array>
 #include <vector>

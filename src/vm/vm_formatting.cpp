@@ -80,55 +80,89 @@ namespace {
     {
         auto const opcode = extract<vm::Opcode>(start, stop);
 
-        auto unary = [=, &start]<class T>(bu::Typetag<T>) {
+        auto const unary = [=, &start]<class T>(bu::Typetag<T>) {
             return std::format_to(out, "{} {}", opcode, extract<T>(start, stop));
         };
 
-        using enum vm::Opcode;
+        auto const binary = [=, &start]<class T, class U>(bu::Typetag<T>, bu::Typetag<U>) {
+            auto const first = extract<T>(start, stop);
+            auto const second = extract<U>(start, stop);
+            return std::format_to(out, "{} {} {}", opcode, first, second);
+        };
+
         switch (opcode) {
-        case ipush:
-        case ieq_i:
-        case ineq_i:
-        case ilt_i:
-        case ilte_i:
-        case igt_i:
-        case igte_i:
+        case vm::Opcode::ipush:
+        case vm::Opcode::ieq_i:
+        case vm::Opcode::ineq_i:
+        case vm::Opcode::ilt_i:
+        case vm::Opcode::ilte_i:
+        case vm::Opcode::igt_i:
+        case vm::Opcode::igte_i:
             return unary(bu::typetag<bu::Isize>);
-        case fpush:
-        case feq_i:
-        case fneq_i:
-        case flt_i:
-        case flte_i:
-        case fgt_i:
-        case fgte_i:
+
+        case vm::Opcode::fpush:
+        case vm::Opcode::feq_i:
+        case vm::Opcode::fneq_i:
+        case vm::Opcode::flt_i:
+        case vm::Opcode::flte_i:
+        case vm::Opcode::fgt_i:
+        case vm::Opcode::fgte_i:
             return unary(bu::typetag<bu::Float>);
-        case cpush:
-        case ceq_i:
-        case cneq_i:
+
+        case vm::Opcode::cpush:
+        case vm::Opcode::ceq_i:
+        case vm::Opcode::cneq_i:
             return unary(bu::typetag<bu::Char>);
-        case beq_i:
-        case bneq_i:
+
+        case vm::Opcode::beq_i:
+        case vm::Opcode::bneq_i:
             return unary(bu::typetag<bool>);
-        case bitcopy_from_stack:
-        case bitcopy_to_stack:
+
+        case vm::Opcode::bitcopy_from_stack:
+        case vm::Opcode::bitcopy_to_stack:
             return unary(bu::typetag<vm::Local_size_type>);
-        case push_address:
+
+        case vm::Opcode::push_address:
             return unary(bu::typetag<vm::Local_offset_type>);
-        case jump:
-        case jump_true:
-        case jump_false:
-        case call_0:
+
+        case vm::Opcode::jump:
+        case vm::Opcode::jump_true:
+        case vm::Opcode::jump_false:
+        case vm::Opcode::call_0:
             return unary(bu::typetag<vm::Jump_offset_type>);
-        case local_jump:
-        case local_jump_true:
-        case local_jump_false:
+
+        case vm::Opcode::local_jump:
+        case vm::Opcode::local_jump_true:
+        case vm::Opcode::local_jump_false:
             return unary(bu::typetag<vm::Local_offset_type>);
-        case call:
-        {
-            auto const return_value_size = extract<vm::Local_size_type>(start, stop);
-            auto const function_offset = extract<vm::Jump_offset_type>(start, stop);
-            return std::format_to(out, "{} {} {}", opcode, return_value_size, function_offset);
-        }
+
+        case vm::Opcode::local_jump_ieq_i:
+        case vm::Opcode::local_jump_ineq_i:
+        case vm::Opcode::local_jump_ilt_i:
+        case vm::Opcode::local_jump_ilte_i:
+        case vm::Opcode::local_jump_igt_i:
+        case vm::Opcode::local_jump_igte_i:
+            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bu::Isize>);
+
+        case vm::Opcode::local_jump_feq_i:
+        case vm::Opcode::local_jump_fneq_i:
+        case vm::Opcode::local_jump_flt_i:
+        case vm::Opcode::local_jump_flte_i:
+        case vm::Opcode::local_jump_fgt_i:
+        case vm::Opcode::local_jump_fgte_i:
+            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bu::Float>);
+
+        case vm::Opcode::local_jump_ceq_i:
+        case vm::Opcode::local_jump_cneq_i:
+            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bu::Char>);
+
+        case vm::Opcode::local_jump_beq_i:
+        case vm::Opcode::local_jump_bneq_i:
+            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bool>);
+
+        case vm::Opcode::call:
+            return binary(bu::typetag<vm::Local_size_type>, bu::typetag<vm::Jump_offset_type>);
+
         default:
             assert(vm::argument_bytes(opcode) == 0);
             return std::format_to(out, "{}", opcode);

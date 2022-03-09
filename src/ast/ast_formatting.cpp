@@ -463,7 +463,7 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     std::format_to(out, "module {} {{", value.name);
 
     auto fmt = [out](auto const& xs) {
-        for (auto& x : xs.span() | std::views::transform(bu::second)) {
+        for (auto& x : xs.container() | std::views::transform(bu::second)) {
             std::format_to(out, "\n{}", x);
         }
     };

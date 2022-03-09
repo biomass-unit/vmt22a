@@ -14,8 +14,8 @@ namespace ast {
     struct [[nodiscard]] Type;
 
 
-    template <class T>
-    using Table = bu::Flatmap<lexer::Identifier, T, bu::Flatmap_strategy::store_keys>;
+    template <class T, template <class...> class Container = std::vector>
+    using Table = bu::Flatmap<lexer::Identifier, T, bu::Flatmap_strategy::store_keys, Container>;
 
 
     struct Template_argument;

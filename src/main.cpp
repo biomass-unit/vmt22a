@@ -1,5 +1,6 @@
 #include "bu/utilities.hpp"
 #include "bu/color.hpp"
+#include "bu/timer.hpp"
 
 #include "lexer/lexer.hpp"
 #include "lexer/token_formatting.hpp"
@@ -87,17 +88,15 @@ using namespace bu    :: literals;
 using namespace lexer :: literals;
 
 
-#include "bu/timer.hpp"
-
 auto main() -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
     //program_parser_repl         ();
     //expression_parser_repl      ();
 
-    vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+    /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
-    constexpr auto max = 1'000'000'000_iz;
+    constexpr auto max = 5'000'000_iz;
 
     using enum vm::Opcode;
     machine.bytecode.write(
@@ -105,16 +104,10 @@ auto main() -> int try {
         iinc_top,
         idup,
         local_jump_ineq_i, vm::Local_offset_type(-13), max,
-        //ieq_i, max,
-        //local_jump_false, vm::Local_offset_type(-14),
         halt
     );
 
-    for (auto i : std::views::iota(1)) {
-        bu::Timer timer { false };
-        std::ignore = machine.run();
-        bu::print("Iteration {}, elapsed: {}\n", i, timer.elapsed());
-    }
+    return machine.run();*/
 
     /*auto module = parser::parse(
         lexer::lex(

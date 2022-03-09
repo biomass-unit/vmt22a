@@ -98,17 +98,27 @@ namespace ast {
         using Alias_template    = Template_definition<Alias   >;
 
 
-        struct Instantiation {
-            Class_reference          typeclass;
-            bu::Wrapper<Type>        instance;
+        struct Block_definitions {
             Table<Function>          function_definitions;
             Table<Function_template> function_template_definitions;
             Table<Alias>             alias_definitions;
             Table<Alias_template>    alias_template_definitions;
+            DEFAULTED_EQUALITY(Block_definitions);
+        };
+
+        struct Instantiation : Block_definitions {
+            Class_reference   typeclass;
+            bu::Wrapper<Type> instance;
             DEFAULTED_EQUALITY(Instantiation);
         };
 
-        using Instantiation_template = Template_definition<Instantiation>;
+        struct Implementation : Block_definitions {
+            bu::Wrapper<Type> type;
+            DEFAULTED_EQUALITY(Implementation);
+        };
+
+        using Instantiation_template  = Template_definition<Instantiation>;
+        using Implementation_template = Template_definition<Implementation>;
 
     }
 
