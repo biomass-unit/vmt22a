@@ -96,7 +96,16 @@ auto main(int /*argc*/, char const** /*argv*/) -> int try {
     //program_parser_repl         ();
     //expression_parser_repl      ();
 
-    //auto options = cli::parse_command_line(argc, argv);
+    cli::Options_description description;
+    description.add_options()
+        ("test", 't', cli::integer().default_to(4).min(2).max(6), "funny test")
+        ("other", cli::boolean(), "yes");
+
+    bu::print("Arguments:\n\n{}", description);
+
+    //auto options = cli::parse_command_line(argc, argv, description);
+
+    //std::cout << "name: " << options.program_name_as_invoked;
 
     /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
