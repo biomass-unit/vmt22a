@@ -56,9 +56,8 @@ namespace bu {
             return pairs;
         }
 
-        constexpr auto container() const noexcept -> decltype(pairs) const& {
-            return pairs;
-        }
+        constexpr auto container() const noexcept -> decltype(pairs) const& { return pairs; }
+        constexpr auto container()       noexcept -> decltype(pairs)      & { return pairs; }
     };
 
     template <class K, class V, template <class...> class Container>

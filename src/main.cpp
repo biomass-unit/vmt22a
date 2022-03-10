@@ -19,6 +19,8 @@
 
 #include "tests/tests.hpp"
 
+#include "cli/cli.hpp"
+
 
 namespace {
 
@@ -88,11 +90,13 @@ using namespace bu    :: literals;
 using namespace lexer :: literals;
 
 
-auto main() -> int try {
+auto main(int /*argc*/, char const** /*argv*/) -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
     //program_parser_repl         ();
     //expression_parser_repl      ();
+
+    //auto options = cli::parse_command_line(argc, argv);
 
     /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
