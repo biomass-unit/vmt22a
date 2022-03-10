@@ -300,6 +300,9 @@ namespace bu {
     template <class T>
     concept trivial = std::is_trivial_v<T>;
 
+    template <class>
+    constexpr bool always_false = false;
+
 
     constexpr auto map = []<class Optional, class F>(Optional&& optional, F&& f)
         noexcept(std::is_nothrow_invocable_v<F&&, decltype(forward_like<Optional>(*optional))>)

@@ -90,7 +90,7 @@ using namespace bu    :: literals;
 using namespace lexer :: literals;
 
 
-auto main(int /*argc*/, char const** /*argv*/) -> int try {
+auto main(int argc, char const** argv) -> int try {
     bu::enable_color_formatting ();
     tests::run_all_tests        ();
     //program_parser_repl         ();
@@ -98,14 +98,17 @@ auto main(int /*argc*/, char const** /*argv*/) -> int try {
 
     cli::Options_description description;
     description.add_options()
-        ("test", 't', cli::integer().default_to(4).min(2).max(6), "funny test")
-        ("other", cli::boolean(), "yes");
+        ("test", 't', cli::integer().default_to(4).min(2).max(6), "test description")
+        ("other", 'o', cli::boolean().default_to(true), "yes");
 
-    bu::print("Arguments:\n\n{}", description);
+    auto options = cli::parse_command_line(argc, argv, description);
 
-    //auto options = cli::parse_command_line(argc, argv, description);
+    bu::print("name: {}\n", options.program_name_as_invoked);
 
-    //std::cout << "name: " << options.program_name_as_invoked;
+
+    for (auto& [value, name] : options.named_arguments) {
+        bu::print("value: {}, name: {}\n", value, name);
+    }
 
     /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 

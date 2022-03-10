@@ -57,12 +57,10 @@ namespace cli {
             std::string
         >;
 
-        struct Name {
-            std::variant<
-                char,       // short form, -
-                std::string // long form, --
-            > value;
-        };
+        using Name = std::variant<
+            char,       // short form, -
+            std::string // long form, --
+        >;
 
         Variant value;
         Name    name;
@@ -81,8 +79,7 @@ namespace cli {
 
             auto operator()(std::string&&                long_name,
                             std::optional<char>          short_name = std::nullopt,
-                            std::optional<std::string>&& description = std::nullopt
-            )
+                            std::optional<std::string>&& description = std::nullopt)
                 noexcept -> Option_adder
             {
                 parameters->emplace_back(
@@ -97,8 +94,7 @@ namespace cli {
             template <class T>
             auto operator()(std::string&&                long_name,
                             Value<T>&&                   value,
-                            std::optional<std::string>&& description = std::nullopt
-            )
+                            std::optional<std::string>&& description = std::nullopt)
                 noexcept -> Option_adder
             {
                 parameters->emplace_back(
@@ -114,8 +110,7 @@ namespace cli {
             auto operator()(std::string&&                long_name,
                             char const                   short_name,
                             Value<T>&&                   value,
-                            std::optional<std::string>&& description = std::nullopt
-            )
+                            std::optional<std::string>&& description = std::nullopt)
                 noexcept -> Option_adder
             {
                 parameters->emplace_back(
