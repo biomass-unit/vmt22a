@@ -33,41 +33,49 @@ namespace cli {
 
 
     struct [[nodiscard]] Parameter {
-        std::string         long_name;
-        std::optional<char> short_name;
+        struct Name {
+            std::string         long_form;
+            std::optional<char> short_form;
 
-        std::variant<
-            std::monostate,
+            Name(char const* long_name, std::optional<char> short_name = std::nullopt) noexcept
+                : long_form  { long_name  }
+                , short_form { short_name } {}
+        };
+
+        using Variant = std::variant<
             Value<bu::Isize>,
             Value<bu::Float>,
             Value<bool>,
             Value<std::string>
-        > value;
+        >;
 
+        Name                       name;
+        std::optional<Variant>     value;
         std::optional<std::string> description;
     };
 
 
-    struct [[nodiscard]] Named_argument {
-        using Variant = std::variant<
-            std::monostate,
+    using Argument_value = std::optional<
+        std::variant<
             bu::Isize,
             bu::Float,
             bool,
             std::string
-        >;
+        >
+    >;
 
+    struct [[nodiscard]] Named_argument {
         using Name = std::variant<
             char,       // short form, -
             std::string // long form, --
         >;
 
-        Variant value;
-        Name    name;
+        Name           name;
+        Argument_value value;
     };
 
     struct [[nodiscard]] Positional_argument {
-        Named_argument::Variant value;
+        Argument_value value;
     };
 
 
@@ -77,58 +85,27 @@ namespace cli {
         struct Option_adder {
             decltype(parameters)* parameters;
 
-            auto operator()(std::string&&                long_name,
-                            std::optional<char>          short_name = std::nullopt,
+            auto operator()(Parameter::Name&&            name,
                             std::optional<std::string>&& description = std::nullopt)
-                noexcept -> Option_adder
-            {
-                parameters->emplace_back(
-                    std::move(long_name),
-                    short_name,
-                    std::monostate {},
-                    std::move(description)
-                );
-                return *this;
-            }
-
-            template <class T>
-            auto operator()(std::string&&                long_name,
-                            Value<T>&&                   value,
-                            std::optional<std::string>&& description = std::nullopt)
-                noexcept -> Option_adder
-            {
-                parameters->emplace_back(
-                    std::move(long_name),
-                    std::nullopt,
-                    std::move(value),
-                    std::move(description)
-                );
-                return *this;
-            }
-
-            template <class T>
-            auto operator()(std::string&&                long_name,
-                            char const                   short_name,
-                            Value<T>&&                   value,
-                            std::optional<std::string>&& description = std::nullopt)
-                noexcept -> Option_adder
-            {
-                parameters->emplace_back(
-                    std::move(long_name),
-                    short_name,
-                    std::move(value),
-                    std::move(description)
-                );
-                return *this;
-            }
-
-            auto operator()(std::string&& name, std::string&& description)
                 noexcept -> Option_adder
             {
                 parameters->emplace_back(
                     std::move(name),
                     std::nullopt,
-                    std::monostate {},
+                    std::move(description)
+                );
+                return *this;
+            }
+
+            template <class T>
+            auto operator()(Parameter::Name&&            name,
+                            Value<T>&&                   value,
+                            std::optional<std::string>&& description = std::nullopt)
+                noexcept -> Option_adder
+            {
+                parameters->emplace_back(
+                    std::move(name),
+                    std::move(value),
                     std::move(description)
                 );
                 return *this;
@@ -145,6 +122,9 @@ namespace cli {
         std::vector<Positional_argument> positional_arguments;
         std::vector<Named_argument>      named_arguments;
         std::string_view                 program_name_as_invoked;
+
+        auto find(std::string_view) noexcept -> Named_argument*;
+        auto find(char)             noexcept -> Positional_argument*;
     };
 
 

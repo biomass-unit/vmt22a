@@ -98,8 +98,8 @@ auto main(int argc, char const** argv) -> int try {
 
     cli::Options_description description;
     description.add_options()
-        ("test", 't', cli::integer().default_to(4).min(2).max(6), "test description")
-        ("other", 'o', cli::boolean().default_to(true), "yes");
+        ({ "test", 't' }, cli::integer().default_to(4).min(2).max(6), "test description")
+        ("other", cli::boolean().default_to(true), "yes");
 
     auto options = cli::parse_command_line(argc, argv, description);
 
