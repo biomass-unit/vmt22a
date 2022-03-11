@@ -52,7 +52,7 @@ namespace {
                 std::transform_reduce(
                     start,
                     stop,
-                    bu::unsigned_distance(start, stop), // account for whitespace delimiters
+                    bu::unsigned_distance(start, stop), // Account for whitespace delimiters
                     std::plus {},
                     std::mem_fn(&std::string_view::size)
                 )
@@ -113,7 +113,10 @@ namespace {
             switch (ec) {
             case std::errc {}:
             {
-                if (ptr != stop) {
+                if (ptr == stop) {
+                    return value;
+                }
+                else {
                     context.retreat();
                     throw context.error(
                         std::format(
@@ -122,7 +125,6 @@ namespace {
                         )
                     );
                 }
-                return value;
             }
             case std::errc::result_out_of_range:
             {
@@ -188,13 +190,8 @@ namespace {
                 auto argument = extract_value<T>(context);
 
                 if (!argument) {
-                    if (value.default_value) {
-                        argument = value.default_value;
-                    }
-                    else {
-                        context.retreat();
-                        throw context.error("no argument supplied");
-                    }
+                    context.retreat();
+                    throw context.error("no argument supplied");
                 }
 
                 if (value.minimum_value) {
@@ -232,15 +229,12 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
     -> Options
 {
     std::vector<std::string_view> command_line(argv + 1, argv + argc);
-    Options options {
-        .program_name_as_invoked = *argv,
-        .long_forms = description.long_forms
-    };
+    Options options { .program_name_as_invoked = *argv };
 
     Parse_context context { command_line };
 
     while (!context.is_finished()) {
-        auto name = [&]() -> std::optional<Named_argument::Name> {
+        auto name = [&]() -> std::optional<std::string> {
             auto view = context.extract();
 
             if (view.starts_with("--")) {
@@ -255,10 +249,16 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
             else if (view.starts_with('-')) {
                 view.remove_prefix(1);
                 if (view.size() != 1) {
-                    throw context.expected("a single-character argument name");
+                    throw context.expected("a single-character flag name");
                 }
                 else {
-                    return view.front();
+                    if (auto long_form = description.long_forms.find(view.front())) {
+                        return bu::copy(*long_form);
+                    }
+                    else {
+                        context.retreat();
+                        throw Unrecognized_option { context.error_string("w option") };
+                    }
                 }
             }
             else {
@@ -268,22 +268,11 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
         }();
 
         if (name) {
-            auto it = std::visit(bu::Overload {
-                [&](std::string_view const name) {
-                    return std::ranges::find(
-                        description.parameters,
-                        name,
-                        bu::compose(&Parameter::Name::long_form, &Parameter::name)
-                    );
-                },
-                [&](char const name) {
-                    return std::ranges::find(
-                        description.parameters,
-                        std::optional { name },
-                        bu::compose(&Parameter::Name::short_form, &Parameter::name)
-                    );
-                }
-            }, *name);
+            auto it = std::ranges::find(
+                description.parameters,
+                name,
+                bu::compose(&Parameter::Name::long_form, &Parameter::name)
+            );
 
             if (it != description.parameters.end()) {
                 options.named_arguments.emplace_back(
@@ -301,6 +290,20 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
         }
     }
 
+    // Apply default values
+    for (auto& parameter : description.parameters) {
+        if (parameter.value && !options.find(parameter.name.long_form)) {
+            std::visit([&]<class T>(Value<T> const& value) {
+                if (value.default_value) {
+                    options.named_arguments.emplace_back(
+                        parameter.name.long_form,
+                        *value.default_value
+                    );
+                }
+            }, *parameter.value);
+        }
+    }
+
     return options;
 }
 
@@ -309,16 +312,7 @@ auto cli::Options::find(std::string_view const name) noexcept -> Named_argument*
     auto it = std::ranges::find(
         named_arguments,
         name,
-        [this](Named_argument const& argument) {
-            return std::visit(bu::Overload {
-                [](std::string_view const string) { return string; },
-                [this](char const c) {
-                    auto pointer = long_forms.find(c);
-                    assert(pointer);
-                    return *pointer;
-                }
-            }, argument.name);
-        }
+        &Named_argument::name
     );
 
     return it != named_arguments.end()

@@ -65,12 +65,7 @@ namespace cli {
     >;
 
     struct [[nodiscard]] Named_argument {
-        using Name = std::variant<
-            char,       // short form, -
-            std::string // long form, --
-        >;
-
-        Name           name;
+        std::string    name; // short-form names are automatically converted to long-form
         Argument_value value;
     };
 
@@ -78,8 +73,8 @@ namespace cli {
 
 
     struct [[nodiscard]] Options_description {
-        std::vector<Parameter>              parameters;
-        bu::Flatmap<char, std::string_view> long_forms;
+        std::vector<Parameter>                                           parameters;
+        bu::Flatmap<char, std::string, bu::Flatmap_strategy::store_keys> long_forms;
 
     private:
 
@@ -91,7 +86,7 @@ namespace cli {
                 noexcept -> Option_adder
             {
                 if (name.short_form) {
-                    self->long_forms.add(*name.short_form, name.long_form);
+                    self->long_forms.add(bu::copy(*name.short_form), bu::copy(name.long_form));
                 }
                 self->parameters.emplace_back(
                     std::move(name),
@@ -108,7 +103,7 @@ namespace cli {
                 noexcept -> Option_adder
             {
                 if (name.short_form) {
-                    self->long_forms.add(*name.short_form, name.long_form);
+                    self->long_forms.add(bu::copy(*name.short_form), bu::copy(name.long_form));
                 }
                 self->parameters.emplace_back(
                     std::move(name),
@@ -128,12 +123,22 @@ namespace cli {
 
 
     struct [[nodiscard]] Options {
-        std::vector<Positional_argument>    positional_arguments;
-        std::vector<Named_argument>         named_arguments;
-        std::string_view                    program_name_as_invoked;
-        bu::Flatmap<char, std::string_view> long_forms;
+        std::vector<Positional_argument> positional_arguments;
+        std::vector<Named_argument>      named_arguments;
+        std::string_view                 program_name_as_invoked;
 
         auto find(std::string_view) noexcept -> Named_argument*;
+
+        template <class T>
+        auto find_arg(std::string_view const name) noexcept -> T* {
+            if (auto* const arg = find(name)) {
+                // std::get used instead of std::get_if because invalid access should throw
+                return std::addressof(std::get<T>(arg->value.value()));
+            }
+            else {
+                return nullptr;
+            }
+        }
     };
 
 

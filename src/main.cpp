@@ -98,8 +98,8 @@ auto main(int argc, char const** argv) -> int try {
 
     cli::Options_description description;
     description.add_options()
-        ("help")
-        ({ "test", 't' }, cli::integer().min(2).max(6), "test description")
+        ("help", "Show this text")
+        ({ "test", 't' }, cli::integer().default_to(5).min(2).max(6), "test description")
         ("other", cli::boolean().default_to(true), "yes")
         ("wasd", cli::string());
 
@@ -108,16 +108,6 @@ auto main(int argc, char const** argv) -> int try {
     if (options.find("help")) {
         bu::print("Valid options:\n\n{}", description);
         return 0;
-    }
-
-    bu::print(
-        "name: {}, positional arguments: {}\n",
-        options.program_name_as_invoked,
-        options.positional_arguments
-    );
-
-    for (auto& [name, value] : options.named_arguments) {
-        bu::print("name: {}, value: {}\n", name, value);
     }
 
     /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
