@@ -26,10 +26,10 @@ namespace cli {
         }
     };
 
-    inline auto integer () -> Value<bu::Isize>   { return {}; }
-    inline auto floating() -> Value<bu::Float>   { return {}; }
-    inline auto boolean () -> Value<bool>        { return {}; }
-    inline auto string  () -> Value<std::string> { return {}; }
+    inline auto integer () -> Value<bu::Isize>        { return {}; }
+    inline auto floating() -> Value<bu::Float>        { return {}; }
+    inline auto boolean () -> Value<bool>             { return {}; }
+    inline auto string  () -> Value<std::string_view> { return {}; }
 
 
     struct [[nodiscard]] Parameter {
@@ -46,12 +46,12 @@ namespace cli {
             Value<bu::Isize>,
             Value<bu::Float>,
             Value<bool>,
-            Value<std::string>
+            Value<std::string_view>
         >;
 
-        Name                       name;
-        std::optional<Variant>     value;
-        std::optional<std::string> description;
+        Name                            name;
+        std::optional<Variant>          value;
+        std::optional<std::string_view> description;
     };
 
 
@@ -60,7 +60,7 @@ namespace cli {
             bu::Isize,
             bu::Float,
             bool,
-            std::string
+            std::string_view
         >
     >;
 
@@ -69,20 +69,20 @@ namespace cli {
         Argument_value value;
     };
 
-    using Positional_argument = std::string;
+    using Positional_argument = std::string_view;
 
 
     struct [[nodiscard]] Options_description {
-        std::vector<Parameter>                                           parameters;
-        bu::Flatmap<char, std::string, bu::Flatmap_strategy::store_keys> long_forms;
+        std::vector<Parameter>         parameters;
+        bu::Flatmap<char, std::string> long_forms;
 
     private:
 
         struct Option_adder {
             Options_description* self;
 
-            auto operator()(Parameter::Name&&            name,
-                            std::optional<std::string>&& description = std::nullopt)
+            auto operator()(Parameter::Name&&               name,
+                            std::optional<std::string_view> description = std::nullopt)
                 noexcept -> Option_adder
             {
                 if (name.short_form) {
@@ -91,15 +91,15 @@ namespace cli {
                 self->parameters.emplace_back(
                     std::move(name),
                     std::nullopt,
-                    std::move(description)
+                    description
                 );
                 return *this;
             }
 
             template <class T>
-            auto operator()(Parameter::Name&&            name,
-                            Value<T>&&                   value,
-                            std::optional<std::string>&& description = std::nullopt)
+            auto operator()(Parameter::Name&&               name,
+                            Value<T>&&                      value,
+                            std::optional<std::string_view> description = std::nullopt)
                 noexcept -> Option_adder
             {
                 if (name.short_form) {
@@ -108,7 +108,7 @@ namespace cli {
                 self->parameters.emplace_back(
                     std::move(name),
                     std::move(value),
-                    std::move(description)
+                    description
                 );
                 return *this;
             }
@@ -139,6 +139,11 @@ namespace cli {
                 return nullptr;
             }
         }
+
+        auto find_integer (std::string_view const name) noexcept { return find_arg<bu::Isize       >(name); }
+        auto find_floating(std::string_view const name) noexcept { return find_arg<bu::Float       >(name); }
+        auto find_boolean (std::string_view const name) noexcept { return find_arg<bool            >(name); }
+        auto find_string  (std::string_view const name) noexcept { return find_arg<std::string_view>(name); }
     };
 
 

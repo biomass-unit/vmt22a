@@ -16,6 +16,26 @@ namespace {
     static_assert(to_lower('%') == '%');
 
 
+    template <class T>
+    consteval auto type_description() noexcept -> char const* {
+        if constexpr (std::same_as<T, bu::Isize>)
+            return "int";
+        else if constexpr (std::same_as<T, bu::Float>)
+            return "float";
+        else if constexpr (std::same_as<T, bool>)
+            return "bool";
+        else if constexpr (std::same_as<T, std::string_view>)
+            return "str";
+        else
+            static_assert(bu::always_false<T>);
+    }
+
+    template <class... Ts>
+    constexpr auto type_description(std::variant<Ts...> const& variant) noexcept -> char const* {
+        return std::visit([]<class T>(cli::Value<T> const&) { return type_description<T>(); }, variant);
+    }
+
+
     struct Parse_context {
         std::string_view* pointer;
         std::string_view* start;
@@ -167,8 +187,8 @@ namespace {
             }
         }
 
-        else if constexpr (std::same_as<T, std::string>) {
-            return std::string { view };
+        else if constexpr (std::same_as<T, std::string_view>) {
+            return view;
         }
 
         else {
@@ -191,7 +211,12 @@ namespace {
 
                 if (!argument) {
                     context.retreat();
-                    throw context.error("no argument supplied");
+                    throw context.error(
+                        std::format(
+                            "This flag requires an argument [{}], but none were supplied",
+                            type_description<T>()
+                        )
+                    );
                 }
 
                 if (value.minimum_value) {
@@ -257,7 +282,7 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
                     }
                     else {
                         context.retreat();
-                        throw Unrecognized_option { context.error_string("w option") };
+                        throw Unrecognized_option { context.error_string("Unrecognized option") };
                     }
                 }
             }
@@ -286,7 +311,7 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
             }
         }
         else {
-            options.positional_arguments.push_back(std::string { context.extract() });
+            options.positional_arguments.push_back(context.extract());
         }
     }
 
@@ -322,7 +347,7 @@ auto cli::Options::find(std::string_view const name) noexcept -> Named_argument*
 
 
 DEFINE_FORMATTER_FOR(cli::Options_description) {
-    std::vector<bu::Pair<std::string, std::optional<std::string>>> lines;
+    std::vector<bu::Pair<std::string, std::optional<std::string_view>>> lines;
     lines.reserve(value.parameters.size());
     bu::Usize max_length = 0;
 
@@ -332,7 +357,7 @@ DEFINE_FORMATTER_FOR(cli::Options_description) {
                 "--{}{}{}",
                 name.long_form,
                 std::format(name.short_form ? ", -{}" : "", name.short_form),
-                argument ? " [arg]" : ""
+                argument ? std::format(" [{}]", type_description(*argument)) : ""
             ),
             description
         );

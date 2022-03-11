@@ -11,7 +11,9 @@ namespace bu {
     template <
         class Key,
         class Value,
-        Flatmap_strategy = Flatmap_strategy::hash_keys,
+        Flatmap_strategy = std::is_trivial_v<Key>
+            ? Flatmap_strategy::store_keys
+            : Flatmap_strategy::hash_keys,
         template <class...> class Container = std::vector
     >
     class Flatmap;

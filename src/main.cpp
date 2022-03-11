@@ -99,9 +99,10 @@ auto main(int argc, char const** argv) -> int try {
     cli::Options_description description;
     description.add_options()
         ("help", "Show this text")
-        ({ "test", 't' }, cli::integer().default_to(5).min(2).max(6), "test description")
-        ("other", cli::boolean().default_to(true), "yes")
-        ("wasd", cli::string());
+        ({ "int", 'i' }, cli::integer())
+        ({ "float", 'f' }, cli::floating())
+        ({ "bool", 'b' }, cli::boolean())
+        ({ "str", 's' }, cli::string().default_to("Hello, world!"));
 
     auto options = cli::parse_command_line(argc, argv, description);
 
@@ -109,6 +110,13 @@ auto main(int argc, char const** argv) -> int try {
         bu::print("Valid options:\n\n{}", description);
         return 0;
     }
+
+    bu::print("str: {}\n", *options.find_string("str"));
+
+    //bu::print("i: {}\n", (bool)options.find_integer("int"));
+    //bu::print("f: {}\n", (bool)options.find_floating("float"));
+    //bu::print("b: {}\n", (bool)options.find_boolean("bool"));
+    //bu::print("s: {}\n", (bool)options.find_string("str"));
 
     /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
