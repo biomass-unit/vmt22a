@@ -41,7 +41,7 @@ namespace {
                     f(std::move(source));
                 }
                 catch (std::exception const& exception) {
-                    bu::print<std::cerr>("REPL error: {}\n", exception.what());
+                    bu::print<std::cerr>("REPL error: {}\n\n", exception.what());
                 }
             }
         };
@@ -92,22 +92,32 @@ using namespace lexer :: literals;
 
 auto main(int argc, char const** argv) -> int try {
     bu::enable_color_formatting ();
-    tests::run_all_tests        ();
+    //tests::run_all_tests        ();
     //program_parser_repl         ();
     //expression_parser_repl      ();
 
     cli::Options_description description;
     description.add_options()
-        ({ "test", 't' }, cli::integer().default_to(4).min(2).max(6), "test description")
-        ("other", cli::boolean().default_to(true), "yes");
+        ("help")
+        ({ "test", 't' }, cli::integer().min(2).max(6), "test description")
+        ("other", cli::boolean().default_to(true), "yes")
+        ("wasd", cli::string());
 
     auto options = cli::parse_command_line(argc, argv, description);
 
-    bu::print("name: {}\n", options.program_name_as_invoked);
+    if (options.find("help")) {
+        bu::print("Valid options:\n\n{}", description);
+        return 0;
+    }
 
+    bu::print(
+        "name: {}, positional arguments: {}\n",
+        options.program_name_as_invoked,
+        options.positional_arguments
+    );
 
-    for (auto& [value, name] : options.named_arguments) {
-        bu::print("value: {}, name: {}\n", value, name);
+    for (auto& [name, value] : options.named_arguments) {
+        bu::print("name: {}, value: {}\n", name, value);
     }
 
     /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
@@ -156,6 +166,10 @@ R"(
     compiler::Codegen_context context { { .stack = bu::Bytestack { 1000 } }, std::move(module) };
 
     bu::print("type: {}\n", compiler::size_of(type, context));*/
+}
+
+catch (cli::Unrecognized_option const& exception) {
+    std::cerr << exception.what() << "; use --help to see a list of valid options\n";
 }
 
 catch (std::exception const& exception) {

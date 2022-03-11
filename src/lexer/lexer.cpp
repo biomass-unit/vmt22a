@@ -27,29 +27,29 @@ namespace {
             tokens.reserve(1024);
         }
 
-        inline auto is_finished() const noexcept -> bool {
+        auto is_finished() const noexcept -> bool {
             return pointer == stop;
         }
 
-        inline auto current() const noexcept -> char {
+        auto current() const noexcept -> char {
             return *pointer;
         }
 
-        inline auto extract_current() noexcept -> char {
+        auto extract_current() noexcept -> char {
             return *pointer++;
         }
 
-        inline auto consume(std::predicate<char> auto const predicate) noexcept -> void {
+        auto consume(std::predicate<char> auto const predicate) noexcept -> void {
             for (; (pointer != stop) && predicate(*pointer); ++pointer);
         }
 
-        inline auto extract(std::predicate<char> auto const predicate) noexcept -> std::string_view {
+        auto extract(std::predicate<char> auto const predicate) noexcept -> std::string_view {
             auto const anchor = pointer;
             consume(predicate);
             return { anchor, pointer };
         }
 
-        inline auto try_consume(char const c) noexcept -> bool {
+        auto try_consume(char const c) noexcept -> bool {
             assert(c != '\n');
 
             if (*pointer == c) {
@@ -61,7 +61,7 @@ namespace {
             }
         }
 
-        inline auto try_consume(std::string_view string) noexcept -> bool {
+        auto try_consume(std::string_view string) noexcept -> bool {
             auto ptr = pointer;
 
             for (char const character : string) {
@@ -75,23 +75,25 @@ namespace {
             return true;
         }
 
-        inline auto success(lexer::Token&& token) noexcept -> std::true_type {
+        auto success(lexer::Token&& token) noexcept -> std::true_type {
             token.source_view = { token_start, pointer };
             tokens.push_back(std::move(token));
             return {};
         }
 
-        inline auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
-            return bu::Textual_error { {
-                .erroneous_view = view,
-                .file_view      = source->string(),
-                .file_name      = source->name(),
-                .message        = message,
-                .help_note      = help
-            } };
+        auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
+            return std::runtime_error {
+                bu::textual_error({
+                    .erroneous_view = view,
+                    .file_view      = source->string(),
+                    .file_name      = source->name(),
+                    .message        = message,
+                    .help_note      = help
+                })
+            };
         }
 
-        inline auto error(char const* location, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+        auto error(char const* location, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
             return error({ location, location + 1 }, message, help);
         }
 
@@ -120,7 +122,7 @@ namespace {
         };
 
         template <bu::trivial T>
-        inline auto parse(auto const... args) noexcept -> Parse_result<T> {
+        auto parse(auto const... args) noexcept -> Parse_result<T> {
             static_assert(sizeof...(args) < 2); // The variadic parameter pack is used
             T value;                            // for the optional base parameter
             auto const result = std::from_chars(pointer, stop, value, args...);
@@ -236,6 +238,7 @@ namespace {
             { new_id("struct")   , Token::Type::struct_   },
             { new_id("class")    , Token::Type::class_    },
             { new_id("inst")     , Token::Type::inst      },
+            { new_id("impl")     , Token::Type::impl      },
             { new_id("alias")    , Token::Type::alias     },
             { new_id("import")   , Token::Type::import    },
             { new_id("module")   , Token::Type::module    },

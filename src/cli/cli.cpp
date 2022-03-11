@@ -46,7 +46,7 @@ namespace {
             --pointer;
         }
 
-        auto error(std::string_view const message) -> bu::Textual_error {
+        auto error_string(std::string_view const message) const -> std::string {
             std::string fake_file;
             fake_file.reserve(
                 std::transform_reduce(
@@ -77,17 +77,19 @@ namespace {
                 erroneous_view = { view_begin, pointer->size() };
             }
 
-            return bu::Textual_error {
-                bu::Textual_error::Arguments {
-                    .erroneous_view = erroneous_view,
-                    .file_view      = fake_file,
-                    .file_name      = "the command line",
-                    .message        = message,
-                }
-            };
+            return bu::textual_error({
+                .erroneous_view = erroneous_view,
+                .file_view      = fake_file,
+                .file_name      = "the command line",
+                .message        = message,
+            });
         }
 
-        auto expected(std::string_view const expectation) -> bu::Textual_error {
+        auto error(std::string_view const message) const -> std::runtime_error {
+            return std::runtime_error { error_string(message) };
+        }
+
+        auto expected(std::string_view const expectation) const -> std::runtime_error {
             return error(std::format("Expected {}", expectation));
         }
     };
@@ -101,12 +103,45 @@ namespace {
 
         auto const view = context.extract();
 
-        if constexpr (std::same_as<T, bu::Isize>) {
-            bu::unimplemented();
-        }
+        if constexpr (std::same_as<T, bu::Isize> || std::same_as<T, bu::Float>) {
+            auto const start = view.data();
+            auto const stop  = start + view.size();
 
-        else if constexpr (std::same_as<T, bu::Float>) {
-            bu::unimplemented();
+            T value;
+            auto [ptr, ec] = std::from_chars(start, stop, value);
+
+            switch (ec) {
+            case std::errc {}:
+            {
+                if (ptr != stop) {
+                    context.retreat();
+                    throw context.error(
+                        std::format(
+                            "Unexpected suffix: '{}'",
+                            std::string_view { ptr, stop }
+                        )
+                    );
+                }
+                return value;
+            }
+            case std::errc::result_out_of_range:
+            {
+                context.retreat();
+                throw context.error(
+                    std::format(
+                        "The given value is too large to be represented by a {}-bit value",
+                        sizeof(T) * CHAR_BIT
+                    )
+                );
+            }
+            case std::errc::invalid_argument:
+            {
+                context.retreat();
+                return std::nullopt;
+            }
+            default:
+                bu::unimplemented();
+            }
         }
 
         else if constexpr (std::same_as<T, bool>) {
@@ -157,18 +192,31 @@ namespace {
                         argument = value.default_value;
                     }
                     else {
-                        bu::abort("no argument supplied");
+                        context.retreat();
+                        throw context.error("no argument supplied");
                     }
                 }
 
                 if (value.minimum_value) {
                     if (*argument < *value.minimum_value) {
-                        bu::abort("value too small");
+                        context.retreat();
+                        throw context.error(
+                            std::format(
+                                "The minimum allowed value is {}",
+                                *value.minimum_value
+                            )
+                        );
                     }
                 }
                 if (value.maximum_value) {
                     if (*argument > *value.maximum_value) {
-                        bu::abort("value too large");
+                        context.retreat();
+                        throw context.error(
+                            std::format(
+                                "The maximum allowed value is {}",
+                                *value.maximum_value
+                            )
+                        );
                     }
                 }
 
@@ -184,7 +232,10 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
     -> Options
 {
     std::vector<std::string_view> command_line(argv + 1, argv + argc);
-    Options options { .program_name_as_invoked = *argv };
+    Options options {
+        .program_name_as_invoked = *argv,
+        .long_forms = description.long_forms
+    };
 
     Parse_context context { command_line };
 
@@ -211,6 +262,7 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
                 }
             }
             else {
+                context.retreat();
                 return std::nullopt;
             }
         }();
@@ -241,11 +293,11 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
             }
             else {
                 context.retreat();
-                throw context.error("Unrecognized option");
+                throw Unrecognized_option { context.error_string("Unrecognized option") };
             }
         }
         else {
-            bu::unimplemented();
+            options.positional_arguments.push_back(std::string { context.extract() });
         }
     }
 
@@ -253,12 +305,25 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
 }
 
 
-auto cli::Options::find(std::string_view const) noexcept -> Named_argument* {
-    bu::unimplemented();
-}
+auto cli::Options::find(std::string_view const name) noexcept -> Named_argument* {
+    auto it = std::ranges::find(
+        named_arguments,
+        name,
+        [this](Named_argument const& argument) {
+            return std::visit(bu::Overload {
+                [](std::string_view const string) { return string; },
+                [this](char const c) {
+                    auto pointer = long_forms.find(c);
+                    assert(pointer);
+                    return *pointer;
+                }
+            }, argument.name);
+        }
+    );
 
-auto cli::Options::find(char const) noexcept -> Positional_argument* {
-    bu::unimplemented();
+    return it != named_arguments.end()
+        ? std::to_address(it)
+        : nullptr;
 }
 
 

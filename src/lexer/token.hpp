@@ -64,6 +64,7 @@ namespace lexer {
             struct_,
             class_,
             inst,
+            impl,
             alias,
             import,
             module,

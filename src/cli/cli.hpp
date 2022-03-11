@@ -74,22 +74,26 @@ namespace cli {
         Argument_value value;
     };
 
-    struct [[nodiscard]] Positional_argument {
-        Argument_value value;
-    };
+    using Positional_argument = std::string;
 
 
     struct [[nodiscard]] Options_description {
-        std::vector<Parameter> parameters;
+        std::vector<Parameter>              parameters;
+        bu::Flatmap<char, std::string_view> long_forms;
+
+    private:
 
         struct Option_adder {
-            decltype(parameters)* parameters;
+            Options_description* self;
 
             auto operator()(Parameter::Name&&            name,
                             std::optional<std::string>&& description = std::nullopt)
                 noexcept -> Option_adder
             {
-                parameters->emplace_back(
+                if (name.short_form) {
+                    self->long_forms.add(*name.short_form, name.long_form);
+                }
+                self->parameters.emplace_back(
                     std::move(name),
                     std::nullopt,
                     std::move(description)
@@ -103,7 +107,10 @@ namespace cli {
                             std::optional<std::string>&& description = std::nullopt)
                 noexcept -> Option_adder
             {
-                parameters->emplace_back(
+                if (name.short_form) {
+                    self->long_forms.add(*name.short_form, name.long_form);
+                }
+                self->parameters.emplace_back(
                     std::move(name),
                     std::move(value),
                     std::move(description)
@@ -112,19 +119,27 @@ namespace cli {
             }
         };
 
+    public:
+
         auto add_options() noexcept -> Option_adder {
-            return { &parameters };
+            return { this };
         }
     };
 
 
     struct [[nodiscard]] Options {
-        std::vector<Positional_argument> positional_arguments;
-        std::vector<Named_argument>      named_arguments;
-        std::string_view                 program_name_as_invoked;
+        std::vector<Positional_argument>    positional_arguments;
+        std::vector<Named_argument>         named_arguments;
+        std::string_view                    program_name_as_invoked;
+        bu::Flatmap<char, std::string_view> long_forms;
 
         auto find(std::string_view) noexcept -> Named_argument*;
-        auto find(char)             noexcept -> Positional_argument*;
+    };
+
+
+    struct Unrecognized_option : std::runtime_error {
+        using runtime_error::runtime_error;
+        using runtime_error::operator=;
     };
 
 

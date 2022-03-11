@@ -25,24 +25,24 @@ namespace parser {
             , pointer { start }
             , source  { &ts.source } {}
 
-        inline auto is_finished() const noexcept -> bool {
+        auto is_finished() const noexcept -> bool {
             return pointer->type == Token::Type::end_of_input;
         }
 
-        inline auto try_extract(Token::Type const type) noexcept -> Token* {
+        auto try_extract(Token::Type const type) noexcept -> Token* {
             return pointer->type == type ? pointer++ : nullptr;
         }
 
-        inline auto extract() noexcept -> Token& {
+        auto extract() noexcept -> Token& {
             return *pointer++;
         }
 
-        inline auto previous() noexcept -> Token& {
+        auto previous() noexcept -> Token& {
             assert(pointer != start);
             return pointer[-1];
         }
 
-        inline auto consume_required(Token::Type const type) -> void {
+        auto consume_required(Token::Type const type) -> void {
             if (pointer->type == type) {
                 ++pointer;
             }
@@ -51,7 +51,7 @@ namespace parser {
             }
         }
 
-        inline auto try_consume(Token::Type const type) noexcept -> bool {
+        auto try_consume(Token::Type const type) noexcept -> bool {
             if (pointer->type == type) {
                 ++pointer;
                 return true;
@@ -61,29 +61,31 @@ namespace parser {
             }
         }
 
-        inline auto retreat() noexcept -> void {
+        auto retreat() noexcept -> void {
             --pointer;
         }
 
-        inline auto error(std::span<Token const> span, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+        auto error(std::span<Token const> span, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
             std::string_view view {
                 span.front().source_view.data(),
                 span.back().source_view.data() + span.back().source_view.size()
             };
-            return bu::Textual_error { {
-                .erroneous_view = view,
-                .file_view      = source->string(),
-                .file_name      = source->name(),
-                .message        = message,
-                .help_note      = help
-            } };
+            return std::runtime_error {
+                bu::textual_error({
+                    .erroneous_view = view,
+                    .file_view      = source->string(),
+                    .file_name      = source->name(),
+                    .message        = message,
+                    .help_note      = help
+                })
+            };
         }
 
-        inline auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+        auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
             return error({ pointer, pointer + 1 }, message, help);
         }
 
-        inline auto expected(std::span<Token const> span, std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+        auto expected(std::span<Token const> span, std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
             return error(
                 span,
                 std::format(
@@ -95,7 +97,7 @@ namespace parser {
             );
         }
 
-        inline auto expected(std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> bu::Textual_error {
+        auto expected(std::string_view expectation, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
             return expected({ pointer, pointer + 1 }, expectation, help);
         }
     };

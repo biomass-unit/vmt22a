@@ -32,16 +32,16 @@ namespace compiler {
             auto const&                     erroneous_node,
             std::optional<std::string_view> help = std::nullopt
         )
-            -> bu::Textual_error
+            -> std::runtime_error
         {
-            return bu::Textual_error {
-                bu::Textual_error::Arguments {
+            return std::runtime_error {
+                bu::textual_error({
                     .erroneous_view = erroneous_node.source_view,
                     .file_view      = module.source.string(),
                     .file_name      = module.source.name(),
                     .message        = message,
                     .help_note      = help
-                }
+                })
             };
         }
     };

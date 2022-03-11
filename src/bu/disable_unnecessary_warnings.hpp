@@ -32,6 +32,8 @@ DISABLE(4623) // default constructor was implicitly defined as deleted
 DISABLE(4625) // copy constructor was implicitly defined as deleted
 DISABLE(4626) // copy assignment operator was implicitly defined as deleted
 
+DISABLE(4063) // case n is not a valid value for switch
+
 DISABLE(4710) // function not inlined
 DISABLE(4711) // function selected for automatic inline expansion
 

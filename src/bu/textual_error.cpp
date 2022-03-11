@@ -70,9 +70,7 @@ namespace {
 }
 
 
-bu::Textual_error::Textual_error(Arguments const arguments)
-    : runtime_error
-{ [=] {
+auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
     auto const [view, file, filename, message, help] = arguments;
     auto const position = find_position(file.data(), view.data());
 
@@ -120,10 +118,10 @@ bu::Textual_error::Textual_error(Arguments const arguments)
         );
     }
 
-    std::format_to(out, "\n\nMessage: {}\n", message);
+    std::format_to(out, "\n\nMessage: {}", message);
     if (help) {
-        std::format_to(out, "\nHelpful note: {}\n", *help);
+        std::format_to(out, "\n\nHelpful note: {}", *help);
     }
 
     return string;
-}() } {}
+}
