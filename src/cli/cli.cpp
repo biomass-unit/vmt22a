@@ -199,27 +199,18 @@ namespace {
         }
     }
 
-    auto extract_argument(Parse_context& context, cli::Parameter const& parameter)
-        -> cli::Argument_value
+    auto extract_arguments(Parse_context& context, cli::Parameter const& parameter)
+        -> std::vector<cli::Named_argument::Variant>
     {
-        using R = cli::Argument_value;
+        std::vector<cli::Named_argument::Variant> arguments;
+        arguments.reserve(parameter.values.size());
 
-        if (!parameter.value) {
-            return std::nullopt;
-        }
-
-        return std::visit(bu::Overload {
-            [&]<class T>(cli::Value<T> const& value) -> R {
+        for (auto& value : parameter.values) {
+            std::visit([&]<class T>(cli::Value<T> const& value) {
                 auto argument = extract_value<T>(context);
 
                 if (!argument) {
-                    context.retreat();
-                    throw context.error(
-                        std::format(
-                            "This flag requires an argument [{}], but none were supplied",
-                            type_description<T>()
-                        )
-                    );
+                    throw context.error(std::format("Expected an argument [{}]", type_description<T>()));
                 }
 
                 if (value.minimum_value) {
@@ -245,9 +236,11 @@ namespace {
                     }
                 }
 
-                return std::move(*argument);
-            }
-        }, *parameter.value);
+                arguments.push_back(std::move(*argument));
+            }, value);
+        }
+
+        return arguments;
     }
 
 }
@@ -308,7 +301,7 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
             if (it != description.parameters.end()) {
                 options.named_arguments.emplace_back(
                     std::move(*name),
-                    extract_argument(context, *it)
+                    extract_arguments(context, *it)
                 );
             }
             else {
@@ -321,17 +314,21 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
         }
     }
 
-    // Apply default values
+    // Apply default arguments
     for (auto& parameter : description.parameters) {
-        if (parameter.value && !options.find(parameter.name.long_form)) {
-            std::visit([&]<class T>(Value<T> const& value) {
-                if (value.default_value) {
-                    options.named_arguments.emplace_back(
-                        parameter.name.long_form,
-                        *value.default_value
-                    );
-                }
-            }, *parameter.value);
+        if (parameter.defaulted && !options.find(parameter.name.long_form)) {
+            std::vector<Named_argument::Variant> arguments;
+
+            for (auto& value : parameter.values) {
+                std::visit([&]<class T>(Value<T> const& value) {
+                    arguments.push_back(value.default_value.value());
+                }, value);
+            }
+
+            options.named_arguments.emplace_back(
+                parameter.name.long_form,
+                std::move(arguments)
+            );
         }
     }
 
@@ -357,18 +354,23 @@ DEFINE_FORMATTER_FOR(cli::Options_description) {
     lines.reserve(value.parameters.size());
     bu::Usize max_length = 0;
 
-    for (auto& [name, argument, description] : value.parameters) {
-        lines.emplace_back(
-            std::format(
-                "--{}{}{}",
-                name.long_form,
-                std::format(name.short_form ? ", -{}" : "", name.short_form),
-                argument ? std::format(" [{}]", type_description(*argument)) : ""
-            ),
-            description
+    for (auto& [name, arguments, description, _] : value.parameters) {
+        std::string line;
+        auto out = std::back_inserter(line);
+
+        std::format_to(
+            out,
+            "--{}{}",
+            name.long_form,
+            std::format(name.short_form ? ", -{}" : "", name.short_form)
         );
 
-        max_length = std::max(max_length, lines.back().first.size());
+        for (auto& argument : arguments) {
+            std::format_to(out, " [{}]", type_description(argument));
+        }
+
+        max_length = std::max(max_length, line.size());
+        lines.emplace_back(std::move(line), description);
     }
 
     for (auto& [names, description] : lines) {

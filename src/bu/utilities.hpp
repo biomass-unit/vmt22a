@@ -81,6 +81,24 @@ namespace bu {
     }
 
 
+    namespace dtl {
+
+        inline auto filename_without_path(std::string_view path) noexcept -> std::string_view {
+            auto const trim_if = [&](char const c) {
+                if (auto const pos = path.find_last_of(c); pos != std::string_view::npos) {
+                    path.remove_prefix(pos + 1);
+                }
+            };
+
+            trim_if('\\');
+            trim_if('/');
+
+            return path;
+        }
+
+    }
+
+
     template <std::ostream& os = std::cout>
     auto print(std::string_view fmt, auto const&... args) -> void {
         if constexpr (sizeof...(args) != 0) {
@@ -98,7 +116,7 @@ namespace bu {
             std::format(
                 "bu::abort invoked in {}, in file {} on line {}, with message: {}",
                 caller.function_name(),
-                caller.file_name(),
+                dtl::filename_without_path(caller.file_name()),
                 caller.line(),
                 message
             )
@@ -111,22 +129,10 @@ namespace bu {
     }
 
     inline auto trace(std::source_location caller = std::source_location::current()) -> void {
-        std::string_view filename = caller.file_name();
-
-        auto const trim_if = [&](char const c) {
-            if (auto const pos = filename.find_last_of(c); pos != std::string_view::npos) {
-                filename.remove_prefix(pos + 1);
-            }
-        };
-
-        // We only care about the filename, not the path
-        trim_if('\\');
-        trim_if('/');
-        
         print(
             "bu::trace: Reached line {} in {}, in function {}\n",
             caller.line(),
-            filename,
+            dtl::filename_without_path(caller.file_name()),
             caller.function_name()
         );
     }
@@ -260,6 +266,7 @@ namespace bu {
 
 
     namespace dtl {
+
         template <class, template <class...> class>
         struct Is_instance_of : std::false_type {};
         template <class... Args, template <class...> class F>
@@ -278,6 +285,7 @@ namespace bu {
             U const,
             U
         >;
+
     }
 
 

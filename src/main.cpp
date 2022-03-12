@@ -95,8 +95,10 @@ auto main(int argc, char const** argv) -> int try {
 
     cli::Options_description description;
     description.add_options()
-        ("help", "Show this text")
-        ("repl", cli::string(), "Run the given repl");
+        ("help"   ,                                  "Show this text"        )
+        ("repl"   , cli::string(),                   "Run the given repl"    )
+        ("nocolor",                                  "Disable colored output")
+        ("test", { cli::string(), cli::floating() }, "Qwerty"                );
 
     auto options = cli::parse_command_line(argc, argv, description);
 
@@ -105,9 +107,13 @@ auto main(int argc, char const** argv) -> int try {
         return 0;
     }
 
+    if (options.find("nocolor")) {
+        bu::disable_color_formatting();
+    }
+
     tests::run_all_tests();
     
-    if (auto* const name = options.find_string("repl")) {
+    if (auto* const name = options.find_str("repl")) {
         if (*name == "lex") {
             lexer_repl();
         }

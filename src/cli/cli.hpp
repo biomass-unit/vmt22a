@@ -26,10 +26,10 @@ namespace cli {
         }
     };
 
-    inline auto integer () -> Value<bu::Isize       > { return {}; }
-    inline auto floating() -> Value<bu::Float       > { return {}; }
-    inline auto boolean () -> Value<bool            > { return {}; }
-    inline auto string  () -> Value<std::string_view> { return {}; }
+    inline auto integer  () -> Value<bu::Isize       > { return {}; }
+    inline auto floating () -> Value<bu::Float       > { return {}; }
+    inline auto boolean  () -> Value<bool            > { return {}; }
+    inline auto string   () -> Value<std::string_view> { return {}; }
 
 
     struct [[nodiscard]] Parameter {
@@ -50,23 +50,46 @@ namespace cli {
         >;
 
         Name                            name;
-        std::optional<Variant>          value;
+        std::vector<Variant>            values;
         std::optional<std::string_view> description;
+        bool                            defaulted = false;
     };
 
 
-    using Argument_value = std::optional<
-        std::variant<
+    struct [[nodiscard]] Named_argument {
+        using Variant = std::variant<
             bu::Isize,
             bu::Float,
             bool,
             std::string_view
-        >
-    >;
+        >;
 
-    struct [[nodiscard]] Named_argument {
-        std::string    name; // short-form names are automatically converted to long-form
-        Argument_value value;
+        std::string          name; // short-form names are automatically converted to long-form
+        std::vector<Variant> values;
+
+        auto as_int   () const { return as<0>(); }
+        auto as_float () const { return as<1>(); }
+        auto as_bool  () const { return as<2>(); }
+        auto as_str   () const { return as<3>(); }
+
+        auto nth_as_int   (bu::Usize const index) const { return nth_as<0>(index); }
+        auto nth_as_float (bu::Usize const index) const { return nth_as<1>(index); }
+        auto nth_as_bool  (bu::Usize const index) const { return nth_as<2>(index); }
+        auto nth_as_str   (bu::Usize const index) const { return nth_as<3>(index); }
+
+    private:
+
+        template <bu::Usize alternative>
+        auto as() const {
+            assert(values.size() == 1);
+            return std::get<alternative>(values.at(0));
+            // .at(0) used because calling .front() on an empty vector is UB
+        }
+
+        template <bu::Usize alternative>
+        auto nth_as(bu::Usize const index) const {
+            return std::get<alternative>(values.at(index));
+        }
     };
 
     using Positional_argument = std::string_view;
@@ -81,18 +104,21 @@ namespace cli {
         struct Option_adder {
             Options_description* self;
 
+            auto map_short_to_long(Parameter::Name const& name) noexcept -> void {
+                if (name.short_form) {
+                    self->long_forms.add(bu::copy(*name.short_form), bu::copy(name.long_form));
+                }
+            }
+
             auto operator()(Parameter::Name&&               name,
                             std::optional<std::string_view> description = std::nullopt)
                 noexcept -> Option_adder
             {
-                if (name.short_form) {
-                    self->long_forms.add(bu::copy(*name.short_form), bu::copy(name.long_form));
-                }
-                self->parameters.emplace_back(
-                    std::move(name),
-                    std::nullopt,
-                    description
-                );
+                map_short_to_long(name);
+                self->parameters.push_back({
+                    .name = std::move(name),
+                    .description = description
+                });
                 return *this;
             }
 
@@ -102,13 +128,49 @@ namespace cli {
                             std::optional<std::string_view> description = std::nullopt)
                 noexcept -> Option_adder
             {
-                if (name.short_form) {
-                    self->long_forms.add(bu::copy(*name.short_form), bu::copy(name.long_form));
+                map_short_to_long(name);
+                bool const is_defaulted = value.default_value.has_value();
+
+                self->parameters.push_back({
+                    .name        = std::move(name),
+                    .values      { std::move(value) },
+                    .description = description,
+                    .defaulted   = is_defaulted
+                });
+                return *this;
+            }
+
+            auto operator()(Parameter::Name&&                 name,
+                            std::vector<Parameter::Variant>&& values,
+                            std::optional<std::string_view>   description = std::nullopt)
+                noexcept -> Option_adder
+            {
+                map_short_to_long(name);
+
+                auto const has_default = [](auto const& variant) {
+                    return std::visit([](auto& alternative) {
+                        return alternative.default_value.has_value();
+                    }, variant);
+                };
+
+                bool is_defaulted = false;
+                if (!values.empty()) {
+                    is_defaulted = has_default(values.front());
+                    auto rest = values | std::views::drop(1);
+
+                    if (is_defaulted) {
+                        assert(std::ranges::all_of(rest, has_default));
+                    }
+                    else {
+                        assert(std::ranges::none_of(rest, has_default));
+                    }
                 }
+
                 self->parameters.emplace_back(
                     std::move(name),
-                    std::move(value),
-                    description
+                    std::move(values),
+                    description,
+                    is_defaulted
                 );
                 return *this;
             }
@@ -129,21 +191,25 @@ namespace cli {
 
         auto find(std::string_view) noexcept -> Named_argument*;
 
+        auto find_int   (std::string_view const name) noexcept { return find_arg<bu::Isize       >(name); }
+        auto find_float (std::string_view const name) noexcept { return find_arg<bu::Float       >(name); }
+        auto find_bool  (std::string_view const name) noexcept { return find_arg<bool            >(name); }
+        auto find_str   (std::string_view const name) noexcept { return find_arg<std::string_view>(name); }
+
+    private:
+
         template <class T>
         auto find_arg(std::string_view const name) noexcept -> T* {
             if (auto* const arg = find(name)) {
+                assert(arg->values.size() == 1);
+                return std::addressof(std::get<T>(arg->values.front()));
                 // std::get used instead of std::get_if because invalid access should throw
-                return std::addressof(std::get<T>(arg->value.value()));
             }
             else {
                 return nullptr;
             }
         }
 
-        auto find_integer (std::string_view const name) noexcept { return find_arg<bu::Isize       >(name); }
-        auto find_floating(std::string_view const name) noexcept { return find_arg<bu::Float       >(name); }
-        auto find_boolean (std::string_view const name) noexcept { return find_arg<bool            >(name); }
-        auto find_string  (std::string_view const name) noexcept { return find_arg<std::string_view>(name); }
     };
 
 
