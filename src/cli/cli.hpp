@@ -26,9 +26,9 @@ namespace cli {
         }
     };
 
-    inline auto integer () -> Value<bu::Isize>        { return {}; }
-    inline auto floating() -> Value<bu::Float>        { return {}; }
-    inline auto boolean () -> Value<bool>             { return {}; }
+    inline auto integer () -> Value<bu::Isize       > { return {}; }
+    inline auto floating() -> Value<bu::Float       > { return {}; }
+    inline auto boolean () -> Value<bool            > { return {}; }
     inline auto string  () -> Value<std::string_view> { return {}; }
 
 

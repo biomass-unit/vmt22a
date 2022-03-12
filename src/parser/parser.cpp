@@ -210,9 +210,11 @@ namespace {
     using namespace parser;
 
 
-    thread_local ast::Namespace                                * current_namespace;
-    thread_local decltype(ast::Module::instantiations)         * instantiations;
-    thread_local decltype(ast::Module::instantiation_templates)* instantiation_templates;
+    thread_local ast::Namespace                                 * current_namespace;
+    thread_local decltype(ast::Module::instantiations)          * instantiations;
+    thread_local decltype(ast::Module::instantiation_templates) * instantiation_templates;
+    thread_local decltype(ast::Module::implementations)         * implementations;
+    thread_local decltype(ast::Module::implementation_templates)* implementation_templates;
 
     template <class T>
     using Components = bu::Pair<std::optional<std::vector<ast::Template_parameter>>, T>;
@@ -563,6 +565,63 @@ namespace {
     }
 
 
+    auto extract_impl_or_inst_definitions(auto* const target, Parse_context& context) -> void {
+        context.consume_required(Token::Type::brace_open);
+
+        for (;;) {
+            switch (context.extract().type) {
+            case Token::Type::fn:
+                extract_and_add_to<
+                    extract_function_components,
+                    &ast::definition::Instantiation::function_definitions,
+                    &ast::definition::Instantiation::function_template_definitions
+                >(target, context);
+                break;
+            case Token::Type::alias:
+                extract_and_add_to<
+                    extract_alias_components,
+                    &ast::definition::Instantiation::alias_definitions,
+                    &ast::definition::Instantiation::alias_template_definitions
+                >(target, context);
+                break;
+            case Token::Type::brace_close:
+                return;
+            default:
+                context.retreat();
+                throw context.expected(
+                    "a function definition, an alias definition, or a closing '}'"
+                );
+            }
+        }
+    }
+
+
+    auto extract_implementation(Parse_context& context) -> void {
+        if (current_namespace != current_namespace->global) {
+            context.retreat();
+            throw context.error("Implementation blocks may only appear at global scope");
+        }
+
+        auto template_parameters = parse_template_parameters(context);
+
+        ast::definition::Implementation implementation {
+            .type = extract_type(context)
+        };
+
+        extract_impl_or_inst_definitions(&implementation, context);
+
+        if (template_parameters) {
+            implementation_templates->emplace_back(
+                std::move(implementation),
+                std::move(*template_parameters)
+            );
+        }
+        else {
+            implementations->push_back(std::move(implementation));
+        }
+    }
+
+
     auto extract_instantiation(Parse_context& context) -> void {
         if (current_namespace != current_namespace->global) {
             context.retreat();
@@ -577,43 +636,16 @@ namespace {
                 .instance  = extract_type(context)
             };
 
-            context.consume_required(Token::Type::brace_open);
+            extract_impl_or_inst_definitions(&instantiation, context);
 
-            for (;;) {
-                switch (context.extract().type) {
-                case Token::Type::fn:
-                    extract_and_add_to<
-                        extract_function_components,
-                        &ast::definition::Instantiation::function_definitions,
-                        &ast::definition::Instantiation::function_template_definitions
-                    >(&instantiation, context);
-                    break;
-                case Token::Type::alias:
-                    extract_and_add_to<
-                        extract_alias_components,
-                        &ast::definition::Instantiation::alias_definitions,
-                        &ast::definition::Instantiation::alias_template_definitions
-                    >(&instantiation, context);
-                    break;
-                case Token::Type::brace_close:
-                    if (template_parameters) {
-                        instantiation_templates->push_back(
-                            ast::definition::Instantiation_template {
-                                std::move(instantiation),
-                                std::move(*template_parameters)
-                            }
-                        );
-                    }
-                    else {
-                        instantiations->push_back(std::move(instantiation));
-                    }
-                    return;
-                default:
-                    context.retreat();
-                    throw context.expected(
-                        "a function definition, an alias definition, or a closing '}'"
-                    );
-                }
+            if (template_parameters) {
+                instantiation_templates->emplace_back(
+                    std::move(instantiation),
+                    std::move(*template_parameters)
+                );
+            }
+            else {
+                instantiations->push_back(std::move(instantiation));
             }
         }
         else {
@@ -755,6 +787,9 @@ namespace {
                 &ast::Namespace::alias_template_definitions
             >(current_namespace, context);
             break;
+        case Token::Type::impl:
+            extract_implementation(context);
+            break;
         case Token::Type::inst:
             extract_instantiation(context);
             break;
@@ -778,10 +813,14 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     Parse_context context { tokenized_source };
     ast::Namespace global_namespace { lexer::Identifier { std::string_view { "" } } };
 
-    decltype(ast::Module::instantiations)          instantiations;
-    decltype(ast::Module::instantiation_templates) instantiation_templates;
-    ::instantiations          = &instantiations;
-    ::instantiation_templates = &instantiation_templates;
+    decltype(ast::Module::instantiations)           instantiations;
+    decltype(ast::Module::instantiation_templates)  instantiation_templates;
+    decltype(ast::Module::implementations)          implementations;
+    decltype(ast::Module::implementation_templates) implementation_templates;
+    ::instantiations           = &instantiations;
+    ::instantiation_templates  = &instantiation_templates;
+    ::implementations          = &implementations;
+    ::implementation_templates = &implementation_templates;
 
     ::current_namespace = &global_namespace;
 
@@ -791,7 +830,7 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
         throw context.expected(
             "a definition",
             "Definitions must begin with 'fn', 'struct', "
-            "'data', 'alias', 'inst', or 'class'"
+            "'data', 'alias', 'impl', 'inst', or 'class'"
         );
     }
 
@@ -800,8 +839,10 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
         std::move(global_namespace)
     };
 
-    module.instantiations          = std::move(instantiations);
-    module.instantiation_templates = std::move(instantiation_templates);
+    module.implementations          = std::move(implementations);
+    module.implementation_templates = std::move(implementation_templates);
+    module.instantiations           = std::move(instantiations);
+    module.instantiation_templates  = std::move(instantiation_templates);
 
     return module;
 }

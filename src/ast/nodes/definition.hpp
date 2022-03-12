@@ -111,13 +111,12 @@ namespace ast {
             bu::Wrapper<Type> instance;
             DEFAULTED_EQUALITY(Instantiation);
         };
+        using Instantiation_template = Template_definition<Instantiation>;
 
         struct Implementation : Block_definitions {
             bu::Wrapper<Type> type;
             DEFAULTED_EQUALITY(Implementation);
         };
-
-        using Instantiation_template  = Template_definition<Instantiation>;
         using Implementation_template = Template_definition<Implementation>;
 
     }

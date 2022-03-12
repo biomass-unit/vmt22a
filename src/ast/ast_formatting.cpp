@@ -225,16 +225,19 @@ namespace {
 
 
     using Definition_variant = std::variant<
-        ast::definition::Function               const*,
-        ast::definition::Struct                 const*,
-        ast::definition::Data                   const*,
-        ast::definition::Alias                  const*,
-        ast::definition::Instantiation          const*,
-        ast::definition::Function_template      const*,
-        ast::definition::Struct_template        const*,
-        ast::definition::Data_template          const*,
-        ast::definition::Alias_template         const*,
-        ast::definition::Instantiation_template const*
+        ast::definition::Function                const*,
+        ast::definition::Struct                  const*,
+        ast::definition::Data                    const*,
+        ast::definition::Alias                   const*,
+        ast::definition::Implementation          const*,
+        ast::definition::Instantiation           const*,
+
+        ast::definition::Function_template       const*,
+        ast::definition::Struct_template         const*,
+        ast::definition::Data_template           const*,
+        ast::definition::Alias_template          const*,
+        ast::definition::Implementation_template const*,
+        ast::definition::Instantiation_template  const*
     >;
 
     auto format_definition(
@@ -286,24 +289,36 @@ namespace {
                     alias->type
                 );
             },
-            [&](ast::definition::Instantiation const* instantiation) {
+            [&]<class T>(T const* impl_or_inst)
+                requires std::same_as<T, ast::definition::Instantiation>
+                    || std::same_as<T, ast::definition::Implementation>
+            {
                 auto fmt = [&](auto const& xs) {
                     for (auto& x : xs.span() | std::views::transform(bu::second)) {
                         std::format_to(context.out(), "\n{}", x);
                     }
                 };
 
-                format(
-                    "inst{} {} {} {{",
-                    template_parameters(),
-                    instantiation->typeclass,
-                    instantiation->instance
-                );
+                if constexpr (std::same_as<T, ast::definition::Instantiation>) {
+                    format(
+                        "inst{} {} {} {{",
+                        template_parameters(),
+                        impl_or_inst->typeclass,
+                        impl_or_inst->instance
+                    );
+                }
+                else {
+                    format(
+                        "impl{} {} {{",
+                        template_parameters(),
+                        impl_or_inst->type
+                    );
+                }
 
-                fmt(instantiation->function_definitions);
-                fmt(instantiation->function_template_definitions);
-                fmt(instantiation->alias_definitions);
-                fmt(instantiation->alias_template_definitions);
+                fmt(impl_or_inst->function_definitions);
+                fmt(impl_or_inst->function_template_definitions);
+                fmt(impl_or_inst->alias_definitions);
+                fmt(impl_or_inst->alias_template_definitions);
 
                 return format("\n}}");
             },
@@ -369,6 +384,13 @@ DEFINE_FORMATTER_FOR(ast::definition::Alias) {
     return format_definition(context, &value);
 }
 DEFINE_FORMATTER_FOR(ast::definition::Alias_template) {
+    return format_definition(context, &value);
+}
+
+DEFINE_FORMATTER_FOR(ast::definition::Implementation) {
+    return format_definition(context, &value);
+}
+DEFINE_FORMATTER_FOR(ast::definition::Implementation_template) {
     return format_definition(context, &value);
 }
 
@@ -491,9 +513,11 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
 DEFINE_FORMATTER_FOR(ast::Module) {
     return std::format_to(
         context.out(),
-        "{}\n{}\n{}",
+        "{}\n{}\n{}\n{}\n{}",
         value.global_namespace,
         value.instantiations,
-        value.instantiation_templates
+        value.instantiation_templates,
+        value.implementations,
+        value.implementation_templates
     );
 }

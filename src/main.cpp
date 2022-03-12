@@ -91,18 +91,12 @@ using namespace lexer :: literals;
 
 
 auto main(int argc, char const** argv) -> int try {
-    bu::enable_color_formatting ();
-    //tests::run_all_tests        ();
-    //program_parser_repl         ();
-    //expression_parser_repl      ();
+    bu::enable_color_formatting();
 
     cli::Options_description description;
     description.add_options()
         ("help", "Show this text")
-        ({ "int", 'i' }, cli::integer())
-        ({ "float", 'f' }, cli::floating())
-        ({ "bool", 'b' }, cli::boolean())
-        ({ "str", 's' }, cli::string().default_to("Hello, world!"));
+        ("repl", cli::string(), "Run the given repl");
 
     auto options = cli::parse_command_line(argc, argv, description);
 
@@ -111,12 +105,22 @@ auto main(int argc, char const** argv) -> int try {
         return 0;
     }
 
-    bu::print("str: {}\n", *options.find_string("str"));
-
-    //bu::print("i: {}\n", (bool)options.find_integer("int"));
-    //bu::print("f: {}\n", (bool)options.find_floating("float"));
-    //bu::print("b: {}\n", (bool)options.find_boolean("bool"));
-    //bu::print("s: {}\n", (bool)options.find_string("str"));
+    tests::run_all_tests();
+    
+    if (auto* const name = options.find_string("repl")) {
+        if (*name == "lex") {
+            lexer_repl();
+        }
+        else if (*name == "expr") {
+            expression_parser_repl();
+        }
+        else if (*name == "prog") {
+            program_parser_repl();
+        }
+        else {
+            bu::abort("Unrecognized repl name");
+        }
+    }
 
     /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 

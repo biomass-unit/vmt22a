@@ -20,6 +20,9 @@ DECLARE_FORMATTER_FOR(ast::definition::Data_template);
 DECLARE_FORMATTER_FOR(ast::definition::Alias);
 DECLARE_FORMATTER_FOR(ast::definition::Alias_template);
 
+DECLARE_FORMATTER_FOR(ast::definition::Implementation);
+DECLARE_FORMATTER_FOR(ast::definition::Implementation_template);
+
 DECLARE_FORMATTER_FOR(ast::definition::Instantiation);
 DECLARE_FORMATTER_FOR(ast::definition::Instantiation_template);
 

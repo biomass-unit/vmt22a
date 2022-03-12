@@ -115,8 +115,10 @@ namespace ast {
         bu::Source source;
         Namespace  global_namespace;
 
-        std::vector<definition::Instantiation>          instantiations;
-        std::vector<definition::Instantiation_template> instantiation_templates;
+        std::vector<definition::Instantiation>           instantiations;
+        std::vector<definition::Instantiation_template>  instantiation_templates;
+        std::vector<definition::Implementation>          implementations;
+        std::vector<definition::Implementation_template> implementation_templates;
     };
 
 }

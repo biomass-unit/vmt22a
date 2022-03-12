@@ -67,6 +67,9 @@ namespace {
         }
 
         auto error_string(std::string_view const message) const -> std::string {
+            // We must recreate the command line as a single string which will
+            // emulate the file that would normally be passed to bu::textual_error
+
             std::string fake_file;
             fake_file.reserve(
                 std::transform_reduce(
@@ -273,10 +276,10 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
             }
             else if (view.starts_with('-')) {
                 view.remove_prefix(1);
-                if (view.size() != 1) {
+                switch (view.size()) {
+                case 0:
                     throw context.expected("a single-character flag name");
-                }
-                else {
+                case 1:
                     if (auto long_form = description.long_forms.find(view.front())) {
                         return bu::copy(*long_form);
                     }
@@ -284,6 +287,9 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
                         context.retreat();
                         throw Unrecognized_option { context.error_string("Unrecognized option") };
                     }
+                default:
+                    context.retreat();
+                    throw context.expected("a single-character flag name; use '--' instead of '-' if this was intended");
                 }
             }
             else {

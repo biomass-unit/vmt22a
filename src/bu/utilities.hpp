@@ -238,6 +238,7 @@ namespace bu {
 
     [[nodiscard]]
     constexpr auto unsigned_distance(auto const start, auto const stop) noexcept -> Usize {
+        assert(start <= stop);
         return static_cast<Usize>(std::distance(start, stop));
     }
 
