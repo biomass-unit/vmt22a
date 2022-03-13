@@ -31,12 +31,37 @@ namespace vm {
         Activation_record* activation_record   = nullptr;
         bool               keep_running        = true;
 
+        static constexpr bu::Usize version = 0;
+
+
         auto run() -> int;
 
         auto jump_to(Jump_offset_type) noexcept -> void;
 
         template <bu::trivial T>
         auto extract_argument() noexcept -> T;
+
+
+        std::string output_buffer;
+
+        auto flush_output() -> void;
+
+
+        struct String {
+            char const* pointer;
+            bu::Usize   length;
+        };
+
+        std::string                      string_buffer;
+        std::vector<bu::Pair<bu::Usize>> string_buffer_views;
+        std::vector<String>              string_pool;
+
+        auto add_to_string_pool(std::string_view const string) noexcept -> bu::Usize {
+            auto const offset = string_buffer.size();
+            string_buffer.append(string);
+            string_buffer_views.emplace_back(offset, string.size());
+            return string_buffer_views.size() - 1;
+        }
     };
 
 }

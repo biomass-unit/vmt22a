@@ -18,6 +18,7 @@ namespace bu {
     >
     class Flatmap;
 
+
     template <class K, class V, template <class...> class Container>
     class [[nodiscard]] Flatmap<K, V, Flatmap_strategy::store_keys, Container> {
         Container<Pair<K, V>> pairs;
@@ -62,9 +63,10 @@ namespace bu {
         constexpr auto container()       noexcept -> decltype(pairs)      & { return pairs; }
     };
 
+
     template <class K, class V, template <class...> class Container>
     class [[nodiscard]] Flatmap<K, V, Flatmap_strategy::hash_keys, Container> :
-        Flatmap<Usize, V, Flatmap_strategy::store_keys>
+        Flatmap<Usize, V, Flatmap_strategy::store_keys, Container>
     {
         using Parent = Flatmap<Usize, V, Flatmap_strategy::store_keys, Container>;
 
@@ -73,6 +75,7 @@ namespace bu {
         using Parent::Parent;
         using Parent::operator=;
         using Parent::span;
+        using Parent::container;
 
         // The member functions aren't constexpr because
         // std::hash::operator() unfortunately isn't constexpr.

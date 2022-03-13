@@ -236,6 +236,11 @@ namespace bu {
         return vector;
     }
 
+    template <class T>
+    constexpr auto release_vector_memory(std::vector<T>& vector) noexcept -> void {
+        std::vector<T> {}.swap(vector);
+    }
+
     inline constexpr auto string_without_sso() noexcept -> std::string {
         std::string string;
         string.reserve(sizeof string);

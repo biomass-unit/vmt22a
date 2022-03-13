@@ -93,10 +93,11 @@ using namespace lexer :: literals;
 auto main(int argc, char const** argv) -> int try {
     cli::Options_description description;
     description.add_options()
-        ("help"   ,                                     "Show this text"        )
-        ("repl"   , cli::string(),                      "Run the given repl"    )
-        ("nocolor",                                     "Disable colored output")
-        ("test"   , { cli::string(), cli::floating() }, "Qwerty"                );
+        ("help"   ,                "Show this text"              )
+        ("version",                "Show the interpreter version")
+        ("repl"   , cli::string(), "Run the given repl"          )
+        ("machine",                "Run the interpreter test"    )
+        ("nocolor",                "Disable colored output"      );
 
     auto options = cli::parse_command_line(argc, argv, description);
 
@@ -105,11 +106,36 @@ auto main(int argc, char const** argv) -> int try {
         return 0;
     }
 
+    if (options.find("version")) {
+        bu::print("Interpreter version {}, compiled on " __DATE__ ", " __TIME__ ".\n", vm::Virtual_machine::version);
+    }
+
     if (options.find("nocolor")) {
         bu::disable_color_formatting();
     }
 
     tests::run_all_tests();
+
+    if (options.find("machine")) {
+        vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+
+        bu::Timer timer;
+
+        auto const string = machine.add_to_string_pool("Hello, world!\n");
+
+        using enum vm::Opcode;
+        machine.bytecode.write(
+            ipush, 0_iz,
+            iinc_top,
+            idup,
+            spush, string,
+            sprint,
+            local_jump_ineq_i, vm::Local_offset_type(-23), 500'000_iz,
+            halt
+        );
+
+        return machine.run();
+    }
     
     if (auto* const name = options.find_str("repl")) {
         if (*name == "lex") {
@@ -125,21 +151,6 @@ auto main(int argc, char const** argv) -> int try {
             bu::abort("Unrecognized repl name");
         }
     }
-
-    /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
-
-    constexpr auto max = 5'000'000_iz;
-
-    using enum vm::Opcode;
-    machine.bytecode.write(
-        ipush, 0_iz,
-        iinc_top,
-        idup,
-        local_jump_ineq_i, vm::Local_offset_type(-13), max,
-        halt
-    );
-
-    return machine.run();*/
 
     /*auto module = parser::parse(
         lexer::lex(

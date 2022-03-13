@@ -1,4 +1,5 @@
 #include "bu/utilities.hpp"
+#include "bu/color.hpp"
 #include "tests.hpp"
 
 
@@ -12,5 +13,5 @@ auto tests::run_all_tests() -> void {
     run_parser_tests();
     run_vm_tests();
 
-    bu::print("All tests passed!\n");
+    bu::print("{}All tests passed!{}\n", bu::Color::green, bu::Color::white);
 }

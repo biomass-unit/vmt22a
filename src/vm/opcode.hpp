@@ -6,9 +6,9 @@
 namespace vm {
 
     enum class Opcode : bu::U8 {
-        ipush , fpush , cpush , push_true, push_false,
-        idup  , fdup  , cdup  , bdup  ,
-        iprint, fprint, cprint, bprint,
+        ipush , fpush , cpush , spush , push_true, push_false,
+        idup  , fdup  , cdup  , sdup  , bdup  ,
+        iprint, fprint, cprint, sprint, bprint,
 
         iadd, fadd,
         isub, fsub,

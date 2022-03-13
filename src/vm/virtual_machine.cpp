@@ -8,9 +8,17 @@ namespace {
 
     using VM = vm::Virtual_machine;
 
+    using String = vm::Virtual_machine::String;
+
+
     template <bu::trivial T>
     auto push(VM& vm) -> void {
-        vm.stack.push(vm.extract_argument<T>());
+        if constexpr (std::same_as<T, String>) {
+            vm.stack.push(vm.string_pool[vm.extract_argument<bu::Usize>()]);
+        }
+        else {
+            vm.stack.push(vm.extract_argument<T>());
+        }
     }
 
     template <bool value>
@@ -25,7 +33,20 @@ namespace {
 
     template <bu::trivial T>
     auto print(VM& vm) -> void {
-        bu::print("{}\n", vm.stack.pop<T>());
+        auto const popped = vm.stack.pop<T>();
+
+        if constexpr (std::same_as<T, String>) {
+            vm.output_buffer.insert(
+                vm.output_buffer.end(),
+                popped.pointer,
+                popped.pointer + popped.length
+            );
+        }
+        else {
+            std::format_to(std::back_inserter(vm.output_buffer), "{}\n", popped);
+        }
+
+        vm.flush_output(); // Adjust flush frequency later
     }
 
     template <class T, template <class> class F>
@@ -207,9 +228,9 @@ namespace {
 
 
     constexpr std::array instructions {
-        push <bu::Isize>, push <bu::Float>, push <bu::Char>, push_bool<true>, push_bool<false>,
-        dup  <bu::Isize>, dup  <bu::Float>, dup  <bu::Char>, dup  <bool>,
-        print<bu::Isize>, print<bu::Float>, print<bu::Char>, print<bool>,
+        push <bu::Isize>, push <bu::Float>, push <bu::Char>, push <String>, push_bool<true>, push_bool<false>,
+        dup  <bu::Isize>, dup  <bu::Float>, dup  <bu::Char>, dup  <String>, dup  <bool>,
+        print<bu::Isize>, print<bu::Float>, print<bu::Char>, print<String>, print<bool>,
 
         add<bu::Isize>, add<bu::Float>,
         sub<bu::Isize>, sub<bu::Float>,
@@ -273,11 +294,23 @@ auto vm::Virtual_machine::run() -> int {
 
     // The first activation record does not need to be initialized
 
+    if (string_pool.empty()) {
+        string_pool.reserve(string_buffer_views.size());
+
+        for (auto const [offset, length] : string_buffer_views) {
+            string_pool.emplace_back(string_buffer.data() + offset, length);
+        }
+
+        bu::release_vector_memory(string_buffer_views);
+    }
+
     while (keep_running) {
         auto const opcode = extract_argument<Opcode>();
         //bu::print(" -> {}\n", opcode);
         instructions[static_cast<bu::Usize>(opcode)](*this);
     }
+
+    flush_output();
 
     return static_cast<int>(stack.pop<bu::Isize>());
 }
@@ -302,12 +335,18 @@ auto vm::Virtual_machine::extract_argument() noexcept -> T {
 }
 
 
+auto vm::Virtual_machine::flush_output() -> void {
+    std::cout << output_buffer;
+    output_buffer.clear();
+}
+
+
 auto vm::argument_bytes(Opcode const opcode) noexcept -> bu::Usize {
     static constexpr auto bytecounts = std::to_array<bu::Usize>({
-        sizeof(bu::Isize), sizeof(bu::Float), sizeof(bu::Char), 0, 0, // push
+        sizeof(bu::Isize), sizeof(bu::Float), sizeof(bu::Char), sizeof(bu::Usize), 0, 0, // push
 
-        0, 0, 0, 0, // dup
-        0, 0, 0, 0, // print
+        0, 0, 0, 0, 0, // dup
+        0, 0, 0, 0, 0, // print
 
         0, 0, // add
         0, 0, // sub
