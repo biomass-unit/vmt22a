@@ -4,25 +4,25 @@
 
 namespace {
 
-    constinit bool color_formatting_state = false;
+    constinit bool color_formatting_state = true;
 
-    constexpr auto color_string(bu::Color const color) noexcept -> std::string_view {
-        constexpr auto color_map = std::to_array<std::string_view>({
-            "\033[31m",
-            "\033[32m",
-            "\033[33m",
-            "\033[34m",
-            "\033[35m",
-            "\033[36m",
-            "\033[91m",
-            "\033[92m",
-            "\033[93m",
-            "\033[94m",
-            "\033[95m",
-            "\033[96m",
-            "\033[30m",
-            "\033[0m" ,
-            "\033[90m",
+    auto color_string(bu::Color const color) noexcept -> std::string_view {
+        static constexpr auto color_map = std::to_array<std::string_view>({
+            "\033[31m", // dark red
+            "\033[32m", // dark green
+            "\033[33m", // dark yellow
+            "\033[34m", // dark blue
+            "\033[35m", // dark purple
+            "\033[36m", // dark cyan
+            "\033[91m", // red
+            "\033[92m", // green
+            "\033[93m", // yellow
+            "\033[94m", // blue
+            "\033[95m", // purple
+            "\033[96m", // cyan
+            "\033[30m", // black
+            "\033[0m" , // white
+            "\033[90m", // grey
         });
         static_assert(color_map.size() == static_cast<bu::Usize>(bu::Color::_color_count));
 
@@ -34,7 +34,8 @@ namespace {
 
 #ifdef _WIN32
 
-// Copied the necessary declarations from Windows.h, this allows not #including it.
+// Copied the necessary declarations from Windows.h, this allows not #including it,
+// which would fail to compile because it requires some MS-specific compiler extensions.
 
 extern "C" {
     typedef unsigned long DWORD;
@@ -87,12 +88,11 @@ namespace {
 }
 
 #else
-#define enable_virtual_terminal_processing()
+#define enable_virtual_terminal_processing() ((void)0)
 #endif
 
 
 auto bu::enable_color_formatting() noexcept -> void {
-    enable_virtual_terminal_processing();
     color_formatting_state = true;
 }
 
@@ -102,13 +102,21 @@ auto bu::disable_color_formatting() noexcept -> void {
 
 
 auto operator<<(std::ostream& os, bu::Color const color) -> std::ostream& {
-    return color_formatting_state
-        ? os << color_string(color)
-        : os;
+    if (color_formatting_state) {
+        enable_virtual_terminal_processing();
+        return os << color_string(color);
+    }
+    else {
+        return os;
+    }
 }
 
 DEFINE_FORMATTER_FOR(bu::Color) {
-    return color_formatting_state
-        ? std::format_to(context.out(), color_string(value))
-        : context.out();
+    if (color_formatting_state) {
+        enable_virtual_terminal_processing();
+        return std::format_to(context.out(), color_string(value));
+    }
+    else {
+        return context.out();
+    }
 }

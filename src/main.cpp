@@ -91,14 +91,12 @@ using namespace lexer :: literals;
 
 
 auto main(int argc, char const** argv) -> int try {
-    bu::enable_color_formatting();
-
     cli::Options_description description;
     description.add_options()
-        ("help"   ,                                  "Show this text"        )
-        ("repl"   , cli::string(),                   "Run the given repl"    )
-        ("nocolor",                                  "Disable colored output")
-        ("test", { cli::string(), cli::floating() }, "Qwerty"                );
+        ("help"   ,                                     "Show this text"        )
+        ("repl"   , cli::string(),                      "Run the given repl"    )
+        ("nocolor",                                     "Disable colored output")
+        ("test"   , { cli::string(), cli::floating() }, "Qwerty"                );
 
     auto options = cli::parse_command_line(argc, argv, description);
 
