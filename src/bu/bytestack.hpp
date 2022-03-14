@@ -9,6 +9,7 @@ namespace bu {
 
     class [[nodiscard]] Bytestack {
         std::unique_ptr<std::byte[]> buffer;
+        Usize                        length;
 
 #ifndef NDEBUG
         std::byte* top_pointer;
@@ -18,6 +19,7 @@ namespace bu {
 
         explicit Bytestack(Usize const capacity) noexcept
             : buffer { std::make_unique_for_overwrite<std::byte[]>(capacity) }
+            , length { capacity }
 #ifndef NDEBUG
             , top_pointer { pointer + capacity }
 #endif
@@ -52,6 +54,8 @@ namespace bu {
 
         auto base()       noexcept -> std::byte      * { return buffer.get(); }
         auto base() const noexcept -> std::byte const* { return buffer.get(); }
+
+        auto capacity() const noexcept -> Usize { return length; }
     };
 
 }

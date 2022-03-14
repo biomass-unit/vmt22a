@@ -47,6 +47,10 @@ namespace vm {
         auto flush_output() -> void;
 
 
+        auto serialize() const -> std::vector<std::byte>;
+        static auto deserialize(std::span<std::byte const>) -> Virtual_machine;
+
+
         struct String {
             char const* pointer;
             bu::Usize   length;

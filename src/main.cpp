@@ -107,7 +107,7 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (options.find("version")) {
-        bu::print("Interpreter version {}, compiled on " __DATE__ ", " __TIME__ ".\n", vm::Virtual_machine::version);
+        bu::print("Version {}, compiled on " __DATE__ ", " __TIME__ ".\n", vm::Virtual_machine::version);
     }
 
     if (options.find("nocolor")) {
@@ -134,7 +134,11 @@ auto main(int argc, char const** argv) -> int try {
             halt
         );
 
-        return machine.run();
+        auto bytes = machine.serialize();
+
+        auto other = vm::Virtual_machine::deserialize(bytes);
+
+        return other.run();
     }
     
     if (auto* const name = options.find_str("repl")) {

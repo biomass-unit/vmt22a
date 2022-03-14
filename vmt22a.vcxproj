@@ -236,6 +236,7 @@
     <ClCompile Include="src\parser\parser.cpp" />
     <ClCompile Include="src\tests\parser_test.cpp" />
     <ClCompile Include="src\tests\tests.cpp" />
+    <ClCompile Include="src\vm\serializing.cpp" />
     <ClCompile Include="src\vm\virtual_machine.cpp" />
     <ClCompile Include="src\vm\vm_formatting.cpp" />
     <ClCompile Include="src\tests\vm_test.cpp" />
