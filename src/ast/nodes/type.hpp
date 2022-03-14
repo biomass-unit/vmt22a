@@ -104,7 +104,8 @@ namespace ast {
             floating  = Floating  {},
             character = Character {},
             boolean   = Boolean   {},
-            string    = String    {};
+            string    = String    {},
+            unit      = Tuple     {};
 
     }
 

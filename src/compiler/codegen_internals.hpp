@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bu/utilities.hpp"
+#include "bu/flatmap.hpp"
 #include "bu/textual_error.hpp"
 #include "ast/ast.hpp"
 #include "vm/virtual_machine.hpp"
@@ -9,10 +10,18 @@
 namespace compiler {
 
     struct Scope {
-        vm::Virtual_machine* machine;
-        Scope*               parent;
+        struct Binding {
+            bu::Wrapper<ast::Type> type;
+            vm::Local_offset_type  frame_offset;
+        };
 
-        auto make_child() -> Scope;
+        bu::Flatmap<lexer::Identifier, Binding> bindings;
+        vm::Virtual_machine*                    machine;
+        Scope*                                  parent;
+
+        auto find(lexer::Identifier) noexcept -> Binding*;
+
+        auto make_child() & -> Scope;
     };
 
     struct Codegen_context {
@@ -27,11 +36,9 @@ namespace compiler {
             , space   { &this->module.global_namespace }
             , scope   { .machine = &this->machine, .parent = nullptr } {}
 
-        auto error(
-            std::string_view                message,
-            auto const&                     erroneous_node,
-            std::optional<std::string_view> help = std::nullopt
-        )
+        auto error(std::string_view                message,
+                   auto const&                     erroneous_node,
+                   std::optional<std::string_view> help = std::nullopt)
             -> std::runtime_error
         {
             return std::runtime_error {

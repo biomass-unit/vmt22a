@@ -23,12 +23,26 @@ namespace {
 
         template <class T>
         auto operator()(ast::Literal<T>&) -> void {
-            this_expression.type.emplace(ast::type::Primitive<T> {});
+            if constexpr (std::same_as<T, bu::Isize>)
+                this_expression.type = ast::type::integer;
+            else if constexpr (std::same_as<T, bu::Float>)
+                this_expression.type = ast::type::floating;
+            else if constexpr (std::same_as<T, bu::Char>)
+                this_expression.type = ast::type::character;
+            else if constexpr (std::same_as<T, bool>)
+                this_expression.type = ast::type::boolean;
+            else if constexpr (std::same_as<T, lexer::String>)
+                this_expression.type = ast::type::string;
+            else
+                static_assert(bu::always_false<T>);
         }
 
         auto operator()(ast::Variable& variable) -> void {
             if (variable.name.is_unqualified()) {
-                // try to find in local scope first
+                if (auto* binding = context.scope.find(variable.name.primary_qualifier.identifier)) {
+                    this_expression.type = binding->type;
+                    return;
+                }
             }
 
             using ast::definition::Function;
@@ -59,6 +73,47 @@ namespace {
                     );
                 }
             }, context.space->find_lower(variable.name));
+        }
+
+        auto operator()(ast::Let_binding&) -> void {
+            this_expression.type = ast::type::unit;
+            // Fix later
+        }
+
+        template <bu::one_of<ast::Array_literal, ast::List_literal> Literal>
+        auto operator()(Literal& literal) -> void {
+            if (literal.elements.empty()) {
+                bu::unimplemented();
+            }
+            else {
+                auto& head = literal.elements.front();
+                recurse(head);
+
+                for (auto& element : literal.elements | std::views::drop(1)) {
+                    recurse(element);
+
+                    if (*element.type != *head.type) {
+                        throw context.error(
+                            std::format(
+                                "The previous elements had type {}, not {}",
+                                *head.type,
+                                *element.type
+                            ),
+                            element
+                        );
+                    }
+                }
+
+                if constexpr (std::same_as<Literal, ast::Array_literal>) {
+                    this_expression.type = ast::type::Array {
+                        *head.type,
+                        ast::Literal { static_cast<bu::Isize>(literal.elements.size()) }
+                    };
+                }
+                else {
+                    this_expression.type = ast::type::List { *head.type };
+                }
+            }
         }
 
         auto operator()(ast::Invocation& invocation) -> void {
@@ -96,7 +151,7 @@ namespace {
         }
 
         auto operator()(ast::Meta& meta) -> void {
-            std::ignore = recurse(meta.expression);
+            recurse(meta.expression);
             this_expression.type = meta.expression->type;
         }
 

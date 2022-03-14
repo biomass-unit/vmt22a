@@ -108,8 +108,7 @@ auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
 
 namespace ast {
 
-    inline bu::Wrapper<Expression> const unit_value =       Tuple {};
-    inline bu::Wrapper<Type      > const unit_type  = type::Tuple {};
+    inline bu::Wrapper<Expression> const unit_value = Tuple {};
 
     struct [[nodiscard]] Module {
         bu::Source source;

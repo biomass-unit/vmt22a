@@ -15,8 +15,8 @@ auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
         write(string_buffer.size());
         buffer.insert(
             buffer.end(),
-            reinterpret_cast<std::byte const*>(std::to_address(string_buffer.begin())),
-            reinterpret_cast<std::byte const*>(std::to_address(string_buffer.end()))
+            reinterpret_cast<std::byte const*>(string_buffer.data()),
+            reinterpret_cast<std::byte const*>(string_buffer.data() + string_buffer.size())
         );
 
         write(string_buffer_views.size());
@@ -26,9 +26,8 @@ auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
     }
 
     {
-        auto& code = bytecode.bytes;
-        write(code.size());
-        buffer.insert(buffer.end(), code.begin(), code.end());
+        write(bytecode.bytes.size());
+        buffer.insert(buffer.end(), bytecode.bytes.begin(), bytecode.bytes.end());
     }
 
     return buffer;
@@ -78,7 +77,6 @@ auto vm::Virtual_machine::deserialize(Byte_span bytes) -> Virtual_machine {
         );
 
         bytes = bytes.subspan(string_buffer_size);
-
         
         for (auto i = extract<bu::Usize>(bytes); i != 0; --i) {
             machine.string_buffer_views.push_back(extract<bu::Pair<bu::Usize>>(bytes));

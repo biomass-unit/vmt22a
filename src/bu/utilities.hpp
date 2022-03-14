@@ -311,6 +311,9 @@ namespace bu {
     template <class T, class U>
     concept similar_to = std::same_as<std::decay_t<T>, std::decay_t<U>>;
 
+    template <class T, class... Ts>
+    concept one_of = std::disjunction_v<std::is_same<T, Ts>...>;
+
     template <class T>
     concept trivial = std::is_trivial_v<T>;
 

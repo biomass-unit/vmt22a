@@ -90,8 +90,8 @@ using namespace bu    :: literals;
 using namespace lexer :: literals;
 
 
-auto main(int argc, char const** argv) -> int try {
-    cli::Options_description description;
+auto main(int /*argc*/, char const** /*argv*/) -> int try {
+    /*cli::Options_description description;
     description.add_options()
         ("help"   ,                "Show this text"              )
         ("version",                "Show the interpreter version")
@@ -154,39 +154,26 @@ auto main(int argc, char const** argv) -> int try {
         else {
             bu::abort("Unrecognized repl name");
         }
-    }
+    }*/
 
-    /*auto module = parser::parse(
+    auto module = parser::parse(
         lexer::lex(
             bu::Source {
                 bu::Source::Mock_tag {},
 R"(
 
-    module std {
-        struct Test = a: Int, b: (Int, Int)
-    }
-
-
-    alias A = std::Test
-    alias B = A
-    alias C = B
-
-    // data U = a(A, B) | b(Int)
-    // alias T = type_of(b(3))
-
-    fn g(n: Int): (Int, Int) = n
-    alias G = type_of(g(5))
+    alias T = type_of([10.0; 20; 30; 40; 50])
 
 )"
             }
         )
     );
 
-    auto type = debug_parse<parser::extract_type>("G");
+    auto type = debug_parse<parser::extract_type>("T");
 
     compiler::Codegen_context context { { .stack = bu::Bytestack { 1000 } }, std::move(module) };
 
-    bu::print("type: {}\n", compiler::size_of(type, context));*/
+    bu::print("size: {}\n", compiler::size_of(type, context));
 }
 
 catch (cli::Unrecognized_option const& exception) {
