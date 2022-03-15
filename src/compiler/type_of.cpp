@@ -152,7 +152,17 @@ namespace {
 
         auto operator()(ast::Meta& meta) -> void {
             recurse(meta.expression);
-            this_expression.type = meta.expression->type;
+            this_expression.type = *meta.expression->type;
+        }
+
+        auto operator()(ast::Size_of& size_of) -> void {
+            auto const size = compiler::size_of(size_of.type, context);
+            this_expression.value = ast::Literal { static_cast<bu::Isize>(size) };
+            this_expression.type = ast::type::integer;
+        }
+
+        auto operator()(bu::one_of<ast::Break, ast::Continue, ast::Ret> auto&) -> void {
+            this_expression.type = ast::type::unit;
         }
 
         auto operator()(auto&) -> void {

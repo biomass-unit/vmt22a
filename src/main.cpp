@@ -90,8 +90,8 @@ using namespace bu    :: literals;
 using namespace lexer :: literals;
 
 
-auto main(int /*argc*/, char const** /*argv*/) -> int try {
-    /*cli::Options_description description;
+auto main(int argc, char const** argv) -> int try {
+    cli::Options_description description;
     description.add_options()
         ("help"   ,                "Show this text"              )
         ("version",                "Show the interpreter version")
@@ -154,15 +154,15 @@ auto main(int /*argc*/, char const** /*argv*/) -> int try {
         else {
             bu::abort("Unrecognized repl name");
         }
-    }*/
+    }
 
-    auto module = parser::parse(
+    /*auto module = parser::parse(
         lexer::lex(
             bu::Source {
                 bu::Source::Mock_tag {},
 R"(
 
-    alias T = type_of([10.0; 20; 30; 40; 50])
+    alias T = type_of([10; 20; 30; 40; 50])
 
 )"
             }
@@ -173,7 +173,7 @@ R"(
 
     compiler::Codegen_context context { { .stack = bu::Bytestack { 1000 } }, std::move(module) };
 
-    bu::print("size: {}\n", compiler::size_of(type, context));
+    bu::print("size: {}\n", compiler::size_of(type, context));*/
 }
 
 catch (cli::Unrecognized_option const& exception) {

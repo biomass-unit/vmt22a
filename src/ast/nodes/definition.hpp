@@ -111,12 +111,14 @@ namespace ast {
             bu::Wrapper<Type> instance;
             DEFAULTED_EQUALITY(Instantiation);
         };
+
         using Instantiation_template = Template_definition<Instantiation>;
 
         struct Implementation : Block_definitions {
             bu::Wrapper<Type> type;
             DEFAULTED_EQUALITY(Implementation);
         };
+
         using Implementation_template = Template_definition<Implementation>;
 
     }
@@ -143,9 +145,10 @@ namespace ast {
             std::vector<Function_signature> function_signatures;
             std::vector<Type_signature>     type_signatures;
             lexer::Identifier               name;
-            bool                            self_is_template;
             DEFAULTED_EQUALITY(Typeclass);
         };
+
+        using Typeclass_template = Template_definition<Typeclass>;
 
     }
 

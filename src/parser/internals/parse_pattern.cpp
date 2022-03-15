@@ -23,7 +23,7 @@ namespace {
         auto mutability = extract_mutability(context);
 
         return ast::pattern::Name {
-            .identifier = extract_lower_id<"a lowercase identifier">(context),
+            .identifier = extract_lower_id(context, "a lowercase identifier"),
             .mutability = std::move(mutability)
         };
     }

@@ -66,6 +66,11 @@ namespace ast {
             DEFAULTED_EQUALITY(Template_instantiation);
         };
 
+        struct Inference_variable {
+            bu::Usize tag;
+            DEFAULTED_EQUALITY(Inference_variable);
+        };
+
     }
 
 
@@ -84,7 +89,8 @@ namespace ast {
             type::Type_of,
             type::Reference,
             type::Pointer,
-            type::Template_instantiation
+            type::Template_instantiation,
+            type::Inference_variable
         >;
         Variant                value;
         std::optional<bu::U16> size;

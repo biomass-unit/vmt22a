@@ -106,10 +106,7 @@ namespace {
             return recurse(this_type);
         }
 
-        auto operator()(ast::type::Reference&) noexcept -> bu::Usize {
-            return sizeof(std::byte*);
-        }
-        auto operator()(ast::type::Pointer&) noexcept -> bu::Usize {
+        auto operator()(bu::one_of<ast::type::Pointer, ast::type::Reference> auto&) noexcept -> bu::Usize {
             return sizeof(std::byte*);
         }
 

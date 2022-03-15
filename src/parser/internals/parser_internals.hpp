@@ -235,25 +235,23 @@ namespace parser {
     auto extract_mutability(Parse_context&) -> ast::Mutability;
 
 
-    template <Token::Type id_type, bu::Metastring description>
-    auto extract_id(Parse_context& context) -> lexer::Identifier {
-        if (auto token = context.try_extract(id_type)) {
+    template <Token::Type id_type>
+    auto extract_id(Parse_context& context, std::string_view const description) -> lexer::Identifier {
+        if (auto* const token = context.try_extract(id_type)) {
             return token->as_identifier();
         }
         else {
-            throw context.expected(description.view());
+            throw context.expected(description);
         }
     }
 
-    template <bu::Metastring description>
-    constexpr auto extract_lower_id = extract_id<Token::Type::lower_name, description>;
-    template <bu::Metastring description>
-    constexpr auto extract_upper_id = extract_id<Token::Type::upper_name, description>;
+    constexpr auto extract_lower_id = extract_id<Token::Type::lower_name>;
+    constexpr auto extract_upper_id = extract_id<Token::Type::upper_name>;
 
 
     template <Token::Type id_type>
     auto parse_id(Parse_context& context) -> std::optional<lexer::Identifier> {
-        if (auto token = context.try_extract(id_type)) {
+        if (auto* const token = context.try_extract(id_type)) {
             return token->as_identifier();
         }
         else {
@@ -273,7 +271,7 @@ namespace parser {
 
     template <parser auto p>
     auto parse_and_add_source_view(Parse_context& context) {
-        auto const anchor = context.pointer;
+        auto* const anchor = context.pointer;
         auto result = p(context);
 
         if (result) {

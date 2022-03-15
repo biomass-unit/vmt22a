@@ -221,6 +221,10 @@ namespace {
         auto operator()(ast::type::Template_instantiation const& instantiation) {
             return format("{}[{}]", instantiation.name, instantiation.arguments);
         }
+
+        auto operator()(ast::type::Inference_variable const& variable) {
+            return format("${}", variable.tag);
+        }
     };
 
 
@@ -231,13 +235,15 @@ namespace {
         ast::definition::Alias                   const*,
         ast::definition::Implementation          const*,
         ast::definition::Instantiation           const*,
+        ast::definition::Typeclass               const*,
 
         ast::definition::Function_template       const*,
         ast::definition::Struct_template         const*,
         ast::definition::Data_template           const*,
         ast::definition::Alias_template          const*,
         ast::definition::Implementation_template const*,
-        ast::definition::Instantiation_template  const*
+        ast::definition::Instantiation_template  const*,
+        ast::definition::Typeclass_template      const*
     >;
 
     auto format_definition(
@@ -289,9 +295,7 @@ namespace {
                     alias->type
                 );
             },
-            [&]<class T>(T const* impl_or_inst)
-                requires std::same_as<T, ast::definition::Instantiation>
-                    || std::same_as<T, ast::definition::Implementation>
+            [&]<bu::one_of<ast::definition::Instantiation, ast::definition::Implementation> T>(T const* impl_or_inst)
             {
                 auto fmt = [&](auto const& xs) {
                     for (auto& x : xs.span() | std::views::transform(bu::second)) {
@@ -321,6 +325,29 @@ namespace {
                 fmt(impl_or_inst->alias_template_definitions);
 
                 return format("\n}}");
+            },
+            [&](ast::definition::Typeclass const* typeclass) {
+                format("class {}{} {{", typeclass->name, template_parameters());
+
+                for (auto& signature : typeclass->function_signatures) {
+                    format(
+                        "fn {}[{}]({}): {}\n",
+                        signature.name,
+                        signature.template_parameters,
+                        signature.type.argument_types,
+                        signature.type.return_type
+                    );
+                }
+                for (auto& signature : typeclass->type_signatures) {
+                    format(
+                        "alias {}[{}]: {}\n",
+                        signature.name,
+                        signature.template_parameters,
+                        signature.classes
+                    );
+                }
+
+                return format("}}");
             },
             [&]<class T>(ast::definition::Template_definition<T> const* pointer) {
                 return format_definition(context, &pointer->definition, &pointer->parameters);
@@ -401,32 +428,11 @@ DEFINE_FORMATTER_FOR(ast::definition::Instantiation_template) {
     return format_definition(context, &value);
 }
 
-
 DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
-    auto out = context.out();
-    std::format_to(out, value.self_is_template ? "class {} [] {{\n" : "class {} {{\n", value.name);
-
-    for (auto& signature : value.function_signatures) {
-        std::format_to(
-            out,
-            "fn {}[{}]({}): {}\n",
-            signature.name,
-            signature.template_parameters,
-            signature.type.argument_types,
-            signature.type.return_type
-        );
-    }
-    for (auto& signature : value.type_signatures) {
-        std::format_to(
-            out,
-            "alias {}[{}]: {}\n",
-            signature.name,
-            signature.template_parameters,
-            signature.classes
-        );
-    }
-
-    return std::format_to(out, "}}");
+    return format_definition(context, &value);
+}
+DEFINE_FORMATTER_FOR(ast::definition::Typeclass_template) {
+    return format_definition(context, &value);
 }
 
 
@@ -503,6 +509,7 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     fmt(value.alias_template_definitions);
 
     fmt(value.class_definitions);
+    fmt(value.class_template_definitions);
 
     fmt(value.children);
 

@@ -27,6 +27,7 @@ DECLARE_FORMATTER_FOR(ast::definition::Instantiation);
 DECLARE_FORMATTER_FOR(ast::definition::Instantiation_template);
 
 DECLARE_FORMATTER_FOR(ast::definition::Typeclass);
+DECLARE_FORMATTER_FOR(ast::definition::Typeclass_template);
 
 DECLARE_FORMATTER_FOR(ast::Namespace);
 

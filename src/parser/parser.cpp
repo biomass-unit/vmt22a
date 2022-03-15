@@ -22,7 +22,7 @@ auto parser::parse_template_arguments(Parse_context& context)
                 if (context.try_consume(Token::Type::question)) {
                     mutability.emplace(
                         ast::Mutability {
-                            .parameter_name = extract_lower_id<"a mutability parameter name">(context),
+                            .parameter_name = extract_lower_id(context, "a mutability parameter name"),
                             .type           = ast::Mutability::Type::parameterized
                         }
                     );
@@ -128,7 +128,7 @@ auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
     if (context.try_consume(Token::Type::mut)) {
         if (context.try_consume(Token::Type::question)) {
             mutability.type           = ast::Mutability::Type::parameterized;
-            mutability.parameter_name = extract_lower_id<"a mutability parameter name">(context);
+            mutability.parameter_name = extract_lower_id(context, "a mutability parameter name");
         }
         else {
             mutability.type = ast::Mutability::Type::mut;
@@ -345,7 +345,7 @@ namespace {
     auto extract_function_components(Parse_context& context)
         -> Components<ast::definition::Function>
     {
-        auto const name                = extract_lower_id<"a function name">(context);
+        auto const name                = extract_lower_id(context, "a function name");
         auto       template_parameters = parse_template_parameters(context);
 
         if (context.try_consume(Token::Type::paren_open)) {
@@ -412,7 +412,7 @@ namespace {
         constexpr auto parse_members =
             parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
 
-        auto const name                = extract_upper_id<"a struct name">(context);
+        auto const name                = extract_upper_id(context, "a struct name");
         auto       template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
@@ -467,7 +467,7 @@ namespace {
 
         auto* anchor = context.pointer;
 
-        auto const name                = extract_upper_id<"a data name">(context);
+        auto const name                = extract_upper_id(context, "a data name");
         auto       template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
@@ -508,7 +508,7 @@ namespace {
     auto extract_alias_components(Parse_context& context)
         -> Components<ast::definition::Alias>
     {
-        auto const name                = extract_upper_id<"an alias name">(context);
+        auto const name                = extract_upper_id(context, "an alias name");
         auto       template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
@@ -655,7 +655,7 @@ namespace {
 
 
     auto extract_function_signature(Parse_context& context) -> ast::Function_signature {
-        auto name = extract_lower_id<"a function name">(context);
+        auto name = extract_lower_id(context, "a function name");
         auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::paren_open);
@@ -674,7 +674,7 @@ namespace {
     }
 
     auto extract_type_signature(Parse_context& context) -> ast::Type_signature {
-        auto name = extract_upper_id<"an alias name">(context);
+        auto name = extract_upper_id(context, "an alias name");
 
         auto template_parameters = parse_template_parameters(context);
 
@@ -690,14 +690,12 @@ namespace {
         };
     }
 
-    auto extract_class(Parse_context& context) -> void {
-        auto name = extract_upper_id<"a class name">(context);
+    auto extract_class_components(Parse_context& context)
+        -> Components<ast::definition::Typeclass>
+    {
+        auto name = extract_upper_id(context, "a class name");
 
-        bool self_is_template = false;
-        if (context.try_consume(Token::Type::bracket_open)) {
-            self_is_template = true;
-            context.consume_required(Token::Type::bracket_close);
-        }
+        auto template_parameters = parse_template_parameters(context);
 
         std::vector<ast::Type_signature>     type_signatures;
         std::vector<ast::Function_signature> function_signatures;
@@ -724,17 +722,14 @@ namespace {
                     context.consume_required(Token::Type::brace_close);
                 }
 
-                // fix
-                current_namespace->class_definitions.add(
-                    bu::copy(name),
+                return {
+                    std::move(template_parameters),
                     ast::definition::Typeclass {
                         std::move(function_signatures),
                         std::move(type_signatures),
-                        name,
-                        self_is_template
+                        name
                     }
-                );
-                return;
+                };
             }
         }
     }
@@ -743,7 +738,7 @@ namespace {
     auto parse_definition(Parse_context&) -> bool;
 
     auto extract_namespace(Parse_context& context) -> void {
-        auto name = extract_lower_id<"a module name">(context);
+        auto name = extract_lower_id(context, "a module name");
 
         context.consume_required(Token::Type::brace_open);
 
@@ -787,14 +782,18 @@ namespace {
                 &ast::Namespace::alias_template_definitions
             >(current_namespace, context);
             break;
+        case Token::Type::class_:
+            extract_and_add_to<
+                extract_class_components,
+                &ast::Namespace::class_definitions,
+                &ast::Namespace::class_template_definitions
+            >(current_namespace, context);
+            break;
         case Token::Type::impl:
             extract_implementation(context);
             break;
         case Token::Type::inst:
             extract_instantiation(context);
-            break;
-        case Token::Type::class_:
-            extract_class(context);
             break;
         case Token::Type::module:
             extract_namespace(context);

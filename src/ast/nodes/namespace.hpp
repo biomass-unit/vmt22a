@@ -4,19 +4,20 @@
 namespace ast {
 
     struct [[nodiscard]] Namespace {
-        Table<definition::Function>          function_definitions;
-        Table<definition::Function_template> function_template_definitions;
-        Table<definition::Struct>            struct_definitions;
-        Table<definition::Struct_template>   struct_template_definitions;
-        Table<definition::Data>              data_definitions;
-        Table<definition::Data_template>     data_template_definitions;
-        Table<definition::Alias>             alias_definitions;
-        Table<definition::Alias_template>    alias_template_definitions;
-        Table<definition::Typeclass>         class_definitions;
-        Table<Namespace, std::list>          children; // std::list is used to avoid pointer invalidation
-        Namespace*                           parent;
-        Namespace*                           global;
-        lexer::Identifier                    name;
+        Table<definition::Function>           function_definitions;
+        Table<definition::Function_template>  function_template_definitions;
+        Table<definition::Struct>             struct_definitions;
+        Table<definition::Struct_template>    struct_template_definitions;
+        Table<definition::Data>               data_definitions;
+        Table<definition::Data_template>      data_template_definitions;
+        Table<definition::Alias>              alias_definitions;
+        Table<definition::Alias_template>     alias_template_definitions;
+        Table<definition::Typeclass>          class_definitions;
+        Table<definition::Typeclass_template> class_template_definitions;
+        Table<Namespace, std::list>           children; // std::list is used to avoid pointer invalidation
+        Namespace*                            parent;
+        Namespace*                            global;
+        lexer::Identifier                     name;
 
         explicit Namespace(lexer::Identifier) noexcept;
 
