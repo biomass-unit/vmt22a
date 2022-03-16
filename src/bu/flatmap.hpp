@@ -59,8 +59,9 @@ namespace bu {
             return pairs;
         }
 
-        constexpr auto container() const noexcept -> decltype(pairs) const& { return pairs; }
-        constexpr auto container()       noexcept -> decltype(pairs)      & { return pairs; }
+        constexpr decltype(auto) container(this auto&& self) {
+            return bu::forward_like<decltype(self)>(self.pairs);
+        }
     };
 
 

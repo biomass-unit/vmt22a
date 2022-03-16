@@ -173,7 +173,7 @@ namespace {
 
 
 DEFINE_FORMATTER_FOR(vm::Opcode) {
-    return std::format_to(context.out(), opcode_strings[static_cast<bu::Usize>(value)]);
+    return std::format_to(context.out(), "{}", opcode_strings[static_cast<bu::Usize>(value)]);
 }
 
 DEFINE_FORMATTER_FOR(vm::Bytecode) {

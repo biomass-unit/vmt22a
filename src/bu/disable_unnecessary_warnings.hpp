@@ -18,12 +18,14 @@
 
 
 DISABLE(4061) // enumerator is not explicitly handled by a case label
+DISABLE(4063) // case n is not a valid value for switch
 DISABLE(4065) // switch statement contains default but no case labels
 
 DISABLE(4355) // 'this' used in member initializer list
 DISABLE(4371) // layout of class may have changed from a previous version of the compiler
 
 DISABLE(4456) // declaration hides previous local declaration
+DISABLE(4458) // declaration hides class member (occurs incorrectly)
 DISABLE(4459) // declaration hides global declaration
 
 DISABLE(4514) // unreferenced inline function has been removed
@@ -31,8 +33,6 @@ DISABLE(4514) // unreferenced inline function has been removed
 DISABLE(4623) // default constructor was implicitly defined as deleted
 DISABLE(4625) // copy constructor was implicitly defined as deleted
 DISABLE(4626) // copy assignment operator was implicitly defined as deleted
-
-DISABLE(4063) // case n is not a valid value for switch
 
 DISABLE(4710) // function not inlined
 DISABLE(4711) // function selected for automatic inline expansion

@@ -3,7 +3,9 @@
 
 
 auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
-    std::vector<std::byte> buffer;
+    bu::unimplemented(); // MSVC ICE, fix later
+
+    /*std::vector<std::byte> buffer;
 
     auto const write = [&](bu::trivial auto const... args) {
         bu::serialize_to(std::back_inserter(buffer), args...);
@@ -30,7 +32,7 @@ auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
         buffer.insert(buffer.end(), bytecode.bytes.begin(), bytecode.bytes.end());
     }
 
-    return buffer;
+    return buffer;*/
 }
 
 

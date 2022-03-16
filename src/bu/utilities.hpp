@@ -99,10 +99,19 @@ namespace bu {
     }
 
 
+    auto format_to(auto out, std::string_view fmt, auto const&... args) {
+        return std::vformat_to(out, fmt, std::make_format_args(args...));
+    }
+    auto format(std::string_view fmt, auto const&... args) {
+        return std::vformat(fmt, std::make_format_args(args...));
+    }
+
+    // ^^^ Remove when std::basic_format_string is standardized
+
     template <std::ostream& os = std::cout>
     auto print(std::string_view fmt, auto const&... args) -> void {
         if constexpr (sizeof...(args) != 0) {
-            auto const buffer = std::format(fmt, args...);
+            auto const buffer = format(fmt, args...);
             os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
         }
         else {

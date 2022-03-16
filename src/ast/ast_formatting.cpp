@@ -7,7 +7,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Match::Case) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
-    return std::format_to(context.out(), value.name ? "{} = {}" : "{1}", value.name, value.expression);
+    return bu::format_to(context.out(), value.name ? "{} = {}" : "{1}", value.name, value.expression);
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
@@ -24,7 +24,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
         format = "mut?{} ";
     }
 
-    return std::format_to(context.out(), format, value.parameter_name);
+    return bu::format_to(context.out(), format, value.parameter_name);
 }
 
 
@@ -43,7 +43,7 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
                 std::format_to(out, "{}::", lower.name);
             },
             [out](ast::Qualifier::Upper const& upper) {
-                std::format_to(
+                bu::format_to(
                     out,
                     upper.template_arguments ? "{}[{}]::" : "{}::",
                     upper.name,
@@ -63,7 +63,7 @@ namespace {
         std::format_context::iterator out;
 
         auto format(std::string_view fmt, auto const&... args) {
-            return std::format_to(out, fmt, args...);
+            return bu::format_to(out, fmt, args...);
         }
     };
 
@@ -257,7 +257,7 @@ namespace {
             return parameters ? std::format("[{}]", *parameters) : "";
         };
         auto const format = [out = context.out()](std::string_view fmt, auto const&... args){
-            return std::format_to(out, fmt, args...);
+            return bu::format_to(out, fmt, args...);
         };
 
         return std::visit(bu::Overload {
@@ -477,7 +477,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
                 format = "mut?{}";
             }
 
-            return std::format_to(context.out(), format, mutability.parameter_name);
+            return bu::format_to(context.out(), format, mutability.parameter_name);
         },
         [&](auto const& argument) {
             return std::format_to(context.out(), "{}", argument);

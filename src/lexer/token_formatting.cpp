@@ -9,7 +9,7 @@ DEFINE_FORMATTER_FOR(lexer::Token::Type) {
         "underscore", "lower", "upper", "op", "str", "int", "float", "char", "bool", "end of input"
     });
     static_assert(strings.size() == lexer::Token::type_count);
-    return std::format_to(context.out(), strings[static_cast<bu::Usize>(value)]);
+    return std::format_to(context.out(), "{}", strings[static_cast<bu::Usize>(value)]);
 }
 
 

@@ -18,7 +18,7 @@ namespace {
 
     auto size_of_data(ast::definition::Data& type, Codegen_context& context) -> bu::Usize {
         auto const size_of_ctor = [&](auto& constructor) -> bu::Usize {
-            return constructor.type ? compiler::size_of(*constructor.type, context) : 0_uz;
+            return constructor.type.transform(recurse_with(context)).value_or(0);
         };
         return type.constructors.empty()
             ? 1_uz
@@ -73,7 +73,7 @@ namespace {
                 tuple.types.begin(),
                 tuple.types.end(),
                 0_uz,
-                std::plus<bu::Usize> {},
+                std::plus {},
                 recurse_with(context)
             );
         }
@@ -104,6 +104,7 @@ namespace {
         auto operator()(ast::type::Type_of& type_of) -> bu::Usize {
             this_type = compiler::type_of(type_of.expression, context);
             return recurse(this_type);
+            // fix?
         }
 
         auto operator()(bu::one_of<ast::type::Pointer, ast::type::Reference> auto&) noexcept -> bu::Usize {

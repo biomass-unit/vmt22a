@@ -35,12 +35,9 @@ namespace bu {
             ::new(&buffer) T(std::forward<Args>(args)...);
         }
 
-        auto operator*() const noexcept -> T const& {
-            assert(is_initialized);
-            return *reinterpret_cast<T const*>(&buffer);
-        }
-        auto operator*() noexcept -> T& {
-            return const_cast<T&>(*const_cast<Uninitialized const&>(*this));
+        decltype(auto) operator*(this auto&& self) noexcept {
+            assert(self.is_initialized);
+            return bu::forward_like<decltype(self)>(reinterpret_cast<T&>(self.buffer));
         }
     };
 
