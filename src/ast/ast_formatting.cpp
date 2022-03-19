@@ -7,24 +7,23 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Match::Case) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
-    return bu::format_to(context.out(), value.name ? "{} = {}" : "{1}", value.name, value.expression);
+    if (value.name) {
+        return std::format_to(context.out(), "{} = {}", value.name, value.expression);
+    }
+    else {
+        return std::format_to(context.out(), "{}", value.expression);
+    }
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
-    std::string_view format;
-
     switch (value.type) {
     case ast::Mutability::Type::mut:
-        format = "mut ";
-        break;
+        return std::format_to(context.out(), "mut ");
     case ast::Mutability::Type::immut:
-        format = "";
-        break;
+        return context.out();
     default:
-        format = "mut?{} ";
+        return std::format_to(context.out(), "mut?{} ", value.parameter_name);
     }
-
-    return bu::format_to(context.out(), format, value.parameter_name);
 }
 
 
@@ -43,12 +42,12 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
                 std::format_to(out, "{}::", lower.name);
             },
             [out](ast::Qualifier::Upper const& upper) {
-                bu::format_to(
-                    out,
-                    upper.template_arguments ? "{}[{}]::" : "{}::",
-                    upper.name,
-                    upper.template_arguments
-                );
+                if (upper.template_arguments) {
+                    std::format_to(out, "{}[{}]::", upper.name, *upper.template_arguments);
+                }
+                else {
+                    std::format_to(out, "{}::", upper.name);
+                }
             }
         }, qualifier.value);
     }
@@ -63,7 +62,7 @@ namespace {
         std::format_context::iterator out;
 
         auto format(std::string_view fmt, auto const&... args) {
-            return bu::format_to(out, fmt, args...);
+            return std::vformat_to(out, fmt, std::make_format_args(args...));
         }
     };
 
@@ -257,7 +256,7 @@ namespace {
             return parameters ? std::format("[{}]", *parameters) : "";
         };
         auto const format = [out = context.out()](std::string_view fmt, auto const&... args){
-            return bu::format_to(out, fmt, args...);
+            return std::vformat_to(out, fmt, std::make_format_args(args...));
         };
 
         return std::visit(bu::Overload {
@@ -464,20 +463,14 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
     return std::visit(bu::Overload {
         [&](ast::Mutability const& mutability) {
-            std::string_view format;
-
             switch (mutability.type) {
             case ast::Mutability::Type::mut:
-                format = "mut";
-                break;
+                return std::format_to(context.out(), "mut");
             case ast::Mutability::Type::immut:
-                format = "immut";
-                break;
+                return std::format_to(context.out(), "immut");
             default:
-                format = "mut?{}";
+                return std::format_to(context.out(), "mut?{}", mutability.parameter_name);
             }
-
-            return bu::format_to(context.out(), format, mutability.parameter_name);
         },
         [&](auto const& argument) {
             return std::format_to(context.out(), "{}", argument);
@@ -490,28 +483,11 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
     auto out = context.out();
     std::format_to(out, "module {} {{", value.name);
 
-    auto fmt = [out](auto const& xs) {
-        for (auto& [fst, snd] : xs.container()) {
-            std::format_to(out, "\n{}", snd);
-        }
-    };
-
-    fmt(value.function_definitions);
-    fmt(value.function_template_definitions);
-
-    fmt(value.struct_definitions);
-    fmt(value.struct_template_definitions);
-
-    fmt(value.data_definitions);
-    fmt(value.data_template_definitions);
-
-    fmt(value.alias_definitions);
-    fmt(value.alias_template_definitions);
-
-    fmt(value.class_definitions);
-    fmt(value.class_template_definitions);
-
-    fmt(value.children);
+    for (auto definition : value.definitions_in_order) {
+        std::visit([&](auto* const pointer) {
+            std::format_to(out, "\n{}", *pointer);
+        }, definition);
+    }
 
     return std::format_to(out, "\n}}\n");
 }

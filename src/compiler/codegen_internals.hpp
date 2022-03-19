@@ -25,16 +25,16 @@ namespace compiler {
     };
 
     struct Codegen_context {
-        vm::Virtual_machine machine;
-        ast::Module         module;
-        ast::Namespace*     space;
-        Scope               scope;
+        vm::Virtual_machine* machine;
+        ast::Module          module;
+        ast::Namespace*      space;
+        Scope                scope;
 
-        Codegen_context(vm::Virtual_machine&& machine, ast::Module&& module) noexcept
-            : machine { std::move(machine) }
+        Codegen_context(vm::Virtual_machine& machine, ast::Module&& module) noexcept
+            : machine { &machine }
             , module  { std::move(module) }
             , space   { &this->module.global_namespace }
-            , scope   { .machine = &this->machine, .parent = nullptr } {}
+            , scope   { .machine = &machine, .parent = nullptr } {}
 
         auto error(std::string_view                message,
                    auto const&                     erroneous_node,

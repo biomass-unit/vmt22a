@@ -13,7 +13,7 @@ namespace {
 
         if (result != expected_value) {
             bu::abort(
-                bu::format(
+                std::format(
                     "VM test case failed, with\n\texpected"
                     " value: {}\n\tactual result: {}",
                     expected_value,

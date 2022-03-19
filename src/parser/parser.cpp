@@ -225,6 +225,12 @@ namespace {
         auto&& [template_parameters, definition] = extract(context);
         auto name = definition.name;
 
+        auto const add_to_ordered = [&]<auto member>(bu::Value<member>) {
+            if constexpr (std::same_as<decltype(target), ast::Namespace* const>) {
+                target->definitions_in_order.push_back(std::addressof((target->*member).container().back().second));
+            }
+        };
+
         if (template_parameters) {
             (target->*non_concrete).add(
                 std::move(name),
@@ -233,12 +239,16 @@ namespace {
                     std::move(*template_parameters)
                 }
             );
+
+            add_to_ordered(bu::value<non_concrete>);
         }
         else {
             (target->*concrete).add(
                 std::move(name),
                 std::move(definition)
             );
+
+            add_to_ordered(bu::value<concrete>);
         }
     }
 

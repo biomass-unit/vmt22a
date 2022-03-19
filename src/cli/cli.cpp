@@ -362,7 +362,7 @@ DEFINE_FORMATTER_FOR(cli::Options_description) {
             out,
             "--{}{}",
             name.long_form,
-            bu::format(name.short_form ? ", -{}" : "", name.short_form)
+            name.short_form ? std::format(", -{}", *name.short_form) : ""
         );
 
         for (auto& argument : arguments) {
@@ -379,7 +379,7 @@ DEFINE_FORMATTER_FOR(cli::Options_description) {
             "\t{:{}}{}\n",
             names,
             max_length,
-            bu::format(description ? " : {}" : "", description)
+            description ? std::format(" : {}", *description) : ""
         );
     }
 

@@ -80,11 +80,11 @@ namespace {
     {
         auto const opcode = extract<vm::Opcode>(start, stop);
 
-        auto const unary = [=, &start]<class T>(bu::Typetag<T>) {
+        auto const unary = [=, &start]<class T>(bu::Type<T>) {
             return std::format_to(out, "{} {}", opcode, extract<T>(start, stop));
         };
 
-        auto const binary = [=, &start]<class T, class U>(bu::Typetag<T>, bu::Typetag<U>) {
+        auto const binary = [=, &start]<class T, class U>(bu::Type<T>, bu::Type<U>) {
             auto const first = extract<T>(start, stop);
             auto const second = extract<U>(start, stop);
             return std::format_to(out, "{} {} {}", opcode, first, second);
@@ -98,7 +98,7 @@ namespace {
         case vm::Opcode::ilte_i:
         case vm::Opcode::igt_i:
         case vm::Opcode::igte_i:
-            return unary(bu::typetag<bu::Isize>);
+            return unary(bu::type<bu::Isize>);
 
         case vm::Opcode::fpush:
         case vm::Opcode::feq_i:
@@ -107,34 +107,34 @@ namespace {
         case vm::Opcode::flte_i:
         case vm::Opcode::fgt_i:
         case vm::Opcode::fgte_i:
-            return unary(bu::typetag<bu::Float>);
+            return unary(bu::type<bu::Float>);
 
         case vm::Opcode::cpush:
         case vm::Opcode::ceq_i:
         case vm::Opcode::cneq_i:
-            return unary(bu::typetag<bu::Char>);
+            return unary(bu::type<bu::Char>);
 
         case vm::Opcode::beq_i:
         case vm::Opcode::bneq_i:
-            return unary(bu::typetag<bool>);
+            return unary(bu::type<bool>);
 
         case vm::Opcode::bitcopy_from_stack:
         case vm::Opcode::bitcopy_to_stack:
-            return unary(bu::typetag<vm::Local_size_type>);
+            return unary(bu::type<vm::Local_size_type>);
 
         case vm::Opcode::push_address:
-            return unary(bu::typetag<vm::Local_offset_type>);
+            return unary(bu::type<vm::Local_offset_type>);
 
         case vm::Opcode::jump:
         case vm::Opcode::jump_true:
         case vm::Opcode::jump_false:
         case vm::Opcode::call_0:
-            return unary(bu::typetag<vm::Jump_offset_type>);
+            return unary(bu::type<vm::Jump_offset_type>);
 
         case vm::Opcode::local_jump:
         case vm::Opcode::local_jump_true:
         case vm::Opcode::local_jump_false:
-            return unary(bu::typetag<vm::Local_offset_type>);
+            return unary(bu::type<vm::Local_offset_type>);
 
         case vm::Opcode::local_jump_ieq_i:
         case vm::Opcode::local_jump_ineq_i:
@@ -142,7 +142,7 @@ namespace {
         case vm::Opcode::local_jump_ilte_i:
         case vm::Opcode::local_jump_igt_i:
         case vm::Opcode::local_jump_igte_i:
-            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bu::Isize>);
+            return binary(bu::type<vm::Local_offset_type>, bu::type<bu::Isize>);
 
         case vm::Opcode::local_jump_feq_i:
         case vm::Opcode::local_jump_fneq_i:
@@ -150,18 +150,18 @@ namespace {
         case vm::Opcode::local_jump_flte_i:
         case vm::Opcode::local_jump_fgt_i:
         case vm::Opcode::local_jump_fgte_i:
-            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bu::Float>);
+            return binary(bu::type<vm::Local_offset_type>, bu::type<bu::Float>);
 
         case vm::Opcode::local_jump_ceq_i:
         case vm::Opcode::local_jump_cneq_i:
-            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bu::Char>);
+            return binary(bu::type<vm::Local_offset_type>, bu::type<bu::Char>);
 
         case vm::Opcode::local_jump_beq_i:
         case vm::Opcode::local_jump_bneq_i:
-            return binary(bu::typetag<vm::Local_offset_type>, bu::typetag<bool>);
+            return binary(bu::type<vm::Local_offset_type>, bu::type<bool>);
 
         case vm::Opcode::call:
-            return binary(bu::typetag<vm::Local_size_type>, bu::typetag<vm::Jump_offset_type>);
+            return binary(bu::type<vm::Local_size_type>, bu::type<vm::Jump_offset_type>);
 
         default:
             assert(vm::argument_bytes(opcode) == 0);

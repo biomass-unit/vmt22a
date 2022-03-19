@@ -99,19 +99,10 @@ namespace bu {
     }
 
 
-    auto format_to(auto out, std::string_view fmt, auto const&... args) {
-        return std::vformat_to(out, fmt, std::make_format_args(args...));
-    }
-    auto format(std::string_view fmt, auto const&... args) {
-        return std::vformat(fmt, std::make_format_args(args...));
-    }
-
-    // ^^^ Remove when std::basic_format_string is standardized
-
     template <std::ostream& os = std::cout>
     auto print(std::string_view fmt, auto const&... args) -> void {
         if constexpr (sizeof...(args) != 0) {
-            auto const buffer = format(fmt, args...);
+            auto const buffer = std::vformat(fmt, std::make_format_args(args...));
             os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
         }
         else {
@@ -221,9 +212,10 @@ namespace bu {
 
 
     template <class>
-    struct Typetag {};
+    struct Type {};
     template <class T>
-    constexpr Typetag<T> typetag;
+    constexpr Type<T> type;
+
 
     template <auto>
     struct Value {};
@@ -235,7 +227,7 @@ namespace bu {
     constexpr Usize alternative_index;
     template <class... Ts, class T>
     constexpr Usize alternative_index<std::variant<Ts...>, T> =
-        std::variant<Typetag<Ts>...> { Typetag<T> {} }.index();
+        std::variant<Type<Ts>...> { Type<T> {} }.index();
 
 
     template <class T>
@@ -374,6 +366,7 @@ namespace bu {
 
     struct Formatter_base {
         constexpr auto parse(std::format_parse_context& context) {
+            assert(context.begin() == context.end());
             return context.end();
         }
     };
