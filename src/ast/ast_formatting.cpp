@@ -445,9 +445,14 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
     return std::visit(
         bu::Overload {
             [&](ast::Template_parameter::Type_parameter const& parameter) {
-                return parameter.classes.empty()
-                    ? std::format_to(context.out(), "{}", parameter.name)
-                    : std::format_to(context.out(), "{}: {}", parameter.name, parameter.classes);
+                std::format_to(context.out(), "{}", parameter.name);
+
+                if (!parameter.classes.empty()) {
+                    std::format_to(context.out(), ": ");
+                    bu::format_delimited_range(context.out(), parameter.classes, " + ");
+                }
+
+                return context.out();
             },
             [&](ast::Template_parameter::Value_parameter const& parameter) {
                 return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
@@ -481,7 +486,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
 
 DEFINE_FORMATTER_FOR(ast::Namespace) {
     auto out = context.out();
-    std::format_to(out, "module {} {{", value.name);
+    std::format_to(out, "namespace {} {{", value.name);
 
     for (auto definition : value.definitions_in_order) {
         std::visit([&](auto* const pointer) {
@@ -494,6 +499,17 @@ DEFINE_FORMATTER_FOR(ast::Namespace) {
 
 
 DEFINE_FORMATTER_FOR(ast::Module) {
+    if (value.name) {
+        std::format_to(context.out(), "module {}\n", *value.name);
+    }
+    for (auto& import_ : value.imports) {
+        std::format_to(context.out(), "import ");
+        bu::format_delimited_range(context.out(), import_.path, ".");
+        if (import_.alias) {
+            std::format_to(context.out(), " as {}", *import_.alias);
+        }
+        std::format_to(context.out(), "\n");
+    }
     return std::format_to(
         context.out(),
         "{}\n{}\n{}\n{}\n{}",

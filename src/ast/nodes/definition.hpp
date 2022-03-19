@@ -42,7 +42,7 @@ namespace ast {
 
         struct Function {
             struct Parameter {
-                Pattern                                pattern;
+                bu::Wrapper<Pattern>                   pattern;
                 bu::Wrapper<Type>                      type;
                 std::optional<bu::Wrapper<Expression>> default_value;
                 DEFAULTED_EQUALITY(Parameter);

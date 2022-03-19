@@ -364,6 +364,21 @@ namespace bu {
     Metastring(char const(&)[length]) -> Metastring<length - 1>;
 
 
+    auto format_delimited_range(std::format_context::iterator        out,
+                                std::ranges::sized_range auto const& range,
+                                std::string_view const               delimiter)
+        -> std::format_context::iterator
+    {
+        if (!range.empty()) {
+            std::format_to(out, "{}", range.front());
+
+            for (auto& element : range | std::views::drop(1)) {
+                std::format_to(out, "{}{}", delimiter, element);
+            }
+        }
+        return out;
+    }
+
     struct Formatter_base {
         constexpr auto parse(std::format_parse_context& context) {
             assert(context.begin() == context.end());
@@ -422,14 +437,7 @@ DEFINE_FORMATTER_FOR(std::optional<T>) {
 
 template <class T>
 DEFINE_FORMATTER_FOR(std::vector<T>) {
-    auto out = context.out();
-    if (!value.empty()) {
-        std::format_to(out, "{}", value.front());
-        for (auto& x : value | std::views::drop(1)) {
-            std::format_to(out, ", {}", x);
-        }
-    }
-    return out;
+    return bu::format_delimited_range(context.out(), value, ", ");
 }
 
 template <class F, class S>

@@ -65,6 +65,14 @@ namespace ast {
 
         auto find_upper(Qualified_name&) -> Upper_variant;
         auto find_lower(Qualified_name&) -> Lower_variant;
+
+
+        auto handle_recursively(std::invocable<Namespace&> auto&& f) -> void {
+            f(*this);
+            for (auto& [_, child] : children.container()) {
+                child.handle_recursively(f);
+            }
+        }
     };
 
 }

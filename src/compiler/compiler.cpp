@@ -1,21 +1,34 @@
 #include "bu/utilities.hpp"
 #include "compiler.hpp"
 #include "codegen_internals.hpp"
+#include "ast/ast_formatting.hpp"
 
 
-auto compiler::compile(ast::Module&&) -> vm::Virtual_machine {
-    bu::unimplemented();
+namespace {
 
-    /*vm::Virtual_machine machine {
+    struct Codegen_visitor {
+        compiler::Codegen_context& context;
+
+        auto operator()(auto const* definition) {
+            bu::abort(std::format("Codegen_visitor::operator(): {}", *definition));
+        }
+    };
+
+}
+
+
+auto compiler::compile(ast::Module&& module) -> vm::Virtual_machine {
+    vm::Virtual_machine machine {
         .stack = bu::Bytestack { 1'000'000 }
     };
 
     Codegen_context context { machine, std::move(module) };
 
-    for (auto& [name, function] : context.space->function_definitions.container()) {
-        (void)function;
-        // register sigs, recurse context.space->children
-    }
+    context.space->handle_recursively([&](ast::Namespace& space) {
+        for (auto const definition : space.definitions_in_order) {
+            std::visit(Codegen_visitor { context }, definition);
+        }
+    });
 
-    return machine;*/
+    return machine;
 }

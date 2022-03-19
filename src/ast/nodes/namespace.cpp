@@ -88,7 +88,8 @@ auto ast::Namespace::find_upper(Qualified_name& qualified_name)
         &ast::Namespace::struct_template_definitions,
         &ast::Namespace::data_template_definitions,
         &ast::Namespace::alias_template_definitions,
-        &ast::Namespace::class_definitions
+        &ast::Namespace::class_definitions,
+        &ast::Namespace::class_template_definitions
     >;
 
     auto* const space = apply_qualifiers(this, qualified_name);

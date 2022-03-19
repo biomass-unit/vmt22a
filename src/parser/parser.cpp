@@ -181,8 +181,9 @@ auto parser::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::class_:
     case Token::Type::inst:
     case Token::Type::alias:
-    case Token::Type::import:
-    case Token::Type::module:
+    case Token::Type::import_:
+    case Token::Type::export_:
+    case Token::Type::module_:
     case Token::Type::size_of:
     case Token::Type::type_of:
     case Token::Type::meta:
@@ -748,7 +749,7 @@ namespace {
     auto parse_definition(Parse_context&) -> bool;
 
     auto extract_namespace(Parse_context& context) -> void {
-        auto name = extract_lower_id(context, "a module name");
+        auto name = extract_lower_id(context, "a namespace name");
 
         context.consume_required(Token::Type::brace_open);
 
@@ -805,7 +806,7 @@ namespace {
         case Token::Type::inst:
             extract_instantiation(context);
             break;
-        case Token::Type::module:
+        case Token::Type::namespace_:
             extract_namespace(context);
             break;
         default:
@@ -821,6 +822,34 @@ namespace {
 auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     Parse_context context { tokenized_source };
     ast::Namespace global_namespace { lexer::Identifier { std::string_view { "" } } };
+
+
+    std::vector<ast::Import>         module_imports;
+    std::optional<lexer::Identifier> module_name;
+
+    if (context.try_consume(Token::Type::module_)) {
+        module_name = extract_lower_id(context, "a module name");
+    }
+
+    while (context.try_consume(Token::Type::import_)) {
+        static constexpr auto parse_path =
+            parse_separated_one_or_more<parse_lower_id, Token::Type::dot, "a module qualifier">;
+
+        if (auto path = parse_path(context)) {
+            ast::Import import_statement;
+            import_statement.path = std::move(*path);
+
+            if (context.try_consume(Token::Type::as)) {
+                import_statement.alias = extract_lower_id(context, "a module alias");
+            }
+
+            module_imports.push_back(std::move(import_statement));
+        }
+        else {
+            throw context.expected("a module path");
+        }
+    }
+
 
     decltype(ast::Module::instantiations)           instantiations;
     decltype(ast::Module::instantiation_templates)  instantiation_templates;
@@ -845,7 +874,9 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
 
     ast::Module module {
         std::move(tokenized_source.source),
-        std::move(global_namespace)
+        std::move(global_namespace),
+        std::move(module_imports),
+        std::move(module_name)
     };
 
     module.implementations          = std::move(implementations);

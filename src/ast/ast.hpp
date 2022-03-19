@@ -110,9 +110,17 @@ namespace ast {
 
     inline bu::Wrapper<Expression> const unit_value = Tuple {};
 
+    struct Import {
+        std::vector<lexer::Identifier>   path;
+        std::optional<lexer::Identifier> alias;
+    };
+
     struct [[nodiscard]] Module {
         bu::Source source;
         Namespace  global_namespace;
+
+        std::vector<Import>              imports;
+        std::optional<lexer::Identifier> name;
 
         std::vector<definition::Instantiation>           instantiations;
         std::vector<definition::Instantiation_template>  instantiation_templates;
