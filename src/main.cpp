@@ -99,6 +99,7 @@ auto main(int argc, char const** argv) -> int try {
         ("version",                "Show the interpreter version")
         ("repl"   , cli::string(), "Run the given repl"          )
         ("machine",                "Run the interpreter test"    )
+        ("resolve",                "Run the resolution test"     )
         ("nocolor",                "Disable colored output"      );
 
     auto options = cli::parse_command_line(argc, argv, description);
@@ -117,6 +118,14 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     tests::run_all_tests();
+
+    if (options.find("resolve")) {
+        auto pipeline = bu::compose(&compiler::resolve, &parser::parse, &lexer::lex);
+        auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
+        auto program  = pipeline(bu::Source { path.string() });
+
+        std::ignore = program;
+    }
 
     if (options.find("machine")) {
         bu::unimplemented(); // MSVC ICE
@@ -140,7 +149,7 @@ auto main(int argc, char const** argv) -> int try {
 
         return machine.run();*/
     }
-    
+
     if (auto* const name = options.find_str("repl")) {
         if (*name == "lex") {
             lexer_repl();

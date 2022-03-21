@@ -1,0 +1,3 @@
+import a.b as ab
+
+fn main(): Int = ab::f()

@@ -34,10 +34,14 @@ namespace {
         char const* line_start = view_start;
         for (; line_start != file_start && *line_start != '\n'; --line_start);
 
+        if (*line_start == '\n') {
+            ++line_start;
+        }
+
         for (char const* pointer = line_start; ; ++pointer) {
             if (*pointer == '\n') {
                 lines.push_back({ line_start, pointer });
-                line_start = pointer;
+                line_start = pointer + 1;
             }
             else if (*pointer == '\0') {
                 lines.push_back({ line_start, pointer });

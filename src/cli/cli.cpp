@@ -17,7 +17,7 @@ namespace {
 
 
     template <class T>
-    consteval auto type_description() noexcept -> char const* {
+    consteval auto type_description() noexcept -> std::string_view {
         if constexpr (std::same_as<T, bu::Isize>)
             return "int";
         else if constexpr (std::same_as<T, bu::Float>)
@@ -31,7 +31,7 @@ namespace {
     }
 
     template <class... Ts>
-    constexpr auto type_description(std::variant<Ts...> const& variant) noexcept -> char const* {
+    constexpr auto type_description(std::variant<Ts...> const& variant) noexcept -> std::string_view {
         return std::visit([]<class T>(cli::Value<T> const&) { return type_description<T>(); }, variant);
     }
 

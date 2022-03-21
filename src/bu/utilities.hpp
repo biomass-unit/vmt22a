@@ -13,11 +13,14 @@
 #include <limits>
 #include <memory>
 #include <utility>
-#include <iostream>
 #include <concepts>
 #include <functional>
 #include <type_traits>
 #include <source_location>
+
+#include <fstream>
+#include <iostream>
+#include <filesystem>
 
 #include <exception>
 #include <stdexcept>
@@ -177,28 +180,35 @@ namespace bu {
     };
 
 
-    constexpr auto compose = []<class F, class G>(F&& f, G&& g) noexcept {
-        return [f = std::forward<F>(f), g = std::forward<G>(g)]<class... Args>(Args&&... args)
-            mutable noexcept(
-                std::is_nothrow_invocable_v<G&&, Args&&...> &&
-                std::is_nothrow_invocable_v<F&&, std::invoke_result_t<G&&, Args&&...>>
-            ) -> decltype(auto)
-        {
-            return std::invoke(
-                std::forward<F>(f),
-                std::invoke(
-                    std::forward<G>(g),
-                    std::forward<Args>(args)...
-                )
-            );
-        };
+    template <class F, class G, class... Hs>
+    constexpr auto compose(F&& f, G&& g, Hs&&... hs) noexcept {
+        if constexpr (sizeof...(Hs) != 0) {
+            return compose(std::forward<F>(f), compose(std::forward<G>(g), std::forward<Hs>(hs)...));
+        }
+        else {
+            return [f = std::forward<F>(f), g = std::forward<G>(g)]<class... Args>(Args&&... args)
+                mutable noexcept(
+                    std::is_nothrow_invocable_v<G&&, Args&&...> &&
+                    std::is_nothrow_invocable_v<F&&, std::invoke_result_t<G&&, Args&&...>>
+                ) -> decltype(auto)
+            {
+                return std::invoke(
+                    std::forward<F>(f),
+                    std::invoke(
+                        std::forward<G>(g),
+                        std::forward<Args>(args)...
+                    )
+                );
+            };
+        }
     };
 
     static_assert(
         compose(
             [](int x) { return x * x; },
+            [](int x) { return x + 1; },
             [](int a, int b) { return a + b; }
-        )(2, 3) == 25
+        )(2, 3) == 36
     );
 
 
