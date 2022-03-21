@@ -13,7 +13,8 @@ namespace bu {
     public:
         template <class... Args> // The constraint ensures that the copy constructor isn't deleted
             requires ((sizeof...(Args) != 1) || (!similar_to<Wrapper, Args> && ...))
-        constexpr Wrapper(Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
+        constexpr Wrapper(Args&&... args)
+            noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
             : index { vector.size() }
         {
             vector.emplace_back(std::forward<Args>(args)...);
@@ -27,10 +28,6 @@ namespace bu {
 
         constexpr auto operator->() const noexcept -> T const* { return vector.data() + index; }
         constexpr auto operator->()       noexcept -> T      * { return vector.data() + index; }
-
-        static constexpr auto object_count() noexcept -> Usize {
-            return vector.size();
-        }
     };
 
     template <class T>

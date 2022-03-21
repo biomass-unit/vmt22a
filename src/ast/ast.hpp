@@ -110,8 +110,10 @@ namespace ast {
 
     inline bu::Wrapper<Expression> const unit_value = Tuple {};
 
+    using Module_path = std::vector<lexer::Identifier>;
+
     struct Import {
-        std::vector<lexer::Identifier>   path;
+        Module_path                      path;
         std::optional<lexer::Identifier> alias;
     };
 
@@ -119,8 +121,9 @@ namespace ast {
         bu::Source source;
         Namespace  global_namespace;
 
-        std::vector<Import>              imports;
         std::optional<lexer::Identifier> name;
+        std::vector<Import>              imports;
+        std::vector<Module_path>         imported_by;
 
         std::vector<definition::Instantiation>           instantiations;
         std::vector<definition::Instantiation_template>  instantiation_templates;

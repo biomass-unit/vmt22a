@@ -850,7 +850,6 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
         }
     }
 
-
     decltype(ast::Module::instantiations)           instantiations;
     decltype(ast::Module::instantiation_templates)  instantiation_templates;
     decltype(ast::Module::implementations)          implementations;
@@ -867,22 +866,18 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     if (!context.is_finished()) {
         throw context.expected(
             "a definition",
-            "Definitions must begin with 'fn', 'struct', "
-            "'data', 'alias', 'impl', 'inst', or 'class'"
+            "'fn', 'struct', 'data', 'alias', 'impl', 'inst', or 'class'"
         );
     }
 
-    ast::Module module {
-        std::move(tokenized_source.source),
-        std::move(global_namespace),
-        std::move(module_imports),
-        std::move(module_name)
+    return ast::Module {
+        .source                   = std::move(tokenized_source.source),
+        .global_namespace         = std::move(global_namespace),
+        .name                     = std::move(module_name),
+        .imports                  = std::move(module_imports),
+        .instantiations           = std::move(instantiations),
+        .instantiation_templates  = std::move(instantiation_templates),
+        .implementations          = std::move(implementations),
+        .implementation_templates = std::move(implementation_templates),
     };
-
-    module.implementations          = std::move(implementations);
-    module.implementation_templates = std::move(implementation_templates);
-    module.instantiations           = std::move(instantiations);
-    module.instantiation_templates  = std::move(instantiation_templates);
-
-    return module;
 }

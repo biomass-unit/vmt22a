@@ -15,6 +15,8 @@
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
 
+#include "compiler/resolution/resolution.hpp"
+
 #include "compiler/codegen_internals.hpp"
 
 #include "tests/tests.hpp"

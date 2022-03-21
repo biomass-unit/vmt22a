@@ -9,7 +9,7 @@ namespace {
     struct Codegen_visitor {
         compiler::Codegen_context& context;
 
-        auto operator()(auto const* definition) {
+        auto operator()(auto const* definition) -> void {
             bu::abort(std::format("Codegen_visitor::operator(): {}", *definition));
         }
     };
