@@ -213,6 +213,7 @@
     <ClCompile Include="src\cli\cli.cpp" />
     <ClCompile Include="src\compiler\compiler.cpp" />
     <ClCompile Include="src\compiler\resolution\resolution.cpp" />
+    <ClCompile Include="src\compiler\resolution\resolve_type.cpp" />
     <ClCompile Include="src\compiler\scope.cpp" />
     <ClCompile Include="src\compiler\size_of.cpp" />
     <ClCompile Include="src\compiler\type_of.cpp" />
@@ -264,6 +265,7 @@
     <ClInclude Include="src\cli\cli.hpp" />
     <ClInclude Include="src\compiler\codegen_internals.hpp" />
     <ClInclude Include="src\compiler\compiler.hpp" />
+    <ClInclude Include="src\compiler\resolution\resolution_internals.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\bu\textual_error.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
