@@ -541,6 +541,12 @@ namespace {
                 case '\0':
                     throw context.error(anchor, "Unterminating string literal");
                 case '"':
+                    if (!context.tokens.empty() && context.tokens.back().type == Token::Type::string) {
+                        // Concatenate adjacent string literals
+
+                        string.insert(0, context.tokens.back().as_string().view());
+                        context.tokens.pop_back();
+                    }
                     return context.success({ lexer::String { std::move(string) }, Token::Type::string });
                 case '\\':
                     c = handle_escape_sequence(context);

@@ -7,8 +7,8 @@
 
 namespace ir {
 
-    struct Type;
-    struct Expression;
+    struct [[nodiscard]] Type;
+    struct [[nodiscard]] Expression;
 
 
     namespace definition {
