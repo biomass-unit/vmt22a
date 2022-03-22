@@ -698,10 +698,14 @@ namespace {
     }
 
 
-    auto extract_namespace(Parse_context& context) -> ast::Definition {
-        auto name = extract_lower_id(context, "a namespace name");
+    auto extract_namespace_components(Parse_context& context)
+        -> Components<ast::definition::Namespace>
+    {
+        auto name                = extract_lower_id(context, "a namespace name");
+        auto template_parameters = parse_template_parameters(context);
 
         return {
+            std::move(template_parameters),
             ast::definition::Namespace {
                 extract_braced_definition_sequence(context),
                 std::move(name)
@@ -728,7 +732,7 @@ namespace {
             case Token::Type::inst:
                 return extract_from_components<extract_instantiation_components>(context);
             case Token::Type::namespace_:
-                return extract_namespace(context);
+                return extract_from_components<extract_namespace_components>(context);
             default:
                 context.retreat();
                 return std::nullopt;

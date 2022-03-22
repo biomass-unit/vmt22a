@@ -119,6 +119,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Instantiation);
         };
 
+        struct Namespace {
+            std::vector<Definition> definitions;
+            lexer::Identifier       name;
+            DEFAULTED_EQUALITY(Namespace);
+        };
+
 
         template <class Definition>
         struct Template_definition {
@@ -131,16 +137,10 @@ namespace ast {
         using Struct_template         = Template_definition<Struct        >;
         using Data_template           = Template_definition<Data          >;
         using Alias_template          = Template_definition<Alias         >;
+        using Typeclass_template      = Template_definition<Typeclass     >;
         using Implementation_template = Template_definition<Implementation>;
         using Instantiation_template  = Template_definition<Instantiation >;
-        using Typeclass_template      = Template_definition<Typeclass>;
-
-
-        struct Namespace {
-            std::vector<Definition> definitions;
-            lexer::Identifier       name;
-            DEFAULTED_EQUALITY(Namespace);
-        };
+        using Namespace_template      = Template_definition<Namespace     >;
 
     }
 
@@ -161,7 +161,8 @@ namespace ast {
             definition::Instantiation_template,
             definition::Implementation,
             definition::Implementation_template,
-            definition::Namespace
+            definition::Namespace,
+            definition::Namespace_template
         >;
 
         Variant          value;

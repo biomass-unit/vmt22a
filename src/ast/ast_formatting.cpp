@@ -377,7 +377,7 @@ namespace {
         }
 
         auto operator()(ast::definition::Namespace const& space) {
-            format("namespace {} {{\n", space.name);
+            format("namespace {}{} {{\n", space.name, template_parameters());
             bu::format_delimited_range(out, space.definitions, "\n\n");
             return format("\n}}");
         }
