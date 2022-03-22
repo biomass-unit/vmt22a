@@ -72,12 +72,6 @@
     <ClCompile Include="src\tests\tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\size_of.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\compiler\type_of.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\scope.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -93,7 +87,7 @@
     <ClCompile Include="src\compiler\resolution\resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\resolution\resolve_type.cpp">
+    <ClCompile Include="src\compiler\resolution\type_resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

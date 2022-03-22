@@ -213,10 +213,8 @@
     <ClCompile Include="src\cli\cli.cpp" />
     <ClCompile Include="src\compiler\compiler.cpp" />
     <ClCompile Include="src\compiler\resolution\resolution.cpp" />
-    <ClCompile Include="src\compiler\resolution\resolve_type.cpp" />
+    <ClCompile Include="src\compiler\resolution\type_resolution.cpp" />
     <ClCompile Include="src\compiler\scope.cpp" />
-    <ClCompile Include="src\compiler\size_of.cpp" />
-    <ClCompile Include="src\compiler\type_of.cpp" />
     <ClCompile Include="src\lexer\lexer.cpp" />
     <ClCompile Include="src\tests\lexer_test.cpp" />
     <ClCompile Include="src\bu\textual_error.cpp" />

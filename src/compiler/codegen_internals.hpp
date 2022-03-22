@@ -54,8 +54,4 @@ namespace compiler {
         }
     };
 
-
-    auto size_of(ir::Type&      , Codegen_context&) -> vm::Local_size_type;
-    auto type_of(ir::Expression&, Codegen_context&) -> ir::Type&;
-
 }
