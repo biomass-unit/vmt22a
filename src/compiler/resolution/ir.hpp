@@ -3,6 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "lexer/token.hpp" // for lexer::Identifier, fix?
+#include "vm/virtual_machine.hpp"
 
 
 namespace ir {
@@ -115,9 +116,27 @@ namespace ir {
     };
 
 
+    namespace expression {
+
+        template <class T>
+        using Literal = expression::Literal<T>;
+
+        struct Local_variable {
+            bu::Wrapper<Type>     type;
+            vm::Local_offset_type frame_offset;
+            DEFAULTED_EQUALITY(Local_variable);
+        };
+
+    }
+
     struct Expression {
         using Variant = std::variant<
-            std::monostate
+            expression::Literal<bu::Isize>,
+            expression::Literal<bu::Float>,
+            expression::Literal<bu::Char>,
+            expression::Literal<bool>,
+            expression::Literal<lexer::String>,
+            expression::Local_variable
         >;
 
         Variant           value;

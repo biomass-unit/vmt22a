@@ -2,7 +2,7 @@
 #include "ast_formatting.hpp"
 
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Match::Case) {
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Match::Case) {
     return std::format_to(context.out(), "{} -> {}", value.pattern, value.expression);
 }
 
@@ -131,16 +131,16 @@ namespace {
 
     struct Expression_format_visitor : Visitor_base {
         template <class T>
-        auto operator()(ast::Literal<T> const& literal) {
+        auto operator()(ast::expression::Literal<T> const& literal) {
             return format("{}", literal.value);
         }
-        auto operator()(ast::Literal<char> const literal) {
+        auto operator()(ast::expression::Literal<char> const literal) {
             return format("'{}'", literal.value);
         }
-        auto operator()(ast::Literal<lexer::String> const literal) {
+        auto operator()(ast::expression::Literal<lexer::String> const literal) {
             return format("\"{}\"", literal.value);
         }
-        auto operator()(ast::Array_literal const& literal) {
+        auto operator()(ast::expression::Array_literal const& literal) {
             switch (literal.elements.size()) {
             case 0:
                 return format("[;]");
@@ -154,77 +154,74 @@ namespace {
                 return format("]");
             }
         }
-        auto operator()(ast::List_literal const& literal) {
+        auto operator()(ast::expression::List_literal const& literal) {
             return format("[{}]", literal.elements);
         }
-        auto operator()(lexer::Identifier const identifier) {
-            return format("{}", identifier);
-        }
-        auto operator()(ast::Variable const& variable) {
+        auto operator()(ast::expression::Variable const& variable) {
             return format("{}", variable.name);
         }
-        auto operator()(ast::Template_instantiation const& instantiation) {
+        auto operator()(ast::expression::Template_instantiation const& instantiation) {
             return format("{}[{}]", instantiation.name, instantiation.template_arguments);
         }
-        auto operator()(ast::Tuple const& tuple) {
+        auto operator()(ast::expression::Tuple const& tuple) {
             return format("({})", tuple.expressions);
         }
-        auto operator()(ast::Invocation const& invocation) {
+        auto operator()(ast::expression::Invocation const& invocation) {
             return format("{}({})", invocation.invocable, invocation.arguments);
         }
-        auto operator()(ast::Binary_operator_invocation const& invocation) {
+        auto operator()(ast::expression::Binary_operator_invocation const& invocation) {
             return format("({} {} {})", invocation.left, invocation.op, invocation.right);
         }
-        auto operator()(ast::Member_access const& expression) {
+        auto operator()(ast::expression::Member_access const& expression) {
             return format("({}.{})", expression.expression, expression.member_name);
         }
-        auto operator()(ast::Member_function_invocation const& invocation) {
+        auto operator()(ast::expression::Member_function_invocation const& invocation) {
             return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
         }
-        auto operator()(ast::Tuple_member_access const& expression) {
+        auto operator()(ast::expression::Tuple_member_access const& expression) {
             return format("({}.{})", expression.expression, expression.member_index);
         }
-        auto operator()(ast::Compound_expression const& compound) {
+        auto operator()(ast::expression::Compound_expression const& compound) {
             return format("{{ {} }}", compound.expressions);
         }
-        auto operator()(ast::Conditional const& conditional) {
+        auto operator()(ast::expression::Conditional const& conditional) {
             auto& [condition, true_branch, false_branch] = conditional;
             return format("if {} {} else {}", condition, true_branch, false_branch);
         }
-        auto operator()(ast::Match const& match) {
+        auto operator()(ast::expression::Match const& match) {
             return format("match {} {{ {} }}", match.expression, match.cases);
         }
-        auto operator()(ast::Type_cast const& cast) {
+        auto operator()(ast::expression::Type_cast const& cast) {
             return format("{} as {}", cast.expression, cast.target);
         }
-        auto operator()(ast::Let_binding const& binding) {
+        auto operator()(ast::expression::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
         }
-        auto operator()(ast::Infinite_loop const& loop) {
+        auto operator()(ast::expression::Infinite_loop const& loop) {
             return format("loop {}", loop.body);
         }
-        auto operator()(ast::While_loop const& loop) {
+        auto operator()(ast::expression::While_loop const& loop) {
             return format("while {} {}", loop.condition, loop.body);
         }
-        auto operator()(ast::For_loop const& loop) {
+        auto operator()(ast::expression::For_loop const& loop) {
             return format("for {} in {} {}", loop.iterator, loop.iterable, loop.body);
         }
-        auto operator()(ast::Continue) {
+        auto operator()(ast::expression::Continue) {
             return format("continue");
         }
-        auto operator()(ast::Break const& break_) {
+        auto operator()(ast::expression::Break const& break_) {
             return format("break {}", break_.expression);
         }
-        auto operator()(ast::Ret const& ret) {
+        auto operator()(ast::expression::Ret const& ret) {
             return format("ret {}", ret.expression);
         }
-        auto operator()(ast::Size_of const& size_of) {
+        auto operator()(ast::expression::Size_of const& size_of) {
             return format("size_of({})", size_of.type);
         }
-        auto operator()(ast::Take_reference const& reference) {
+        auto operator()(ast::expression::Take_reference const& reference) {
             return format("&{}{}", reference.mutability, reference.expression);
         }
-        auto operator()(ast::Meta const& meta) {
+        auto operator()(ast::expression::Meta const& meta) {
             return format("meta({})", meta.expression);
         }
     };

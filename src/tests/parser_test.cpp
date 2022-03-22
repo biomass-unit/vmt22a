@@ -115,7 +115,7 @@ auto run_parser_tests() -> void {
         {
             Token { 4.2e3, Type::floating }
         },
-        ast::Literal<bu::Float> { 4.2e3 }
+        ast::expression::Literal<bu::Float> { 4.2e3 }
     );
 
     test
@@ -134,15 +134,15 @@ auto run_parser_tests() -> void {
                 Token { 'a', Type::character },
             Token { .type = Type::brace_close },
         },
-        ast::Conditional {
-            ast::Literal<bool> { false },
-            ast::Compound_expression {
+        ast::expression::Conditional {
+            ast::expression::Literal<bool> { false },
+            ast::expression::Compound_expression {
                 {
-                    ast::Literal<bool> { true },
+                    ast::expression::Literal<bool> { true },
                     ast::unit_value
                 }
             },
-            ast::Literal { static_cast<bu::Char>('a') }
+            ast::expression::Literal { static_cast<bu::Char>('a') }
         }
     );
 
@@ -156,9 +156,9 @@ auto run_parser_tests() -> void {
             Token { .type = Type::brace_open },
             Token { .type = Type::brace_close }
         },
-        ast::For_loop {
+        ast::expression::For_loop {
             ast::pattern::Name { "x"_id, { .type = ast::Mutability::Type::immut } },
-            ast::Literal { lexer::String { "hello"sv } },
+            ast::expression::Literal { lexer::String { "hello"sv } },
             ast::unit_value
         }
     );
@@ -174,18 +174,18 @@ auto run_parser_tests() -> void {
             Token { "+"_id, Type::operator_name },
             Token { 4, Type::integer }
         },
-        ast::Binary_operator_invocation {
+        ast::expression::Binary_operator_invocation {
             ast::Expression {
-                ast::Binary_operator_invocation {
-                    ast::Literal<bu::Isize> { 1 },
-                    ast::Literal<bu::Isize> { 2 },
+                ast::expression::Binary_operator_invocation {
+                    ast::expression::Literal<bu::Isize> { 1 },
+                    ast::expression::Literal<bu::Isize> { 2 },
                     "*"_id
                 }
             },
             ast::Expression {
-                ast::Binary_operator_invocation {
-                    ast::Literal<bu::Isize> { 3 },
-                    ast::Literal<bu::Isize> { 4 },
+                ast::expression::Binary_operator_invocation {
+                    ast::expression::Literal<bu::Isize> { 3 },
+                    ast::expression::Literal<bu::Isize> { 4 },
                     "+"_id
                 }
             },
@@ -204,17 +204,17 @@ auto run_parser_tests() -> void {
             Token { "+"_id, Type::operator_name },
             Token { 5, Type::integer }
         },
-        ast::Binary_operator_invocation {
-            ast::Type_cast {
+        ast::expression::Binary_operator_invocation {
+            ast::expression::Type_cast {
                 ast::Expression {
-                    ast::Type_cast {
-                        ast::Literal { static_cast<bu::Char>('x') },
+                    ast::expression::Type_cast {
+                        ast::expression::Literal { static_cast<bu::Char>('x') },
                         ast::type::integer
                     }
                 },
                 ast::type::boolean
             },
-            ast::Literal<bu::Isize> { 5 },
+            ast::expression::Literal<bu::Isize> { 5 },
             "+"_id
         }
     );
@@ -230,10 +230,10 @@ auto run_parser_tests() -> void {
             Token { .type = Type::paren_open },
             Token { .type = Type::paren_close },
         },
-        ast::Member_function_invocation {
+        ast::expression::Member_function_invocation {
             .arguments = {},
-            .expression = ast::Member_access {
-                ast::Variable { make_unqualified("x") },
+            .expression = ast::expression::Member_access {
+                ast::expression::Variable { make_unqualified("x") },
                 "y"_id
             },
             .member_name = "f"_id
@@ -250,10 +250,10 @@ auto run_parser_tests() -> void {
             Token { .type = Type::dot },
             Token { 2, Type::integer },
         },
-        ast::Tuple_member_access {
+        ast::expression::Tuple_member_access {
             ast::Expression {
-                ast::Tuple_member_access {
-                    ast::Tuple {},
+                ast::expression::Tuple_member_access {
+                    ast::expression::Tuple {},
                     1
                 }
             },
@@ -297,9 +297,9 @@ auto run_parser_tests() -> void {
             Token { .type = Type::equals },
             Token { 5, Type::integer }
         },
-        ast::Let_binding {
+        ast::expression::Let_binding {
             .pattern = ast::pattern::Wildcard {},
-            .initializer = ast::Literal<bu::Isize> { 5 },
+            .initializer = ast::expression::Literal<bu::Isize> { 5 },
             .type = ast::type::Typename {
                 ast::Qualified_name {
                     .middle_qualifiers = std::move(namespace_access_test_qualifiers),
@@ -327,13 +327,13 @@ auto run_parser_tests() -> void {
             Token { 100, Type::integer },
             Token { .type = Type::brace_close }
         },
-        ast::Conditional {
-            ast::Literal<bool> { true },
-            ast::Literal<bu::Isize> { 50 },
-            ast::Conditional {
-                ast::Literal<bool> { false },
-                ast::Literal<bu::Isize> { 75 },
-                ast::Literal<bu::Isize> { 100 }
+        ast::expression::Conditional {
+            ast::expression::Literal<bool> { true },
+            ast::expression::Literal<bu::Isize> { 50 },
+            ast::expression::Conditional {
+                ast::expression::Literal<bool> { false },
+                ast::expression::Literal<bu::Isize> { 75 },
+                ast::expression::Literal<bu::Isize> { 100 }
             }
         }
     );

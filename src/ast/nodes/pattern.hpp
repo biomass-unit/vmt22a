@@ -27,7 +27,7 @@ namespace ast {
         };
 
         template <class T>
-        using Literal = ::ast::Literal<T>;
+        using Literal = expression::Literal<T>;
 
     }
 

@@ -545,7 +545,7 @@ namespace {
                         // Concatenate adjacent string literals
 
                         string.insert(0, context.tokens.back().as_string().view());
-                        context.tokens.pop_back();
+                        context.tokens.pop_back(); // Pop the previous string
                     }
                     return context.success({ lexer::String { std::move(string) }, Token::Type::string });
                 case '\\':

@@ -38,7 +38,7 @@ namespace {
         }
 
         auto operator()(ast::type::Array& array) -> ir::Type {
-            if (auto* const length = std::get_if<ast::Literal<bu::Isize>>(&array.length->value)) {
+            if (auto* const length = std::get_if<ast::expression::Literal<bu::Isize>>(&array.length->value)) {
                 // do meta evaluation later, the length shouldn't be restricted to a literal
 
                 assert(length->value >= 0);

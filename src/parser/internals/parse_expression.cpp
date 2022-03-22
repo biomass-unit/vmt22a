@@ -9,12 +9,12 @@ namespace {
 
     template <class T>
     auto extract_literal(Parse_context& context) -> ast::Expression {
-        return ast::Literal<T> { context.previous().value_as<T>() };
+        return ast::expression::Literal<T> { context.previous().value_as<T>() };
     }
 
     template <>
     auto extract_literal<char>(Parse_context& context) -> ast::Expression {
-        return ast::Literal { static_cast<bu::Char>(context.previous().as_character()) };
+        return ast::expression::Literal { static_cast<bu::Char>(context.previous().as_character()) };
     }
 
 
@@ -26,13 +26,13 @@ namespace {
 
         if (name.primary_qualifier.is_lower()) {
             if (auto template_arguments = parse_template_arguments(context)) {
-                return ast::Template_instantiation {
+                return ast::expression::Template_instantiation {
                     std::move(name),
                     std::move(*template_arguments)
                 };
             }
             else {
-                return ast::Variable { std::move(name) };
+                return ast::expression::Variable { std::move(name) };
             }
         }
         else {
@@ -60,7 +60,7 @@ namespace {
             return std::move(expressions.front());
         }
         else {
-            return ast::Tuple { std::move(expressions) };
+            return ast::expression::Tuple { std::move(expressions) };
         }
     }
 
@@ -81,7 +81,7 @@ namespace {
                 delimiter = token.type;
                 break;
             case Token::Type::bracket_close:
-                return ast::List_literal { { std::move(*head) } };
+                return ast::expression::List_literal { { std::move(*head) } };
             default:
                 context.retreat();
                 throw context.expected("a ',', a ';', or a closing ']'");
@@ -97,7 +97,7 @@ namespace {
                 }
                 else if (delimiter == Token::Type::semicolon && elements.size() == 1) {
                     return context.try_consume(Token::Type::bracket_close)
-                        ? ast::Array_literal { std::move(elements) }
+                        ? ast::expression::Array_literal { std::move(elements) }
                         : throw context.expected("an expression or a closing ']'");
                 }
                 else {
@@ -107,10 +107,10 @@ namespace {
 
             if (context.try_consume(Token::Type::bracket_close)) {
                 if (delimiter == Token::Type::semicolon) {
-                    return ast::Array_literal { std::move(elements) };
+                    return ast::expression::Array_literal { std::move(elements) };
                 }
                 else {
-                    return ast::List_literal { std::move(elements) };
+                    return ast::expression::List_literal { std::move(elements) };
                 }
             }
             else {
@@ -127,10 +127,10 @@ namespace {
                 );
             }
             if (is_array) {
-                return ast::Array_literal {};
+                return ast::expression::Array_literal {};
             }
             else {
-                return ast::List_literal {};
+                return ast::expression::List_literal {};
             }
         }
     }
@@ -155,7 +155,7 @@ namespace {
                     false_branch.emplace(extract_conditional(context));
                 }
 
-                return ast::Conditional {
+                return ast::expression::Conditional {
                     std::move(*condition),
                     std::move(*true_branch),
                     std::move(false_branch)
@@ -180,7 +180,7 @@ namespace {
 
         context.consume_required(Token::Type::equals);
 
-        return ast::Let_binding {
+        return ast::expression::Let_binding {
             std::move(pattern),
             extract_expression(context),
             std::move(type)
@@ -197,12 +197,12 @@ namespace {
     }
 
     auto extract_infinite_loop(Parse_context& context) -> ast::Expression {
-        return ast::Infinite_loop { extract_loop_body(context) };
+        return ast::expression::Infinite_loop { extract_loop_body(context) };
     }
 
     auto extract_while_loop(Parse_context& context) -> ast::Expression {
         auto condition = extract_expression(context);
-        return ast::While_loop {
+        return ast::expression::While_loop {
             std::move(condition),
             extract_loop_body(context)
         };
@@ -212,7 +212,7 @@ namespace {
         auto iterator = extract_pattern(context);
         context.consume_required(Token::Type::in);
         auto iterable = extract_expression(context);
-        return ast::For_loop {
+        return ast::expression::For_loop {
             std::move(iterator),
             std::move(iterable),
             extract_loop_body(context)
@@ -223,17 +223,17 @@ namespace {
         if (context.try_consume(Token::Type::paren_open)) {
             auto type = extract_type(context);
             context.consume_required(Token::Type::paren_close);
-            return ast::Size_of { std::move(type) };
+            return ast::expression::Size_of { std::move(type) };
         }
         else {
             throw context.expected("a parenthesized type");
         }
     }
 
-    auto parse_match_case(Parse_context& context) -> std::optional<ast::Match::Case> {
+    auto parse_match_case(Parse_context& context) -> std::optional<ast::expression::Match::Case> {
         if (auto pattern = parse_pattern(context)) {
             context.consume_required(Token::Type::right_arrow);
-            return ast::Match::Case {
+            return ast::expression::Match::Case {
                 std::move(*pattern),
                 extract_expression(context)
             };
@@ -256,7 +256,7 @@ namespace {
         auto expression = extract_expression(context);
 
         if (auto cases = parse_cases(context)) {
-            return ast::Match {
+            return ast::expression::Match {
                 std::move(*cases),
                 std::move(expression)
             };
@@ -267,20 +267,20 @@ namespace {
     }
 
     auto extract_continue(Parse_context&) -> ast::Expression {
-        return ast::Continue {};
+        return ast::expression::Continue {};
     }
 
     auto extract_break(Parse_context& context) -> ast::Expression {
-        return ast::Break { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
+        return ast::expression::Break { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
     }
 
     auto extract_ret(Parse_context& context) -> ast::Expression {
-        return ast::Ret { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
+        return ast::expression::Ret { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
     }
 
     auto extract_take_reference(Parse_context& context) -> ast::Expression {
         auto mutability = extract_mutability(context);
-        return ast::Take_reference {
+        return ast::expression::Take_reference {
             .expression = extract_expression(context),
             .mutability = std::move(mutability)
         };
@@ -290,7 +290,7 @@ namespace {
         if (context.try_consume(Token::Type::paren_open)) {
             auto expression = extract_expression(context);
             context.consume_required(Token::Type::paren_close);
-            return ast::Meta { std::move(expression) };
+            return ast::expression::Meta { std::move(expression) };
         }
         else {
             throw context.expected("a parenthesized expression");
@@ -321,7 +321,7 @@ namespace {
         case 1:
             return std::move(expressions.front());
         default:
-            return ast::Compound_expression { std::move(expressions) };
+            return ast::expression::Compound_expression { std::move(expressions) };
         }
     }
 
@@ -425,7 +425,7 @@ namespace {
     auto parse_potential_invocation(Parse_context& context) -> std::optional<ast::Expression> {
         if (auto potential_invocable = parse_normal_expression(context)) {
             while (context.try_consume(Token::Type::paren_open)) {
-                *potential_invocable = ast::Invocation {
+                *potential_invocable = ast::expression::Invocation {
                     extract_arguments(context),
                     std::move(*potential_invocable)
                 };
@@ -445,21 +445,21 @@ namespace {
             while (context.try_consume(Token::Type::dot)) {
                 if (auto member_name = parse_lower_id(context)) {
                     if (context.try_consume(Token::Type::paren_open)) {
-                        *expression = ast::Member_function_invocation {
+                        *expression = ast::expression::Member_function_invocation {
                             extract_arguments(context),
                             std::move(*expression),
                             *member_name
                         };
                     }
                     else {
-                        *expression = ast::Member_access {
+                        *expression = ast::expression::Member_access {
                             std::move(*expression),
                             *member_name
                         };
                     }
                 }
                 else if (auto member_index = context.try_extract(Token::Type::integer)) {
-                    *expression = ast::Tuple_member_access {
+                    *expression = ast::expression::Tuple_member_access {
                         std::move(*expression),
                         member_index->as_integer()
                     };
@@ -477,7 +477,7 @@ namespace {
     auto parse_potential_type_cast(Parse_context& context) -> std::optional<ast::Expression> {
         if (auto expression = parse_potential_member_access(context)) {
             while (context.try_consume(Token::Type::as)) {
-                *expression = ast::Type_cast {
+                *expression = ast::expression::Type_cast {
                     std::move(*expression),
                     extract_type(context)
                 };
@@ -549,7 +549,7 @@ namespace {
                     }
                 }
                 if (auto right = recurse(context)) {
-                    *left = ast::Binary_operator_invocation {
+                    *left = ast::expression::Binary_operator_invocation {
                         std::move(*left),
                         std::move(*right),
                         *op

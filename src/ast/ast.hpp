@@ -103,7 +103,7 @@ auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
 
 namespace ast {
 
-    inline bu::Wrapper<Expression> const unit_value = Tuple {};
+    inline bu::Wrapper<Expression> const unit_value = expression::Tuple {};
 
     using Module_path = std::vector<lexer::Identifier>;
 
