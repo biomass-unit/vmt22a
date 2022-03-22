@@ -28,6 +28,10 @@ namespace bu {
 
         constexpr auto operator->() const noexcept -> T const* { return vector.data() + index; }
         constexpr auto operator->()       noexcept -> T      * { return vector.data() + index; }
+
+        constexpr static auto release_wrapped_memory() noexcept {
+            bu::release_vector_memory(vector);
+        }
     };
 
     template <class T>
