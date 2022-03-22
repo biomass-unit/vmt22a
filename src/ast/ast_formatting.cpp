@@ -27,6 +27,68 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
 }
 
 
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
+    return std::format_to(context.out(), "{}: {} = {}", value.pattern, value.type, value.default_value);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
+    return std::format_to(context.out(), "{}: {}", value.name, value.type);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Data::Constructor) {
+    return std::format_to(context.out(), "{}({})", value.name, value.type);
+}
+
+
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Class_reference) {
+    return value.template_arguments
+        ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
+        : std::format_to(context.out(), "{}", value.name);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
+    return std::visit(
+        bu::Overload {
+            [&](ast::Template_parameter::Type_parameter const& parameter) {
+                std::format_to(context.out(), "{}", parameter.name);
+
+                if (!parameter.classes.empty()) {
+                    std::format_to(context.out(), ": ");
+                    bu::format_delimited_range(context.out(), parameter.classes, " + ");
+                }
+
+                return context.out();
+            },
+            [&](ast::Template_parameter::Value_parameter const& parameter) {
+                return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
+            },
+            [&](ast::Template_parameter::Mutability_parameter const& parameter) {
+                return std::format_to(context.out(), "{}: mut", parameter.name);
+            }
+        },
+        value.value
+    );
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
+    return std::visit(bu::Overload {
+        [&](ast::Mutability const& mutability) {
+            switch (mutability.type) {
+            case ast::Mutability::Type::mut:
+                return std::format_to(context.out(), "mut");
+            case ast::Mutability::Type::immut:
+                return std::format_to(context.out(), "immut");
+            default:
+                return std::format_to(context.out(), "mut?{}", mutability.parameter_name);
+            }
+        },
+        [&](auto const& argument) {
+            return std::format_to(context.out(), "{}", argument);
+        }
+    }, value.value);
+}
+
+
 DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     auto out = context.out();
 
@@ -167,6 +229,7 @@ namespace {
         }
     };
 
+
     struct Pattern_format_visitor : Visitor_base {
         auto operator()(ast::pattern::Wildcard) {
             return format("_");
@@ -185,6 +248,7 @@ namespace {
             return format("{} if {}", guarded.pattern, guarded.guard);
         }
     };
+
 
     struct Type_format_visitor : Visitor_base {
         auto operator()(ast::type::Integer)   { return format("Int");    }
@@ -227,132 +291,103 @@ namespace {
     };
 
 
-    using Definition_variant = std::variant<
-        ast::definition::Function                const*,
-        ast::definition::Struct                  const*,
-        ast::definition::Data                    const*,
-        ast::definition::Alias                   const*,
-        ast::definition::Implementation          const*,
-        ast::definition::Instantiation           const*,
-        ast::definition::Typeclass               const*,
+    struct Definition_format_visitor : Visitor_base {
+        std::vector<ast::Template_parameter> const* parameters;
 
-        ast::definition::Function_template       const*,
-        ast::definition::Struct_template         const*,
-        ast::definition::Data_template           const*,
-        ast::definition::Alias_template          const*,
-        ast::definition::Implementation_template const*,
-        ast::definition::Instantiation_template  const*,
-        ast::definition::Typeclass_template      const*
-    >;
-
-    auto format_definition(
-        std::format_context&                        context,
-        Definition_variant                          definition,
-        std::vector<ast::Template_parameter> const* parameters = nullptr
-    )
-        -> std::format_context::iterator
-    {
-        auto const template_parameters = [&]() noexcept -> std::string {
+        auto template_parameters() noexcept -> std::string {
             return parameters ? std::format("[{}]", *parameters) : "";
-        };
-        auto const format = [out = context.out()](std::string_view fmt, auto const&... args){
-            return std::vformat_to(out, fmt, std::make_format_args(args...));
-        };
+        }
 
-        return std::visit(bu::Overload {
-            [&](ast::definition::Function const* function) {
-                return format(
-                    "fn {}{}({}): {} = {}",
-                    function->name,
-                    template_parameters(),
-                    function->parameters,
-                    function->return_type,
-                    function->body
+        auto operator()(ast::definition::Function const& function) {
+            return format(
+                "fn {}{}({}){} = {}",
+                function.name,
+                template_parameters(),
+                function.parameters,
+                function.return_type ? std::format(": {}", *function.return_type) : "",
+                function.body
+            );
+        }
+
+        auto operator()(ast::definition::Struct const& structure) {
+            return format(
+                "struct {}{} = {}",
+                structure.name,
+                template_parameters(),
+                structure.members
+            );
+        }
+
+        auto operator()(ast::definition::Data const& data) {
+            return format(
+                "data {}{} = {}",
+                data.name,
+                template_parameters(),
+                data.constructors
+            );
+        }
+
+        auto operator()(ast::definition::Alias const& alias) {
+            return format(
+                "alias {}{} = {}",
+                alias.name,
+                template_parameters(),
+                alias.type
+            );
+        }
+
+        auto operator()(ast::definition::Typeclass const& typeclass) {
+            format(
+                "class {}{} {{",
+                typeclass.name,
+                template_parameters()
+            );
+
+            for (auto& signature : typeclass.function_signatures) {
+                format(
+                    "fn {}[{}]({}): {}\n",
+                    signature.name,
+                    signature.template_parameters,
+                    signature.type.argument_types,
+                    signature.type.return_type
                 );
-            },
-            [&](ast::definition::Struct const* structure) {
-                return format(
-                    "struct {}{} = {}",
-                    structure->name,
-                    template_parameters(),
-                    structure->members
-                );
-            },
-            [&](ast::definition::Data const* data) {
-                return format(
-                    "data {}{} = {}",
-                    data->name,
-                    template_parameters(),
-                    data->constructors
-                );
-            },
-            [&](ast::definition::Alias const* alias) {
-                return format(
-                    "alias {}{} = {}",
-                    alias->name,
-                    template_parameters(),
-                    alias->type
-                );
-            },
-            [&]<bu::one_of<ast::definition::Instantiation, ast::definition::Implementation> T>(T const* impl_or_inst)
-            {
-                auto fmt = [&](auto const& xs) {
-                    for (auto& x : xs.span() | std::views::transform(bu::second)) {
-                        std::format_to(context.out(), "\n{}", x);
-                    }
-                };
-
-                if constexpr (std::same_as<T, ast::definition::Instantiation>) {
-                    format(
-                        "inst{} {} {} {{",
-                        template_parameters(),
-                        impl_or_inst->typeclass,
-                        impl_or_inst->instance
-                    );
-                }
-                else {
-                    format(
-                        "impl{} {} {{",
-                        template_parameters(),
-                        impl_or_inst->type
-                    );
-                }
-
-                fmt(impl_or_inst->function_definitions);
-                fmt(impl_or_inst->function_template_definitions);
-                fmt(impl_or_inst->alias_definitions);
-                fmt(impl_or_inst->alias_template_definitions);
-
-                return format("\n}}");
-            },
-            [&](ast::definition::Typeclass const* typeclass) {
-                format("class {}{} {{", typeclass->name, template_parameters());
-
-                for (auto& signature : typeclass->function_signatures) {
-                    format(
-                        "fn {}[{}]({}): {}\n",
-                        signature.name,
-                        signature.template_parameters,
-                        signature.type.argument_types,
-                        signature.type.return_type
-                    );
-                }
-                for (auto& signature : typeclass->type_signatures) {
-                    format(
-                        "alias {}[{}]: {}\n",
-                        signature.name,
-                        signature.template_parameters,
-                        signature.classes
-                    );
-                }
-
-                return format("}}");
-            },
-            [&]<class T>(ast::definition::Template_definition<T> const* pointer) {
-                return format_definition(context, &pointer->definition, &pointer->parameters);
             }
-        }, definition);
-    }
+            for (auto& signature : typeclass.type_signatures) {
+                format(
+                    "alias {}[{}]: {}\n",
+                    signature.name,
+                    signature.template_parameters,
+                    signature.classes
+                );
+            }
+
+            return format("}}");
+        }
+
+        auto operator()(ast::definition::Instantiation const& instantiation) {
+            format("inst {} {} {{\n", instantiation.typeclass, instantiation.instance);
+            bu::format_delimited_range(out, instantiation.definitions, "\n\n");
+            return format("}}");
+        }
+
+        auto operator()(ast::definition::Implementation const& implementation) {
+            format("impl {} {{\n", implementation.type);
+            bu::format_delimited_range(out, implementation.definitions, "\n\n");
+            return format("}}");
+        }
+
+        auto operator()(ast::definition::Namespace const& space) {
+            format("namespace {} {{\n", space.name);
+            bu::format_delimited_range(out, space.definitions, "\n\n");
+            return format("\n}}");
+        }
+
+        template <class T>
+        auto operator()(ast::definition::Template_definition<T> const& template_definition) {
+            parameters = &template_definition.parameters;
+            return operator()(template_definition.definition);
+        }
+    };
 
 }
 
@@ -369,132 +404,8 @@ DEFINE_FORMATTER_FOR(ast::Type) {
     return std::visit(Type_format_visitor { { context.out() } }, value.value);
 }
 
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
-    return std::format_to(context.out(), "{}: {} = {}", value.pattern, value.type, value.default_value);
-}
-
-DEFINE_FORMATTER_FOR(ast::definition::Function) {
-    return format_definition(context, &value);
-}
-DEFINE_FORMATTER_FOR(ast::definition::Function_template) {
-    return format_definition(context, &value);
-}
-
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
-    return std::format_to(context.out(), "{}: {}", value.name, value.type);
-}
-
-DEFINE_FORMATTER_FOR(ast::definition::Struct) {
-    return format_definition(context, &value);
-}
-DEFINE_FORMATTER_FOR(ast::definition::Struct_template) {
-    return format_definition(context, &value);
-}
-
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Data::Constructor) {
-    return std::format_to(context.out(), "{}({})", value.name, value.type);
-}
-
-DEFINE_FORMATTER_FOR(ast::definition::Data) {
-    return format_definition(context, &value);
-}
-DEFINE_FORMATTER_FOR(ast::definition::Data_template) {
-    return format_definition(context, &value);
-}
-
-
-DEFINE_FORMATTER_FOR(ast::definition::Alias) {
-    return format_definition(context, &value);
-}
-DEFINE_FORMATTER_FOR(ast::definition::Alias_template) {
-    return format_definition(context, &value);
-}
-
-DEFINE_FORMATTER_FOR(ast::definition::Implementation) {
-    return format_definition(context, &value);
-}
-DEFINE_FORMATTER_FOR(ast::definition::Implementation_template) {
-    return format_definition(context, &value);
-}
-
-DEFINE_FORMATTER_FOR(ast::definition::Instantiation) {
-    return format_definition(context, &value);
-}
-DEFINE_FORMATTER_FOR(ast::definition::Instantiation_template) {
-    return format_definition(context, &value);
-}
-
-DEFINE_FORMATTER_FOR(ast::definition::Typeclass) {
-    return format_definition(context, &value);
-}
-DEFINE_FORMATTER_FOR(ast::definition::Typeclass_template) {
-    return format_definition(context, &value);
-}
-
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Class_reference) {
-    return value.template_arguments
-        ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
-        : std::format_to(context.out(), "{}", value.name);
-}
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
-    return std::visit(
-        bu::Overload {
-            [&](ast::Template_parameter::Type_parameter const& parameter) {
-                std::format_to(context.out(), "{}", parameter.name);
-
-                if (!parameter.classes.empty()) {
-                    std::format_to(context.out(), ": ");
-                    bu::format_delimited_range(context.out(), parameter.classes, " + ");
-                }
-
-                return context.out();
-            },
-            [&](ast::Template_parameter::Value_parameter const& parameter) {
-                return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
-            },
-            [&](ast::Template_parameter::Mutability_parameter const& parameter) {
-                return std::format_to(context.out(), "{}: mut", parameter.name);
-            }
-        },
-        value.value
-    );
-}
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
-    return std::visit(bu::Overload {
-        [&](ast::Mutability const& mutability) {
-            switch (mutability.type) {
-            case ast::Mutability::Type::mut:
-                return std::format_to(context.out(), "mut");
-            case ast::Mutability::Type::immut:
-                return std::format_to(context.out(), "immut");
-            default:
-                return std::format_to(context.out(), "mut?{}", mutability.parameter_name);
-            }
-        },
-        [&](auto const& argument) {
-            return std::format_to(context.out(), "{}", argument);
-        }
-    }, value.value);
-}
-
-
-DEFINE_FORMATTER_FOR(ast::Namespace) {
-    auto out = context.out();
-    std::format_to(out, "namespace {} {{", value.name);
-
-    for (auto definition : value.definitions_in_order) {
-        std::visit([&](auto* const pointer) {
-            std::format_to(out, "\n{}", *pointer);
-        }, definition);
-    }
-
-    return std::format_to(out, "\n}}\n");
+DEFINE_FORMATTER_FOR(ast::Definition) {
+    return std::visit(Definition_format_visitor { { context.out() }, nullptr }, value.value);
 }
 
 
@@ -502,6 +413,7 @@ DEFINE_FORMATTER_FOR(ast::Module) {
     if (value.name) {
         std::format_to(context.out(), "module {}\n", *value.name);
     }
+
     for (auto& import_ : value.imports) {
         std::format_to(context.out(), "import ");
         bu::format_delimited_range(context.out(), import_.path, ".");
@@ -510,13 +422,6 @@ DEFINE_FORMATTER_FOR(ast::Module) {
         }
         std::format_to(context.out(), "\n");
     }
-    return std::format_to(
-        context.out(),
-        "{}\n{}\n{}\n{}\n{}",
-        value.global_namespace,
-        value.instantiations,
-        value.instantiation_templates,
-        value.implementations,
-        value.implementation_templates
-    );
+
+    return bu::format_delimited_range(context.out(), value.definitions, "\n\n");
 }

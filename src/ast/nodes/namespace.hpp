@@ -1,5 +1,7 @@
 // Only included by ast/ast.hpp
 
+#if 0
+
 
 namespace ast {
 
@@ -17,7 +19,7 @@ namespace ast {
         Table<definition::Alias_template>     alias_template_definitions;
         Table<definition::Typeclass>          class_definitions;
         Table<definition::Typeclass_template> class_template_definitions;
-        Table<Namespace>                      children; 
+        Table<Namespace>                      children;
         Namespace*                            parent;
         Namespace*                            global;
         lexer::Identifier                     name;
@@ -76,3 +78,5 @@ namespace ast {
     };
 
 }
+
+#endif

@@ -211,46 +211,46 @@ namespace {
     using namespace parser;
 
 
-    thread_local ast::Namespace                                 * current_namespace;
-    thread_local decltype(ast::Module::instantiations)          * instantiations;
-    thread_local decltype(ast::Module::instantiation_templates) * instantiation_templates;
-    thread_local decltype(ast::Module::implementations)         * implementations;
-    thread_local decltype(ast::Module::implementation_templates)* implementation_templates;
-
     template <class T>
     using Components = bu::Pair<std::optional<std::vector<ast::Template_parameter>>, T>;
 
 
-    template <auto extract, auto concrete, auto non_concrete>
-    auto extract_and_add_to(auto* const target, Parse_context& context) -> void {
+    template <auto extract>
+    auto extract_from_components(Parse_context& context) -> ast::Definition {
         auto&& [template_parameters, definition] = extract(context);
-        auto name = definition.name;
-
-        auto const add_to_ordered = [&]<auto member>(bu::Value<member>) {
-            if constexpr (std::same_as<decltype(target), ast::Namespace* const>) {
-                target->definitions_in_order.push_back(std::addressof((target->*member).container().back().second));
-            }
-        };
 
         if (template_parameters) {
-            (target->*non_concrete).add(
-                std::move(name),
+            return {
                 ast::definition::Template_definition {
                     std::move(definition),
                     std::move(*template_parameters)
                 }
-            );
-
-            add_to_ordered(bu::value<non_concrete>);
+            };
         }
         else {
-            (target->*concrete).add(
-                std::move(name),
-                std::move(definition)
-            );
-
-            add_to_ordered(bu::value<concrete>);
+            return { std::move(definition) };
         }
+    }
+
+
+    auto parse_definition(Parse_context&) -> std::optional<ast::Definition>;
+
+    auto extract_definition_sequence(Parse_context& context) -> std::vector<ast::Definition> {
+        std::vector<ast::Definition> definitions;
+        definitions.reserve(16);
+
+        while (auto definition = parse_definition(context)) {
+            definitions.push_back(std::move(*definition));
+        }
+
+        return definitions;
+    }
+
+    auto extract_braced_definition_sequence(Parse_context& context) -> std::vector<ast::Definition> {
+        context.consume_required(Token::Type::brace_open);
+        auto definitions = extract_definition_sequence(context);
+        context.consume_required(Token::Type::brace_close);
+        return definitions;
     }
 
 
@@ -576,88 +576,40 @@ namespace {
     }
 
 
-    auto extract_impl_or_inst_definitions(auto* const target, Parse_context& context) -> void {
-        context.consume_required(Token::Type::brace_open);
-
-        for (;;) {
-            switch (context.extract().type) {
-            case Token::Type::fn:
-                extract_and_add_to<
-                    extract_function_components,
-                    &ast::definition::Instantiation::function_definitions,
-                    &ast::definition::Instantiation::function_template_definitions
-                >(target, context);
-                break;
-            case Token::Type::alias:
-                extract_and_add_to<
-                    extract_alias_components,
-                    &ast::definition::Instantiation::alias_definitions,
-                    &ast::definition::Instantiation::alias_template_definitions
-                >(target, context);
-                break;
-            case Token::Type::brace_close:
-                return;
-            default:
-                context.retreat();
-                throw context.expected(
-                    "a function definition, an alias definition, or a closing '}'"
-                );
-            }
-        }
-    }
-
-
-    auto extract_implementation(Parse_context& context) -> void {
-        if (current_namespace != current_namespace->global) {
-            context.retreat();
-            throw context.error("Implementation blocks may only appear at global scope");
-        }
-
+    auto extract_implementation_components(Parse_context& context)
+        -> Components<ast::definition::Implementation>
+    {
         auto template_parameters = parse_template_parameters(context);
+        auto type                = extract_type(context);
+        auto definitions         = extract_braced_definition_sequence(context);
 
-        ast::definition::Implementation implementation {
-            .type = extract_type(context)
+        return {
+            std::move(template_parameters),
+            ast::definition::Implementation {
+                std::move(type),
+                std::move(definitions)
+            }
         };
-
-        extract_impl_or_inst_definitions(&implementation, context);
-
-        if (template_parameters) {
-            implementation_templates->emplace_back(
-                std::move(implementation),
-                std::move(*template_parameters)
-            );
-        }
-        else {
-            implementations->push_back(std::move(implementation));
-        }
     }
 
 
-    auto extract_instantiation(Parse_context& context) -> void {
-        if (current_namespace != current_namespace->global) {
-            context.retreat();
-            throw context.error("Instantiation blocks may only appear at global scope");
-        }
-
+    auto extract_instantiation_components(Parse_context& context)
+        -> Components<ast::definition::Instantiation>
+    {
         auto template_parameters = parse_template_parameters(context);
 
         if (auto typeclass = parse_class_reference(context)) {
-            ast::definition::Instantiation instantiation {
-                .typeclass = std::move(*typeclass),
-                .instance  = extract_type(context)
+            auto type        = extract_type(context);
+            auto definitions = extract_braced_definition_sequence(context);
+
+            return {
+                std::move(template_parameters),
+                ast::definition::Instantiation {
+                    .typeclass   = std::move(*typeclass),
+                    .instance    = std::move(type),
+                    .definitions = std::move(definitions)
+                }
             };
-
-            extract_impl_or_inst_definitions(&instantiation, context);
-
-            if (template_parameters) {
-                instantiation_templates->emplace_back(
-                    std::move(instantiation),
-                    std::move(*template_parameters)
-                );
-            }
-            else {
-                instantiations->push_back(std::move(instantiation));
-            }
         }
         else {
             throw context.expected("a class name");
@@ -746,74 +698,42 @@ namespace {
     }
 
 
-    auto parse_definition(Parse_context&) -> bool;
-
-    auto extract_namespace(Parse_context& context) -> void {
+    auto extract_namespace(Parse_context& context) -> ast::Definition {
         auto name = extract_lower_id(context, "a namespace name");
 
-        context.consume_required(Token::Type::brace_open);
-
-        auto* parent_namespace = current_namespace;
-
-        current_namespace = parent_namespace->make_child(name);
-        while (parse_definition(context));
-        current_namespace = parent_namespace;
-
-        context.consume_required(Token::Type::brace_close);
+        return {
+            ast::definition::Namespace {
+                extract_braced_definition_sequence(context),
+                std::move(name)
+            }
+        };
     }
 
 
-    auto parse_definition(Parse_context& context) -> bool {
-        switch (context.extract().type) {
-        case Token::Type::fn:
-            extract_and_add_to<
-                extract_function_components,
-                &ast::Namespace::function_definitions,
-                &ast::Namespace::function_template_definitions
-            >(current_namespace, context);
-            break;
-        case Token::Type::struct_:
-            extract_and_add_to<
-                extract_struct_components,
-                &ast::Namespace::struct_definitions,
-                &ast::Namespace::struct_template_definitions
-            >(current_namespace, context);
-            break;
-        case Token::Type::data:
-            extract_and_add_to<
-                extract_data_components,
-                &ast::Namespace::data_definitions,
-                &ast::Namespace::data_template_definitions
-            >(current_namespace, context);
-            break;
-        case Token::Type::alias:
-            extract_and_add_to<
-                extract_alias_components,
-                &ast::Namespace::alias_definitions,
-                &ast::Namespace::alias_template_definitions
-            >(current_namespace, context);
-            break;
-        case Token::Type::class_:
-            extract_and_add_to<
-                extract_class_components,
-                &ast::Namespace::class_definitions,
-                &ast::Namespace::class_template_definitions
-            >(current_namespace, context);
-            break;
-        case Token::Type::impl:
-            extract_implementation(context);
-            break;
-        case Token::Type::inst:
-            extract_instantiation(context);
-            break;
-        case Token::Type::namespace_:
-            extract_namespace(context);
-            break;
-        default:
-            context.retreat();
-            return false;
-        }
-        return true;
+    auto parse_definition(Parse_context& context) -> std::optional<ast::Definition> {
+        return parse_and_add_source_view<[](Parse_context& context) -> std::optional<ast::Definition> {
+            switch (context.extract().type) {
+            case Token::Type::fn:
+                return extract_from_components<extract_function_components>(context);
+            case Token::Type::struct_:
+                return extract_from_components<extract_struct_components>(context);
+            case Token::Type::data:
+                return extract_from_components<extract_data_components>(context);
+            case Token::Type::alias:
+                return extract_from_components<extract_alias_components>(context);
+            case Token::Type::class_:
+                return extract_from_components<extract_class_components>(context);
+            case Token::Type::impl:
+                return extract_from_components<extract_implementation_components>(context);
+            case Token::Type::inst:
+                return extract_from_components<extract_instantiation_components>(context);
+            case Token::Type::namespace_:
+                return extract_namespace(context);
+            default:
+                context.retreat();
+                return std::nullopt;
+            }
+        }>(context);
     }
 
 }
@@ -821,8 +741,6 @@ namespace {
 
 auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     Parse_context context { tokenized_source };
-    ast::Namespace global_namespace { lexer::Identifier { std::string_view { "" } } };
-
 
     std::vector<ast::Import>         module_imports;
     std::optional<lexer::Identifier> module_name;
@@ -850,18 +768,7 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
         }
     }
 
-    decltype(ast::Module::instantiations)           instantiations;
-    decltype(ast::Module::instantiation_templates)  instantiation_templates;
-    decltype(ast::Module::implementations)          implementations;
-    decltype(ast::Module::implementation_templates) implementation_templates;
-    ::instantiations           = &instantiations;
-    ::instantiation_templates  = &instantiation_templates;
-    ::implementations          = &implementations;
-    ::implementation_templates = &implementation_templates;
-
-    ::current_namespace = &global_namespace;
-
-    while (parse_definition(context));
+    auto definitions = extract_definition_sequence(context);
 
     if (!context.is_finished()) {
         throw context.expected(
@@ -871,13 +778,9 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     }
 
     return ast::Module {
-        .source                   = std::move(tokenized_source.source),
-        .global_namespace         = std::move(global_namespace),
-        .name                     = std::move(module_name),
-        .imports                  = std::move(module_imports),
-        .instantiations           = std::move(instantiations),
-        .instantiation_templates  = std::move(instantiation_templates),
-        .implementations          = std::move(implementations),
-        .implementation_templates = std::move(implementation_templates),
+        std::move(tokenized_source.source),
+        std::move(definitions),
+        std::move(module_name),
+        std::move(module_imports)
     };
 }

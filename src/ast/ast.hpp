@@ -13,11 +13,6 @@ namespace ast {
     struct [[nodiscard]] Pattern;
     struct [[nodiscard]] Type;
 
-
-    template <class T, template <class...> class Container = std::vector>
-    using Table = bu::Flatmap<lexer::Identifier, T, bu::Flatmap_strategy::store_keys, Container>;
-
-
     struct Template_argument;
 
     struct Function_argument;
@@ -118,17 +113,12 @@ namespace ast {
     };
 
     struct [[nodiscard]] Module {
-        bu::Source source;
-        Namespace  global_namespace;
+        bu::Source              source;
+        std::vector<Definition> definitions;
 
         std::optional<lexer::Identifier> name;
         std::vector<Import>              imports;
         std::vector<Module_path>         imported_by;
-
-        std::vector<definition::Instantiation>           instantiations;
-        std::vector<definition::Instantiation_template>  instantiation_templates;
-        std::vector<definition::Implementation>          implementations;
-        std::vector<definition::Implementation_template> implementation_templates;
     };
 
 }

@@ -3,6 +3,9 @@
 
 namespace ast {
 
+    struct Definition;
+
+
     struct Template_argument {
         std::variant<Type, Expression, Mutability> value;
         DEFAULTED_EQUALITY(Template_argument);
@@ -35,6 +38,20 @@ namespace ast {
             Mutability_parameter
         > value;
         DEFAULTED_EQUALITY(Template_parameter);
+    };
+
+    struct Function_signature {
+        std::optional<std::vector<Template_parameter>> template_parameters;
+        type::Function                                 type;
+        lexer::Identifier                              name;
+        DEFAULTED_EQUALITY(Function_signature);
+    };
+
+    struct Type_signature {
+        std::optional<std::vector<Template_parameter>> template_parameters;
+        std::vector<Class_reference>                   classes;
+        lexer::Identifier                              name;
+        DEFAULTED_EQUALITY(Type_signature);
     };
 
 
@@ -82,6 +99,26 @@ namespace ast {
             DEFAULTED_EQUALITY(Alias);
         };
 
+        struct Typeclass {
+            std::vector<Function_signature> function_signatures;
+            std::vector<Type_signature>     type_signatures;
+            lexer::Identifier               name;
+            DEFAULTED_EQUALITY(Typeclass);
+        };
+
+        struct Implementation {
+            bu::Wrapper<Type>       type;
+            std::vector<Definition> definitions;
+            DEFAULTED_EQUALITY(Implementation);
+        };
+
+        struct Instantiation {
+            Class_reference         typeclass;
+            bu::Wrapper<Type>       instance;
+            std::vector<Definition> definitions;
+            DEFAULTED_EQUALITY(Instantiation);
+        };
+
 
         template <class Definition>
         struct Template_definition {
@@ -90,64 +127,49 @@ namespace ast {
             DEFAULTED_EQUALITY(Template_definition);
         };
 
-        using Function_template = Template_definition<Function>;
-        using Struct_template   = Template_definition<Struct  >;
-        using Data_template     = Template_definition<Data    >;
-        using Alias_template    = Template_definition<Alias   >;
-
-
-        struct Block_definitions {
-            Table<Function>          function_definitions;
-            Table<Function_template> function_template_definitions;
-            Table<Alias>             alias_definitions;
-            Table<Alias_template>    alias_template_definitions;
-            DEFAULTED_EQUALITY(Block_definitions);
-        };
-
-        struct Instantiation : Block_definitions {
-            Class_reference   typeclass;
-            bu::Wrapper<Type> instance;
-            DEFAULTED_EQUALITY(Instantiation);
-        };
-
-        using Instantiation_template = Template_definition<Instantiation>;
-
-        struct Implementation : Block_definitions {
-            bu::Wrapper<Type> type;
-            DEFAULTED_EQUALITY(Implementation);
-        };
-
+        using Function_template       = Template_definition<Function      >;
+        using Struct_template         = Template_definition<Struct        >;
+        using Data_template           = Template_definition<Data          >;
+        using Alias_template          = Template_definition<Alias         >;
         using Implementation_template = Template_definition<Implementation>;
-
-    }
-
-
-    struct Function_signature {
-        std::optional<std::vector<Template_parameter>> template_parameters;
-        type::Function                                 type;
-        lexer::Identifier                              name;
-        DEFAULTED_EQUALITY(Function_signature);
-    };
-
-    struct Type_signature {
-        std::optional<std::vector<Template_parameter>> template_parameters;
-        std::vector<Class_reference>                   classes;
-        lexer::Identifier                              name;
-        DEFAULTED_EQUALITY(Type_signature);
-    };
+        using Instantiation_template  = Template_definition<Instantiation >;
+        using Typeclass_template      = Template_definition<Typeclass>;
 
 
-    namespace definition {
-
-        struct Typeclass {
-            std::vector<Function_signature> function_signatures;
-            std::vector<Type_signature>     type_signatures;
-            lexer::Identifier               name;
-            DEFAULTED_EQUALITY(Typeclass);
+        struct Namespace {
+            std::vector<Definition> definitions;
+            lexer::Identifier       name;
+            DEFAULTED_EQUALITY(Namespace);
         };
 
-        using Typeclass_template = Template_definition<Typeclass>;
-
     }
+
+
+    struct Definition {
+        using Variant = std::variant<
+            definition::Function,
+            definition::Function_template,
+            definition::Data,
+            definition::Data_template,
+            definition::Struct,
+            definition::Struct_template,
+            definition::Alias,
+            definition::Alias_template,
+            definition::Typeclass,
+            definition::Typeclass_template,
+            definition::Instantiation,
+            definition::Instantiation_template,
+            definition::Implementation,
+            definition::Implementation_template,
+            definition::Namespace
+        >;
+
+        Variant          value;
+        std::string_view source_view;
+
+        auto operator==(Definition const& other) const noexcept -> bool {
+            return value == other.value;
+        }
+    };
 
 }

@@ -1,4 +1,7 @@
 #include "bu/utilities.hpp"
+
+#if 0
+
 #include "ast/ast.hpp"
 
 
@@ -109,3 +112,5 @@ auto ast::Namespace::find_lower(Qualified_name& qualified_name)
     auto* const space = apply_qualifiers(this, qualified_name);
     return find(*space, qualified_name.primary_qualifier.identifier);
 }
+
+#endif

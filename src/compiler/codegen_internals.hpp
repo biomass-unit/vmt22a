@@ -27,31 +27,13 @@ namespace compiler {
 
     struct Codegen_context {
         vm::Virtual_machine* machine;
-        ast::Module          module;
-        ast::Namespace*      space;
+        ir::Program          program;
         Scope                scope;
 
-        Codegen_context(vm::Virtual_machine& machine, ast::Module&& module) noexcept
+        Codegen_context(vm::Virtual_machine& machine, ir::Program&& program) noexcept
             : machine { &machine }
-            , module  { std::move(module) }
-            , space   { &this->module.global_namespace }
+            , program { std::move(program) }
             , scope   { .machine = &machine, .parent = nullptr } {}
-
-        auto error(std::string_view                message,
-                   auto const&                     erroneous_node,
-                   std::optional<std::string_view> help = std::nullopt)
-            -> std::runtime_error
-        {
-            return std::runtime_error {
-                bu::textual_error({
-                    .erroneous_view = erroneous_node.source_view,
-                    .file_view      = module.source.string(),
-                    .file_name      = module.source.name(),
-                    .message        = message,
-                    .help_note      = help
-                })
-            };
-        }
     };
 
 }
