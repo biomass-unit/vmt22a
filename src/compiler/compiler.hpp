@@ -1,11 +1,11 @@
 #pragma once
 
-#include "ast/ast.hpp"
+#include "resolution/ir.hpp"
 #include "vm/virtual_machine.hpp"
 
 
 namespace compiler {
 
-    auto compile(ast::Module&&) -> vm::Virtual_machine;
+    auto codegen(ir::Program&&) -> vm::Virtual_machine;
 
 }

@@ -60,9 +60,8 @@ namespace ast {
                 bu::Wrapper<Type> type;
                 DEFAULTED_EQUALITY(Member);
             };
-            std::vector<Member>      members;
-            lexer::Identifier        name;
-            std::optional<bu::Usize> size;
+            std::vector<Member> members;
+            lexer::Identifier   name;
             DEFAULTED_EQUALITY(Struct);
         };
 
@@ -74,7 +73,6 @@ namespace ast {
             };
             std::vector<Constructor> constructors;
             lexer::Identifier        name;
-            std::optional<bu::Usize> size;
             DEFAULTED_EQUALITY(Data);
         };
 

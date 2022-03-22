@@ -1,7 +1,6 @@
 #include "bu/utilities.hpp"
 #include "compiler.hpp"
 #include "codegen_internals.hpp"
-#include "ast/ast_formatting.hpp"
 
 
 namespace {
@@ -9,26 +8,14 @@ namespace {
     struct Codegen_visitor {
         compiler::Codegen_context& context;
 
-        auto operator()(auto const* definition) -> void {
-            bu::abort(std::format("Codegen_visitor::operator(): {}", *definition));
+        auto operator()(auto&&) -> void {
+            bu::unimplemented();
         }
     };
 
 }
 
 
-auto compiler::compile(ast::Module&& module) -> vm::Virtual_machine {
-    vm::Virtual_machine machine {
-        .stack = bu::Bytestack { 1'000'000 }
-    };
-
-    Codegen_context context { machine, std::move(module) };
-
-    context.space->handle_recursively([&](ast::Namespace& space) {
-        for (auto const definition : space.definitions_in_order) {
-            std::visit(Codegen_visitor { context }, definition);
-        }
-    });
-
-    return machine;
+auto compiler::codegen(ir::Program&&) -> vm::Virtual_machine {
+    bu::unimplemented();
 }

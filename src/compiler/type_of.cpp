@@ -2,6 +2,7 @@
 #include "codegen_internals.hpp"
 #include "ast/ast_formatting.hpp"
 
+#if 0 // fix later
 
 namespace {
 
@@ -179,4 +180,11 @@ auto compiler::type_of(ast::Expression& expression, Codegen_context& context) ->
         assert(expression.type);
     }
     return *expression.type;
+}
+
+#endif
+
+
+auto compiler::type_of(ir::Expression&, Codegen_context&) -> ir::Type& {
+    bu::unimplemented();
 }

@@ -4,6 +4,7 @@
 #include "bu/flatmap.hpp"
 #include "bu/textual_error.hpp"
 #include "ast/ast.hpp"
+#include "resolution/ir.hpp"
 #include "vm/virtual_machine.hpp"
 
 
@@ -54,7 +55,7 @@ namespace compiler {
     };
 
 
-    auto size_of(ast::Type&      , Codegen_context&) -> vm::Local_size_type;
-    auto type_of(ast::Expression&, Codegen_context&) -> ast::Type&;
+    auto size_of(ir::Type&      , Codegen_context&) -> vm::Local_size_type;
+    auto type_of(ir::Expression&, Codegen_context&) -> ir::Type&;
 
 }

@@ -1,8 +1,6 @@
 #include "bu/utilities.hpp"
 #include "source.hpp"
 
-#include <fstream>
-
 
 bu::Source::Source(std::string&& name)
     : filename { std::move(name) }

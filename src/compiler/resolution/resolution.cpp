@@ -7,12 +7,13 @@
 
 namespace {
 
-    auto process_imports(std::span<ast::Import> const imports) -> std::vector<ast::Module> {
+    auto handle_imports(ast::Module& module) -> void {
         auto project_root = std::filesystem::current_path() / "sample-project"; // for debugging purposes, programmatically find path later
 
         std::vector<ast::Module> modules;
+        modules.reserve(module.imports.size());
 
-        for (auto& import : imports) {
+        for (auto& import : module.imports) {
             auto directory = project_root;
 
             for (auto& component : import.path | std::views::take(import.path.size() - 1)) {
@@ -23,17 +24,18 @@ namespace {
             modules.push_back(parser::parse(lexer::lex(bu::Source { path.string() })));
         }
 
-        return modules;
+        {
+            // add stuff to the namespace
+        }
     }
 
 }
 
 
 auto compiler::resolve(ast::Module&& module) -> ir::Program {
-    auto imported_modules = process_imports(module.imports);
-    (void)imported_modules;
+    handle_imports(module);
 
-    bu::unimplemented();
+    return {};
 
     // Perform imports, scope resolution, type
     // checking, turn names into actual references, etc.

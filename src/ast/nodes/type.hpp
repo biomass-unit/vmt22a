@@ -92,8 +92,7 @@ namespace ast {
             type::Template_instantiation,
             type::Inference_variable
         >;
-        Variant                value;
-        std::optional<bu::U16> size;
+        Variant value;
 
         DEFINE_NODE_CTOR(Type);
 

@@ -184,9 +184,8 @@ namespace ast {
             Take_reference,
             Meta
         >;
-        Variant                          value;
-        std::string_view                 source_view;
-        std::optional<bu::Wrapper<Type>> type;
+        Variant          value;
+        std::string_view source_view;
 
         DEFINE_NODE_CTOR(Expression);
 
