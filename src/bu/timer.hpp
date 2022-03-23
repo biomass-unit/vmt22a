@@ -10,10 +10,9 @@ namespace bu {
 
     template <class Duration = std::chrono::milliseconds>
     struct Timer {
-        using Clock      = std::chrono::steady_clock;
-        using Time_point = Clock::time_point;
+        using Clock = std::chrono::steady_clock;
 
-        Time_point start;
+        Clock::time_point start;
         bool log_scope_exit;
 
         explicit Timer(bool const log_scope_exit = true) noexcept
@@ -35,7 +34,7 @@ namespace bu {
             return std::chrono::duration_cast<Duration>(now() - start);
         }
 
-        static auto now() noexcept -> Time_point {
+        static auto now() noexcept -> Clock::time_point {
             return Clock::now();
         }
     };

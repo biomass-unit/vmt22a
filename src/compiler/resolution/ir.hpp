@@ -71,11 +71,13 @@ namespace ir {
 
         struct Reference {
             bu::Wrapper<Type> type;
+            bool mut;
             DEFAULTED_EQUALITY(Reference);
         };
 
         struct Pointer {
             bu::Wrapper<Type> type;
+            bool mut;
             DEFAULTED_EQUALITY(Pointer);
         };
 

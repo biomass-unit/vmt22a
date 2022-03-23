@@ -90,6 +90,9 @@
     <ClCompile Include="src\compiler\resolution\definition_resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\resolution\ir_formatting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\utilities.hpp">
@@ -192,6 +195,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\compiler\resolution\resolution_internals.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compiler\resolution\ir_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
