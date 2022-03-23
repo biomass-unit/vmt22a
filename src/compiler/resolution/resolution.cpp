@@ -33,32 +33,28 @@ namespace {
     auto make_namespace(std::span<ast::Definition> const definitions) -> compiler::Namespace {
         compiler::Namespace space;
 
-        auto const register_definition = [&]<class Definition, auto member>(bu::Type<Definition>, bu::Value<member>) {
-            return [&](Definition& definition) -> void {
-                (space.*member).add(bu::copy(definition.name), &definition);
-            };
-        };
-
         for (auto& definition : definitions) {
+            using namespace ast::definition;
+
             std::visit(bu::Overload {
-                register_definition(bu::type<ast::definition::Function >, bu::value<&compiler::Namespace::function_definitions>),
-                register_definition(bu::type<ast::definition::Struct   >, bu::value<&compiler::Namespace::struct_definitions  >),
-                register_definition(bu::type<ast::definition::Data     >, bu::value<&compiler::Namespace::data_definitions    >),
-                register_definition(bu::type<ast::definition::Alias    >, bu::value<&compiler::Namespace::alias_definitions   >),
-                register_definition(bu::type<ast::definition::Typeclass>, bu::value<&compiler::Namespace::class_definitions   >),
-
-                [](ast::definition::Implementation&) -> void {
-                    bu::unimplemented();
+                [&](Function& function) -> void {
+                    space.lower_table.add(bu::copy(function.name), &function);
                 },
-                [](ast::definition::Instantiation&) -> void {
-                    bu::unimplemented();
+                [&](bu::one_of<Struct, Data, Alias, Typeclass> auto& definition) -> void {
+                    space.upper_table.add(bu::copy(definition.name), &definition);
                 },
 
-                []<class Definition>(ast::definition::Template_definition<Definition>&) -> void {
+                [](Implementation&) -> void {
+                    bu::unimplemented();
+                },
+                [](Instantiation&) -> void {
+                    bu::unimplemented();
+                },
+                []<class Definition>(Template_definition<Definition>&) -> void {
                     bu::unimplemented();
                 },
 
-                [&](ast::definition::Namespace& nested_space) -> void {
+                [&](Namespace& nested_space) -> void {
                     space.children.add(bu::copy(nested_space.name), make_namespace(nested_space.definitions));
                 }
             }, definition.value);

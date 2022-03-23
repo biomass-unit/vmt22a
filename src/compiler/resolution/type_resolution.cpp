@@ -24,41 +24,21 @@ namespace {
         }
 
         auto operator()(ast::type::Typename& name) -> ir::Type {
-            return std::visit(
-                bu::Overload {
-                    [](std::monostate) -> ir::Type { bu::unimplemented(); },
-                    [](ast::definition::Struct*) -> ir::Type { bu::unimplemented(); },
-                    [](ast::definition::Data*) -> ir::Type { bu::unimplemented(); }
-                },
-                context.find_one_of<
-                    &compiler::Namespace::struct_definitions,
-                    &compiler::Namespace::data_definitions
-                >(name.identifier)
-            );
+            if (auto const upper = context.find_upper(name.identifier)) {
+                bu::unimplemented();
+            }
+            else {
+                bu::unimplemented();
+            }
         }
 
         auto operator()(ast::type::Template_instantiation& instantiation) -> ir::Type {
-            return std::visit(
-                bu::Overload {
-                    [](std::monostate) -> ir::Type {
-                        bu::unimplemented();
-                    },
-                    [](ast::definition::Struct_template*) -> ir::Type {
-                        bu::unimplemented();
-                    },
-                    [](ast::definition::Data_template*) -> ir::Type {
-                        bu::unimplemented();
-                    },
-                    [](ast::definition::Alias_template*) -> ir::Type {
-                        bu::unimplemented();
-                    }
-                },
-                context.find_one_of<
-                    &compiler::Namespace::struct_template_definitions,
-                    &compiler::Namespace::data_template_definitions,
-                    &compiler::Namespace::alias_template_definitions
-                >(instantiation.name)
-            );
+            if (auto const upper = context.find_upper(instantiation.name)) {
+                bu::unimplemented();
+            }
+            else {
+                bu::unimplemented();
+            }
         }
 
         auto operator()(ast::type::Tuple& tuple) -> ir::Type {
