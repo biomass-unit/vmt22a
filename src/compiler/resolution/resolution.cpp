@@ -57,6 +57,7 @@ auto compiler::resolve(ast::Module&& module) -> ir::Program {
     handle_imports(module);
 
     auto global_namespace = make_namespace(module.definitions);
+
     Resolution_context context {
         .current_namespace = &global_namespace,
         .global_namespace = &global_namespace

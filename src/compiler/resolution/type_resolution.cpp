@@ -23,8 +23,18 @@ namespace {
             return { .value = ir::type::Primitive<T> {}, .size = sizeof(T) };
         }
 
-        auto operator()(ast::type::Typename&) -> ir::Type {
-            bu::unimplemented();
+        auto operator()(ast::type::Typename& name) -> ir::Type {
+            return std::visit(
+                bu::Overload {
+                    [](std::monostate) -> ir::Type { bu::unimplemented(); },
+                    [](ast::definition::Struct*) -> ir::Type { bu::unimplemented(); },
+                    [](ast::definition::Data*) -> ir::Type { bu::unimplemented(); }
+                },
+                context.find_one_of<
+                    &compiler::Namespace::struct_definitions,
+                    &compiler::Namespace::data_definitions
+                >(name.identifier)
+            );
         }
 
         auto operator()(ast::type::Tuple& tuple) -> ir::Type {

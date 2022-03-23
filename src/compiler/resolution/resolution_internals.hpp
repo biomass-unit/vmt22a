@@ -25,9 +25,7 @@ namespace compiler {
         Namespace* global_namespace;
 
         template <auto Namespace::*... members>
-        auto find_one_of(ast::Qualified_name& name)
-            -> std::variant<decltype(&(current_namespace->*members))...>
-        {
+        auto find_one_of(ast::Qualified_name& name) {
             if (name.is_unqualified()) {
                 bu::unimplemented(); // try local scope first
             }
@@ -44,9 +42,46 @@ namespace compiler {
                 }
             }, name.root_qualifier->value);
 
-            std::ignore = root;
+            for (auto& qualifier : name.middle_qualifiers) {
+                if (auto* const lower = qualifier.lower()) {
+                    if (auto* const child = root->children.find(lower->name)) {
+                        root = child;
+                    }
+                    else {
+                        bu::unimplemented();
+                    }
+                }
+                else {
+                    bu::unimplemented();
+                }
+            }
 
-            bu::unimplemented();
+            return find_impl<
+                std::variant<
+                    std::monostate,
+                    typename std::remove_reference_t<
+                        decltype(current_namespace->*members)
+                    >::Value...
+                >,
+                members...
+            >(root, name.primary_qualifier.identifier);
+        }
+
+    private:
+
+        template <class Variant, auto Namespace::* head, auto Namespace::*... tail>
+        auto find_impl(Namespace* const space, lexer::Identifier const name) -> Variant {
+            if (auto** const pointer = (space->*head).find(name)) {
+                return *pointer;
+            }
+            else {
+                if constexpr (sizeof...(tail) != 0) {
+                    return find_impl<Variant, tail...>(space, name);
+                }
+                else {
+                    return std::monostate {};
+                }
+            }
         }
     };
 
