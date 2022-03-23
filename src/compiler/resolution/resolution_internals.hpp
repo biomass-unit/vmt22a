@@ -12,9 +12,16 @@ namespace compiler {
         template <class T>
         using Table = bu::Flatmap<lexer::Identifier, T*>;
 
-        Table<ast::definition::Struct> struct_definitions;
-        Table<ast::definition::Data>   data_definitions;
-        // add other tables
+        Table<ast::definition::Function>           function_definitions;
+        Table<ast::definition::Function_template>  function_template_definitions;
+        Table<ast::definition::Struct>             struct_definitions;
+        Table<ast::definition::Struct_template>    struct_template_definitions;
+        Table<ast::definition::Data>               data_definitions;
+        Table<ast::definition::Data_template>      data_template_definitions;
+        Table<ast::definition::Alias>              alias_definitions;
+        Table<ast::definition::Alias_template>     alias_template_definitions;
+        Table<ast::definition::Typeclass>          class_definitions;
+        Table<ast::definition::Typeclass_template> class_template_definitions;
 
         bu::Flatmap<lexer::Identifier, Namespace> children;
     };
@@ -86,6 +93,7 @@ namespace compiler {
     };
 
 
-    auto resolve_type(ast::Type&, Resolution_context&) -> ir::Type;
+    auto resolve_type      (ast::Type&      , Resolution_context&) -> ir::Type;
+    auto resolve_definition(ast::Definition&, Resolution_context&) -> void;
 
 }

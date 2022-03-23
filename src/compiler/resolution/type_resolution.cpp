@@ -37,6 +37,30 @@ namespace {
             );
         }
 
+        auto operator()(ast::type::Template_instantiation& instantiation) -> ir::Type {
+            return std::visit(
+                bu::Overload {
+                    [](std::monostate) -> ir::Type {
+                        bu::unimplemented();
+                    },
+                    [](ast::definition::Struct_template*) -> ir::Type {
+                        bu::unimplemented();
+                    },
+                    [](ast::definition::Data_template*) -> ir::Type {
+                        bu::unimplemented();
+                    },
+                    [](ast::definition::Alias_template*) -> ir::Type {
+                        bu::unimplemented();
+                    }
+                },
+                context.find_one_of<
+                    &compiler::Namespace::struct_template_definitions,
+                    &compiler::Namespace::data_template_definitions,
+                    &compiler::Namespace::alias_template_definitions
+                >(instantiation.name)
+            );
+        }
+
         auto operator()(ast::type::Tuple& tuple) -> ir::Type {
             ir::type::Tuple ir_tuple;
             bu::U16         size = 0;

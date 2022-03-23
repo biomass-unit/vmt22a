@@ -33,16 +33,33 @@ namespace {
     auto make_namespace(std::span<ast::Definition> const definitions) -> compiler::Namespace {
         compiler::Namespace space;
 
+        auto const register_definition = [&]<class Definition, auto member>(bu::Type<Definition>, bu::Value<member>) {
+            return [&](Definition& definition) -> void {
+                (space.*member).add(bu::copy(definition.name), &definition);
+            };
+        };
+
         for (auto& definition : definitions) {
             std::visit(bu::Overload {
-                [&](ast::definition::Struct& structure) -> void {
-                    space.struct_definitions.add(bu::copy(structure.name), &structure);
+                register_definition(bu::type<ast::definition::Function >, bu::value<&compiler::Namespace::function_definitions>),
+                register_definition(bu::type<ast::definition::Struct   >, bu::value<&compiler::Namespace::struct_definitions  >),
+                register_definition(bu::type<ast::definition::Data     >, bu::value<&compiler::Namespace::data_definitions    >),
+                register_definition(bu::type<ast::definition::Alias    >, bu::value<&compiler::Namespace::alias_definitions   >),
+                register_definition(bu::type<ast::definition::Typeclass>, bu::value<&compiler::Namespace::class_definitions   >),
+
+                [](ast::definition::Implementation&) -> void {
+                    bu::unimplemented();
                 },
+                [](ast::definition::Instantiation&) -> void {
+                    bu::unimplemented();
+                },
+
+                []<class Definition>(ast::definition::Template_definition<Definition>&) -> void {
+                    bu::unimplemented();
+                },
+
                 [&](ast::definition::Namespace& nested_space) -> void {
                     space.children.add(bu::copy(nested_space.name), make_namespace(nested_space.definitions));
-                },
-                [](auto&) -> void {
-                    bu::unimplemented();
                 }
             }, definition.value);
         }

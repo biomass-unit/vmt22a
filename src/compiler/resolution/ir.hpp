@@ -111,6 +111,8 @@ namespace ir {
         Variant value;
         bu::U16 size;
 
+        //auto conforms_to(Typeclass) -> bool
+
         DEFAULTED_EQUALITY(Type);
     };
 

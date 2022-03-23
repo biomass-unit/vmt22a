@@ -211,6 +211,7 @@
     <ClCompile Include="src\bu\source.cpp" />
     <ClCompile Include="src\cli\cli.cpp" />
     <ClCompile Include="src\compiler\compiler.cpp" />
+    <ClCompile Include="src\compiler\resolution\definition_resolution.cpp" />
     <ClCompile Include="src\compiler\resolution\resolution.cpp" />
     <ClCompile Include="src\compiler\resolution\type_resolution.cpp" />
     <ClCompile Include="src\compiler\scope.cpp" />
