@@ -66,9 +66,6 @@
     <ClCompile Include="src\tests\vm_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast\nodes\namespace.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\tests\tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -165,9 +162,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\vm\vm_formatting.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ast\nodes\namespace.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tests\tests.hpp">

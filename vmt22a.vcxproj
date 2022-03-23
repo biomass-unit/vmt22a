@@ -202,7 +202,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ast\ast_formatting.cpp" />
-    <ClCompile Include="src\ast\nodes\namespace.cpp" />
     <ClCompile Include="src\bu\color.cpp">
       <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DisableLanguageExtensions>
       <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DisableLanguageExtensions>
@@ -245,7 +244,6 @@
     <ClInclude Include="src\ast\ast.hpp" />
     <ClInclude Include="src\ast\ast_formatting.hpp" />
     <ClInclude Include="src\ast\nodes\expression.hpp" />
-    <ClInclude Include="src\ast\nodes\namespace.hpp" />
     <ClInclude Include="src\ast\nodes\pattern.hpp" />
     <ClInclude Include="src\ast\nodes\definition.hpp" />
     <ClInclude Include="src\ast\nodes\type.hpp" />

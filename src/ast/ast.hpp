@@ -3,7 +3,6 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "bu/source.hpp"
-#include "bu/flatmap.hpp"
 #include "lexer/token.hpp"
 
 
@@ -74,7 +73,6 @@ name(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>) \
 #include "nodes/pattern.hpp"
 #include "nodes/type.hpp"
 #include "nodes/definition.hpp"
-#include "nodes/namespace.hpp"
 
 #undef DEFINE_NODE_CTOR
 

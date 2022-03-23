@@ -30,11 +30,38 @@ namespace {
         }
     }
 
+    auto make_namespace(std::span<ast::Definition> const definitions) -> compiler::Namespace {
+        compiler::Namespace space;
+
+        for (auto& definition : definitions) {
+            std::visit(bu::Overload {
+                [&](ast::definition::Struct& structure) -> void {
+                    space.struct_definitions.add(bu::copy(structure.name), &structure);
+                },
+                [&](ast::definition::Namespace& nested_space) -> void {
+                    space.children.add(bu::copy(nested_space.name), make_namespace(nested_space.definitions));
+                },
+                [](auto&) -> void {
+                    bu::unimplemented();
+                }
+            }, definition.value);
+        }
+
+        return space;
+    }
+
 }
 
 
 auto compiler::resolve(ast::Module&& module) -> ir::Program {
     handle_imports(module);
+
+    auto global_namespace = make_namespace(module.definitions);
+    Resolution_context context {
+        .current_namespace = &global_namespace,
+        .global_namespace = &global_namespace
+    };
+
 
     // vvv Release all memory used by the AST
 
@@ -45,7 +72,4 @@ auto compiler::resolve(ast::Module&& module) -> ir::Program {
     // ^^^ Fix, use RAII or find wrapped types programmatically ^^^
 
     return {};
-
-    // Perform imports, scope resolution, type
-    // checking, turn names into actual references, etc.
 }

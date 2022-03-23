@@ -23,6 +23,10 @@ namespace {
             return { .value = ir::type::Primitive<T> {}, .size = sizeof(T) };
         }
 
+        auto operator()(ast::type::Typename&) -> ir::Type {
+            bu::unimplemented();
+        }
+
         auto operator()(ast::type::Tuple& tuple) -> ir::Type {
             ir::type::Tuple ir_tuple;
             bu::U16         size = 0;

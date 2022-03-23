@@ -3,6 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "lexer/token.hpp" // for lexer::Identifier, fix?
+#include "ast/ast.hpp" // fix?
 #include "vm/virtual_machine.hpp"
 
 
@@ -37,10 +38,8 @@ namespace ir {
 
     namespace type {
 
-        template <class>
-        struct Primitive {
-            DEFAULTED_EQUALITY(Primitive);
-        };
+        template <class T>
+        using Primitive = ast::type::Primitive<T>;
 
         using Integer   = Primitive<bu::Isize    >;
         using Floating  = Primitive<bu::Float    >;
@@ -119,7 +118,7 @@ namespace ir {
     namespace expression {
 
         template <class T>
-        using Literal = expression::Literal<T>;
+        using Literal = ast::expression::Literal<T>;
 
         struct Local_variable {
             bu::Wrapper<Type>     type;
