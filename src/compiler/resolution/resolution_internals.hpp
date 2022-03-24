@@ -9,19 +9,19 @@
 namespace compiler {
 
     using Upper_variant = std::variant<
-        ast::definition::Struct*,
-        ast::definition::Struct_template*,
-        ast::definition::Data*,
-        ast::definition::Data_template*,
-        ast::definition::Alias*,
-        ast::definition::Alias_template*,
-        ast::definition::Typeclass*,
-        ast::definition::Typeclass_template*
+        ast::definition::Struct             *,
+        ast::definition::Struct_template    *,
+        ast::definition::Data               *,
+        ast::definition::Data_template      *,
+        ast::definition::Alias              *,
+        ast::definition::Alias_template     *,
+        ast::definition::Typeclass          *,
+        ast::definition::Typeclass_template *
     >;
 
     using Lower_variant = std::variant<
-        ast::definition::Function*,
-        ast::definition::Function_template*
+        ast::definition::Function          *,
+        ast::definition::Function_template *
     >;
 
 
@@ -95,7 +95,7 @@ namespace compiler {
     };
 
 
-    auto resolve_type (ast::Type&      , Resolution_context&) -> ir::Type;
+    auto resolve_type (ast::Type&, Resolution_context&) -> ir::Type;
 
     auto resolve_upper(Upper_variant, Resolution_context&) -> void;
     auto resolve_lower(Lower_variant, Resolution_context&) -> void;
