@@ -66,21 +66,17 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
     auto extract_qualifier = [&]() -> bool {
         switch (auto& token = context.extract(); token.type) {
         case Token::Type::lower_name:
-            qualifiers.emplace_back(
-                ast::Qualifier::Lower {
-                    token.as_identifier()
-                }
-            );
-            return true;
         case Token::Type::upper_name:
             template_argument_anchor = context.pointer;
 
-            qualifiers.emplace_back(
-                ast::Qualifier::Upper {
-                    parse_template_arguments(context),
-                    token.as_identifier()
+            qualifiers.push_back(
+                ast::Qualifier {
+                    .template_arguments = parse_template_arguments(context),
+                    .name               = token.as_identifier(),
+                    .is_upper           = token.type == Token::Type::upper_name
                 }
             );
+
             return true;
         default:
             context.retreat();
@@ -98,22 +94,13 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
         auto back = std::move(qualifiers.back());
         qualifiers.pop_back();
 
-        auto primary = [&]() -> ast::Primary_qualifier {
-            if (auto* upper = back.upper()) {
-                // Template arguments are handled separately
-                upper->template_arguments.reset();
-                context.pointer = template_argument_anchor;
-                return { .identifier = upper->name, .uppercase = true };
-            }
-            else {
-                return { .identifier = back.lower()->name, .uppercase = false };
-            }
-        }();
+        // Ignore potential template arguments, they are handled separately
+        context.pointer = template_argument_anchor;
 
         return {
             .root_qualifier    = std::move(root),
             .middle_qualifiers = std::move(qualifiers),
-            .primary_qualifier = std::move(primary)
+            .primary_qualifier { back.name, back.is_upper }
         };
     }
     else {
@@ -553,7 +540,7 @@ namespace {
 
             auto name = extract_qualified(std::move(root), context);
 
-            if (name.primary_qualifier.is_upper()) {
+            if (name.primary_qualifier.is_upper) {
                 return name;
             }
             else {

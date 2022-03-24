@@ -103,8 +103,8 @@ auto run_parser_tests() -> void {
     auto make_unqualified = [](std::string_view name) {
         return ast::Qualified_name {
             .primary_qualifier {
-                .identifier = lexer::Identifier { name },
-                .uppercase  = std::isupper(name.front()) != 0
+                .name     = lexer::Identifier { name },
+                .is_upper = std::isupper(name.front()) != 0
             }
         };
     };
@@ -261,26 +261,7 @@ auto run_parser_tests() -> void {
         }
     );
 
-    ast::Qualifier::Upper namespace_access_test_vector {
-        .template_arguments = std::vector {
-            ast::Template_argument {
-                ast::Type {
-                    ast::type::Typename {
-                        make_unqualified("Long")
-                    }
-                }
-            }
-        },
-        .name = "Vector"_id,
-    };
-    std::vector<ast::Qualifier> namespace_access_test_qualifiers;
-
-    namespace_access_test_qualifiers.emplace_back(ast::Qualifier::Lower { "std"_id });
-    namespace_access_test_qualifiers.emplace_back(std::move(namespace_access_test_vector));
-
-    // ^^^ this isn't done inline because it caused an ICE on MSVC for some reason
-
-    test
+    /*test
     (
         {
             Token { .type = Type::let },
@@ -302,12 +283,30 @@ auto run_parser_tests() -> void {
             .initializer = ast::expression::Literal<bu::Isize> { 5 },
             .type = ast::type::Typename {
                 ast::Qualified_name {
-                    .middle_qualifiers = std::move(namespace_access_test_qualifiers),
-                    .primary_qualifier { .identifier = "Element"_id, .uppercase = true }
+                    .middle_qualifiers {
+                        ast::Qualifier {
+                            .name = "std"_id,
+                            .is_upper = false
+                        },
+                        ast::Qualifier {
+                            .template_arguments = std::vector {
+                                ast::Template_argument {
+                                    ast::Type {
+                                        ast::type::Typename {
+                                            make_unqualified("Long")
+                                        }
+                                    }
+                                }
+                            },
+                            .name = "Vector"_id,
+                            .is_upper = true
+                        }
+                    },
+                    .primary_qualifier { .name = "Element"_id, .is_upper = true }
                 }
             }
         }
-    );
+    );*/
 
     test
     (

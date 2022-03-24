@@ -145,7 +145,7 @@ namespace ast {
     }
 
 
-    struct Definition {
+    struct Definition : dtl::Source_tracked {
         using Variant = std::variant<
             definition::Function,
             definition::Function_template,
@@ -165,12 +165,9 @@ namespace ast {
             definition::Namespace_template
         >;
 
-        Variant          value;
-        std::string_view source_view;
+        Variant value;
 
-        auto operator==(Definition const& other) const noexcept -> bool {
-            return value == other.value;
-        }
+        DEFINE_NODE_CTOR(Definition);
     };
 
 }

@@ -19,29 +19,16 @@ namespace ast {
     struct Root_qualifier;
 
     struct Qualifier {
-        struct Lower {
-            lexer::Identifier name;
-            DEFAULTED_EQUALITY(Lower);
-        };
-        struct Upper {
-            std::optional<std::vector<Template_argument>> template_arguments;
-            lexer::Identifier                             name;
-            DEFAULTED_EQUALITY(Upper);
-        };
-        std::variant<Lower, Upper> value;
+        std::optional<std::vector<Template_argument>> template_arguments;
+        lexer::Identifier                             name;
+        bool                                          is_upper;
         DEFAULTED_EQUALITY(Qualifier);
-
-        auto lower() noexcept -> Lower* { return std::get_if<Lower>(&value); }
-        auto upper() noexcept -> Upper* { return std::get_if<Upper>(&value); }
     };
 
     struct Primary_qualifier {
-        lexer::Identifier identifier;
-        bool              uppercase;
+        lexer::Identifier name;
+        bool              is_upper;
         DEFAULTED_EQUALITY(Primary_qualifier);
-
-        auto is_upper() const noexcept -> bool { return uppercase; }
-        auto is_lower() const noexcept -> bool { return !uppercase; }
     };
 
     struct Qualified_name {
@@ -60,6 +47,21 @@ namespace ast {
         Type                             type;
         DEFAULTED_EQUALITY(Mutability);
     };
+
+
+    namespace dtl {
+
+        struct Source_tracked {
+            std::string_view source_view;
+        };
+
+    }
+
+    // Provide equality comparisons for all node types
+    template <class T> requires requires { typename T::Variant; }
+    auto operator==(T const& lhs, T const& rhs) noexcept -> bool {
+        return lhs.value == rhs.value;
+    }
 
 }
 

@@ -156,7 +156,7 @@ namespace ast {
     }
 
 
-    struct Expression {
+    struct Expression : dtl::Source_tracked {
         using Variant = std::variant<
             expression::Literal<bu::Isize>,
             expression::Literal<bu::Float>,
@@ -188,14 +188,10 @@ namespace ast {
             expression::Take_reference,
             expression::Meta
         >;
-        Variant          value;
-        std::string_view source_view;
+
+        Variant value;
 
         DEFINE_NODE_CTOR(Expression);
-
-        auto operator==(Expression const& other) const noexcept -> bool {
-            return value == other.value;
-        }
     };
 
     static_assert(std::is_trivially_copyable_v<bu::Wrapper<Expression>>);

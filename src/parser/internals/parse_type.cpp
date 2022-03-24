@@ -11,7 +11,7 @@ namespace {
         auto* const anchor = context.pointer;
         auto name = extract_qualified(std::move(root), context);
 
-        if (name.primary_qualifier.is_upper()) {
+        if (!name.primary_qualifier.is_upper) {
             if (auto template_arguments = parse_template_arguments(context)) {
                 return ast::type::Template_instantiation {
                     std::move(*template_arguments),
@@ -188,29 +188,31 @@ namespace {
 
 
 auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
-    auto type = parse_normal_type(context);
-    auto* const anchor = context.pointer;
+    return parse_and_add_source_view<[](Parse_context& context) -> std::optional<ast::Type> {
+        auto type = parse_normal_type(context);
+        auto* const anchor = context.pointer;
 
-    if (type && context.try_consume(Token::Type::double_colon)) {
-        auto name = extract_qualified({ std::move(*type) }, context);
+        if (type && context.try_consume(Token::Type::double_colon)) {
+            auto name = extract_qualified({ std::move(*type) }, context);
 
-        if (name.primary_qualifier.is_upper()) {
-            if (auto template_arguments = parse_template_arguments(context)) {
-                return ast::type::Template_instantiation {
-                    std::move(*template_arguments),
-                    std::move(name)
-                };
+            if (name.primary_qualifier.is_upper) {
+                if (auto template_arguments = parse_template_arguments(context)) {
+                    return ast::type::Template_instantiation {
+                        std::move(*template_arguments),
+                        std::move(name)
+                    };
+                }
+                else {
+                    return ast::type::Typename { std::move(name) };
+                }
             }
             else {
-                return ast::type::Typename { std::move(name) };
+                // Not a qualified type, retreat
+                context.pointer = anchor;
+                type = std::move(std::get<ast::Type>(name.root_qualifier->value));
             }
         }
-        else {
-            // Not a qualified type, retreat
-            context.pointer = anchor;
-            type = std::move(std::get<ast::Type>(name.root_qualifier->value));
-        }
-    }
 
-    return type;
+        return type;
+    }>(context);
 }

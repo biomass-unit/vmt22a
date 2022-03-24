@@ -32,7 +32,7 @@ namespace ast {
     }
 
 
-    struct Pattern {
+    struct Pattern : dtl::Source_tracked {
         using Variant = std::variant<
             pattern::Wildcard,
             pattern::Literal<bu::Isize>,
@@ -44,14 +44,10 @@ namespace ast {
             pattern::Tuple,
             pattern::Guarded
         >;
-        Variant          value;
-        std::string_view source_view;
+
+        Variant value;
 
         DEFINE_NODE_CTOR(Pattern);
-
-        auto operator==(Pattern const& other) const noexcept -> bool {
-            return value == other.value;
-        }
     };
 
 }

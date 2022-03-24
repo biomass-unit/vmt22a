@@ -74,7 +74,7 @@ namespace ast {
     }
 
 
-    struct Type {
+    struct Type : dtl::Source_tracked {
         using Variant = std::variant<
             type::Integer,
             type::Floating,
@@ -92,13 +92,10 @@ namespace ast {
             type::Template_instantiation,
             type::Inference_variable
         >;
+
         Variant value;
 
         DEFINE_NODE_CTOR(Type);
-
-        auto operator==(Type const& other) const noexcept -> bool {
-            return value == other.value;
-        }
     };
 
 

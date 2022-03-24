@@ -99,22 +99,15 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     }, value.root_qualifier->value);
 
     for (auto& qualifier : value.middle_qualifiers) {
-        std::visit(bu::Overload {
-            [out](ast::Qualifier::Lower const& lower) {
-                std::format_to(out, "{}::", lower.name);
-            },
-            [out](ast::Qualifier::Upper const& upper) {
-                if (upper.template_arguments) {
-                    std::format_to(out, "{}[{}]::", upper.name, *upper.template_arguments);
-                }
-                else {
-                    std::format_to(out, "{}::", upper.name);
-                }
-            }
-        }, qualifier.value);
+        std::format_to(
+            out,
+            "{}{}::",
+            qualifier.name,
+            qualifier.template_arguments ? std::format("[{}]", qualifier.template_arguments) : ""
+        );
     }
 
-    return std::format_to(out, "{}", value.primary_qualifier.identifier);
+    return std::format_to(out, "{}", value.primary_qualifier.name);
 }
 
 

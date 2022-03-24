@@ -54,7 +54,7 @@ namespace compiler {
         auto find_impl(ast::Qualified_name& name)
             -> std::optional<typename std::remove_reference_t<decltype(current_namespace->*member)>::Value>
         {
-            if (auto* const pointer = (apply_qualifiers(name)->*member).find(name.primary_qualifier.identifier)) {
+            if (auto* const pointer = (apply_qualifiers(name)->*member).find(name.primary_qualifier.name)) {
                 return *pointer;
             }
             else {
@@ -76,13 +76,12 @@ namespace compiler {
             }, name.root_qualifier->value);
 
             for (auto& qualifier : name.middle_qualifiers) {
-                if (auto* const lower = qualifier.lower()) {
-                    if (auto* const child = root->children.find(lower->name)) {
-                        root = child;
-                    }
-                    else {
-                        bu::unimplemented();
-                    }
+                if (qualifier.is_upper || qualifier.template_arguments) {
+                    bu::unimplemented();
+                }
+
+                if (auto* const child = root->children.find(qualifier.name)) {
+                    root = child;
                 }
                 else {
                     bu::unimplemented();
@@ -95,7 +94,7 @@ namespace compiler {
     };
 
 
-    auto resolve_type (ast::Type&, Resolution_context&) -> ir::Type;
+    auto resolve_type(ast::Type&, Resolution_context&) -> ir::Type;
 
     auto resolve_upper(Upper_variant, Resolution_context&) -> void;
     auto resolve_lower(Lower_variant, Resolution_context&) -> void;

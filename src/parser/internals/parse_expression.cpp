@@ -24,7 +24,7 @@ namespace {
         auto* const anchor = context.pointer;
         auto name = extract_qualified(std::move(root), context);
 
-        if (name.primary_qualifier.is_lower()) {
+        if (!name.primary_qualifier.is_upper) {
             if (auto template_arguments = parse_template_arguments(context)) {
                 return ast::expression::Template_instantiation {
                     std::move(name),
