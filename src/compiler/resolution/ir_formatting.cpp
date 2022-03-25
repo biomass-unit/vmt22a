@@ -1,4 +1,5 @@
 #include "bu/utilities.hpp"
+#include "ast/ast_formatting.hpp"
 #include "ir_formatting.hpp"
 
 
@@ -19,7 +20,7 @@ namespace {
             return format("{}", literal.value);
         }
         auto operator()(ir::expression::Let_binding const& binding) {
-            return format("(Bind {} = {})", binding.type, binding.initializer);
+            return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
         }
         auto operator()(ir::expression::Local_variable const& variable) {
             return format("(Local {})", variable.type);

@@ -57,12 +57,15 @@ namespace compiler {
 
 
     struct Resolution_context {
+        Resolution_scope scope;
+
         Namespace* current_namespace;
         Namespace* global_namespace;
 
-        explicit Resolution_context(Namespace& global) noexcept
-            : current_namespace { &global }
-            , global_namespace  { &global } {}
+        explicit Resolution_context(Namespace& global, Resolution_scope&& scope) noexcept
+            : scope             { std::move(scope) }
+            , current_namespace { &global          }
+            , global_namespace  { &global          } {}
 
         auto find_upper(ast::Qualified_name& name) -> std::optional<Upper_variant> {
             return find_impl<&Namespace::upper_table>(name);

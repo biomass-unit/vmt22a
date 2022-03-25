@@ -83,12 +83,18 @@ namespace ir {
 
         struct User_defined_data {
             bu::Wrapper<definition::Data> data;
-            DEFAULTED_EQUALITY(User_defined_data);
+
+            auto operator==(User_defined_data const&) const noexcept -> bool {
+                bu::unimplemented();
+            }
         };
 
         struct User_defined_struct {
             bu::Wrapper<definition::Struct> structure;
-            DEFAULTED_EQUALITY(User_defined_struct);
+
+            auto operator==(User_defined_struct const&) const noexcept -> bool {
+                bu::unimplemented();
+            }
         };
 
     }
@@ -118,6 +124,12 @@ namespace ir {
         DEFAULTED_EQUALITY(Type);
     };
 
+    namespace type {
+
+        inline bu::Wrapper<Type> const unit = Type { .value = type::Tuple {}, .size = 0 };
+
+    }
+
 
     namespace expression {
 
@@ -125,9 +137,9 @@ namespace ir {
         using Literal = ast::expression::Literal<T>;
 
         struct Let_binding {
-            // also handle pattern
-            bu::Wrapper<Type>       type;
-            bu::Wrapper<Expression> initializer;
+            bu::Wrapper<ast::Pattern> pattern;
+            bu::Wrapper<Type>         type;
+            bu::Wrapper<Expression>   initializer;
             DEFAULTED_EQUALITY(Let_binding);
         };
 

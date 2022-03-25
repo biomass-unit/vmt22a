@@ -15,7 +15,9 @@
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
 
+#include "compiler/resolution/ir_formatting.hpp"
 #include "compiler/resolution/resolution.hpp"
+#include "compiler/resolution/resolution_internals.hpp"
 
 #include "compiler/codegen_internals.hpp"
 
@@ -73,6 +75,19 @@ namespace {
     [[maybe_unused]]
     auto const program_parser_repl = generic_repl([](bu::Source source) {
         bu::print("{}\n", parser::parse(lexer::lex(std::move(source))));
+    });
+
+    [[maybe_unused]]
+    auto const expression_resolution_repl = generic_repl([](bu::Source source) {
+        auto tokenized_source = lexer::lex(std::move(source));
+        parser::Parse_context parse_context { tokenized_source };
+        auto result = parser::extract_expression(parse_context);
+
+        compiler::Namespace space;
+        compiler::Resolution_context resolution_context { space, {} };
+        auto expression = compiler::resolve_expression(result, resolution_context);
+
+        bu::print("ir expr: {}\n", expression);
     });
 
 
@@ -166,6 +181,9 @@ auto main(int argc, char const** argv) -> int try {
         }
         else if (*name == "prog") {
             program_parser_repl();
+        }
+        else if (*name == "res") {
+            expression_resolution_repl();
         }
         else {
             bu::abort("Unrecognized repl name");

@@ -85,7 +85,7 @@ auto compiler::resolve(ast::Module&& module) -> ir::Program {
 
     auto global_namespace = make_namespace(module.definitions);
 
-    Resolution_context context { global_namespace };
+    Resolution_context context { global_namespace, Resolution_scope { .parent = nullptr } };
 
 
     // vvv Release all memory used by the AST
