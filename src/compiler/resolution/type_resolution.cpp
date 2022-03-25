@@ -10,9 +10,8 @@ namespace {
         auto recurse(ast::Type& type) -> ir::Type {
             return compiler::resolve_type(type, context);
         }
-
         auto recurse() {
-            return [&](ast::Type& type) -> ir::Type {
+            return [this](ast::Type& type) -> ir::Type {
                 return recurse(type);
             };
         }

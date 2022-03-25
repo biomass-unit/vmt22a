@@ -124,9 +124,15 @@ namespace ir {
         template <class T>
         using Literal = ast::expression::Literal<T>;
 
+        struct Let_binding {
+            // also handle pattern
+            bu::Wrapper<Type>       type;
+            bu::Wrapper<Expression> initializer;
+            DEFAULTED_EQUALITY(Let_binding);
+        };
+
         struct Local_variable {
-            bu::Wrapper<Type>     type;
-            vm::Local_offset_type frame_offset;
+            bu::Wrapper<Type> type;
             DEFAULTED_EQUALITY(Local_variable);
         };
 
@@ -139,6 +145,7 @@ namespace ir {
             expression::Literal<bu::Char>,
             expression::Literal<bool>,
             expression::Literal<lexer::String>,
+            expression::Let_binding,
             expression::Local_variable
         >;
 

@@ -6,6 +6,20 @@
 #include "parser/parser.hpp"
 
 
+auto compiler::Resolution_scope::make_child() noexcept -> Resolution_scope {
+    return { .parent = this };
+}
+
+auto compiler::Resolution_scope::find(lexer::Identifier const name) noexcept -> Binding* {
+    if (auto* const pointer = bindings.find(name)) {
+        return pointer;
+    }
+    else {
+        return parent ? parent->find(name) : nullptr;
+    }
+}
+
+
 namespace {
 
     auto handle_imports(ast::Module& module) -> void {
@@ -71,10 +85,7 @@ auto compiler::resolve(ast::Module&& module) -> ir::Program {
 
     auto global_namespace = make_namespace(module.definitions);
 
-    Resolution_context context {
-        .current_namespace = &global_namespace,
-        .global_namespace = &global_namespace
-    };
+    Resolution_context context { global_namespace };
 
 
     // vvv Release all memory used by the AST

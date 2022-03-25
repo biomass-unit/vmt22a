@@ -3,6 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/flatmap.hpp"
 #include "ast/ast.hpp"
+#include "ast/ast_formatting.hpp"
 #include "ir.hpp"
 
 
@@ -36,9 +37,32 @@ namespace compiler {
     };
 
 
+    struct Binding {
+        bu::Wrapper<ir::Type> type;
+        ast::Expression*      moved_by           = nullptr;
+        bool                  is_mutable         = false;
+        bool                  has_been_mentioned = false;
+    };
+
+
+    struct Resolution_scope {
+        bu::Flatmap<lexer::Identifier, Binding>      bindings;
+        std::vector<ir::Type>                        destroy_in_reverse_order;
+        Resolution_scope*                            parent;
+
+        auto make_child() noexcept -> Resolution_scope;
+
+        auto find(lexer::Identifier) noexcept -> Binding*;
+    };
+
+
     struct Resolution_context {
         Namespace* current_namespace;
         Namespace* global_namespace;
+
+        explicit Resolution_context(Namespace& global) noexcept
+            : current_namespace { &global }
+            , global_namespace  { &global } {}
 
         auto find_upper(ast::Qualified_name& name) -> std::optional<Upper_variant> {
             return find_impl<&Namespace::upper_table>(name);
@@ -94,7 +118,8 @@ namespace compiler {
     };
 
 
-    auto resolve_type(ast::Type&, Resolution_context&) -> ir::Type;
+    auto resolve_type      (ast::Type      &, Resolution_context&) -> ir::Type;
+    auto resolve_expression(ast::Expression&, Resolution_context&) -> ir::Expression;
 
     auto resolve_upper(Upper_variant, Resolution_context&) -> void;
     auto resolve_lower(Lower_variant, Resolution_context&) -> void;

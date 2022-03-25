@@ -93,6 +93,9 @@
     <ClCompile Include="src\compiler\resolution\ir_formatting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\compiler\resolution\expression_resolution.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\utilities.hpp">
