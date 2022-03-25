@@ -66,6 +66,17 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Size_of& size_of) -> ir::Expression {
+            auto type = compiler::resolve_type(size_of.type, context);
+
+            return {
+                .value = ir::expression::Literal<bu::Isize> {
+                    static_cast<bu::Isize>(type.size)
+                },
+                .type = ir::type::Integer {} // fix
+            };
+        }
+
         auto operator()(auto&) -> ir::Expression {
             bu::abort(
                 std::format(

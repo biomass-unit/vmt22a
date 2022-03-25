@@ -81,6 +81,15 @@ namespace {
             return { .value = ir::type::Reference { recurse(reference.type) }, .size = sizeof(std::byte*) };
         }
 
+        auto operator()(ast::type::Type_of& type_of) -> ir::Type {
+            if (std::holds_alternative<ast::expression::Let_binding>(type_of.expression->value)) {
+                bu::abort("can not take type of let binding");
+            }
+
+            auto expression = compiler::resolve_expression(type_of.expression, context);
+            return std::move(*expression.type);
+        }
+
         auto operator()(auto&) -> ir::Type {
             bu::unimplemented();
         }
