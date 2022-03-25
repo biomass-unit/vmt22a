@@ -37,9 +37,9 @@ namespace ast {
             DEFAULTED_EQUALITY(Tuple);
         };
 
-        struct Compound_expression {
+        struct Compound {
             std::vector<Expression> expressions;
-            DEFAULTED_EQUALITY(Compound_expression);
+            DEFAULTED_EQUALITY(Compound);
         };
 
         struct Invocation {
@@ -143,8 +143,8 @@ namespace ast {
         };
 
         struct Take_reference {
-            bu::Wrapper<Expression> expression;
-            Mutability              mutability;
+            Mutability        mutability;
+            lexer::Identifier name;
             DEFAULTED_EQUALITY(Take_reference);
         };
 
@@ -168,7 +168,7 @@ namespace ast {
             expression::Variable,
             expression::Template_instantiation,
             expression::Tuple,
-            expression::Compound_expression,
+            expression::Compound,
             expression::Invocation,
             expression::Binary_operator_invocation,
             expression::Member_access,

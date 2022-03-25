@@ -9,6 +9,24 @@
 
 namespace compiler {
 
+    struct Binding {
+        bu::Wrapper<ir::Type> type;
+        ast::Expression*      moved_by           = nullptr;
+        bool                  is_mutable         = false;
+        bool                  has_been_mentioned = false;
+    };
+
+    struct Resolution_scope {
+        bu::Flatmap<lexer::Identifier, Binding>      bindings;
+        std::vector<ir::Type>                        destroy_in_reverse_order;
+        Resolution_scope*                            parent;
+
+        auto make_child() noexcept -> Resolution_scope;
+
+        auto find(lexer::Identifier) noexcept -> Binding*;
+    };
+
+
     using Upper_variant = std::variant<
         ast::definition::Struct             *,
         ast::definition::Struct_template    *,
@@ -21,6 +39,7 @@ namespace compiler {
     >;
 
     using Lower_variant = std::variant<
+        Binding                            *,
         ast::definition::Function          *,
         ast::definition::Function_template *
     >;
@@ -37,30 +56,13 @@ namespace compiler {
     };
 
 
-    struct Binding {
-        bu::Wrapper<ir::Type> type;
-        ast::Expression*      moved_by           = nullptr;
-        bool                  is_mutable         = false;
-        bool                  has_been_mentioned = false;
-    };
-
-
-    struct Resolution_scope {
-        bu::Flatmap<lexer::Identifier, Binding>      bindings;
-        std::vector<ir::Type>                        destroy_in_reverse_order;
-        Resolution_scope*                            parent;
-
-        auto make_child() noexcept -> Resolution_scope;
-
-        auto find(lexer::Identifier) noexcept -> Binding*;
-    };
-
-
     struct Resolution_context {
         Resolution_scope scope;
 
         Namespace* current_namespace;
         Namespace* global_namespace;
+
+        //bool is_unevaluated;
 
         explicit Resolution_context(Namespace& global, Resolution_scope&& scope) noexcept
             : scope             { std::move(scope) }
@@ -68,10 +70,17 @@ namespace compiler {
             , global_namespace  { &global          } {}
 
         auto find_upper(ast::Qualified_name& name) -> std::optional<Upper_variant> {
+            assert(name.primary_qualifier.is_upper);
             return find_impl<&Namespace::upper_table>(name);
         }
 
         auto find_lower(ast::Qualified_name& name) -> std::optional<Lower_variant> {
+            assert(!name.primary_qualifier.is_upper);
+            if (name.is_unqualified()) {
+                if (auto* binding = scope.find(name.primary_qualifier.name)) {
+                    return binding;
+                }
+            }
             return find_impl<&Namespace::lower_table>(name);
         }
 

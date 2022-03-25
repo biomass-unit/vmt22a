@@ -9,6 +9,10 @@ namespace {
         //bu::Flatmap<lexer::Identifier, bu::Wrapper<ir::Type>>* template_type_arguments = nullptr;
 
 
+        auto operator()(compiler::Binding*) -> void {
+            bu::abort("should be unreachable");
+        }
+
         auto operator()(ast::definition::Function*) -> void {
             bu::unimplemented();
         }

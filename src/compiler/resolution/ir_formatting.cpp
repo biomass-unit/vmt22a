@@ -19,11 +19,21 @@ namespace {
         auto operator()(ir::expression::Literal<T> const& literal) {
             return format("{}", literal.value);
         }
+
         auto operator()(ir::expression::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
         }
+
         auto operator()(ir::expression::Local_variable const& variable) {
             return format("(Local {})", variable.type);
+        }
+
+        auto operator()(ir::expression::Compound const& compound) {
+            format("{{ ");
+            for (auto const& expression : compound.side_effects) {
+                format("{}; ", expression);
+            }
+            return format("{} }}", compound.result);
         }
     };
 

@@ -281,8 +281,8 @@ namespace {
     auto extract_take_reference(Parse_context& context) -> ast::Expression {
         auto mutability = extract_mutability(context);
         return ast::expression::Take_reference {
-            .expression = extract_expression(context),
-            .mutability = std::move(mutability)
+            .mutability = std::move(mutability),
+            .name       = extract_lower_id(context, "a variable name")
         };
     }
 
@@ -321,7 +321,7 @@ namespace {
         case 1:
             return std::move(expressions.front());
         default:
-            return ast::expression::Compound_expression { std::move(expressions) };
+            return ast::expression::Compound { std::move(expressions) };
         }
     }
 

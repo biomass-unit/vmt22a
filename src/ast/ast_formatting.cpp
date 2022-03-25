@@ -174,7 +174,7 @@ namespace {
         auto operator()(ast::expression::Tuple_member_access const& expression) {
             return format("({}.{})", expression.expression, expression.member_index);
         }
-        auto operator()(ast::expression::Compound_expression const& compound) {
+        auto operator()(ast::expression::Compound const& compound) {
             return format("{{ {} }}", compound.expressions);
         }
         auto operator()(ast::expression::Conditional const& conditional) {
@@ -212,7 +212,7 @@ namespace {
             return format("size_of({})", size_of.type);
         }
         auto operator()(ast::expression::Take_reference const& reference) {
-            return format("&{}{}", reference.mutability, reference.expression);
+            return format("&{}{}", reference.mutability, reference.name);
         }
         auto operator()(ast::expression::Meta const& meta) {
             return format("meta({})", meta.expression);

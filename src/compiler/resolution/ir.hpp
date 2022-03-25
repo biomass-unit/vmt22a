@@ -148,6 +148,12 @@ namespace ir {
             DEFAULTED_EQUALITY(Local_variable);
         };
 
+        struct Compound {
+            std::vector<Expression> side_effects;
+            bu::Wrapper<Expression> result;
+            DEFAULTED_EQUALITY(Compound);
+        };
+
     }
 
     struct Expression {
@@ -158,7 +164,8 @@ namespace ir {
             expression::Literal<bool>,
             expression::Literal<lexer::String>,
             expression::Let_binding,
-            expression::Local_variable
+            expression::Local_variable,
+            expression::Compound
         >;
 
         Variant           value;

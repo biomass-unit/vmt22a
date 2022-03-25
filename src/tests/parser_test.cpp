@@ -136,7 +136,7 @@ auto run_parser_tests() -> void {
         },
         ast::expression::Conditional {
             ast::expression::Literal<bool> { false },
-            ast::expression::Compound_expression {
+            ast::expression::Compound {
                 {
                     ast::expression::Literal<bool> { true },
                     ast::unit_value
