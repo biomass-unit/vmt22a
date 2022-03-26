@@ -165,14 +165,15 @@ namespace {
         auto operator()(ast::expression::Binary_operator_invocation const& invocation) {
             return format("({} {} {})", invocation.left, invocation.op, invocation.right);
         }
-        auto operator()(ast::expression::Member_access const& expression) {
-            return format("({}.{})", expression.expression, expression.member_name);
+        auto operator()(ast::expression::Member_access_chain const& chain) {
+            format("({}", chain.expression);
+            for (auto& accessor : chain.accessors) {
+                format(".{}", accessor);
+            }
+            return format(")");
         }
         auto operator()(ast::expression::Member_function_invocation const& invocation) {
             return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
-        }
-        auto operator()(ast::expression::Tuple_member_access const& expression) {
-            return format("({}.{})", expression.expression, expression.member_index);
         }
         auto operator()(ast::expression::Compound const& compound) {
             return format("{{ {} }}", compound.expressions);

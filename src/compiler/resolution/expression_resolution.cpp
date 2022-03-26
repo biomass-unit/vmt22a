@@ -34,6 +34,37 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Tuple& tuple) -> ir::Expression {
+            std::vector<ir::Expression> expressions;
+            std::vector<bu::Wrapper<ir::Type>> types;
+            bu::U16 size       = 0;
+            bool    is_trivial = true;
+
+            expressions.reserve(tuple.expressions.size());
+            types      .reserve(tuple.expressions.size());
+
+            for (auto& expression : tuple.expressions) {
+                auto ir_expr = recurse(expression);
+
+                if (!ir_expr.type->is_trivial) {
+                    is_trivial = false;
+                }
+                size += ir_expr.type->size;
+
+                types.push_back(ir_expr.type);
+                expressions.push_back(std::move(ir_expr));
+            }
+
+            return {
+                .value = ir::expression::Tuple { std::move(expressions) },
+                .type = ir::Type {
+                    .value      = ir::type::Tuple { std::move(types) },
+                    .size       = size,
+                    .is_trivial = is_trivial
+                }
+            };
+        }
+
         auto operator()(ast::expression::Let_binding& let_binding) -> ir::Expression {
             auto initializer = compiler::resolve_expression(let_binding.initializer, context);
 
@@ -155,6 +186,62 @@ namespace {
                     static_cast<bu::Isize>(type.size)
                 },
                 .type = ir::type::integer
+            };
+        }
+
+        auto operator()(ast::expression::Member_access_chain& chain) -> ir::Expression {
+            auto expression = recurse(chain.expression);
+            auto most_recent_type = expression.type;
+
+            bu::U16 offset = 0;
+
+            for (auto& accessor : chain.accessors) {
+                std::visit(bu::Overload {
+                    [&](bu::Isize const member_index) {
+                        if (member_index < 0) {
+                            bu::abort("negative tuple member index");
+                        }
+
+                        auto const index = static_cast<bu::Usize>(member_index);
+
+                        if (auto* const tuple = std::get_if<ir::type::Tuple>(&most_recent_type->value)) {
+                            if (index < tuple->types.size()) {
+                                for (auto& type : tuple->types | std::views::take(member_index)) {
+                                    offset += type->size;
+                                }
+                                most_recent_type = tuple->types.at(index);
+                            }
+                            else {
+                                bu::abort("tuple member index out of range");
+                            }
+                        }
+                        else {
+                            bu::abort("attempted tuple member access on a non-tuple type");
+                        }
+                    },
+                    [&](lexer::Identifier const member_name) {
+                        if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&most_recent_type->value)) {
+                            if (auto* const member = uds->structure->members.find(member_name)) {
+                                most_recent_type = member->type;
+                                offset += member->offset;
+                            }
+                            else {
+                                bu::abort("struct does not contain given member");
+                            }
+                        }
+                        else {
+                            bu::abort("attempted member access on non-struct type");
+                        }
+                    }
+                }, accessor);
+            }
+
+            return {
+                .value = ir::expression::Member_access {
+                    std::move(expression),
+                    offset
+                },
+                .type = most_recent_type
             };
         }
 

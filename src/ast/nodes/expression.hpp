@@ -55,10 +55,11 @@ namespace ast {
             DEFAULTED_EQUALITY(Binary_operator_invocation);
         };
 
-        struct Member_access {
+        struct Member_access_chain {
+            using Accessor = std::variant<lexer::Identifier, bu::Isize>;
+            std::vector<Accessor>   accessors;
             bu::Wrapper<Expression> expression;
-            lexer::Identifier       member_name;
-            DEFAULTED_EQUALITY(Member_access);
+            DEFAULTED_EQUALITY(Member_access_chain);
         };
 
         struct Member_function_invocation {
@@ -66,12 +67,6 @@ namespace ast {
             bu::Wrapper<Expression>        expression;
             lexer::Identifier              member_name;
             DEFAULTED_EQUALITY(Member_function_invocation);
-        };
-
-        struct Tuple_member_access {
-            bu::Wrapper<Expression> expression;
-            bu::Isize               member_index;
-            DEFAULTED_EQUALITY(Tuple_member_access);
         };
 
         struct Conditional {
@@ -171,9 +166,8 @@ namespace ast {
             expression::Compound,
             expression::Invocation,
             expression::Binary_operator_invocation,
-            expression::Member_access,
+            expression::Member_access_chain,
             expression::Member_function_invocation,
-            expression::Tuple_member_access,
             expression::Conditional,
             expression::Match,
             expression::Type_cast,

@@ -442,9 +442,18 @@ namespace {
         auto expression = parse_potential_invocation(context);
 
         if (expression) {
+            std::vector<ast::expression::Member_access_chain::Accessor> accessors;
+
             while (context.try_consume(Token::Type::dot)) {
                 if (auto member_name = parse_lower_id(context)) {
                     if (context.try_consume(Token::Type::paren_open)) {
+                        if (!accessors.empty()) {
+                            *expression = ast::expression::Member_access_chain {
+                                std::move(accessors),
+                                std::move(*expression)
+                            };
+                            accessors = {}; // Silence warnings
+                        }
                         *expression = ast::expression::Member_function_invocation {
                             extract_arguments(context),
                             std::move(*expression),
@@ -452,21 +461,22 @@ namespace {
                         };
                     }
                     else {
-                        *expression = ast::expression::Member_access {
-                            std::move(*expression),
-                            *member_name
-                        };
+                        accessors.emplace_back(*member_name);
                     }
                 }
                 else if (auto member_index = context.try_extract(Token::Type::integer)) {
-                    *expression = ast::expression::Tuple_member_access {
-                        std::move(*expression),
-                        member_index->as_integer()
-                    };
+                    accessors.emplace_back(member_index->as_integer());
                 }
                 else {
                     throw context.expected("a member name or index");
                 }
+            }
+
+            if (!accessors.empty()) {
+                return ast::expression::Member_access_chain {
+                    std::move(accessors),
+                    std::move(*expression)
+                };
             }
         }
 

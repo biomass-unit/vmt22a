@@ -20,6 +20,10 @@ namespace {
             return format("{}", literal.value);
         }
 
+        auto operator()(ir::expression::Tuple const& tuple) {
+            return format("({})", tuple.expressions);
+        }
+
         auto operator()(ir::expression::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
         }
@@ -30,6 +34,10 @@ namespace {
 
         auto operator()(ir::expression::Reference const& reference) {
             return format("(Ref offset {})", reference.frame_offset);
+        }
+
+        auto operator()(ir::expression::Member_access const& access) {
+            return format("({}, mem offset {})", access.expression, access.offset);
         }
 
         auto operator()(ir::expression::Compound const& compound) {

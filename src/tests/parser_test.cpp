@@ -232,9 +232,9 @@ auto run_parser_tests() -> void {
         },
         ast::expression::Member_function_invocation {
             .arguments = {},
-            .expression = ast::expression::Member_access {
-                ast::expression::Variable { make_unqualified("x") },
-                "y"_id
+            .expression = ast::expression::Member_access_chain {
+                .accessors { "y"_id },
+                .expression = ast::expression::Variable { make_unqualified("x") }
             },
             .member_name = "f"_id
         }
@@ -250,14 +250,9 @@ auto run_parser_tests() -> void {
             Token { .type = Type::dot },
             Token { 2, Type::integer },
         },
-        ast::expression::Tuple_member_access {
-            ast::Expression {
-                ast::expression::Tuple_member_access {
-                    ast::expression::Tuple {},
-                    1
-                }
-            },
-            2
+        ast::expression::Member_access_chain {
+            .accessors { 1, 2 },
+            .expression = ast::unit_value
         }
     );
 

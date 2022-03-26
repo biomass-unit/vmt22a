@@ -2,7 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
-#include "lexer/token.hpp" // for lexer::Identifier, fix?
+#include "bu/flatmap.hpp"
 #include "ast/ast.hpp" // fix?
 #include "vm/virtual_machine.hpp"
 
@@ -18,18 +18,19 @@ namespace ir {
         struct Data {
             // should the constructors be stored here, or in a flatmap outside the struct?
             std::string name;
-            bu::Usize   size;
+            bu::U16     size;
         };
 
         struct Struct {
             struct Member {
                 lexer::Identifier name;
                 bu::Wrapper<Type> type;
+                bu::U16           offset;
                 DEFAULTED_EQUALITY(Member);
             };
-            std::string         name;
-            std::vector<Member> members;
-            bu::Usize           size;
+            std::string                            name;
+            bu::Flatmap<lexer::Identifier, Member> members;
+            bu::U16                                size;
             DEFAULTED_EQUALITY(Struct);
         };
 
@@ -48,7 +49,7 @@ namespace ir {
         using String    = Primitive<lexer::String>;
 
         struct Tuple {
-            std::vector<Type> types;
+            std::vector<bu::Wrapper<Type>> types;
             DEFAULTED_EQUALITY(Tuple);
         };
 
@@ -157,6 +158,11 @@ namespace ir {
         template <class T>
         using Literal = ast::expression::Literal<T>;
 
+        struct Tuple {
+            std::vector<Expression> expressions;
+            DEFAULTED_EQUALITY(Tuple);
+        };
+
         struct Let_binding {
             bu::Wrapper<ast::Pattern> pattern;
             bu::Wrapper<Type>         type;
@@ -174,6 +180,12 @@ namespace ir {
             DEFAULTED_EQUALITY(Reference);
         };
 
+        struct Member_access {
+            bu::Wrapper<Expression> expression;
+            bu::Usize               offset;
+            DEFAULTED_EQUALITY(Member_access);
+        };
+
         struct Compound {
             std::vector<Expression> side_effects;
             bu::Wrapper<Expression> result;
@@ -189,9 +201,11 @@ namespace ir {
             expression::Literal<bu::Char>,
             expression::Literal<bool>,
             expression::Literal<lexer::String>,
+            expression::Tuple,
             expression::Let_binding,
             expression::Local_variable,
             expression::Reference,
+            expression::Member_access,
             expression::Compound
         >;
 
