@@ -69,9 +69,6 @@
     <ClCompile Include="src\tests\tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\scope.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\compiler\compiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
