@@ -118,6 +118,7 @@ namespace ir {
 
         Variant value;
         bu::U16 size;
+        bool    is_trivial = false;
 
         //auto conforms_to(Typeclass) -> bool
 
@@ -126,7 +127,27 @@ namespace ir {
 
     namespace type {
 
-        inline bu::Wrapper<Type> const unit = Type { .value = type::Tuple {}, .size = 0 };
+        namespace dtl {
+            template <class T>
+            bu::Wrapper<Type> const make_primitive = Type {
+                .value      = type::Primitive<T> {},
+                .size       = sizeof(T),
+                .is_trivial = true
+            };
+        }
+
+        inline auto const
+            integer   = dtl::make_primitive<bu::Isize    >,
+            floating  = dtl::make_primitive<bu::Float    >,
+            character = dtl::make_primitive<bu::Char     >,
+            boolean   = dtl::make_primitive<bool         >,
+            string    = dtl::make_primitive<lexer::String>;
+
+        inline bu::Wrapper<Type> const unit = Type {
+            .value      = type::Tuple {},
+            .size       = 0,
+            .is_trivial = true
+        };
 
     }
 
@@ -144,8 +165,13 @@ namespace ir {
         };
 
         struct Local_variable {
-            bu::Wrapper<Type> type;
+            bu::U16 frame_offset;
             DEFAULTED_EQUALITY(Local_variable);
+        };
+
+        struct Reference {
+            bu::U16 frame_offset;
+            DEFAULTED_EQUALITY(Reference);
         };
 
         struct Compound {
@@ -165,6 +191,7 @@ namespace ir {
             expression::Literal<lexer::String>,
             expression::Let_binding,
             expression::Local_variable,
+            expression::Reference,
             expression::Compound
         >;
 

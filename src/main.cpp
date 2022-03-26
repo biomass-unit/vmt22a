@@ -84,10 +84,15 @@ namespace {
         auto result = parser::extract_expression(parse_context);
 
         compiler::Namespace space;
-        compiler::Resolution_context resolution_context { space, {} };
+        compiler::Resolution_context resolution_context {
+            .scope             = { .parent = nullptr },
+            .current_namespace = &space,
+            .global_namespace  = &space,
+            .is_unevaluated    = false
+        };
         auto expression = compiler::resolve_expression(result, resolution_context);
 
-        bu::print("ir expr: {}\n", expression);
+        bu::print("ir: {}\n", expression);
     });
 
 

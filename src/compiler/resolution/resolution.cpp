@@ -7,7 +7,7 @@
 
 
 auto compiler::Resolution_scope::make_child() noexcept -> Resolution_scope {
-    return { .parent = this };
+    return { .parent = this, .current_frame_offset = current_frame_offset };
 }
 
 auto compiler::Resolution_scope::find(lexer::Identifier const name) noexcept -> Binding* {
@@ -85,7 +85,12 @@ auto compiler::resolve(ast::Module&& module) -> ir::Program {
 
     auto global_namespace = make_namespace(module.definitions);
 
-    Resolution_context context { global_namespace, Resolution_scope { .parent = nullptr } };
+    Resolution_context context {
+        .scope             = { .parent = nullptr },
+        .current_namespace = &global_namespace,
+        .global_namespace  = &global_namespace,
+        .is_unevaluated    = false
+    };
 
 
     // vvv Release all memory used by the AST
@@ -93,6 +98,7 @@ auto compiler::resolve(ast::Module&& module) -> ir::Program {
     bu::Wrapper<ast::Expression>::release_wrapped_memory();
     bu::Wrapper<ast::Type      >::release_wrapped_memory();
     bu::Wrapper<ast::Pattern   >::release_wrapped_memory();
+    bu::Wrapper<ast::Definition>::release_wrapped_memory();
 
     // ^^^ Fix, use RAII or find wrapped types programmatically ^^^
 

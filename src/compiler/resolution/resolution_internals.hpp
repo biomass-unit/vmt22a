@@ -11,15 +11,17 @@ namespace compiler {
 
     struct Binding {
         bu::Wrapper<ir::Type> type;
+        bu::U16               frame_offset;
         ast::Expression*      moved_by           = nullptr;
         bool                  is_mutable         = false;
         bool                  has_been_mentioned = false;
     };
 
     struct Resolution_scope {
-        bu::Flatmap<lexer::Identifier, Binding>      bindings;
-        std::vector<ir::Type>                        destroy_in_reverse_order;
-        Resolution_scope*                            parent;
+        bu::Flatmap<lexer::Identifier, Binding> bindings;
+        std::vector<ir::Type>                   destroy_in_reverse_order;
+        Resolution_scope*                       parent               = nullptr;
+        bu::U16                                 current_frame_offset = 0;
 
         auto make_child() noexcept -> Resolution_scope;
 
@@ -62,12 +64,16 @@ namespace compiler {
         Namespace* current_namespace;
         Namespace* global_namespace;
 
-        //bool is_unevaluated;
+        bool is_unevaluated = false;
 
-        explicit Resolution_context(Namespace& global, Resolution_scope&& scope) noexcept
-            : scope             { std::move(scope) }
-            , current_namespace { &global          }
-            , global_namespace  { &global          } {}
+        auto make_child_context_with_new_scope() noexcept -> Resolution_context {
+            return {
+                scope.make_child(),
+                current_namespace,
+                global_namespace,
+                is_unevaluated
+            };
+        }
 
         auto find_upper(ast::Qualified_name& name) -> std::optional<Upper_variant> {
             assert(name.primary_qualifier.is_upper);

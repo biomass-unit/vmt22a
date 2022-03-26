@@ -25,7 +25,11 @@ namespace {
         }
 
         auto operator()(ir::expression::Local_variable const& variable) {
-            return format("(Local {})", variable.type);
+            return format("(Move offset {})", variable.frame_offset);
+        }
+
+        auto operator()(ir::expression::Reference const& reference) {
+            return format("(Ref offset {})", reference.frame_offset);
         }
 
         auto operator()(ir::expression::Compound const& compound) {
@@ -89,5 +93,9 @@ DEFINE_FORMATTER_FOR(ir::Expression) {
 DEFINE_FORMATTER_FOR(ir::Type) {
     std::format_to(context.out(), "(");
     std::visit(Type_format_visitor { { context.out() } }, value.value);
-    return std::format_to(context.out(), ", size {})", value.size);
+    std::format_to(context.out(), ", size {}", value.size);
+    if (value.is_trivial) {
+        std::format_to(context.out(), ", trivial");
+    }
+    return std::format_to(context.out(), ")");
 }

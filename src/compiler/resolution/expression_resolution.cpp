@@ -8,8 +8,13 @@ namespace {
         compiler::Resolution_context& context;
         ast::Expression&              this_expression;
 
+        auto recurse_with(compiler::Resolution_context& context) {
+            return [&](ast::Expression& expression) -> ir::Expression {
+                return compiler::resolve_expression(expression, context);
+            };
+        };
         auto recurse(ast::Expression& expression) -> ir::Expression {
-            return compiler::resolve_expression(expression, context);
+            return recurse_with(context)(expression);
         }
         auto recurse() noexcept {
             return [this](ast::Expression& expression) -> ir::Expression {
@@ -18,14 +23,14 @@ namespace {
         }
 
 
+        auto error() {}
+
+
         template <class T>
         auto operator()(ast::expression::Literal<T>& literal) -> ir::Expression {
             return {
                 .value = literal,
-                .type = ir::Type {
-                    .value = ir::type::Primitive<T> {}, // fix
-                    .size = sizeof(T)
-                }
+                .type = ir::type::dtl::make_primitive<T>
             };
         }
 
@@ -47,10 +52,15 @@ namespace {
                 context.scope.bindings.add(
                     bu::copy(pattern->identifier),
                     compiler::Binding {
-                        .type = initializer.type,
-                        .is_mutable = pattern->mutability.type == ast::Mutability::Type::mut
+                        .type         = initializer.type,
+                        .frame_offset = context.scope.current_frame_offset,
+                        .is_mutable   = pattern->mutability.type == ast::Mutability::Type::mut
                     }
                 );
+
+                if (!context.is_unevaluated) {
+                    context.scope.current_frame_offset += initializer.type->size;
+                }
             }
             else {
                 bu::unimplemented();
@@ -70,14 +80,20 @@ namespace {
             if (auto const value = context.find_lower(variable.name)) {
                 return std::visit(bu::Overload {
                     [&](compiler::Binding* binding) -> ir::Expression {
-                        assert(!binding->moved_by);
-
-                        binding->moved_by = &this_expression;
                         binding->has_been_mentioned = true;
+
+                        if (!context.is_unevaluated && !binding->type->is_trivial) {
+                            if (binding->moved_by) {
+                                bu::unimplemented();
+                            }
+                            else {
+                                binding->moved_by = &this_expression;
+                            }
+                        }
 
                         return {
                             .value = ir::expression::Local_variable {
-                                .type = binding->type
+                                .frame_offset = binding->frame_offset
                             },
                             .type = binding->type
                         };
@@ -95,20 +111,59 @@ namespace {
             }
         }
 
+        auto operator()(ast::expression::Take_reference& take_reference) -> ir::Expression {
+            if (take_reference.mutability.type == ast::Mutability::Type::parameterized) {
+                bu::unimplemented();
+            }
+
+            bool const take_mutable_ref =
+                take_reference.mutability.type == ast::Mutability::Type::mut;
+
+            if (auto* binding = context.scope.find(take_reference.name)) {
+                if (take_mutable_ref && !binding->is_mutable) {
+                    bu::unimplemented();
+                }
+
+                binding->has_been_mentioned = true;
+
+                return {
+                    .value = ir::expression::Reference {
+                        .frame_offset = binding->frame_offset
+                    },
+                    .type = ir::Type {
+                        .value = ir::type::Reference {
+                            .type = binding->type,
+                            .mut  = take_mutable_ref
+                        },
+                        .size       = sizeof(std::byte*),
+                        .is_trivial = true
+                    }
+                };
+            }
+            else {
+                bu::unimplemented();
+            }
+        }
+
         auto operator()(ast::expression::Size_of& size_of) -> ir::Expression {
+            bool const is_unevaluated = std::exchange(context.is_unevaluated, true);
             auto type = compiler::resolve_type(size_of.type, context);
+            context.is_unevaluated = is_unevaluated;
 
             return {
                 .value = ir::expression::Literal<bu::Isize> {
                     static_cast<bu::Isize>(type.size)
                 },
-                .type = ir::type::Integer {} // fix
+                .type = ir::type::integer
             };
         }
 
         auto operator()(ast::expression::Compound& compound) -> ir::Expression {
-            assert(compound.expressions.size() != 0);
             // The parser should convert empty compound expressions into the unit value
+            assert(compound.expressions.size() != 0);
+
+            auto child_context = context.make_child_context_with_new_scope();
+            auto recurse = recurse_with(child_context); // Shadow the struct member
 
             std::vector<ir::Expression> side_effects;
             side_effects.reserve(compound.expressions.size() - 1);
@@ -116,7 +171,7 @@ namespace {
             std::ranges::move(
                 compound.expressions
                     | std::views::take(compound.expressions.size() - 1)
-                    | std::views::transform(recurse()),
+                    | std::views::transform(recurse),
                 std::back_inserter(side_effects)
             );
 
