@@ -7,11 +7,11 @@ namespace {
     struct Type_resolution_visitor {
         compiler::Resolution_context& context;
 
-        auto recurse(ast::Type& type) -> ir::Type {
+        auto recurse(ast::Type& type) {
             return compiler::resolve_type(type, context);
         }
         auto recurse() {
-            return [this](ast::Type& type) -> ir::Type {
+            return [this](ast::Type& type) {
                 return recurse(type);
             };
         }

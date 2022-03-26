@@ -9,15 +9,15 @@ namespace {
         ast::Expression&              this_expression;
 
         auto recurse_with(compiler::Resolution_context& context) {
-            return [&](ast::Expression& expression) -> ir::Expression {
+            return [&](ast::Expression& expression) {
                 return compiler::resolve_expression(expression, context);
             };
         };
-        auto recurse(ast::Expression& expression) -> ir::Expression {
+        auto recurse(ast::Expression& expression) {
             return recurse_with(context)(expression);
         }
         auto recurse() noexcept {
-            return [this](ast::Expression& expression) -> ir::Expression {
+            return [this](ast::Expression& expression) {
                 return recurse(expression);
             };
         }
@@ -66,7 +66,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Let_binding& let_binding) -> ir::Expression {
-            auto initializer = compiler::resolve_expression(let_binding.initializer, context);
+            auto initializer = recurse(let_binding.initializer);
 
             if (let_binding.type) {
                 auto explicit_type = compiler::resolve_type(*let_binding.type, context);
@@ -186,6 +186,46 @@ namespace {
                     static_cast<bu::Isize>(type.size)
                 },
                 .type = ir::type::integer
+            };
+        }
+
+        auto operator()(ast::expression::Conditional& conditional) -> ir::Expression {
+            auto condition = recurse(conditional.condition);
+
+            if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
+                bu::abort("non-bool condition");
+            }
+
+            auto true_branch = recurse(conditional.true_branch);
+            auto false_branch = conditional.false_branch
+                ? bu::Wrapper { recurse(*conditional.false_branch) }
+                : ir::unit_value;
+
+            if (true_branch.type != false_branch->type) {
+                bu::abort("branch type mismatch");
+            }
+
+            return {
+                .value = ir::expression::Conditional {
+                    std::move(condition),
+                    std::move(true_branch),
+                    std::move(false_branch)
+                },
+                .type = true_branch.type
+            };
+        }
+
+        auto operator()(ast::expression::Type_cast& cast) -> ir::Expression {
+            ir::expression::Type_cast ir_cast {
+                .expression = recurse(cast.expression),
+                .type = compiler::resolve_type(cast.target, context)
+            };
+
+            auto type = ir_cast.type;
+
+            return {
+                .value = std::move(ir_cast),
+                .type = type
             };
         }
 

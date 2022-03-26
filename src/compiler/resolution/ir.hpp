@@ -186,6 +186,19 @@ namespace ir {
             DEFAULTED_EQUALITY(Member_access);
         };
 
+        struct Conditional {
+            bu::Wrapper<Expression> condition;
+            bu::Wrapper<Expression> true_branch;
+            bu::Wrapper<Expression> false_branch;
+            DEFAULTED_EQUALITY(Conditional);
+        };
+
+        struct Type_cast {
+            bu::Wrapper<Expression> expression;
+            bu::Wrapper<Type>       type;
+            DEFAULTED_EQUALITY(Type_cast);
+        };
+
         struct Compound {
             std::vector<Expression> side_effects;
             bu::Wrapper<Expression> result;
@@ -206,6 +219,8 @@ namespace ir {
             expression::Local_variable,
             expression::Reference,
             expression::Member_access,
+            expression::Conditional,
+            expression::Type_cast,
             expression::Compound
         >;
 
@@ -214,6 +229,8 @@ namespace ir {
 
         DEFAULTED_EQUALITY(Expression);
     };
+
+    inline bu::Wrapper<Expression> const unit_value { expression::Tuple {}, type::unit };
 
 
     struct Program {};

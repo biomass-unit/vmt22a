@@ -40,6 +40,14 @@ namespace {
             return format("({}, mem offset {})", access.expression, access.offset);
         }
 
+        auto operator()(ir::expression::Conditional const& conditional) {
+            return format("if {} then {} else {}", conditional.condition, conditional.true_branch, conditional.false_branch);
+        }
+
+        auto operator()(ir::expression::Type_cast const& cast) {
+            return format("({} as {})", cast.expression, cast.type);
+        }
+
         auto operator()(ir::expression::Compound const& compound) {
             format("{{ ");
             for (auto const& expression : compound.side_effects) {
