@@ -80,17 +80,28 @@ namespace {
                     bu::unimplemented();
                 }
 
-                context.scope.bindings.add(
-                    bu::copy(pattern->identifier),
-                    compiler::Binding {
-                        .type         = initializer.type,
-                        .frame_offset = context.scope.current_frame_offset,
-                        .is_mutable   = pattern->mutability.type == ast::Mutability::Type::mut
-                    }
-                );
+                {
+                    auto& bindings = context.scope.bindings.container();
+
+                    // emplace inserts the pair right before the given iterator; if
+                    // the name is already bound to something, this effectively shadows
+                    // it, and if the identifier is new, then ranges::find returns a
+                    // past-the-end iterator, meaning the pair is inserted at the end.
+
+                    bindings.emplace(
+                        std::ranges::find(bindings, pattern->identifier, bu::first),
+                        pattern->identifier,
+                        compiler::Binding {
+                            .type         = initializer.type,
+                            .frame_offset = context.scope.current_frame_offset,
+                            .is_mutable   = pattern->mutability.type == ast::Mutability::Type::mut
+                        }
+                    );
+                }
 
                 if (!context.is_unevaluated) {
                     context.scope.current_frame_offset += initializer.type->size;
+                    context.scope.destroy_in_reverse_order.push_back(initializer.type);
                 }
             }
             else {
@@ -98,11 +109,7 @@ namespace {
             }
 
             return {
-                .value = ir::expression::Let_binding {
-                    .pattern     = std::move(let_binding.pattern),
-                    .type        = initializer.type,
-                    .initializer = std::move(initializer)
-                },
+                .value = ir::expression::Let_binding { std::move(initializer) },
                 .type = ir::type::unit
             };
         }
@@ -162,10 +169,7 @@ namespace {
                         .frame_offset = binding->frame_offset
                     },
                     .type = ir::Type {
-                        .value = ir::type::Reference {
-                            .type = binding->type,
-                            .mut  = take_mutable_ref
-                        },
+                        .value      = ir::type::Reference { binding->type },
                         .size       = sizeof(std::byte*),
                         .is_trivial = true
                     }
@@ -253,9 +257,10 @@ namespace {
             }
 
             auto true_branch = recurse(conditional.true_branch);
+
             auto false_branch = conditional.false_branch
-                ? bu::Wrapper { recurse(*conditional.false_branch) }
-                : ir::unit_value;
+                              . transform(bu::compose(bu::wrap, recurse()))
+                              . value_or(ir::unit_value);
 
             if (true_branch.type != false_branch->type) {
                 bu::abort("branch type mismatch");

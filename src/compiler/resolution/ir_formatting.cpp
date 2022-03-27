@@ -25,7 +25,7 @@ namespace {
         }
 
         auto operator()(ir::expression::Let_binding const& binding) {
-            return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
+            return format("bind {}", binding.initializer);
         }
 
         auto operator()(ir::expression::Local_variable const& variable) {
@@ -89,11 +89,11 @@ namespace {
         }
 
         auto operator()(ir::type::Reference const& reference) {
-            return format(reference.mut ? "&mut {}" : "&{}", reference.type);
+            return format("&{}", reference.type);
         }
 
         auto operator()(ir::type::Pointer const& pointer) {
-            return format(pointer.mut ? "*mut {}" : "*{}", pointer.type);
+            return format("*{}", pointer.type);
         }
 
         auto operator()(ir::type::User_defined_struct const& ud) {

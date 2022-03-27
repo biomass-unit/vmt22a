@@ -19,7 +19,7 @@ namespace compiler {
 
     struct Resolution_scope {
         bu::Flatmap<lexer::Identifier, Binding> bindings;
-        std::vector<ir::Type>                   destroy_in_reverse_order;
+        std::vector<bu::Wrapper<ir::Type>>      destroy_in_reverse_order;
         Resolution_scope*                       parent               = nullptr;
         bu::U16                                 current_frame_offset = 0;
 

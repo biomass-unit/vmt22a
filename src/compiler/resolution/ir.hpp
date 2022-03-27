@@ -16,20 +16,25 @@ namespace ir {
     namespace definition {
 
         struct Data {
-            // should the constructors be stored here, or in a flatmap outside the struct?
-            std::string name;
-            bu::U16     size;
+            struct Constructor {
+                std::optional<bu::Wrapper<Type>> type;
+                bu::U8                           tag;
+                DEFAULTED_EQUALITY(Constructor);
+            };
+            bu::Flatmap<lexer::Identifier, Constructor> constructors;
+            std::string                                 name;
+            bu::U16                                     size;
+            DEFAULTED_EQUALITY(Data);
         };
 
         struct Struct {
             struct Member {
-                lexer::Identifier name;
                 bu::Wrapper<Type> type;
                 bu::U16           offset;
                 DEFAULTED_EQUALITY(Member);
             };
-            std::string                            name;
             bu::Flatmap<lexer::Identifier, Member> members;
+            std::string                            name;
             bu::U16                                size;
             DEFAULTED_EQUALITY(Struct);
         };
@@ -72,13 +77,11 @@ namespace ir {
 
         struct Reference {
             bu::Wrapper<Type> type;
-            bool mut;
             DEFAULTED_EQUALITY(Reference);
         };
 
         struct Pointer {
             bu::Wrapper<Type> type;
-            bool mut;
             DEFAULTED_EQUALITY(Pointer);
         };
 
@@ -166,9 +169,7 @@ namespace ir {
         };
 
         struct Let_binding {
-            bu::Wrapper<ast::Pattern> pattern;
-            bu::Wrapper<Type>         type;
-            bu::Wrapper<Expression>   initializer;
+            bu::Wrapper<Expression> initializer;
             DEFAULTED_EQUALITY(Let_binding);
         };
 
