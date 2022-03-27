@@ -69,7 +69,7 @@
     <ClCompile Include="src\tests\tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\compiler.cpp">
+    <ClCompile Include="src\codegen\codegen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\cli\cli.cpp">
@@ -78,19 +78,19 @@
     <ClCompile Include="src\vm\serializing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\resolution\resolution.cpp">
+    <ClCompile Include="src\resolution\resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\resolution\type_resolution.cpp">
+    <ClCompile Include="src\resolution\type_resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\resolution\definition_resolution.cpp">
+    <ClCompile Include="src\resolution\definition_resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\resolution\ir_formatting.cpp">
+    <ClCompile Include="src\ir\ir_formatting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\compiler\resolution\expression_resolution.cpp">
+    <ClCompile Include="src\resolution\expression_resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -176,10 +176,10 @@
     <ClInclude Include="src\bu\flatmap.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\codegen_internals.hpp">
+    <ClInclude Include="src\codegen\codegen_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\compiler.hpp">
+    <ClInclude Include="src\codegen\codegen.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bu\timer.hpp">
@@ -188,16 +188,16 @@
     <ClInclude Include="src\cli\cli.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\resolution\ir.hpp">
+    <ClInclude Include="src\ir\ir.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\resolution\resolution.hpp">
+    <ClInclude Include="src\resolution\resolution.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\resolution\resolution_internals.hpp">
+    <ClInclude Include="src\resolution\resolution_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\compiler\resolution\ir_formatting.hpp">
+    <ClInclude Include="src\ir\ir_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

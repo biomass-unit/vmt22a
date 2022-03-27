@@ -5,10 +5,10 @@
 namespace {
 
     struct Type_resolution_visitor {
-        compiler::Resolution_context& context;
+        resolution::Resolution_context& context;
 
         auto recurse(ast::Type& type) {
-            return compiler::resolve_type(type, context);
+            return resolution::resolve_type(type, context);
         }
         auto recurse() {
             return [this](ast::Type& type) {
@@ -110,7 +110,7 @@ namespace {
             }
 
             bool const is_unevaluated = std::exchange(context.is_unevaluated, true);
-            auto expression = compiler::resolve_expression(type_of.expression, context);
+            auto expression = resolution::resolve_expression(type_of.expression, context);
             context.is_unevaluated = is_unevaluated;
 
             return std::move(*expression.type);
@@ -124,6 +124,6 @@ namespace {
 }
 
 
-auto compiler::resolve_type(ast::Type& type, Resolution_context& context) -> ir::Type {
+auto resolution::resolve_type(ast::Type& type, Resolution_context& context) -> ir::Type {
     return std::visit(Type_resolution_visitor { context }, type.value);
 }

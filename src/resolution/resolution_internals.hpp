@@ -4,10 +4,10 @@
 #include "bu/flatmap.hpp"
 #include "ast/ast.hpp"
 #include "ast/ast_formatting.hpp"
-#include "ir.hpp"
+#include "ir/ir.hpp"
 
 
-namespace compiler {
+namespace resolution {
 
     struct Binding {
         bu::Wrapper<ir::Type> type;
@@ -17,13 +17,13 @@ namespace compiler {
         bool                  has_been_mentioned = false;
     };
 
-    struct Resolution_scope {
+    struct Scope {
         bu::Flatmap<lexer::Identifier, Binding> bindings;
         std::vector<bu::Wrapper<ir::Type>>      destroy_in_reverse_order;
-        Resolution_scope*                       parent               = nullptr;
+        Scope*                                  parent               = nullptr;
         bu::U16                                 current_frame_offset = 0;
 
-        auto make_child() noexcept -> Resolution_scope;
+        auto make_child() noexcept -> Scope;
 
         auto find(lexer::Identifier) noexcept -> Binding*;
     };
@@ -59,7 +59,7 @@ namespace compiler {
 
 
     struct Resolution_context {
-        Resolution_scope scope;
+        Scope scope;
 
         Namespace* current_namespace;
         Namespace* global_namespace;

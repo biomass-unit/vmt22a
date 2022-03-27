@@ -5,12 +5,12 @@
 namespace {
 
     struct Expression_resolution_visitor {
-        compiler::Resolution_context& context;
+        resolution::Resolution_context& context;
         ast::Expression&              this_expression;
 
-        auto recurse_with(compiler::Resolution_context& context) {
+        auto recurse_with(resolution::Resolution_context& context) {
             return [&](ast::Expression& expression) {
-                return compiler::resolve_expression(expression, context);
+                return resolution::resolve_expression(expression, context);
             };
         };
         auto recurse(ast::Expression& expression) {
@@ -69,7 +69,7 @@ namespace {
             auto initializer = recurse(let_binding.initializer);
 
             if (let_binding.type) {
-                auto explicit_type = compiler::resolve_type(*let_binding.type, context);
+                auto explicit_type = resolution::resolve_type(*let_binding.type, context);
                 if (explicit_type != *initializer.type) {
                     bu::abort("mismatched types");
                 }
@@ -91,7 +91,7 @@ namespace {
                     bindings.emplace(
                         std::ranges::find(bindings, pattern->identifier, bu::first),
                         pattern->identifier,
-                        compiler::Binding {
+                        resolution::Binding {
                             .type         = initializer.type,
                             .frame_offset = context.scope.current_frame_offset,
                             .is_mutable   = pattern->mutability.type == ast::Mutability::Type::mut
@@ -117,7 +117,7 @@ namespace {
         auto operator()(ast::expression::Variable& variable) -> ir::Expression {
             if (auto const value = context.find_lower(variable.name)) {
                 return std::visit(bu::Overload {
-                    [&](compiler::Binding* binding) -> ir::Expression {
+                    [&](resolution::Binding* binding) -> ir::Expression {
                         binding->has_been_mentioned = true;
 
                         if (!context.is_unevaluated && !binding->type->is_trivial) {
@@ -182,7 +182,7 @@ namespace {
 
         auto operator()(ast::expression::Size_of& size_of) -> ir::Expression {
             bool const is_unevaluated = std::exchange(context.is_unevaluated, true);
-            auto type = compiler::resolve_type(size_of.type, context);
+            auto type = resolution::resolve_type(size_of.type, context);
             context.is_unevaluated = is_unevaluated;
 
             return {
@@ -279,7 +279,7 @@ namespace {
         auto operator()(ast::expression::Type_cast& cast) -> ir::Expression {
             ir::expression::Type_cast ir_cast {
                 .expression = recurse(cast.expression),
-                .type = compiler::resolve_type(cast.target, context)
+                .type = resolution::resolve_type(cast.target, context)
             };
 
             auto type = ir_cast.type;
@@ -364,6 +364,6 @@ namespace {
 }
 
 
-auto compiler::resolve_expression(ast::Expression& expression, Resolution_context& context) -> ir::Expression {
+auto resolution::resolve_expression(ast::Expression& expression, Resolution_context& context) -> ir::Expression {
     return std::visit(Expression_resolution_visitor { context, expression }, expression.value);
 }

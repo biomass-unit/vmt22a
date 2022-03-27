@@ -15,11 +15,9 @@
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
 
-#include "compiler/resolution/ir_formatting.hpp"
-#include "compiler/resolution/resolution.hpp"
-#include "compiler/resolution/resolution_internals.hpp"
-
-#include "compiler/codegen_internals.hpp"
+#include "ir/ir_formatting.hpp"
+#include "resolution/resolution.hpp"
+#include "resolution/resolution_internals.hpp"
 
 #include "tests/tests.hpp"
 
@@ -83,14 +81,14 @@ namespace {
         parser::Parse_context parse_context { tokenized_source };
         auto result = parser::extract_expression(parse_context);
 
-        compiler::Namespace space;
-        compiler::Resolution_context resolution_context {
+        resolution::Namespace space;
+        resolution::Resolution_context resolution_context {
             .scope             = { .parent = nullptr },
             .current_namespace = &space,
             .global_namespace  = &space,
             .is_unevaluated    = false
         };
-        auto expression = compiler::resolve_expression(result, resolution_context);
+        auto expression = resolution::resolve_expression(result, resolution_context);
 
         bu::print("ir: {}\n", expression);
     });
@@ -147,7 +145,7 @@ auto main(int argc, char const** argv) -> int try {
     tests::run_all_tests();
 
     if (options.find("resolve")) {
-        auto pipeline = bu::compose(&compiler::resolve, &parser::parse, &lexer::lex);
+        auto pipeline = bu::compose(&resolution::resolve, &parser::parse, &lexer::lex);
         auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
         auto program  = pipeline(bu::Source { path.string() });
 

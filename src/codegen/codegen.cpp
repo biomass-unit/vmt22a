@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "compiler.hpp"
+#include "codegen.hpp"
 #include "codegen_internals.hpp"
 
 
@@ -16,6 +16,6 @@ namespace {
 }
 
 
-auto compiler::codegen(ir::Program&&) -> vm::Virtual_machine {
+auto codegen::generate(ir::Program&&) -> vm::Virtual_machine {
     bu::unimplemented();
 }

@@ -6,11 +6,11 @@
 #include "parser/parser.hpp"
 
 
-auto compiler::Resolution_scope::make_child() noexcept -> Resolution_scope {
+auto resolution::Scope::make_child() noexcept -> Scope {
     return { .parent = this, .current_frame_offset = current_frame_offset };
 }
 
-auto compiler::Resolution_scope::find(lexer::Identifier const name) noexcept -> Binding* {
+auto resolution::Scope::find(lexer::Identifier const name) noexcept -> Binding* {
     if (auto* const pointer = bindings.find(name)) {
         return pointer;
     }
@@ -57,8 +57,8 @@ namespace {
         }
     }
 
-    auto make_namespace(std::span<ast::Definition> const definitions) -> compiler::Namespace {
-        compiler::Namespace space;
+    auto make_namespace(std::span<ast::Definition> const definitions) -> resolution::Namespace {
+        resolution::Namespace space;
 
         for (auto& definition : definitions) {
             using namespace ast::definition;
@@ -93,7 +93,7 @@ namespace {
 }
 
 
-auto compiler::resolve(ast::Module&& module) -> ir::Program {
+auto resolution::resolve(ast::Module&& module) -> ir::Program {
     handle_imports(module);
 
     auto global_namespace = make_namespace(module.definitions);

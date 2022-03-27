@@ -4,7 +4,7 @@
 #include "bu/flatmap.hpp"
 #include "bu/textual_error.hpp"
 #include "ast/ast.hpp"
-#include "resolution/ir.hpp"
+#include "ir/ir.hpp"
 #include "vm/virtual_machine.hpp"
 
 

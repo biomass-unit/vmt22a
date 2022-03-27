@@ -1,10 +1,10 @@
 #pragma once
 
 #include "ast/ast.hpp"
-#include "ir.hpp"
+#include "ir/ir.hpp"
 
 
-namespace compiler {
+namespace resolution {
 
     auto resolve(ast::Module&&) -> ir::Program;
 
