@@ -189,46 +189,6 @@ namespace {
             };
         }
 
-        auto operator()(ast::expression::Conditional& conditional) -> ir::Expression {
-            auto condition = recurse(conditional.condition);
-
-            if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
-                bu::abort("non-bool condition");
-            }
-
-            auto true_branch = recurse(conditional.true_branch);
-            auto false_branch = conditional.false_branch
-                ? bu::Wrapper { recurse(*conditional.false_branch) }
-                : ir::unit_value;
-
-            if (true_branch.type != false_branch->type) {
-                bu::abort("branch type mismatch");
-            }
-
-            return {
-                .value = ir::expression::Conditional {
-                    std::move(condition),
-                    std::move(true_branch),
-                    std::move(false_branch)
-                },
-                .type = true_branch.type
-            };
-        }
-
-        auto operator()(ast::expression::Type_cast& cast) -> ir::Expression {
-            ir::expression::Type_cast ir_cast {
-                .expression = recurse(cast.expression),
-                .type = compiler::resolve_type(cast.target, context)
-            };
-
-            auto type = ir_cast.type;
-
-            return {
-                .value = std::move(ir_cast),
-                .type = type
-            };
-        }
-
         auto operator()(ast::expression::Member_access_chain& chain) -> ir::Expression {
             auto expression = recurse(chain.expression);
             auto most_recent_type = expression.type;
@@ -282,6 +242,79 @@ namespace {
                     offset
                 },
                 .type = most_recent_type
+            };
+        }
+
+        auto operator()(ast::expression::Conditional& conditional) -> ir::Expression {
+            auto condition = recurse(conditional.condition);
+
+            if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
+                bu::abort("non-bool condition");
+            }
+
+            auto true_branch = recurse(conditional.true_branch);
+            auto false_branch = conditional.false_branch
+                ? bu::Wrapper { recurse(*conditional.false_branch) }
+                : ir::unit_value;
+
+            if (true_branch.type != false_branch->type) {
+                bu::abort("branch type mismatch");
+            }
+
+            return {
+                .value = ir::expression::Conditional {
+                    std::move(condition),
+                    std::move(true_branch),
+                    std::move(false_branch)
+                },
+                .type = true_branch.type
+            };
+        }
+
+        auto operator()(ast::expression::Type_cast& cast) -> ir::Expression {
+            ir::expression::Type_cast ir_cast {
+                .expression = recurse(cast.expression),
+                .type = compiler::resolve_type(cast.target, context)
+            };
+
+            auto type = ir_cast.type;
+
+            return {
+                .value = std::move(ir_cast),
+                .type = type
+            };
+        }
+
+        auto operator()(ast::expression::Infinite_loop& loop) -> ir::Expression {
+            auto body = recurse(loop.body);
+
+            if (!body.type->is_unit()) {
+                bu::abort("non-unit loop body type");
+            }
+
+            return {
+                .value = ir::expression::Infinite_loop { std::move(body) },
+                .type = ir::type::unit
+            };
+        }
+
+        auto operator()(ast::expression::While_loop& loop) -> ir::Expression {
+            auto condition = recurse(loop.condition);
+            if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
+                bu::abort("non-bool loop condition type");
+            }
+
+            auto body = recurse(loop.body);
+            if (!body.type->is_unit()) {
+                bu::abort("non-unit loop body type");
+            }
+
+            return {
+                .value = ir::expression::While_loop {
+                    std::move(condition),
+                    std::move(body)
+                },
+                .type = ir::type::unit
             };
         }
 

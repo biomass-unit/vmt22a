@@ -48,6 +48,14 @@ namespace {
             return format("({} as {})", cast.expression, cast.type);
         }
 
+        auto operator()(ir::expression::Infinite_loop const& loop) {
+            return format("loop {}", loop.body);
+        }
+
+        auto operator()(ir::expression::While_loop const& loop) {
+            return format("while {} {}", loop.condition, loop.body);
+        }
+
         auto operator()(ir::expression::Compound const& compound) {
             format("{{ ");
             for (auto const& expression : compound.side_effects) {

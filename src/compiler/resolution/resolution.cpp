@@ -20,6 +20,19 @@ auto compiler::Resolution_scope::find(lexer::Identifier const name) noexcept -> 
 }
 
 
+auto ir::Type::is_unit() const noexcept -> bool {
+    // Checking size == 0 isn't enough, because compound
+    // types such as ((), ()) would also count as the unit type
+
+    if (auto* const tuple = std::get_if<ir::type::Tuple>(&value)) {
+        return tuple->types.empty();
+    }
+    else {
+        return false;
+    }
+}
+
+
 namespace {
 
     auto handle_imports(ast::Module& module) -> void {

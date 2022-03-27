@@ -123,6 +123,8 @@ namespace ir {
 
         //auto conforms_to(Typeclass) -> bool
 
+        auto is_unit() const noexcept -> bool;
+
         DEFAULTED_EQUALITY(Type);
     };
 
@@ -199,6 +201,17 @@ namespace ir {
             DEFAULTED_EQUALITY(Type_cast);
         };
 
+        struct Infinite_loop {
+            bu::Wrapper<Expression> body;
+            DEFAULTED_EQUALITY(Infinite_loop);
+        };
+
+        struct While_loop {
+            bu::Wrapper<Expression> condition;
+            bu::Wrapper<Expression> body;
+            DEFAULTED_EQUALITY(While_loop);
+        };
+
         struct Compound {
             std::vector<Expression> side_effects;
             bu::Wrapper<Expression> result;
@@ -221,6 +234,8 @@ namespace ir {
             expression::Member_access,
             expression::Conditional,
             expression::Type_cast,
+            expression::Infinite_loop,
+            expression::While_loop,
             expression::Compound
         >;
 
