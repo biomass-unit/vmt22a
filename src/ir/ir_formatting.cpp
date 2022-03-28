@@ -20,6 +20,19 @@ namespace {
             return format("{}", literal.value);
         }
 
+        auto operator()(ir::expression::Array_literal const& array) {
+            switch (array.elements.size()) {
+            case 0:
+                return format("[;]");
+            case 1:
+                return format("[{};]", array.elements.front());
+            default:
+                format("[");
+                bu::format_delimited_range(out, array.elements, "; ");
+                return format("]");
+            }
+        }
+
         auto operator()(ir::expression::Tuple const& tuple) {
             return format("({})", tuple.expressions);
         }

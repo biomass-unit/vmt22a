@@ -34,6 +34,44 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Array_literal& array) -> ir::Expression {
+            std::vector<ir::Expression> elements;
+            elements.reserve(array.elements.size());
+
+            if (array.elements.empty()) {
+                bu::unimplemented();
+            }
+
+            elements.push_back(recurse(array.elements.front()));
+            auto& head = elements.front();
+
+            for (auto& element : array.elements | std::views::drop(1)) {
+                auto elem = recurse(element);
+
+                if (head.type != elem.type) {
+                    bu::abort("array element type mismatch");
+                }
+
+                elements.push_back(std::move(elem));
+            }
+
+            bu::Usize const length = elements.size();
+            bu::U16   const size   = head.type->size;
+
+            return {
+                .value = ir::expression::Array_literal {
+                    std::move(elements)
+                },
+                .type = ir::Type {
+                    .value = ir::type::Array {
+                        .element_type = head.type,
+                        .length       = length
+                    },
+                    .size = static_cast<bu::U16>(length * size) // fix
+                }
+            };
+        }
+
         auto operator()(ast::expression::Tuple& tuple) -> ir::Expression {
             std::vector<ir::Expression> expressions;
             std::vector<bu::Wrapper<ir::Type>> types;

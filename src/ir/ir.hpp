@@ -163,6 +163,11 @@ namespace ir {
         template <class T>
         using Literal = ast::expression::Literal<T>;
 
+        struct Array_literal {
+            std::vector<Expression> elements;
+            DEFAULTED_EQUALITY(Array_literal);
+        };
+
         struct Tuple {
             std::vector<Expression> expressions;
             DEFAULTED_EQUALITY(Tuple);
@@ -228,6 +233,7 @@ namespace ir {
             expression::Literal<bu::Char>,
             expression::Literal<bool>,
             expression::Literal<lexer::String>,
+            expression::Array_literal,
             expression::Tuple,
             expression::Let_binding,
             expression::Local_variable,
