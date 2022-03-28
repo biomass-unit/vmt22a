@@ -125,7 +125,8 @@ auto main(int argc, char const** argv) -> int try {
         ("repl"   , cli::string(), "Run the given repl"          )
         ("machine",                "Run the interpreter test"    )
         ("resolve",                "Run the resolution test"     )
-        ("nocolor",                "Disable colored output"      );
+        ("nocolor",                "Disable colored output"      )
+        ("test"   ,                "Run all tests"               );
 
     auto options = cli::parse_command_line(argc, argv, description);
 
@@ -142,7 +143,9 @@ auto main(int argc, char const** argv) -> int try {
         bu::disable_color_formatting();
     }
 
-    tests::run_all_tests();
+    if (options.find("test")) {
+        tests::run_all_tests();
+    }
 
     if (options.find("resolve")) {
         auto pipeline = bu::compose(&resolution::resolve, &parser::parse, &lexer::lex);
