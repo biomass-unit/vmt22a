@@ -75,6 +75,7 @@ namespace lexer {
             meta,
             where,
             dyn,
+            pub,
 
             underscore,
             lower_name,

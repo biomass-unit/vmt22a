@@ -28,11 +28,23 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
 
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
-    return std::format_to(context.out(), "{}: {} = {}", value.pattern, value.type, value.default_value);
+    return std::format_to(
+        context.out(),
+        "{}: {} = {}",
+        value.pattern,
+        value.type,
+        value.default_value
+    );
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
-    return std::format_to(context.out(), "{}: {}", value.name, value.type);
+    return std::format_to(
+        context.out(),
+        "{}{}: {}",
+        value.is_public ? "pub " : "",
+        value.name,
+        value.type
+    );
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Data::Constructor) {
@@ -82,7 +94,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
                 return std::format_to(context.out(), "mut?{}", mutability.parameter_name);
             }
         },
-        [&](auto const& argument) {
+        [&](auto const& argument) { // This catches type and expression arguments
             return std::format_to(context.out(), "{}", argument);
         }
     }, value.value);

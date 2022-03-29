@@ -6,6 +6,19 @@
 
 namespace tests {
 
+    namespace dtl {
+        auto red_text(auto const& x) -> std::string {
+            return std::format("{}{}{}", bu::Color::red, x, bu::Color::white);
+        }
+    }
+
+
+    struct Failure : std::runtime_error {
+        using runtime_error::runtime_error;
+        using runtime_error::operator=;
+    };
+    
+
     struct Test {
         std::string_view name;
 
@@ -21,30 +34,30 @@ namespace tests {
         auto operator=(Invoke&& test) -> void try {
             test.callable();
         }
-        catch (std::exception const& exception) {
+        catch (Failure const& failure) {
             bu::print(
-                "Test case in [{}.{}] failed: {}\n",
+                "{} Test case in [{}.{}] failed: {}\n",
+                dtl::red_text("NOTE:"),
                 test.caller.function_name(),
                 name,
-                exception.what()
+                failure.what()
             );
+        }
+        catch (...) {
+            bu::print(
+                "{} Exception thrown during test [{}.{}]\n",
+                dtl::red_text("NOTE:"),
+                test.caller.function_name(),
+                name
+            );
+            throw;
         }
     };
 
 
     auto assert_eq(auto const& a, auto const& b) -> void {
         if (a != b) {
-            throw std::runtime_error {
-                std::format(
-                    "{}{}{} != {}{}{}",
-                    bu::Color::red,
-                    a,
-                    bu::Color::white,
-                    bu::Color::red,
-                    b,
-                    bu::Color::white
-                )
-            };
+            throw Failure { std::format("{} != {}", dtl::red_text(a), dtl::red_text(b)) };
         }
     }
 

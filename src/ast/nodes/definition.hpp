@@ -75,6 +75,7 @@ namespace ast {
             struct Member {
                 lexer::Identifier name;
                 bu::Wrapper<Type> type;
+                bool              is_public = false;
                 DEFAULTED_EQUALITY(Member);
             };
             std::vector<Member> members;

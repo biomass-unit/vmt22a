@@ -392,12 +392,18 @@ namespace {
     auto parse_struct_member(Parse_context& context)
         -> std::optional<ast::definition::Struct::Member>
     {
+        bool const is_public = context.try_consume(Token::Type::pub);
+
         if (auto name = parse_lower_id(context)) {
             context.consume_required(Token::Type::colon);
             return ast::definition::Struct::Member {
-                *name,
-                extract_type(context)
+                .name      = *name,
+                .type      = extract_type(context),
+                .is_public = is_public
             };
+        }
+        else if (is_public) {
+            throw context.expected("a struct member name");
         }
         else {
             return std::nullopt;

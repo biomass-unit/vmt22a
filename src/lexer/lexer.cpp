@@ -250,6 +250,7 @@ namespace {
             { new_id("where")     , Token::Type::where      },
             { new_id("immut")     , Token::Type::immut      },
             { new_id("dyn")       , Token::Type::dyn        },
+            { new_id("pub")       , Token::Type::pub        },
         });
 
         static auto const

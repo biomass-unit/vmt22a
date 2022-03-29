@@ -5,7 +5,7 @@
 DEFINE_FORMATTER_FOR(lexer::Token::Type) {
     constexpr auto strings = std::to_array<std::string_view>({
         ".", ",", ":", ";", "::", "&", "*", "+", "?", "=", "|", "->", "(", ")", "{", "}", "[", "]",
-        "let", "mut", "immut", "if", "else", "elif", "for", "in", "while", "loop", "continue", "break", "match", "ret", "fn", "as", "data", "struct", "class", "inst", "impl", "alias", "namespace", "import", "export", "module", "size_of", "type_of", "meta", "where", "dyn",
+        "let", "mut", "immut", "if", "else", "elif", "for", "in", "while", "loop", "continue", "break", "match", "ret", "fn", "as", "data", "struct", "class", "inst", "impl", "alias", "namespace", "import", "export", "module", "size_of", "type_of", "meta", "where", "dyn", "pub",
         "underscore", "lower", "upper", "op", "str", "int", "float", "char", "bool", "end of input"
     });
     static_assert(strings.size() == lexer::Token::type_count);
