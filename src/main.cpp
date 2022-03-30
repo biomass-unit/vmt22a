@@ -156,9 +156,7 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (options.find("machine")) {
-        bu::unimplemented(); // MSVC ICE
-
-        /*vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+        vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
         bu::Timer timer;
 
@@ -175,7 +173,7 @@ auto main(int argc, char const** argv) -> int try {
             halt
         );
 
-        return machine.run();*/
+        return machine.run();
     }
 
     if (auto* const name = options.find_str("repl")) {

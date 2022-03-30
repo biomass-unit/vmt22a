@@ -17,9 +17,7 @@ namespace {
 
 
 auto run_vm_tests() -> void {
-    return; // MSVC ICE, fix later
-
-    /*using namespace bu::literals;
+    using namespace bu::literals;
     using namespace tests;
     using enum vm::Opcode;
 
@@ -57,5 +55,5 @@ auto run_vm_tests() -> void {
                 halt
             )
         );
-    };*/
+    };
 }

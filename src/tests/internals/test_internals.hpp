@@ -10,12 +10,21 @@ namespace tests {
         auto red_text(auto const& x) -> std::string {
             return std::format("{}{}{}", bu::Color::red, x, bu::Color::white);
         }
+
+        auto tests_failed() noexcept -> bool&;
     }
 
 
     struct Failure : std::runtime_error {
-        using runtime_error::runtime_error;
-        using runtime_error::operator=;
+        std::source_location thrower;
+
+        explicit Failure(std::string const&   message,
+                         std::source_location thrower = std::source_location::current())
+            : runtime_error { message }
+            , thrower       { thrower }
+        {
+            dtl::tests_failed() = true;
+        }
     };
     
 
@@ -36,10 +45,11 @@ namespace tests {
         }
         catch (Failure const& failure) {
             bu::print(
-                "{} Test case in [{}.{}] failed: {}\n",
+                "{} Test case failed in [{}.{}], on line {}: {}\n",
                 dtl::red_text("NOTE:"),
                 test.caller.function_name(),
                 name,
+                failure.thrower.line(),
                 failure.what()
             );
         }
@@ -55,9 +65,20 @@ namespace tests {
     };
 
 
-    auto assert_eq(auto const& a, auto const& b) -> void {
+    auto assert_eq(auto const& a,
+                   auto const& b,
+                   std::source_location caller = std::source_location::current())
+        -> void
+    {
         if (a != b) {
-            throw Failure { std::format("{} != {}", dtl::red_text(a), dtl::red_text(b)) };
+            throw Failure {
+                std::format(
+                    "{} != {}",
+                    dtl::red_text(a),
+                    dtl::red_text(b)
+                ),
+                caller
+            };
         }
     }
 

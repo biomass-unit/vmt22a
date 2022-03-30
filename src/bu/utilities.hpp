@@ -348,9 +348,13 @@ namespace bu {
     auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto... args)
         noexcept -> void
     {
-        ([=]() mutable noexcept {
+        // The lambda member i is a workaround for a very strange
+        // compiler bug on MSVC 17.2.0 Preview 2.1, revert back
+        // to declaring i in the loop once MSVC fixes the bug.
+
+        ([=, i = 0]() mutable noexcept {
             auto const memory = reinterpret_cast<std::byte const*>(&args);
-            for (Usize i = 0; i != sizeof args; ++i) {
+            for (/*Usize i = 0*/; i != sizeof args; ++i) {
                 *out++ = memory[i];
             }
         }(), ...);
