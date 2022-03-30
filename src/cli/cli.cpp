@@ -18,13 +18,13 @@ namespace {
 
     template <class T>
     consteval auto type_description() noexcept -> std::string_view {
-        if constexpr (std::same_as<T, bu::Isize>)
+        if constexpr (std::same_as<T, cli::types::Int>)
             return "int";
-        else if constexpr (std::same_as<T, bu::Float>)
+        else if constexpr (std::same_as<T, cli::types::Float>)
             return "float";
-        else if constexpr (std::same_as<T, bool>)
+        else if constexpr (std::same_as<T, cli::types::Bool>)
             return "bool";
-        else if constexpr (std::same_as<T, std::string_view>)
+        else if constexpr (std::same_as<T, cli::types::Str>)
             return "str";
         else
             static_assert(bu::always_false<T>);
@@ -126,7 +126,7 @@ namespace {
 
         auto const view = context.extract();
 
-        if constexpr (std::same_as<T, bu::Isize> || std::same_as<T, bu::Float>) {
+        if constexpr (bu::one_of<T, cli::types::Int, cli::types::Float>) {
             auto const start = view.data();
             auto const stop  = start + view.size();
 
@@ -169,7 +169,7 @@ namespace {
             }
         }
 
-        else if constexpr (std::same_as<T, bool>) {
+        else if constexpr (std::same_as<T, cli::types::Bool>) {
             std::string input;
             input.reserve(view.size());
             std::ranges::copy(view | std::views::transform(to_lower), std::back_inserter(input));
@@ -190,7 +190,7 @@ namespace {
             }
         }
 
-        else if constexpr (std::same_as<T, std::string_view>) {
+        else if constexpr (std::same_as<T, cli::types::Str>) {
             return view;
         }
 
@@ -336,6 +336,142 @@ auto cli::parse_command_line(int argc, char const** argv, Options_description co
 }
 
 
+template <class T>
+auto cli::Value<T>::default_to(T&& value) && noexcept -> Value&& {
+    default_value = std::move(value);
+    return std::move(*this);
+}
+
+template <class T>
+auto cli::Value<T>::min(T&& value) && noexcept -> Value&& {
+    minimum_value = std::move(value);
+    return std::move(*this);
+}
+
+template <class T>
+auto cli::Value<T>::max(T&& value) && noexcept -> Value&& {
+    maximum_value = std::move(value);
+    return std::move(*this);
+}
+
+template struct cli::Value<bu::Isize       >;
+template struct cli::Value<bu::Float       >;
+template struct cli::Value<bool            >;
+template struct cli::Value<std::string_view>;
+
+
+cli::Parameter::Name::Name(char const* long_name, std::optional<char> short_name) noexcept
+    : long_form  { long_name  }
+    , short_form { short_name } {}
+
+
+namespace {
+
+    template <bu::Usize n>
+    auto arg_as(auto const& values) {
+        assert(values.size() == 1);
+        return std::get<n>(values.at(0));
+        // .at(0) used because calling .front() on an empty vector is UB
+    }
+
+    template <bu::Usize n>
+    auto nth_arg_as(auto const& values, bu::Usize const index) {
+        return std::get<n>(values.at(index));
+    }
+
+}
+
+auto cli::Named_argument::as_int   () const -> types::Int   { return arg_as<0>(values); }
+auto cli::Named_argument::as_float () const -> types::Float { return arg_as<1>(values); }
+auto cli::Named_argument::as_bool  () const -> types::Bool  { return arg_as<2>(values); }
+auto cli::Named_argument::as_str   () const -> types::Str   { return arg_as<3>(values); }
+
+auto cli::Named_argument::nth_as_int   (bu::Usize const index) const -> types::Int   { return nth_arg_as<0>(values, index); }
+auto cli::Named_argument::nth_as_float (bu::Usize const index) const -> types::Float { return nth_arg_as<1>(values, index); }
+auto cli::Named_argument::nth_as_bool  (bu::Usize const index) const -> types::Bool  { return nth_arg_as<2>(values, index); }
+auto cli::Named_argument::nth_as_str   (bu::Usize const index) const -> types::Str   { return nth_arg_as<3>(values, index); }
+
+
+auto cli::Options_description::Option_adder::map_short_to_long(Parameter::Name const& name)
+    noexcept -> void
+{
+    if (name.short_form) {
+        self->long_forms.add(bu::copy(*name.short_form), bu::copy(name.long_form));
+    }
+}
+
+
+auto cli::Options_description::Option_adder::operator()(Parameter::Name&&               name,
+                                                        std::optional<std::string_view> description)
+    noexcept -> Option_adder
+{
+    map_short_to_long(name);
+    self->parameters.push_back({
+        .name = std::move(name),
+        .description = description
+    });
+    return *this;
+}
+
+template <class T>
+auto cli::Options_description::Option_adder::operator()(Parameter::Name&&               name,
+                                                        Value<T>&&                      value,
+                                                        std::optional<std::string_view> description)
+    noexcept -> Option_adder
+{
+    map_short_to_long(name);
+    bool const is_defaulted = value.default_value.has_value();
+
+    self->parameters.push_back({
+        .name        = std::move(name),
+        .values      { std::move(value) },
+        .description = description,
+        .defaulted   = is_defaulted
+    });
+    return *this;
+}
+
+auto cli::Options_description::Option_adder::operator()(Parameter::Name&&                 name,
+                                                        std::vector<Parameter::Variant>&& values,
+                                                        std::optional<std::string_view>   description)
+    noexcept -> Option_adder
+{
+    map_short_to_long(name);
+
+    auto const has_default = [](auto const& variant) {
+        return std::visit([](auto& alternative) {
+            return alternative.default_value.has_value();
+        }, variant);
+    };
+
+    bool is_defaulted = false;
+    if (!values.empty()) {
+        is_defaulted = has_default(values.front());
+        auto rest = values | std::views::drop(1);
+
+        if (is_defaulted) {
+            assert(std::ranges::all_of(rest, has_default));
+        }
+        else {
+            assert(std::ranges::none_of(rest, has_default));
+        }
+    }
+
+    self->parameters.emplace_back(
+        std::move(name),
+        std::move(values),
+        description,
+        is_defaulted
+    );
+    return *this;
+}
+
+template auto cli::Options_description::Option_adder::operator()(Parameter::Name&&, Value<types::Int  >&&, std::optional<std::string_view>) -> Option_adder;
+template auto cli::Options_description::Option_adder::operator()(Parameter::Name&&, Value<types::Float>&&, std::optional<std::string_view>) -> Option_adder;
+template auto cli::Options_description::Option_adder::operator()(Parameter::Name&&, Value<types::Bool >&&, std::optional<std::string_view>) -> Option_adder;
+template auto cli::Options_description::Option_adder::operator()(Parameter::Name&&, Value<types::Str  >&&, std::optional<std::string_view>) -> Option_adder;
+
+
 auto cli::Options::find(std::string_view const name) noexcept -> Named_argument* {
     auto it = std::ranges::find(
         named_arguments,
@@ -346,6 +482,36 @@ auto cli::Options::find(std::string_view const name) noexcept -> Named_argument*
     return it != named_arguments.end()
         ? std::to_address(it)
         : nullptr;
+}
+
+
+namespace {
+
+    template <class T>
+    auto find_arg(cli::Options* options, std::string_view const name) noexcept -> T* {
+        if (auto* const arg = options->find(name)) {
+            assert(arg->values.size() == 1);
+            return std::addressof(std::get<T>(arg->values.front()));
+            // std::get used instead of std::get_if because invalid access should throw
+        }
+        else {
+            return nullptr;
+        }
+    }
+
+}
+
+auto cli::Options::find_int(std::string_view name) noexcept -> types::Int* {
+    return find_arg<types::Int>(this, name);
+}
+auto cli::Options::find_float(std::string_view name) noexcept -> types::Float* {
+    return find_arg<types::Float>(this, name);
+}
+auto cli::Options::find_bool(std::string_view name) noexcept -> types::Bool* {
+    return find_arg<types::Bool>(this, name);
+}
+auto cli::Options::find_str(std::string_view name) noexcept -> types::Str* {
+    return find_arg<types::Str>(this, name);
 }
 
 
