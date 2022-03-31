@@ -9,7 +9,7 @@ namespace bu {
         std::string filename;
         std::string contents;
     public:
-        struct Mock_tag {};
+        struct Mock_tag { std::string_view filename; };
 
         explicit Source(std::string&&);
         explicit Source(Mock_tag, std::string&&);

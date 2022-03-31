@@ -19,6 +19,23 @@ auto resolution::Scope::find(lexer::Identifier const name) noexcept -> Binding* 
     }
 }
 
+auto resolution::Scope::unused_variables() -> std::optional<std::vector<lexer::Identifier>> {
+    std::vector<lexer::Identifier> names;
+
+    for (auto& [name, binding] : bindings.container()) {
+        if (!binding.has_been_mentioned) {
+            names.push_back(name);
+        }
+    }
+
+    if (names.empty()) {
+        return std::nullopt;
+    }
+    else {
+        return names;
+    }
+}
+
 
 auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> Namespace* {
     auto* root = std::visit(bu::Overload {
@@ -132,6 +149,7 @@ auto resolution::resolve(ast::Module&& module) -> ir::Program {
         .scope             = { .parent = nullptr },
         .current_namespace = &global_namespace,
         .global_namespace  = &global_namespace,
+        .source            = &module.source,
         .is_unevaluated    = false
     };
 

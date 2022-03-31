@@ -46,11 +46,11 @@ namespace {
                 }
 
                 try {
-                    bu::Source source { bu::Source::Mock_tag {}, std::move(string) };
+                    bu::Source source { bu::Source::Mock_tag { "repl" }, std::move(string) };
                     f(std::move(source));
                 }
                 catch (std::exception const& exception) {
-                    error_stream << exception.what() << '\n';
+                    error_stream << exception.what() << "\n\n";
                 }
             }
         };
@@ -86,6 +86,7 @@ namespace {
             .scope             = { .parent = nullptr },
             .current_namespace = &space,
             .global_namespace  = &space,
+            .source            = &tokenized_source.source,
             .is_unevaluated    = false
         };
         auto expression = resolution::resolve_expression(result, resolution_context);
@@ -101,7 +102,7 @@ namespace {
 
         auto tokenized_source = lexer::lex(
             bu::Source {
-                bu::Source::Mock_tag {},
+                bu::Source::Mock_tag { "debug" },
                 std::move(input)
             }
         );

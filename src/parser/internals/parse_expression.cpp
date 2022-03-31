@@ -319,12 +319,10 @@ namespace {
 
         context.consume_required(Token::Type::brace_close);
 
-        switch (expressions.size()) {
-        case 0:
+        if (expressions.empty()) {
             return ast::expression::Tuple {};
-        case 1:
-            return std::move(expressions.front());
-        default:
+        }
+        else {
             return ast::expression::Compound { std::move(expressions) };
         }
     }

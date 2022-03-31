@@ -13,8 +13,8 @@ bu::Source::Source(std::string&& name)
     }
 }
 
-bu::Source::Source(Mock_tag, std::string&& contents)
-    : filename { "[REPL]" }
+bu::Source::Source(Mock_tag const mock_tag, std::string&& contents)
+    : filename { std::format("[{}]", mock_tag.filename) }
     , contents { std::move(contents) } {}
 
 

@@ -6,7 +6,7 @@ namespace {
 
     struct Expression_resolution_visitor {
         resolution::Resolution_context& context;
-        ast::Expression&              this_expression;
+        ast::Expression&                this_expression;
 
         auto recurse_with(resolution::Resolution_context& context) {
             return [&](ast::Expression& expression) {
@@ -23,7 +23,23 @@ namespace {
         }
 
 
-        auto error() {}
+        [[nodiscard]]
+        auto error(std::string_view message, ast::Expression& expression, std::optional<std::string_view> help = std::nullopt) {
+            return std::runtime_error {
+                bu::textual_error({
+                    .erroneous_view = expression.source_view,
+                    .file_view      = context.source->string(),
+                    .file_name      = context.source->name(),
+                    .message        = message,
+                    .help_note      = help
+                })
+            };
+        }
+
+        [[nodiscard]]
+        auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) {
+            return error(message, this_expression, help);
+        }
 
 
         template <class T>
@@ -49,7 +65,14 @@ namespace {
                 auto elem = recurse(element);
 
                 if (head.type != elem.type) {
-                    bu::abort("array element type mismatch");
+                    throw error(
+                        std::format(
+                            "The earlier elements in the array were of type {}, not {}",
+                            head.type,
+                            elem.type
+                        ),
+                        element
+                    );
                 }
 
                 elements.push_back(std::move(elem));
@@ -109,7 +132,15 @@ namespace {
             if (let_binding.type) {
                 auto explicit_type = resolution::resolve_type(*let_binding.type, context);
                 if (explicit_type != *initializer.type) {
-                    bu::abort("mismatched types");
+                    throw error(
+                        std::format(
+                            "The binding is explicitly specified to be of "
+                            "type {}, but the initializer is of type {}",
+                            explicit_type,
+                            initializer.type
+                        ),
+                        let_binding.initializer
+                    );
                 }
             }
 
@@ -183,7 +214,7 @@ namespace {
                 }, *value);
             }
             else {
-                bu::abort("undeclared name");
+                throw error(std::format("The name {} is unbound", variable.name));
             }
         }
 
@@ -241,7 +272,7 @@ namespace {
                 std::visit(bu::Overload {
                     [&](bu::Isize const member_index) {
                         if (member_index < 0) {
-                            bu::abort("negative tuple member index");
+                            throw error("Negative tuple member indices are not allowed");
                         }
 
                         auto const index = static_cast<bu::Usize>(member_index);
@@ -254,11 +285,16 @@ namespace {
                                 most_recent_type = tuple->types.at(index);
                             }
                             else {
-                                bu::abort("tuple member index out of range");
+                                throw error(
+                                    std::format(
+                                        "Tuple member index out of range; the tuple only contains {} elements",
+                                        tuple->types.size()
+                                    )
+                                );
                             }
                         }
                         else {
-                            bu::abort("attempted tuple member access on a non-tuple type");
+                            throw error(std::format("{} is not a tuple type", most_recent_type)); // Improve
                         }
                     },
                     [&](lexer::Identifier const member_name) {
@@ -268,11 +304,22 @@ namespace {
                                 offset.safe_add(member->offset);
                             }
                             else {
-                                bu::abort("struct does not contain given member");
+                                throw error(
+                                    std::format(
+                                        "{} does not contain a member {}",
+                                        uds->structure->name,
+                                        member_name
+                                    )
+                                );
                             }
                         }
                         else {
-                            bu::abort("attempted member access on non-struct type");
+                            throw error(
+                                std::format(
+                                    "{} is not a struct type",
+                                    most_recent_type
+                                )
+                            );
                         }
                     }
                 }, accessor);
@@ -291,7 +338,13 @@ namespace {
             auto condition = recurse(conditional.condition);
 
             if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
-                bu::abort("non-bool condition");
+                throw error(
+                    std::format(
+                        "The condition must be of type Bool, not {}",
+                        condition.type
+                    ),
+                    conditional.condition
+                );
             }
 
             auto true_branch = recurse(conditional.true_branch);
@@ -301,7 +354,14 @@ namespace {
                               . value_or(ir::unit_value);
 
             if (true_branch.type != false_branch->type) {
-                bu::abort("branch type mismatch");
+                throw error(
+                    std::format(
+                        "The true-branch is of type {}, but the false branch is of type {}",
+                        true_branch.type,
+                        false_branch->type
+                    ),
+                    "Both of the branches must be of the same type"
+                );
             }
 
             return {
@@ -332,7 +392,10 @@ namespace {
             auto body = recurse(loop.body);
 
             if (!body.type->is_unit()) {
-                bu::abort("non-unit loop body type");
+                throw error(
+                    std::format("The type of the loop body must be (), not {}", body.type),
+                    loop.body
+                );
             }
 
             return {
@@ -344,12 +407,21 @@ namespace {
         auto operator()(ast::expression::While_loop& loop) -> ir::Expression {
             auto condition = recurse(loop.condition);
             if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
-                bu::abort("non-bool loop condition type");
+                throw error(
+                    std::format(
+                        "The condition must be of type Bool, not {}",
+                        condition.type
+                    ),
+                    loop.condition
+                );
             }
 
             auto body = recurse(loop.body);
             if (!body.type->is_unit()) {
-                bu::abort("non-unit loop body type");
+                throw error(
+                    std::format("The type of the loop body must be (), not {}", body.type),
+                    loop.body
+                );
             }
 
             return {
@@ -379,6 +451,10 @@ namespace {
             );
 
             auto result = recurse(compound.expressions.back());
+
+            if (auto unused = child_context.scope.unused_variables()) {
+                bu::abort("unused variables");
+            }
 
             return {
                 .value = ir::expression::Compound {

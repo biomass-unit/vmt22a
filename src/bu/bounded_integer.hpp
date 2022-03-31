@@ -126,9 +126,9 @@ namespace bu {
 }
 
 
-template <class T, T min, T max, T def>
-struct std::formatter<bu::Bounded_integer<T, min, max, def>> : bu::Formatter_base {
-    auto format(bu::Bounded_integer<T, min, max, def> const value, std::format_context& context) {
+template <class T, T... config>
+struct std::formatter<bu::Bounded_integer<T, config...>> : bu::Formatter_base {
+    auto format(bu::Bounded_integer<T, config...> const value, std::format_context& context) {
         return std::format_to(context.out(), "{}", value.get());
     }
 };

@@ -5,6 +5,7 @@
 #include "ast/ast.hpp"
 #include "ast/ast_formatting.hpp"
 #include "ir/ir.hpp"
+#include "ir/ir_formatting.hpp"
 
 
 namespace resolution {
@@ -26,6 +27,8 @@ namespace resolution {
         auto make_child() noexcept -> Scope;
 
         auto find(lexer::Identifier) noexcept -> Binding*;
+
+        auto unused_variables() -> std::optional<std::vector<lexer::Identifier>>;
     };
 
 
@@ -64,6 +67,8 @@ namespace resolution {
         Namespace* current_namespace;
         Namespace* global_namespace;
 
+        bu::Source* source;
+
         bool is_unevaluated = false;
 
         auto make_child_context_with_new_scope() noexcept -> Resolution_context {
@@ -71,6 +76,7 @@ namespace resolution {
                 scope.make_child(),
                 current_namespace,
                 global_namespace,
+                source,
                 is_unevaluated
             };
         }
