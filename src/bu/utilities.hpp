@@ -332,19 +332,6 @@ namespace bu {
     constexpr bool always_false = false;
 
 
-    constexpr auto map = []<class Optional, class F>(Optional&& optional, F&& f)
-        noexcept(std::is_nothrow_invocable_v<F&&, decltype(forward_like<Optional>(*optional))>)
-        requires instance_of<std::decay_t<Optional>, std::optional>
-    {
-        if (optional) {
-            return std::optional { std::invoke(std::move(f), forward_like<Optional>(*optional)) };
-        }
-        else {
-            return decltype(std::optional { std::invoke(std::move(f), forward_like<Optional>(*optional)) }) {};
-        }
-    };
-
-
     auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto... args)
         noexcept -> void
     {

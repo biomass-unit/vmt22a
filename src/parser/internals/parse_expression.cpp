@@ -271,11 +271,15 @@ namespace {
     }
 
     auto extract_break(Parse_context& context) -> ast::Expression {
-        return ast::expression::Break { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
+        return ast::expression::Break {
+            parse_expression(context).transform(bu::make<bu::Wrapper<ast::Expression>>)
+        };
     }
 
     auto extract_ret(Parse_context& context) -> ast::Expression {
-        return ast::expression::Ret { bu::map(parse_expression(context), bu::make_wrapper<ast::Expression>) };
+        return ast::expression::Ret {
+            parse_expression(context).transform(bu::make<bu::Wrapper<ast::Expression>>)
+        };
     }
 
     auto extract_take_reference(Parse_context& context) -> ast::Expression {
@@ -317,7 +321,7 @@ namespace {
 
         switch (expressions.size()) {
         case 0:
-            return ast::unit_value;
+            return ast::expression::Tuple {};
         case 1:
             return std::move(expressions.front());
         default:
@@ -404,12 +408,9 @@ namespace {
             }
             else {
                 context.retreat();
-                return ast::Function_argument { extract_expression(context) };
             }
         }
-        else {
-            return bu::map(parse_expression(context), bu::make<ast::Function_argument>);
-        }
+        return parse_expression(context).transform(bu::make<ast::Function_argument>);
     }
 
     auto extract_arguments(Parse_context& context) -> std::vector<ast::Function_argument> {

@@ -354,10 +354,10 @@ auto cli::Value<T>::max(T&& value) && noexcept -> Value&& {
     return std::move(*this);
 }
 
-template struct cli::Value<bu::Isize       >;
-template struct cli::Value<bu::Float       >;
-template struct cli::Value<bool            >;
-template struct cli::Value<std::string_view>;
+template struct cli::Value<cli::types::Int  >;
+template struct cli::Value<cli::types::Float>;
+template struct cli::Value<cli::types::Bool >;
+template struct cli::Value<cli::types::Str  >;
 
 
 cli::Parameter::Name::Name(char const* long_name, std::optional<char> short_name) noexcept

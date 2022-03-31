@@ -45,9 +45,6 @@ namespace bu {
         return *a == *b;
     }
 
-    template <class T>
-    constexpr auto make_wrapper = make<Wrapper<T>>;
-
     constexpr auto wrap = []<class X>(X&& x) {
         return Wrapper<std::decay_t<X>> { std::forward<X>(x) };
     };

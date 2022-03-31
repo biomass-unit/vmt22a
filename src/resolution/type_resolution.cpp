@@ -21,7 +21,7 @@ namespace {
         auto operator()(ast::type::Primitive<T>&) -> ir::Type {
             return {
                 .value      = ir::type::Primitive<T> {},
-                .size       = sizeof(T),
+                .size       = ir::Size_type { bu::unchecked_tag, sizeof(T) },
                 .is_trivial = true
             };
         }
@@ -46,7 +46,7 @@ namespace {
 
         auto operator()(ast::type::Tuple& tuple) -> ir::Type {
             ir::type::Tuple ir_tuple;
-            bu::U16         size       = 0;
+            ir::Size_type   size;
             bool            is_trivial = true;
 
             ir_tuple.types.reserve(tuple.types.size());
@@ -54,7 +54,8 @@ namespace {
             for (auto& type : tuple.types) {
                 auto ir_type = recurse(type);
 
-                size += ir_type.size;
+                size.safe_add(ir_type.size.get());
+
                 if (!ir_type.is_trivial) {
                     is_trivial = false;
                 }
@@ -79,9 +80,9 @@ namespace {
                     .element_type = recurse(array.element_type),
                     .length       = static_cast<bu::Usize>(length->value)
                 };
-                auto size = type.length * type.element_type->size;
+                auto const size = type.element_type->size.copy().safe_mul(type.length);
 
-                return { .value = std::move(type), .size = static_cast<bu::U16>(size) };
+                return { .value = std::move(type), .size = size };
             }
             else {
                 bu::abort("non-literal array lengths are not supported yet");
@@ -91,7 +92,7 @@ namespace {
         auto operator()(ast::type::Pointer& pointer) -> ir::Type {
             return {
                 .value      = ir::type::Pointer { recurse(pointer.type) },
-                .size       = sizeof(std::byte*),
+                .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };
         }
@@ -99,7 +100,7 @@ namespace {
         auto operator()(ast::type::Reference& reference) -> ir::Type {
             return {
                 .value      = ir::type::Reference { recurse(reference.type) },
-                .size       = sizeof(std::byte*),
+                .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };
         }

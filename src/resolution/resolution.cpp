@@ -7,7 +7,7 @@
 
 
 auto resolution::Scope::make_child() noexcept -> Scope {
-    return { .parent = this, .current_frame_offset = current_frame_offset };
+    return { .current_frame_offset = current_frame_offset, .parent = this };
 }
 
 auto resolution::Scope::find(lexer::Identifier const name) noexcept -> Binding* {
@@ -17,6 +17,36 @@ auto resolution::Scope::find(lexer::Identifier const name) noexcept -> Binding* 
     else {
         return parent ? parent->find(name) : nullptr;
     }
+}
+
+
+auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> Namespace* {
+    auto* root = std::visit(bu::Overload {
+        [&](std::monostate) {
+            return current_namespace;
+        },
+        [&](ast::Root_qualifier::Global) {
+            return global_namespace;
+        },
+        [](ast::Type&) -> Namespace* {
+            bu::unimplemented();
+        }
+    }, name.root_qualifier->value);
+
+    for (auto& qualifier : name.middle_qualifiers) {
+        if (qualifier.is_upper || qualifier.template_arguments) {
+            bu::unimplemented();
+        }
+
+        if (auto* const child = root->children.find(qualifier.name)) {
+            root = child;
+        }
+        else {
+            bu::unimplemented();
+        }
+    }
+
+    return root;
 }
 
 

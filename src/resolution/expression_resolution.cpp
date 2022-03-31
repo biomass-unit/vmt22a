@@ -55,8 +55,8 @@ namespace {
                 elements.push_back(std::move(elem));
             }
 
-            bu::Usize const length = elements.size();
-            bu::U16   const size   = head.type->size;
+            auto const length = elements.size();
+            auto const size   = head.type->size.copy().safe_mul(length);
 
             return {
                 .value = ir::expression::Array_literal {
@@ -67,7 +67,7 @@ namespace {
                         .element_type = head.type,
                         .length       = length
                     },
-                    .size = static_cast<bu::U16>(length * size) // fix
+                    .size = size
                 }
             };
         }
@@ -75,8 +75,8 @@ namespace {
         auto operator()(ast::expression::Tuple& tuple) -> ir::Expression {
             std::vector<ir::Expression> expressions;
             std::vector<bu::Wrapper<ir::Type>> types;
-            bu::U16 size       = 0;
-            bool    is_trivial = true;
+            ir::Size_type size;
+            bool          is_trivial = true;
 
             expressions.reserve(tuple.expressions.size());
             types      .reserve(tuple.expressions.size());
@@ -87,7 +87,7 @@ namespace {
                 if (!ir_expr.type->is_trivial) {
                     is_trivial = false;
                 }
-                size += ir_expr.type->size;
+                size.safe_add(ir_expr.type->size.get());
 
                 types.push_back(ir_expr.type);
                 expressions.push_back(std::move(ir_expr));
@@ -131,14 +131,14 @@ namespace {
                         pattern->identifier,
                         resolution::Binding {
                             .type         = initializer.type,
-                            .frame_offset = context.scope.current_frame_offset,
+                            .frame_offset = context.scope.current_frame_offset.get(),
                             .is_mutable   = pattern->mutability.type == ast::Mutability::Type::mut
                         }
                     );
                 }
 
                 if (!context.is_unevaluated) {
-                    context.scope.current_frame_offset += initializer.type->size;
+                    context.scope.current_frame_offset.safe_add(initializer.type->size);
                     context.scope.destroy_in_reverse_order.push_back(initializer.type);
                 }
             }
@@ -208,7 +208,7 @@ namespace {
                     },
                     .type = ir::Type {
                         .value      = ir::type::Reference { binding->type },
-                        .size       = sizeof(std::byte*),
+                        .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                         .is_trivial = true
                     }
                 };
@@ -225,7 +225,7 @@ namespace {
 
             return {
                 .value = ir::expression::Literal<bu::Isize> {
-                    static_cast<bu::Isize>(type.size)
+                    type.size.safe_cast<bu::Isize>()
                 },
                 .type = ir::type::integer
             };
@@ -235,7 +235,7 @@ namespace {
             auto expression = recurse(chain.expression);
             auto most_recent_type = expression.type;
 
-            bu::U16 offset = 0;
+            bu::Bounded_integer<bu::U16> offset;
 
             for (auto& accessor : chain.accessors) {
                 std::visit(bu::Overload {
@@ -249,7 +249,7 @@ namespace {
                         if (auto* const tuple = std::get_if<ir::type::Tuple>(&most_recent_type->value)) {
                             if (index < tuple->types.size()) {
                                 for (auto& type : tuple->types | std::views::take(member_index)) {
-                                    offset += type->size;
+                                    offset.safe_add(type->size);
                                 }
                                 most_recent_type = tuple->types.at(index);
                             }
@@ -265,7 +265,7 @@ namespace {
                         if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&most_recent_type->value)) {
                             if (auto* const member = uds->structure->members.find(member_name)) {
                                 most_recent_type = member->type;
-                                offset += member->offset;
+                                offset.safe_add(member->offset);
                             }
                             else {
                                 bu::abort("struct does not contain given member");

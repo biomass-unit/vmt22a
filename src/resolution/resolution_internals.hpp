@@ -11,7 +11,7 @@ namespace resolution {
 
     struct Binding {
         bu::Wrapper<ir::Type> type;
-        bu::U16               frame_offset;
+        vm::Local_size_type   frame_offset       = 0;
         ast::Expression*      moved_by           = nullptr;
         bool                  is_mutable         = false;
         bool                  has_been_mentioned = false;
@@ -20,8 +20,8 @@ namespace resolution {
     struct Scope {
         bu::Flatmap<lexer::Identifier, Binding> bindings;
         std::vector<bu::Wrapper<ir::Type>>      destroy_in_reverse_order;
-        Scope*                                  parent               = nullptr;
-        bu::U16                                 current_frame_offset = 0;
+        bu::Bounded_u16                         current_frame_offset;
+        Scope*                                  parent = nullptr;
 
         auto make_child() noexcept -> Scope;
 
@@ -104,34 +104,7 @@ namespace resolution {
             }
         }
 
-        auto apply_qualifiers(ast::Qualified_name& name) -> Namespace* {
-            auto* root = std::visit(bu::Overload {
-                [&](std::monostate) {
-                    return current_namespace;
-                },
-                [&](ast::Root_qualifier::Global) {
-                    return global_namespace;
-                },
-                [](ast::Type&) -> Namespace* {
-                    bu::unimplemented();
-                }
-            }, name.root_qualifier->value);
-
-            for (auto& qualifier : name.middle_qualifiers) {
-                if (qualifier.is_upper || qualifier.template_arguments) {
-                    bu::unimplemented();
-                }
-
-                if (auto* const child = root->children.find(qualifier.name)) {
-                    root = child;
-                }
-                else {
-                    bu::unimplemented();
-                }
-            }
-
-            return root;
-        }
+        auto apply_qualifiers(ast::Qualified_name&) -> Namespace*;
 
     };
 

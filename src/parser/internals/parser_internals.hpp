@@ -265,7 +265,7 @@ namespace parser {
 
     template <parser auto p>
     auto parse_wrapped(Parse_context& context) {
-        return bu::map(p(context), bu::make_wrapper<Parse_result<p>>);
+        return p(context).transform(bu::make<bu::Wrapper<Parse_result<p>>>);
     }
 
 

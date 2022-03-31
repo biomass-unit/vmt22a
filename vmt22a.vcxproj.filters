@@ -203,5 +203,8 @@
     <ClInclude Include="src\tests\internals\test_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\bu\bounded_integer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

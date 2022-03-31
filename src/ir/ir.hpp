@@ -3,11 +3,18 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "bu/flatmap.hpp"
+#include "bu/bounded_integer.hpp"
 #include "ast/ast.hpp" // fix?
 #include "vm/virtual_machine.hpp"
 
 
 namespace ir {
+
+    using Size_type = bu::Bounded_integer<
+        bu::Usize,
+        std::numeric_limits<vm::Local_size_type>::min(),
+        std::numeric_limits<vm::Local_size_type>::max()
+    >;
 
     struct [[nodiscard]] Type;
     struct [[nodiscard]] Expression;
@@ -23,7 +30,7 @@ namespace ir {
             };
             bu::Flatmap<lexer::Identifier, Constructor> constructors;
             std::string                                 name;
-            bu::U16                                     size;
+            Size_type                                   size;
             DEFAULTED_EQUALITY(Data);
         };
 
@@ -35,7 +42,7 @@ namespace ir {
             };
             bu::Flatmap<lexer::Identifier, Member> members;
             std::string                            name;
-            bu::U16                                size;
+            Size_type                              size;
             DEFAULTED_EQUALITY(Struct);
         };
 
@@ -120,9 +127,9 @@ namespace ir {
             type::User_defined_struct
         >;
 
-        Variant value;
-        bu::U16 size;
-        bool    is_trivial = false;
+        Variant   value;
+        Size_type size;
+        bool      is_trivial = false;
 
         //auto conforms_to(Typeclass) -> bool
 
@@ -137,7 +144,7 @@ namespace ir {
             template <class T>
             bu::Wrapper<Type> const make_primitive = Type {
                 .value      = type::Primitive<T> {},
-                .size       = sizeof(T),
+                .size       = Size_type { bu::unchecked_tag, sizeof(T) },
                 .is_trivial = true
             };
         }
@@ -151,7 +158,6 @@ namespace ir {
 
         inline bu::Wrapper<Type> const unit = Type {
             .value      = type::Tuple {},
-            .size       = 0,
             .is_trivial = true
         };
 
@@ -190,7 +196,7 @@ namespace ir {
 
         struct Member_access {
             bu::Wrapper<Expression> expression;
-            bu::Usize               offset;
+            bu::Bounded_u16         offset;
             DEFAULTED_EQUALITY(Member_access);
         };
 

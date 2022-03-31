@@ -43,7 +43,7 @@ auto parser::parse_template_arguments(Parse_context& context)
                 );
             }
 
-            return bu::map(std::move(mutability), bu::make<ast::Template_argument>);
+            return mutability.transform(bu::make<ast::Template_argument>);
         }
     }, "a template argument">;
 
