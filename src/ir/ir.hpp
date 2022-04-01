@@ -82,14 +82,15 @@ namespace ir {
             DEFAULTED_EQUALITY(List);
         };
 
-        struct Reference {
-            bu::Wrapper<Type> type;
-            DEFAULTED_EQUALITY(Reference);
-        };
-
         struct Pointer {
             bu::Wrapper<Type> type;
+            bool              mut = false;
             DEFAULTED_EQUALITY(Pointer);
+        };
+
+        struct Reference {
+            Pointer pointer;
+            DEFAULTED_EQUALITY(Reference);
         };
 
         struct User_defined_data {

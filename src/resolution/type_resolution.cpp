@@ -91,7 +91,10 @@ namespace {
 
         auto operator()(ast::type::Pointer& pointer) -> ir::Type {
             return {
-                .value      = ir::type::Pointer { recurse(pointer.type) },
+                .value = ir::type::Pointer {
+                    .type = recurse(pointer.type),
+                    .mut  = context.resolve_mutability(pointer.mutability)
+                },
                 .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };
@@ -99,7 +102,12 @@ namespace {
 
         auto operator()(ast::type::Reference& reference) -> ir::Type {
             return {
-                .value      = ir::type::Reference { recurse(reference.type) },
+                .value = ir::type::Reference {
+                    .pointer {
+                        .type = recurse(reference.type),
+                        .mut  = context.resolve_mutability(reference.mutability)
+                    }
+                },
                 .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };

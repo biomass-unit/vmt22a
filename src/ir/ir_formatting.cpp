@@ -102,11 +102,11 @@ namespace {
         }
 
         auto operator()(ir::type::Reference const& reference) {
-            return format("&{}", reference.type);
+            return format("&{}{}", reference.pointer.mut ? "mut " : "", reference.pointer.type);
         }
 
         auto operator()(ir::type::Pointer const& pointer) {
-            return format("*{}", pointer.type);
+            return format("*{}{}", pointer.mut ? "mut " : "", pointer.type);
         }
 
         auto operator()(ir::type::User_defined_struct const& ud) {
@@ -128,11 +128,5 @@ DEFINE_FORMATTER_FOR(ir::Expression) {
 }
 
 DEFINE_FORMATTER_FOR(ir::Type) {
-    std::format_to(context.out(), "(");
-    std::visit(Type_format_visitor { { context.out() } }, value.value);
-    std::format_to(context.out(), ", size {}", value.size);
-    if (value.is_trivial) {
-        std::format_to(context.out(), ", trivial");
-    }
-    return std::format_to(context.out(), ")");
+    return std::visit(Type_format_visitor { { context.out() } }, value.value);
 }

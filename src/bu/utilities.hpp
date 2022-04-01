@@ -140,6 +140,11 @@ namespace bu {
         );
     }
 
+    [[noreturn]]
+    inline auto unreachable() -> void { // Remove when std::unreachable is supported
+        std::terminate();
+    }
+
 
     template <class Fst, class Snd = Fst>
     struct [[nodiscard]] Pair {

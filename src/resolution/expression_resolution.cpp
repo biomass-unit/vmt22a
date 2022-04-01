@@ -24,10 +24,13 @@ namespace {
 
 
         [[nodiscard]]
-        auto error(std::string_view message, ast::Expression& expression, std::optional<std::string_view> help = std::nullopt) {
+        auto error_impl(std::string_view                message,
+                        std::optional<std::string_view> help,
+                        ast::Expression*                expression)
+        {
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = expression.source_view,
+                    .erroneous_view = (expression ? expression : &this_expression)->source_view,
                     .file_view      = context.source->string(),
                     .file_name      = context.source->name(),
                     .message        = message,
@@ -37,8 +40,16 @@ namespace {
         }
 
         [[nodiscard]]
-        auto error(std::string_view message, std::optional<std::string_view> help = std::nullopt) {
-            return error(message, this_expression, help);
+        auto error(std::string_view message, ast::Expression& expression) {
+            return error_impl(message, std::nullopt, &expression);
+        }
+        [[nodiscard]]
+        auto error(std::string_view message, std::string_view help, ast::Expression& expression) {
+            return error_impl(message, help, &expression);
+        }
+        [[nodiscard]]
+        auto error(std::string_view message, std::optional<std::string> help = std::nullopt) {
+            return error_impl(message, help, &this_expression);
         }
 
 
@@ -219,12 +230,8 @@ namespace {
         }
 
         auto operator()(ast::expression::Take_reference& take_reference) -> ir::Expression {
-            if (take_reference.mutability.type == ast::Mutability::Type::parameterized) {
-                bu::unimplemented();
-            }
-
             bool const take_mutable_ref =
-                take_reference.mutability.type == ast::Mutability::Type::mut;
+                context.resolve_mutability(take_reference.mutability);
 
             if (auto* binding = context.scope.find(take_reference.name)) {
                 if (take_mutable_ref && !binding->is_mutable) {
@@ -388,15 +395,18 @@ namespace {
             };
         }
 
-        auto operator()(ast::expression::Infinite_loop& loop) -> ir::Expression {
-            auto body = recurse(loop.body);
-
-            if (!body.type->is_unit()) {
+        auto ensure_loop_body_is_of_unit_type(ast::Expression& body, ir::Type& type) -> void {
+            if (!type.is_unit()) {
                 throw error(
-                    std::format("The type of the loop body must be (), not {}", body.type),
-                    loop.body
+                    std::format("The type of the loop body must be (), not {}", type),
+                    body
                 );
             }
+        }
+
+        auto operator()(ast::expression::Infinite_loop& loop) -> ir::Expression {
+            auto body = recurse(loop.body);
+            ensure_loop_body_is_of_unit_type(loop.body, body.type);
 
             return {
                 .value = ir::expression::Infinite_loop { std::move(body) },
@@ -417,12 +427,7 @@ namespace {
             }
 
             auto body = recurse(loop.body);
-            if (!body.type->is_unit()) {
-                throw error(
-                    std::format("The type of the loop body must be (), not {}", body.type),
-                    loop.body
-                );
-            }
+            ensure_loop_body_is_of_unit_type(loop.body, body.type);
 
             return {
                 .value = ir::expression::While_loop {
@@ -443,12 +448,28 @@ namespace {
             std::vector<ir::Expression> side_effects;
             side_effects.reserve(compound.expressions.size() - 1);
 
-            std::ranges::move(
-                compound.expressions
-                    | std::views::take(compound.expressions.size() - 1)
-                    | std::views::transform(recurse),
-                std::back_inserter(side_effects)
-            );
+            for (auto& expression : compound.expressions | std::views::take(compound.expressions.size() - 1)) {
+                auto side_effect = recurse(expression);
+
+                if (!side_effect.type->is_unit()) {
+                    throw error(
+                        std::format(
+                            "This expression is of type {}, but only the last expression "
+                            "in a compound expression may be of a non-unit type",
+                            side_effect.type
+                        ),
+                        std::format(
+                            "If this is intentional, cast the expression to (), like this: {}{} as (){}",
+                            bu::Color::dark_cyan,
+                            expression,
+                            bu::Color::white
+                        ),
+                        expression
+                    );
+                }
+
+                side_effects.push_back(std::move(side_effect));
+            }
 
             auto result = recurse(compound.expressions.back());
 

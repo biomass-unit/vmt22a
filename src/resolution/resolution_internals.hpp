@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/flatmap.hpp"
+#include "bu/color.hpp"
 #include "ast/ast.hpp"
 #include "ast/ast_formatting.hpp"
 #include "ir/ir.hpp"
@@ -62,14 +63,12 @@ namespace resolution {
 
 
     struct Resolution_context {
-        Scope scope;
-
-        Namespace* current_namespace;
-        Namespace* global_namespace;
-
-        bu::Source* source;
-
-        bool is_unevaluated = false;
+        Scope                                 scope;
+        Namespace                           * current_namespace     = nullptr;
+        Namespace                           * global_namespace      = nullptr;
+        bu::Source                          * source                = nullptr;
+        bu::Flatmap<lexer::Identifier, bool>* mutability_parameters = nullptr;
+        bool                                  is_unevaluated        = false;
 
         auto make_child_context_with_new_scope() noexcept -> Resolution_context {
             return {
@@ -77,6 +76,7 @@ namespace resolution {
                 current_namespace,
                 global_namespace,
                 source,
+                mutability_parameters,
                 is_unevaluated
             };
         }
@@ -95,6 +95,8 @@ namespace resolution {
             }
             return find_impl<&Namespace::lower_table>(name);
         }
+
+        auto resolve_mutability(ast::Mutability) -> bool;
 
     private:
 

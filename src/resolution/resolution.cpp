@@ -37,6 +37,27 @@ auto resolution::Scope::unused_variables() -> std::optional<std::vector<lexer::I
 }
 
 
+auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mutability) -> bool {
+    switch (mutability.type) {
+    case ast::Mutability::Type::mut:
+        return true;
+    case ast::Mutability::Type::immut:
+        return false;
+    case ast::Mutability::Type::parameterized:
+        if (!mutability_parameters) {
+            return false;
+        }
+        else if (bool* const parameter = mutability_parameters->find(mutability.parameter_name)) {
+            return *parameter;
+        }
+        else {
+            bu::abort("not a mutability parameter");
+        }
+    default:
+        bu::unreachable();
+    }
+}
+
 auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> Namespace* {
     auto* root = std::visit(bu::Overload {
         [&](std::monostate) {
