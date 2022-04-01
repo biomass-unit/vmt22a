@@ -28,7 +28,10 @@ namespace {
 
     auto lines_of_occurrence(std::string_view file, std::string_view view) -> std::vector<std::string_view> {
         auto const file_start = file.data();
+        auto const file_stop  = file_start + file.size();
         auto const view_start = view.data();
+        auto const view_stop  = view_start + view.size();
+
         std::vector<std::string_view> lines;
 
         char const* line_start = view_start;
@@ -43,7 +46,8 @@ namespace {
                 lines.push_back({ line_start, pointer });
                 line_start = pointer + 1;
             }
-            else if (*pointer == '\0') {
+            else if (pointer == view_stop) {
+                for (; pointer != file_stop && *pointer != '\n'; ++pointer);
                 lines.push_back({ line_start, pointer });
                 break;
             }

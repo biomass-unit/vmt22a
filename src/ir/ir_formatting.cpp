@@ -37,12 +37,20 @@ namespace {
             return format("({})", tuple.expressions);
         }
 
+        auto operator()(ir::expression::Invocation const& invocation) {
+            return format("{}({})", invocation.invocable, invocation.arguments);
+        }
+
         auto operator()(ir::expression::Let_binding const& binding) {
             return format("bind {}", binding.initializer);
         }
 
         auto operator()(ir::expression::Local_variable const& variable) {
             return format("(Move offset {})", variable.frame_offset);
+        }
+
+        auto operator()(ir::expression::Function_reference const& function) {
+            return format("{}", function.definition->name);
         }
 
         auto operator()(ir::expression::Reference const& reference) {

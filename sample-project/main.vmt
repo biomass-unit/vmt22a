@@ -1,7 +1,13 @@
 import a.b as ab
 
-fn main(): Int {
-    let _ = "Hello, world!";
-    let y = 5;
-    y
+namespace hmm {
+    namespace test {
+        namespace nested {
+            fn test(_: Int, b: Float): Float = b
+        }
+    }
 }
+
+fn main(): Int = hmm::test::nested::test("hi", 5.5) as Int
+
+fn test() {}

@@ -370,6 +370,26 @@ namespace bu {
     Metastring(char const(&)[length]) -> Metastring<length - 1>;
 
 
+    inline auto format_with_ordinal_indicator(Usize const n) -> std::string {
+        // https://stackoverflow.com/questions/61786685/how-do-i-print-ordinal-indicators-in-a-c-program-cant-print-numbers-with-st
+
+        static constexpr auto suffixes = std::to_array<std::string_view>({ "th", "st", "nd", "rd" });
+
+        Usize x = n % 100;
+
+        if (x == 11 || x == 12 || x == 13) {
+            x = 0;
+        }
+        else {
+            x %= 10;
+            if (x > 3) {
+                x = 0;
+            }
+        }
+
+        return std::format("{}{}", n, suffixes[x]);
+    }
+
     auto format_delimited_range(std::format_context::iterator        out,
                                 std::ranges::sized_range auto const& range,
                                 std::string_view const               delimiter)

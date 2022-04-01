@@ -27,9 +27,11 @@ namespace ir {
                 bu::Wrapper<Type>                      type;
                 std::optional<bu::Wrapper<Expression>> default_value;
             };
-            std::vector<Parameter>  parameter_types;
+            std::string             name;
+            std::vector<Parameter>  parameters;
             bu::Wrapper<Type>       return_type;
             bu::Wrapper<Expression> body;
+            bu::Wrapper<Type>       function_type;
         };
 
         struct Data {
@@ -80,7 +82,7 @@ namespace ir {
         };
 
         struct Function {
-            std::vector<Type> parameter_types;
+            std::vector<bu::Wrapper<Type>> parameter_types;
             bu::Wrapper<Type> return_type;
             DEFAULTED_EQUALITY(Function);
         };
@@ -194,6 +196,12 @@ namespace ir {
             DEFAULTED_EQUALITY(Tuple);
         };
 
+        struct Invocation {
+            std::vector<Expression> arguments;
+            bu::Wrapper<Expression> invocable;
+            DEFAULTED_EQUALITY(Invocation);
+        };
+
         struct Let_binding {
             bu::Wrapper<Expression> initializer;
             DEFAULTED_EQUALITY(Let_binding);
@@ -202,6 +210,11 @@ namespace ir {
         struct Local_variable {
             bu::U16 frame_offset;
             DEFAULTED_EQUALITY(Local_variable);
+        };
+
+        struct Function_reference {
+            bu::Wrapper<definition::Function> definition;
+            DEFAULTED_EQUALITY(Function_reference);
         };
 
         struct Reference {
@@ -256,8 +269,10 @@ namespace ir {
             expression::Literal<lexer::String>,
             expression::Array_literal,
             expression::Tuple,
+            expression::Invocation,
             expression::Let_binding,
             expression::Local_variable,
+            expression::Function_reference,
             expression::Reference,
             expression::Member_access,
             expression::Conditional,

@@ -130,6 +130,58 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Invocation& invocation) -> ir::Expression {
+            auto invocable = recurse(invocation.invocable);
+
+            if (auto* const function = std::get_if<ir::type::Function>(&invocable.type->value)) {
+                if (function->parameter_types.size() == invocation.arguments.size()) {
+                    std::vector<ir::Expression> arguments;
+                    arguments.reserve(invocation.arguments.size());
+
+                    for (bu::Usize i = 0; i != invocation.arguments.size(); ++i) {
+                        auto argument = recurse(invocation.arguments[i].expression);
+                        assert(!invocation.arguments[i].name);
+
+                        if (argument.type == function->parameter_types[i]) {
+                            arguments.push_back(std::move(argument));
+                        }
+                        else {
+                            throw error(
+                                std::format(
+                                    "The {} parameter should be of type {}, but the argument has type {}",
+                                    bu::format_with_ordinal_indicator(i + 1),
+                                    function->parameter_types[i],
+                                    argument.type
+                                ),
+                                invocation.arguments[i].expression
+                            );
+                        }
+                    }
+
+                    return {
+                        .value = ir::expression::Invocation {
+                            .arguments = std::move(arguments),
+                            .invocable = std::move(invocable)
+                        },
+                        .type = function->return_type
+                    };
+                }
+                else {
+                    throw error(
+                        std::format(
+                            "{} takes {} parameters, but {} arguments were supplied",
+                            invocable.type,
+                            function->parameter_types.size(),
+                            invocation.arguments.size()
+                        )
+                    );
+                }
+            }
+            else {
+                throw error(std::format("{} is not invocable", invocable.type));
+            }
+        }
+
         auto operator()(ast::expression::Let_binding& let_binding) -> ir::Expression {
             auto initializer = recurse(let_binding.initializer);
 
@@ -178,8 +230,16 @@ namespace {
                             .type = binding->type
                         };
                     },
-                    [&](resolution::Function_definition) -> ir::Expression {
-                        bu::unimplemented();
+                    [&](resolution::Function_definition function) -> ir::Expression {
+                        if (function.resolved->has_value()) {
+                            return {
+                                .value = ir::expression::Function_reference { **function.resolved },
+                                .type  = (**function.resolved)->function_type
+                            };
+                        }
+                        else {
+                            bu::abort("requested reference to unresolved function");
+                        }
                     },
                     [&](resolution::Function_template_definition) -> ir::Expression {
                         bu::unimplemented();

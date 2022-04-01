@@ -58,15 +58,15 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
     }
 }
 
-auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> Namespace* {
-    auto* root = std::visit(bu::Overload {
+auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> bu::Wrapper<Namespace> {
+    bu::Wrapper root = std::visit(bu::Overload {
         [&](std::monostate) {
             return current_namespace;
         },
         [&](ast::Root_qualifier::Global) {
             return global_namespace;
         },
-        [](ast::Type&) -> Namespace* {
+        [](ast::Type&) -> bu::Wrapper<Namespace> {
             bu::unimplemented();
         }
     }, name.root_qualifier->value);
@@ -76,8 +76,8 @@ auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name)
             bu::unimplemented();
         }
 
-        if (auto* const child = root->children.find(qualifier.name)) {
-            root = child;
+        if (bu::Wrapper<Namespace>* const child = root->children.find(qualifier.name)) {
+            root = *child;
         }
         else {
             bu::unimplemented();
@@ -125,8 +125,8 @@ namespace {
         }
     }
 
-    auto make_namespace(std::span<ast::Definition> const definitions) -> resolution::Namespace {
-        resolution::Namespace space;
+    auto make_namespace(std::span<ast::Definition> const definitions) -> bu::Wrapper<resolution::Namespace> {
+        bu::Wrapper<resolution::Namespace> space;
 
         for (auto& definition : definitions) {
             using namespace ast::definition;
@@ -134,13 +134,13 @@ namespace {
             std::visit(bu::Overload {
                 [&](Function& function) -> void {
                     resolution::Function_definition handle { &function };
-                    space.lower_table.add(bu::copy(function.name), bu::copy(handle));
-                    space.definitions_in_order.push_back(handle);
+                    space->lower_table.add(bu::copy(function.name), bu::copy(handle));
+                    space->definitions_in_order.push_back(handle);
                 },
                 [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(T& definition) {
                     resolution::Definition<T> handle { &definition };
-                    space.upper_table.add(bu::copy(definition.name), bu::copy(handle));
-                    space.definitions_in_order.push_back(handle);
+                    space->upper_table.add(bu::copy(definition.name), bu::copy(handle));
+                    space->definitions_in_order.push_back(handle);
                 },
 
                 [](Implementation&) -> void {
@@ -154,10 +154,9 @@ namespace {
                 },
 
                 [&](Namespace& nested_space) -> void {
-                    space.children.add(
-                        bu::copy(nested_space.name),
-                        make_namespace(nested_space.definitions)
-                    );
+                    bu::Wrapper child = make_namespace(nested_space.definitions);
+                    space->definitions_in_order.push_back(child);
+                    space->children.add(bu::copy(nested_space.name), bu::copy(child));
                 }
             }, definition.value);
         }
@@ -166,15 +165,15 @@ namespace {
     }
 
 
-    auto resolve_definitions(ast::Module&           module,
-                             resolution::Namespace* global,
-                             resolution::Namespace* current) -> void;
+    auto resolve_definitions(bu::Wrapper<resolution::Namespace> const current_namespace,
+                             bu::Wrapper<resolution::Namespace> const global_namespace,
+                             bu::Source*                        const source) -> void;
 
 
     struct Definition_resolution_visitor {
-        resolution::Namespace* current_namespace;
-        resolution::Namespace* global_namespace;
-        ast::Module*           module;
+        bu::Wrapper<resolution::Namespace> current_namespace;
+        bu::Wrapper<resolution::Namespace> global_namespace;
+        bu::Source*                        source;
 
         auto operator()(resolution::Function_definition function) -> void {
             if (!function.resolved->has_value()) {
@@ -182,7 +181,7 @@ namespace {
                     .scope                 { .parent = nullptr },
                     .current_namespace     = current_namespace,
                     .global_namespace      = global_namespace,
-                    .source                = &module->source,
+                    .source                = source,
                     .mutability_parameters = nullptr,
                     .is_unevaluated        = false,
                 };
@@ -212,14 +211,35 @@ namespace {
                     }
                 }
 
+                std::vector<bu::Wrapper<ir::Type>> parameter_types;
+                parameter_types.reserve(parameters.size());
+
+                std::ranges::copy(
+                    parameters | std::views::transform(&ir::definition::Function::Parameter::type),
+                    std::back_inserter(parameter_types)
+                );
+
                 bu::Wrapper return_type = body.type;
 
-                function.resolved = ir::definition::Function {
-                    std::move(parameters),
-                    std::move(return_type),
-                    std::move(body),
+                *function.resolved = ir::definition::Function{
+                    .name        = std::string { function.syntactic_definition->name.view() },
+                    .parameters  = std::move(parameters),
+                    .return_type = std::move(return_type),
+                    .body        = std::move(body),
+
+                    .function_type = ir::Type {
+                        .value = ir::type::Function {
+                            .parameter_types = std::move(parameter_types),
+                            .return_type     = return_type
+                        },
+                        .size = ir::Size_type { bu::unchecked_tag, 2 * sizeof(std::byte*) }
+                    }
                 };
             }
+        }
+
+        auto operator()(bu::Wrapper<resolution::Namespace> const child) -> void {
+            resolve_definitions(child, global_namespace, source);
         }
 
         auto operator()(auto&) -> void {
@@ -228,17 +248,16 @@ namespace {
     };
 
 
-    auto resolve_definitions(ast::Module&                 module,
-                             resolution::Namespace* const global_namespace,
-                             resolution::Namespace* const current_namespace)
-        -> void
+    auto resolve_definitions(bu::Wrapper<resolution::Namespace> const current_namespace,
+                             bu::Wrapper<resolution::Namespace> const global_namespace,
+                             bu::Source*                        const source) -> void
     {
         for (auto& definition : current_namespace->definitions_in_order) {
             std::visit(
                 Definition_resolution_visitor {
                     .current_namespace = current_namespace,
                     .global_namespace  = global_namespace,
-                    .module            = &module
+                    .source            = source
                 },
                 definition
             );
@@ -253,8 +272,16 @@ auto resolution::resolve(ast::Module&& module) -> ir::Program {
 
     auto global_namespace = make_namespace(module.definitions);
 
-    resolve_definitions(module, &global_namespace, &global_namespace);
+    resolve_definitions(global_namespace, global_namespace, &module.source);
 
+    auto* const entry = global_namespace->lower_table.find(lexer::Identifier { "main"sv });
+    if (entry) {
+        auto& function = std::get<resolution::Function_definition>(*entry);
+        bu::print("entry: {}\n", function.resolved->value()->body);
+    }
+    else {
+        bu::print("no entry point defined\n");
+    }
 
     // vvv Release all memory used by the AST
 

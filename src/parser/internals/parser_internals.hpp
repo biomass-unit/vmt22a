@@ -275,7 +275,7 @@ namespace parser {
         auto result = p(context);
 
         if (result) {
-            auto const view = context.pointer->source_view;
+            auto const view = context.pointer[-1].source_view;
             result->source_view = { anchor->source_view.data(), view.data() + view.size() };
         }
         return result;

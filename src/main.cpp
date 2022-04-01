@@ -81,11 +81,11 @@ namespace {
         parser::Parse_context parse_context { tokenized_source };
         auto result = parser::extract_expression(parse_context);
 
-        resolution::Namespace space;
+        bu::Wrapper<resolution::Namespace> space;
         resolution::Resolution_context resolution_context {
             .scope             = { .parent = nullptr },
-            .current_namespace = &space,
-            .global_namespace  = &space,
+            .current_namespace = space,
+            .global_namespace  = space,
             .source            = &tokenized_source.source,
             .is_unevaluated    = false
         };

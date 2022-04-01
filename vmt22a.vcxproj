@@ -212,7 +212,6 @@
     <ClCompile Include="src\cli\cli.cpp" />
     <ClCompile Include="src\codegen\codegen.cpp" />
     <ClCompile Include="src\resolution\bind_pattern.cpp" />
-    <ClCompile Include="src\resolution\definition_resolution.cpp" />
     <ClCompile Include="src\resolution\expression_resolution.cpp" />
     <ClCompile Include="src\ir\ir_formatting.cpp" />
     <ClCompile Include="src\resolution\resolution.cpp" />

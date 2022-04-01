@@ -50,16 +50,15 @@ namespace resolution {
 
     template <class T>
     struct Definition {
-        T*                                       syntactic_definition;
-        bu::Wrapper<std::optional<AST_to_IR<T>>> resolved;
+        T*                                                    syntactic_definition;
+        bu::Wrapper<std::optional<bu::Wrapper<AST_to_IR<T>>>> resolved;
     };
 
     template <class T>
     struct Definition<ast::definition::Template_definition<T>> {
-        ast::definition::Template_definition<T>* syntactic_definition;
-        bu::Wrapper<std::vector<AST_to_IR<T>>>   instantiations;
+        ast::definition::Template_definition<T>*            syntactic_definition;
+        bu::Wrapper<std::vector<bu::Wrapper<AST_to_IR<T>>>> instantiations;
     };
-
 
     using Function_definition           = Definition<ast::definition::Function          >;
     using Function_template_definition  = Definition<ast::definition::Function_template >;
@@ -82,7 +81,9 @@ namespace resolution {
         Alias_definition,
         Alias_template_definition,
         Typeclass_definition,
-        Typeclass_template_definition
+        Typeclass_template_definition,
+
+        bu::Wrapper<struct Namespace>
     >;
 
     static_assert(std::is_trivially_copyable_v<Definition_variant>);
@@ -111,16 +112,16 @@ namespace resolution {
 
         std::vector<Definition_variant> definitions_in_order;
 
-        Table<Lower_variant> lower_table;
-        Table<Upper_variant> upper_table;
-        Table<Namespace>     children;
+        Table<Lower_variant>          lower_table;
+        Table<Upper_variant>          upper_table;
+        Table<bu::Wrapper<Namespace>> children;
     };
 
 
     struct Resolution_context {
         Scope                                 scope;
-        Namespace                           * current_namespace     = nullptr;
-        Namespace                           * global_namespace      = nullptr;
+        bu::Wrapper<Namespace>                current_namespace;
+        bu::Wrapper<Namespace>                global_namespace;
         bu::Source                          * source                = nullptr;
         bu::Flatmap<lexer::Identifier, bool>* mutability_parameters = nullptr;
         bool                                  is_unevaluated        = false;
@@ -138,7 +139,7 @@ namespace resolution {
 
         auto find_upper(ast::Qualified_name& name) -> std::optional<Upper_variant> {
             assert(name.primary_qualifier.is_upper);
-            return find_impl<&Namespace::upper_table>(name);
+            return find_impl<&Namespace::upper_table, true>(name);
         }
 
         auto find_lower(ast::Qualified_name& name) -> std::optional<Lower_variant> {
@@ -148,7 +149,7 @@ namespace resolution {
                     return binding;
                 }
             }
-            return find_impl<&Namespace::lower_table>(name);
+            return find_impl<&Namespace::lower_table, false>(name);
         }
 
         auto resolve_mutability(ast::Mutability) -> bool;
@@ -176,11 +177,11 @@ namespace resolution {
 
     private:
 
-        template <auto Namespace::* member>
+        template <auto Namespace::* member, bool upper>
         auto find_impl(ast::Qualified_name& name)
-            -> std::optional<typename std::remove_reference_t<decltype(current_namespace->*member)>::Value>
+            -> std::optional<std::conditional_t<upper, Upper_variant, Lower_variant>>
         {
-            if (auto* const pointer = (apply_qualifiers(name)->*member).find(name.primary_qualifier.name)) {
+            if (auto* const pointer = (std::to_address(apply_qualifiers(name))->*member).find(name.primary_qualifier.name)) {
                 return *pointer;
             }
             else {
@@ -188,15 +189,12 @@ namespace resolution {
             }
         }
 
-        auto apply_qualifiers(ast::Qualified_name&) -> Namespace*;
+        auto apply_qualifiers(ast::Qualified_name&) -> bu::Wrapper<Namespace>;
 
     };
 
 
     auto resolve_type      (ast::Type      &, Resolution_context&) -> ir::Type;
     auto resolve_expression(ast::Expression&, Resolution_context&) -> ir::Expression;
-
-    auto resolve_upper(Upper_variant, Resolution_context&) -> void;
-    auto resolve_lower(Lower_variant, Resolution_context&) -> void;
 
 }
