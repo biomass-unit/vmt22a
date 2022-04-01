@@ -24,32 +24,25 @@ namespace {
 
 
         [[nodiscard]]
-        auto error_impl(std::string_view                message,
-                        std::optional<std::string_view> help,
-                        ast::Expression&                expression)
-        {
-            return std::runtime_error {
-                bu::textual_error({
-                    .erroneous_view = expression.source_view,
-                    .file_view      = context.source->string(),
-                    .file_name      = context.source->name(),
-                    .message        = message,
-                    .help_note      = help
-                })
-            };
-        }
-
-        [[nodiscard]]
-        auto error(std::string_view message, ast::Expression& expression) {
-            return error_impl(message, std::nullopt, expression);
+        auto error(std::string_view const message, ast::Expression& expression) {
+            return context.error({
+                .message        = message,
+                .erroneous_view = expression.source_view
+            });
         }
         [[nodiscard]]
         auto error(std::string_view message, std::string_view help, ast::Expression& expression) {
-            return error_impl(message, help, expression);
+            return context.error({
+                .message        = message,
+                .help_note      = help,
+                .erroneous_view = expression.source_view
+            });
         }
         [[nodiscard]]
         auto error(std::string_view message, std::optional<std::string> help = std::nullopt) {
-            return error_impl(message, help, this_expression);
+            return help
+                ? error(message, *help, this_expression)
+                : error(message, this_expression);
         }
 
 

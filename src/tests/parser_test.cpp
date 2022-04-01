@@ -7,14 +7,15 @@
 
 namespace {
 
-    auto assert_expr_eq(std::string_view text, auto&& expr) -> void {
+    auto assert_expr_eq(std::string_view text, auto&& expr, std::source_location caller = std::source_location::current()) -> void {
         tests::assert_eq(
             [&] {
                 auto ts = lexer::lex(bu::Source { bu::Source::Mock_tag {}, std::string { text } });
                 parser::Parse_context context { ts };
                 return parser::extract_expression(context);
             }(),
-            ast::Expression { std::forward<decltype(expr)>(expr) }
+            ast::Expression { std::forward<decltype(expr)>(expr) },
+            caller
         );
     };
 
@@ -60,7 +61,11 @@ auto run_parser_tests() -> void {
                         ast::unit_value
                     }
                 },
-                ast::expression::Literal { static_cast<bu::Char>('a') }
+                ast::expression::Compound {
+                    {
+                        ast::expression::Literal { static_cast<bu::Char>('a') }
+                    }
+                }
             }
         );
     };
@@ -71,11 +76,11 @@ auto run_parser_tests() -> void {
             "if true { 50 } elif false { 75 } else { 100 }",
             ast::expression::Conditional {
                 ast::expression::Literal { true },
-                ast::expression::Literal { 50_iz },
+                ast::expression::Compound { { ast::expression::Literal { 50_iz } } },
                 ast::expression::Conditional {
                     ast::expression::Literal { false },
-                    ast::expression::Literal { 75_iz },
-                    ast::expression::Literal { 100_iz }
+                    ast::expression::Compound { { ast::expression::Literal { 75_iz } } },
+                    ast::expression::Compound { { ast::expression::Literal { 100_iz } } },
                 }
             }
         );

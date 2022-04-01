@@ -155,6 +155,25 @@ namespace resolution {
 
         auto bind(ast::Pattern&, bu::Wrapper<ir::Type>) -> void;
 
+        struct Error_arguments {
+            std::string_view                message;
+            std::optional<std::string_view> help_note = std::nullopt;
+            std::string_view                erroneous_view;
+        };
+
+        [[nodiscard]]
+        auto error(Error_arguments const arguments) {
+            return std::runtime_error {
+                bu::textual_error({
+                    .erroneous_view = arguments.erroneous_view,
+                    .file_view      = source->string(),
+                    .file_name      = source->name(),
+                    .message        = arguments.message,
+                    .help_note      = arguments.help_note
+                })
+            };
+        }
+
     private:
 
         template <auto Namespace::* member>

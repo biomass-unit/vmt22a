@@ -394,6 +394,8 @@ namespace bu {
 
 }
 
+using namespace bu::literals;
+
 
 #define DEFAULTED_EQUALITY(name) \
 auto operator==(name const&) const noexcept -> bool = default
