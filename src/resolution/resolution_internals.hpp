@@ -33,21 +33,75 @@ namespace resolution {
     };
 
 
+    namespace dtl {
+        template <class>
+        struct AST_to_IR_impl;
+
+        template <> struct AST_to_IR_impl<ast::definition::Function > : std::type_identity<ir::definition::Function > {};
+        template <> struct AST_to_IR_impl<ast::definition::Struct   > : std::type_identity<ir::definition::Struct   > {};
+        template <> struct AST_to_IR_impl<ast::definition::Data     > : std::type_identity<ir::definition::Data     > {};
+        template <> struct AST_to_IR_impl<ast::definition::Alias    > : std::type_identity<ir::definition::Alias    > {};
+        template <> struct AST_to_IR_impl<ast::definition::Typeclass> : std::type_identity<ir::definition::Typeclass> {};
+    }
+
+    template <class T>
+    using AST_to_IR = dtl::AST_to_IR_impl<T>::type;
+
+
+    template <class T>
+    struct Definition {
+        T*                                       definition;
+        bu::Wrapper<std::optional<AST_to_IR<T>>> resolved;
+    };
+
+    template <class T>
+    struct Definition<ast::definition::Template_definition<T>> {
+        ast::definition::Template_definition<T>* definition;
+        bu::Wrapper<std::vector<AST_to_IR<T>>>   instantiations;
+    };
+
+
+    using Function_definition           = Definition<ast::definition::Function          >;
+    using Function_template_definition  = Definition<ast::definition::Function_template >;
+    using Struct_definition             = Definition<ast::definition::Struct            >;
+    using Struct_template_definition    = Definition<ast::definition::Struct_template   >;
+    using Data_definition               = Definition<ast::definition::Data              >;
+    using Data_template_definition      = Definition<ast::definition::Data_template     >;
+    using Alias_definition              = Definition<ast::definition::Alias             >;
+    using Alias_template_definition     = Definition<ast::definition::Alias_template    >;
+    using Typeclass_definition          = Definition<ast::definition::Typeclass         >;
+    using Typeclass_template_definition = Definition<ast::definition::Typeclass_template>;
+
+    using Definition_variant = std::variant<
+        Function_definition,
+        Function_template_definition,
+        Struct_definition,
+        Struct_template_definition,
+        Data_definition,
+        Data_template_definition,
+        Alias_definition,
+        Alias_template_definition,
+        Typeclass_definition,
+        Typeclass_template_definition
+    >;
+
+    static_assert(std::is_trivially_copyable_v<Definition_variant>);
+
     using Upper_variant = std::variant<
-        ast::definition::Struct             *,
-        ast::definition::Struct_template    *,
-        ast::definition::Data               *,
-        ast::definition::Data_template      *,
-        ast::definition::Alias              *,
-        ast::definition::Alias_template     *,
-        ast::definition::Typeclass          *,
-        ast::definition::Typeclass_template *
+        Struct_definition,
+        Struct_template_definition,
+        Data_definition,
+        Data_template_definition,
+        Alias_definition,
+        Alias_template_definition,
+        Typeclass_definition,
+        Typeclass_template_definition
     >;
 
     using Lower_variant = std::variant<
-        Binding                            *,
-        ast::definition::Function          *,
-        ast::definition::Function_template *
+        Binding*,
+        Function_definition,
+        Function_template_definition
     >;
 
 
@@ -55,10 +109,11 @@ namespace resolution {
         template <class T>
         using Table = bu::Flatmap<lexer::Identifier, T>;
 
+        std::vector<Definition_variant> definitions_in_order;
+
         Table<Lower_variant> lower_table;
         Table<Upper_variant> upper_table;
-
-        Table<Namespace> children;
+        Table<Namespace>     children;
     };
 
 

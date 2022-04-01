@@ -22,6 +22,10 @@ namespace ir {
 
     namespace definition {
 
+        struct Function {
+
+        };
+
         struct Data {
             struct Constructor {
                 std::optional<bu::Wrapper<Type>> type;
@@ -44,6 +48,14 @@ namespace ir {
             std::string                            name;
             Size_type                              size;
             DEFAULTED_EQUALITY(Struct);
+        };
+
+        struct Alias {
+
+        };
+
+        struct Typeclass {
+
         };
 
     }

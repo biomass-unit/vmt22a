@@ -26,11 +26,11 @@ namespace {
         [[nodiscard]]
         auto error_impl(std::string_view                message,
                         std::optional<std::string_view> help,
-                        ast::Expression*                expression)
+                        ast::Expression&                expression)
         {
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = (expression ? expression : &this_expression)->source_view,
+                    .erroneous_view = expression.source_view,
                     .file_view      = context.source->string(),
                     .file_name      = context.source->name(),
                     .message        = message,
@@ -41,15 +41,15 @@ namespace {
 
         [[nodiscard]]
         auto error(std::string_view message, ast::Expression& expression) {
-            return error_impl(message, std::nullopt, &expression);
+            return error_impl(message, std::nullopt, expression);
         }
         [[nodiscard]]
         auto error(std::string_view message, std::string_view help, ast::Expression& expression) {
-            return error_impl(message, help, &expression);
+            return error_impl(message, help, expression);
         }
         [[nodiscard]]
         auto error(std::string_view message, std::optional<std::string> help = std::nullopt) {
-            return error_impl(message, help, &this_expression);
+            return error_impl(message, help, this_expression);
         }
 
 
@@ -216,10 +216,10 @@ namespace {
                             .type = binding->type
                         };
                     },
-                    [&](ast::definition::Function*) -> ir::Expression {
+                    [&](resolution::Function_definition) -> ir::Expression {
                         bu::unimplemented();
                     },
-                    [&](ast::definition::Function_template*) -> ir::Expression {
+                    [&](resolution::Function_template_definition) -> ir::Expression {
                         bu::unimplemented();
                     }
                 }, *value);

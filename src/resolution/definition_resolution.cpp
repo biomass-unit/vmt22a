@@ -6,47 +6,48 @@ namespace {
 
     struct Definition_visitor {
         resolution::Resolution_context& context;
-        //bu::Flatmap<lexer::Identifier, bu::Wrapper<ir::Type>>* template_type_arguments = nullptr;
-
 
         auto operator()(resolution::Binding*) -> void {
-            bu::abort("should be unreachable");
+            bu::unreachable();
         }
 
-        auto operator()(ast::definition::Function*) -> void {
+        auto operator()(resolution::Function_definition) -> void {
             bu::unimplemented();
         }
 
-        auto operator()(ast::definition::Struct*) -> void {
+        auto operator()(resolution::Function_template_definition) -> void {
             bu::unimplemented();
         }
 
-        auto operator()(ast::definition::Data*) -> void {
+        auto operator()(resolution::Struct_definition) -> void {
             bu::unimplemented();
         }
 
-        auto operator()(ast::definition::Alias*) -> void {
+        auto operator()(resolution::Struct_template_definition) -> void {
             bu::unimplemented();
         }
 
-        auto operator()(ast::definition::Typeclass*) -> void {
+        auto operator()(resolution::Data_definition) -> void {
             bu::unimplemented();
         }
 
-        auto operator()(ast::definition::Namespace*) -> void {
+        auto operator()(resolution::Data_template_definition) -> void {
             bu::unimplemented();
         }
 
-        auto operator()(ast::definition::Implementation*) -> void {
+        auto operator()(resolution::Alias_definition) -> void {
             bu::unimplemented();
         }
 
-        auto operator()(ast::definition::Instantiation*) -> void {
+        auto operator()(resolution::Alias_template_definition) -> void {
             bu::unimplemented();
         }
 
-        template <class Definition>
-        auto operator()(ast::definition::Template_definition<Definition>*) -> void {
+        auto operator()(resolution::Typeclass_definition) -> void {
+            bu::unimplemented();
+        }
+
+        auto operator()(resolution::Typeclass_template_definition) -> void {
             bu::unimplemented();
         }
     };

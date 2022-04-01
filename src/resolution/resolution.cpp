@@ -47,7 +47,7 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
         if (!mutability_parameters) {
             return false;
         }
-        else if (bool* const parameter = mutability_parameters->find(mutability.parameter_name)) {
+        else if (bool* const parameter = mutability_parameters->find(*mutability.parameter_name)) {
             return *parameter;
         }
         else {
@@ -133,10 +133,14 @@ namespace {
 
             std::visit(bu::Overload {
                 [&](Function& function) -> void {
-                    space.lower_table.add(bu::copy(function.name), &function);
+                    resolution::Function_definition handle { &function };
+                    space.lower_table.add(bu::copy(function.name), bu::copy(handle));
+                    space.definitions_in_order.push_back(handle);
                 },
-                [&](bu::one_of<Struct, Data, Alias, Typeclass> auto& definition) -> void {
-                    space.upper_table.add(bu::copy(definition.name), &definition);
+                [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(T& definition) {
+                    resolution::Definition<T> handle { &definition };
+                    space.upper_table.add(bu::copy(definition.name), bu::copy(handle));
+                    space.definitions_in_order.push_back(handle);
                 },
 
                 [](Implementation&) -> void {
@@ -145,17 +149,58 @@ namespace {
                 [](Instantiation&) -> void {
                     bu::unimplemented();
                 },
-                []<class Definition>(Template_definition<Definition>&) -> void {
+                []<class Definition>(ast::definition::Template_definition<Definition>&) -> void {
                     bu::unimplemented();
                 },
 
                 [&](Namespace& nested_space) -> void {
-                    space.children.add(bu::copy(nested_space.name), make_namespace(nested_space.definitions));
+                    space.children.add(
+                        bu::copy(nested_space.name),
+                        make_namespace(nested_space.definitions)
+                    );
                 }
             }, definition.value);
         }
 
         return space;
+    }
+
+
+    auto resolve_definitions(ast::Module&           module,
+                             resolution::Namespace* global,
+                             resolution::Namespace* current) -> void;
+
+
+    struct Definition_resolution_visitor {
+        resolution::Namespace* global_namespace;
+        resolution::Namespace* current_namespace;
+        ast::Module*           module;
+
+        auto operator()(resolution::Function_definition) -> void {
+            bu::abort("yes");
+        }
+
+        auto operator()(auto&) -> void {
+            bu::unimplemented();
+        }
+    };
+
+
+    auto resolve_definitions(ast::Module&                 module,
+                             resolution::Namespace* const global_namespace,
+                             resolution::Namespace* const current_namespace)
+        -> void
+    {
+        for (auto& definition : current_namespace->definitions_in_order) {
+            std::visit(
+                Definition_resolution_visitor {
+                    .global_namespace  = global_namespace,
+                    .current_namespace = current_namespace,
+                    .module            = &module
+                },
+                definition
+            );
+        }
     }
 
 }
@@ -166,13 +211,7 @@ auto resolution::resolve(ast::Module&& module) -> ir::Program {
 
     auto global_namespace = make_namespace(module.definitions);
 
-    Resolution_context context {
-        .scope             = { .parent = nullptr },
-        .current_namespace = &global_namespace,
-        .global_namespace  = &global_namespace,
-        .source            = &module.source,
-        .is_unevaluated    = false
-    };
+    resolve_definitions(module, &global_namespace, &global_namespace);
 
 
     // vvv Release all memory used by the AST
