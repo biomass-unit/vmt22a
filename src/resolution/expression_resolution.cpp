@@ -155,38 +155,7 @@ namespace {
                 }
             }
 
-            if (auto* const pattern = std::get_if<ast::pattern::Name>(&let_binding.pattern->value)) {
-                if (pattern->mutability.type == ast::Mutability::Type::parameterized) {
-                    bu::unimplemented();
-                }
-
-                {
-                    auto& bindings = context.scope.bindings.container();
-
-                    // emplace inserts the pair right before the given iterator; if
-                    // the name is already bound to something, this effectively shadows
-                    // it, and if the identifier is new, then ranges::find returns a
-                    // past-the-end iterator, meaning the pair is inserted at the end.
-
-                    bindings.emplace(
-                        std::ranges::find(bindings, pattern->identifier, bu::first),
-                        pattern->identifier,
-                        resolution::Binding {
-                            .type         = initializer.type,
-                            .frame_offset = context.scope.current_frame_offset.get(),
-                            .is_mutable   = pattern->mutability.type == ast::Mutability::Type::mut
-                        }
-                    );
-                }
-
-                if (!context.is_unevaluated) {
-                    context.scope.current_frame_offset.safe_add(initializer.type->size);
-                    context.scope.destroy_in_reverse_order.push_back(initializer.type);
-                }
-            }
-            else {
-                bu::unimplemented();
-            }
+            context.bind(let_binding.pattern, initializer.type);
 
             return {
                 .value = ir::expression::Let_binding { std::move(initializer) },

@@ -149,7 +149,7 @@ namespace {
                 [](Instantiation&) -> void {
                     bu::unimplemented();
                 },
-                []<class Definition>(ast::definition::Template_definition<Definition>&) -> void {
+                []<class Definition>(Template_definition<Definition>&) -> void {
                     bu::unimplemented();
                 },
 
@@ -172,12 +172,54 @@ namespace {
 
 
     struct Definition_resolution_visitor {
-        resolution::Namespace* global_namespace;
         resolution::Namespace* current_namespace;
+        resolution::Namespace* global_namespace;
         ast::Module*           module;
 
-        auto operator()(resolution::Function_definition) -> void {
-            bu::abort("yes");
+        auto operator()(resolution::Function_definition function) -> void {
+            if (!function.resolved->has_value()) {
+                resolution::Resolution_context context {
+                    .scope                 { .parent = nullptr },
+                    .current_namespace     = current_namespace,
+                    .global_namespace      = global_namespace,
+                    .source                = &module->source,
+                    .mutability_parameters = nullptr,
+                    .is_unevaluated        = false,
+                };
+
+                auto* const definition = function.syntactic_definition;
+
+                std::vector<ir::definition::Function::Parameter> parameters;
+                parameters.reserve(definition->parameters.size());
+
+                for (auto& [pattern, type, default_value] : definition->parameters) {
+                    bu::Wrapper ir_type = resolution::resolve_type(type, context);
+                    context.bind(pattern, ir_type);
+
+                    parameters.emplace_back(
+                        ir_type,
+                        default_value.transform([&](ast::Expression& expression) -> bu::Wrapper<ir::Expression> {
+                            return resolution::resolve_expression(expression, context);
+                        })
+                    );
+                }
+
+                auto body = resolution::resolve_expression(definition->body, context);
+
+                if (definition->return_type) {
+                    if (body.type != resolution::resolve_type(*definition->return_type, context)) {
+                        bu::abort("function return type mismatch");
+                    }
+                }
+
+                bu::Wrapper return_type = body.type;
+
+                function.resolved = ir::definition::Function {
+                    std::move(parameters),
+                    std::move(return_type),
+                    std::move(body),
+                };
+            }
         }
 
         auto operator()(auto&) -> void {
@@ -194,8 +236,8 @@ namespace {
         for (auto& definition : current_namespace->definitions_in_order) {
             std::visit(
                 Definition_resolution_visitor {
-                    .global_namespace  = global_namespace,
                     .current_namespace = current_namespace,
+                    .global_namespace  = global_namespace,
                     .module            = &module
                 },
                 definition

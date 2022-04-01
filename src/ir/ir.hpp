@@ -23,31 +23,33 @@ namespace ir {
     namespace definition {
 
         struct Function {
-
+            struct Parameter {
+                bu::Wrapper<Type>                      type;
+                std::optional<bu::Wrapper<Expression>> default_value;
+            };
+            std::vector<Parameter>  parameter_types;
+            bu::Wrapper<Type>       return_type;
+            bu::Wrapper<Expression> body;
         };
 
         struct Data {
             struct Constructor {
                 std::optional<bu::Wrapper<Type>> type;
                 bu::U8                           tag;
-                DEFAULTED_EQUALITY(Constructor);
             };
             bu::Flatmap<lexer::Identifier, Constructor> constructors;
             std::string                                 name;
             Size_type                                   size;
-            DEFAULTED_EQUALITY(Data);
         };
 
         struct Struct {
             struct Member {
                 bu::Wrapper<Type> type;
                 bu::U16           offset;
-                DEFAULTED_EQUALITY(Member);
             };
             bu::Flatmap<lexer::Identifier, Member> members;
             std::string                            name;
             Size_type                              size;
-            DEFAULTED_EQUALITY(Struct);
         };
 
         struct Alias {

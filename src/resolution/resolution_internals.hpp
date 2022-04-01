@@ -50,13 +50,13 @@ namespace resolution {
 
     template <class T>
     struct Definition {
-        T*                                       definition;
+        T*                                       syntactic_definition;
         bu::Wrapper<std::optional<AST_to_IR<T>>> resolved;
     };
 
     template <class T>
     struct Definition<ast::definition::Template_definition<T>> {
-        ast::definition::Template_definition<T>* definition;
+        ast::definition::Template_definition<T>* syntactic_definition;
         bu::Wrapper<std::vector<AST_to_IR<T>>>   instantiations;
     };
 
@@ -152,6 +152,8 @@ namespace resolution {
         }
 
         auto resolve_mutability(ast::Mutability) -> bool;
+
+        auto bind(ast::Pattern&, bu::Wrapper<ir::Type>) -> void;
 
     private:
 
