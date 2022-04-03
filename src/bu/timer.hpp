@@ -12,12 +12,8 @@ namespace bu {
     struct Timer {
         using Clock = std::chrono::steady_clock;
 
-        Clock::time_point start;
-        bool log_scope_exit;
-
-        explicit Timer(bool const log_scope_exit = true) noexcept
-            : start { now() }
-            , log_scope_exit { log_scope_exit } {}
+        Clock::time_point start          = Clock::now();
+        bool              log_scope_exit = false;
 
         ~Timer() {
             if (log_scope_exit) {
@@ -30,12 +26,12 @@ namespace bu {
             }
         }
 
-        auto elapsed() const noexcept -> Duration {
-            return std::chrono::duration_cast<Duration>(now() - start);
+        auto restart(Clock::time_point const new_start = Clock::now()) noexcept -> void {
+            start = new_start;
         }
 
-        static auto now() noexcept -> Clock::time_point {
-            return Clock::now();
+        auto elapsed() const noexcept -> Duration {
+            return std::chrono::duration_cast<Duration>(Clock::now() - start);
         }
     };
 

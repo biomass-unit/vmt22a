@@ -89,12 +89,16 @@ namespace {
             }
         }
 
+        auto resolve_pointer(auto& pointer) -> ir::type::Pointer {
+            return {
+                .type = recurse(pointer.type),
+                .mut  = context.resolve_mutability(pointer.mutability)
+            };
+        }
+
         auto operator()(ast::type::Pointer& pointer) -> ir::Type {
             return {
-                .value = ir::type::Pointer {
-                    .type = recurse(pointer.type),
-                    .mut  = context.resolve_mutability(pointer.mutability)
-                },
+                .value      = resolve_pointer(pointer),
                 .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };
@@ -102,27 +106,22 @@ namespace {
 
         auto operator()(ast::type::Reference& reference) -> ir::Type {
             return {
-                .value = ir::type::Reference {
-                    .pointer {
-                        .type = recurse(reference.type),
-                        .mut  = context.resolve_mutability(reference.mutability)
-                    }
-                },
+                .value      = ir::type::Reference { resolve_pointer(reference) },
                 .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };
         }
 
         auto operator()(ast::type::Type_of& type_of) -> ir::Type {
-            if (std::holds_alternative<ast::expression::Let_binding>(type_of.expression->value)) {
-                bu::abort("can not take type of let binding");
-            }
+            auto child_context = context.make_child_context_with_new_scope();
+            child_context.is_unevaluated = true;
 
-            bool const is_unevaluated = std::exchange(context.is_unevaluated, true);
-            auto expression = resolution::resolve_expression(type_of.expression, context);
-            context.is_unevaluated = is_unevaluated;
-
-            return std::move(*expression.type);
+            return std::move(
+                *resolution::resolve_expression(
+                    type_of.expression,
+                    child_context
+                ).type
+            );
         }
 
         auto operator()(auto&) -> ir::Type {

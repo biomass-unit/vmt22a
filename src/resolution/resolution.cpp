@@ -47,11 +47,17 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
         if (!mutability_parameters) {
             return false;
         }
-        else if (bool* const parameter = mutability_parameters->find(*mutability.parameter_name)) {
+        else if (bool const* const parameter = mutability_parameters->find(*mutability.parameter_name)) {
             return *parameter;
         }
         else {
-            bu::abort("not a mutability parameter");
+            throw error({
+                .message = std::format(
+                    "{} is not a mutability parameter",
+                    *mutability.parameter_name
+                ),
+                .erroneous_view = {}
+            });
         }
     default:
         bu::unreachable();

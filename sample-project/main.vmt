@@ -8,6 +8,6 @@ namespace hmm {
     }
 }
 
-fn main(): Int = hmm::test::nested::test("hi", 5.5) as Int
+fn main(): Int = hmm::test::nested::test(5, 5) as Int
 
 fn test() {}

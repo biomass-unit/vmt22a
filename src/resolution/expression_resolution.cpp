@@ -148,7 +148,7 @@ namespace {
                         else {
                             throw error(
                                 std::format(
-                                    "The {} parameter should be of type {}, but the argument has type {}",
+                                    "The {} parameter is of type {}, but the given argument is of type {}",
                                     bu::format_with_ordinal_indicator(i + 1),
                                     function->parameter_types[i],
                                     argument.type

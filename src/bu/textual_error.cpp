@@ -59,17 +59,21 @@ namespace {
 
 
     auto find_position(std::string_view file, char const* current) -> bu::Position {
-        assert(file.data() <= current && current <= (file.data() + file.size()));
         bu::Position position { 1, 1 };
 
-        for (char const* start = file.data(); start != current; ++start) {
-            if (*start == '\n') {
-                ++position.line;
-                position.column = 1;
+        if (file.data() <= current && current <= (file.data() + file.size())) {
+            for (char const* start = file.data(); start != current; ++start) {
+                if (*start == '\n') {
+                    ++position.line;
+                    position.column = 1;
+                }
+                else {
+                    ++position.column;
+                }
             }
-            else {
-                ++position.column;
-            }
+        }
+        else {
+            position = { 0, 0 };
         }
 
         return position;

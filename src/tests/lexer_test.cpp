@@ -7,7 +7,11 @@
 
 namespace {
 
-    auto assert_tok_eq(std::string_view text, std::vector<lexer::Token::Type> required_types) -> void {
+    auto assert_tok_eq(std::string_view const          text,
+                       std::vector<lexer::Token::Type> required_types,
+                       std::source_location            caller = std::source_location::current())
+        -> void
+    {
         bu::Source source { bu::Source::Mock_tag {}, std::string { text } };
         auto tokens = lexer::lex(std::move(source)).tokens;
 
@@ -21,7 +25,7 @@ namespace {
             std::back_inserter(actual_types)
         );
 
-        tests::assert_eq(required_types, actual_types);
+        tests::assert_eq(required_types, actual_types, caller);
     }
 
 }
@@ -99,6 +103,11 @@ auto run_lexer_tests() -> void {
         assert_tok_eq(
             "a<$>_:\nVec",
             { lower_name, operator_name, underscore, colon, upper_name }
+        );
+
+        assert_tok_eq(
+            "_, ______::_________________",
+            { underscore, comma, underscore, double_colon, underscore }
         );
     };
 

@@ -44,6 +44,9 @@ namespace {
                 if (string.empty()) {
                     continue;
                 }
+                else if (string == "q") {
+                    break;
+                }
 
                 try {
                     bu::Source source { bu::Source::Mock_tag { "repl" }, std::move(string) };
@@ -127,9 +130,12 @@ auto main(int argc, char const** argv) -> int try {
         ("machine",                "Run the interpreter test"    )
         ("resolve",                "Run the resolution test"     )
         ("nocolor",                "Disable colored output"      )
+        ("time"   ,                "Print the execution time"    )
         ("test"   ,                "Run all tests"               );
 
     auto options = cli::parse_command_line(argc, argv, description);
+
+    bu::Timer build_timer;
 
     if (options.find("help")) {
         bu::print("Valid options:\n\n{}", description);
@@ -159,8 +165,6 @@ auto main(int argc, char const** argv) -> int try {
     if (options.find("machine")) {
         vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
 
-        bu::Timer timer;
-
         auto const string = machine.add_to_string_pool("Hello, world!\n");
 
         using enum vm::Opcode;
@@ -174,7 +178,7 @@ auto main(int argc, char const** argv) -> int try {
             halt
         );
 
-        return machine.run();
+        bu::print("return value: {}\n", machine.run());
     }
 
     if (auto* const name = options.find_str("repl")) {
@@ -193,6 +197,10 @@ auto main(int argc, char const** argv) -> int try {
         else {
             bu::abort("Unrecognized repl name");
         }
+    }
+
+    if (options.find("time")) {
+        bu::print("Total elapsed time: {}\n", build_timer.elapsed());
     }
 }
 

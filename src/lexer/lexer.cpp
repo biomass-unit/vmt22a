@@ -12,11 +12,11 @@ namespace {
 
     struct Lex_context {
         std::vector<Token> tokens;
-        bu::Source* source;
-        char const* start;
-        char const* stop;
-        char const* pointer;
-        char const* token_start = nullptr;
+        bu::Source*        source;
+        char const*        start;
+        char const*        stop;
+        char const*        pointer;
+        char const*        token_start = nullptr;
 
         explicit Lex_context(bu::Source& source) noexcept
             : source  { &source }
@@ -167,7 +167,7 @@ namespace {
     auto skip_comments_and_whitespace(Lex_context& context) -> void {
         context.consume(is_space);
 
-        auto const anchor = context.pointer;
+        auto* const anchor = context.pointer;
 
         if (context.try_consume('/')) {
             switch (context.extract_current()) {
@@ -205,8 +205,8 @@ namespace {
 
 
     auto extract_identifier(Lex_context& context) -> bool {
-        constexpr auto is_valid_head = satisfies_one_of<is_alpha, is_one_of<'_'>>;
-        constexpr auto is_identifier = satisfies_one_of<is_alnum, is_one_of<'_', '\''>>;
+        static constexpr auto is_valid_head = satisfies_one_of<is_alpha, is_one_of<'_'>>;
+        static constexpr auto is_identifier = satisfies_one_of<is_alnum, is_one_of<'_', '\''>>;
 
         if (!is_valid_head(context.current())) {
             return false;
@@ -360,7 +360,7 @@ namespace {
 
     auto apply_scientific_coefficient(bu::Isize& integer, char const* anchor, Lex_context& context) -> void {
         if (context.try_consume('e') || context.try_consume('E')) {
-            auto exponent = context.parse<bu::Isize>();
+            auto const exponent = context.parse<bu::Isize>();
 
             if (exponent.did_parse()) {
                 if (exponent.is_too_large()) {
@@ -405,15 +405,11 @@ namespace {
     }
 
     auto extract_numeric(Lex_context& context) -> bool {
-        auto const anchor = context.pointer;
+        auto* const anchor = context.pointer;
 
-        bool negative = false;
-        if (context.try_consume('-')) {
-            negative = true;
-        }
-
-        auto const base    = extract_numeric_base(context);
-        auto       integer = context.parse<bu::Isize>(base);
+        bool const negative = context.try_consume('-');
+        auto const base     = extract_numeric_base(context);
+        auto const integer  = context.parse<bu::Isize>(base);
 
         if (integer.was_non_numeric()) {
             if (base == 10) {
@@ -485,7 +481,7 @@ namespace {
 
 
     auto handle_escape_sequence(Lex_context& context) -> char {
-        auto const anchor = context.pointer;
+        auto* const anchor = context.pointer;
 
         switch (context.extract_current()) {
         case 'a': return '\a';
@@ -507,7 +503,7 @@ namespace {
 
 
     auto extract_character(Lex_context& context) -> bool {
-        auto const anchor = context.pointer;
+        auto* const anchor = context.pointer;
 
         if (context.try_consume('\'')) {
             char c = context.extract_current();
@@ -532,7 +528,7 @@ namespace {
     }
 
     auto extract_string(Lex_context& context) -> bool {
-        auto const anchor = context.pointer;
+        auto* const anchor = context.pointer;
 
         if (context.try_consume('"')) {
             std::string string;
