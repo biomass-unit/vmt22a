@@ -48,6 +48,7 @@ namespace ir {
             struct Member {
                 bu::Wrapper<Type> type;
                 bu::U16           offset;
+                bool              is_public = false;
             };
             bu::Flatmap<lexer::Identifier, Member> members;
             std::string                            name;

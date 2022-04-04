@@ -171,27 +171,14 @@ namespace {
     }
 
 
-    auto resolve_definitions(bu::Wrapper<resolution::Namespace> const current_namespace,
-                             bu::Wrapper<resolution::Namespace> const global_namespace,
-                             bu::Source*                        const source) -> void;
+    auto resolve_definitions(resolution::Resolution_context&) -> void;
 
 
     struct Definition_resolution_visitor {
-        bu::Wrapper<resolution::Namespace> current_namespace;
-        bu::Wrapper<resolution::Namespace> global_namespace;
-        bu::Source*                        source;
+        resolution::Resolution_context& context;
 
         auto operator()(resolution::Function_definition function) -> void {
             if (!function.resolved->has_value()) {
-                resolution::Resolution_context context {
-                    .scope                 { .parent = nullptr },
-                    .current_namespace     = current_namespace,
-                    .global_namespace      = global_namespace,
-                    .source                = source,
-                    .mutability_parameters = nullptr,
-                    .is_unevaluated        = false,
-                };
-
                 auto* const definition = function.syntactic_definition;
 
                 std::vector<ir::definition::Function::Parameter> parameters;
@@ -227,7 +214,7 @@ namespace {
 
                 bu::Wrapper return_type = body.type;
 
-                *function.resolved = ir::definition::Function{
+                *function.resolved = ir::definition::Function {
                     .name        = std::string { function.syntactic_definition->name.view() },
                     .parameters  = std::move(parameters),
                     .return_type = std::move(return_type),
@@ -244,8 +231,39 @@ namespace {
             }
         }
 
+        auto operator()(resolution::Struct_definition structure) -> void {
+            if (!structure.resolved->has_value()) {
+                auto* const definition = structure.syntactic_definition;
+
+                ir::definition::Struct resolved_structure {
+                    .name = std::string { definition->name.view() }
+                };
+                resolved_structure.members.container().reserve(definition->members.size());
+
+                for (auto& member : definition->members) {
+                    auto       type = resolution::resolve_type(member.type, context);
+                    auto const size = resolved_structure.size;
+
+                    resolved_structure.members.add(
+                        bu::copy(member.name),
+                        {
+                            .type      = std::move(type),
+                            .offset    = size.safe_cast<bu::U16>(),
+                            .is_public = member.is_public
+                        }
+                    );
+
+                    resolved_structure.size.safe_add(size);
+                }
+
+                *structure.resolved = std::move(resolved_structure);
+            }
+        }
+
         auto operator()(bu::Wrapper<resolution::Namespace> const child) -> void {
-            resolve_definitions(child, global_namespace, source);
+            auto current_namespace = std::exchange(context.current_namespace, child);
+            resolve_definitions(context);
+            context.current_namespace = current_namespace;
         }
 
         auto operator()(auto&) -> void {
@@ -254,19 +272,9 @@ namespace {
     };
 
 
-    auto resolve_definitions(bu::Wrapper<resolution::Namespace> const current_namespace,
-                             bu::Wrapper<resolution::Namespace> const global_namespace,
-                             bu::Source*                        const source) -> void
-    {
-        for (auto& definition : current_namespace->definitions_in_order) {
-            std::visit(
-                Definition_resolution_visitor {
-                    .current_namespace = current_namespace,
-                    .global_namespace  = global_namespace,
-                    .source            = source
-                },
-                definition
-            );
+    auto resolve_definitions(resolution::Resolution_context& context) -> void {
+        for (auto& definition : context.current_namespace->definitions_in_order) {
+            std::visit(Definition_resolution_visitor { context }, definition);
         }
     }
 
@@ -278,7 +286,17 @@ auto resolution::resolve(ast::Module&& module) -> ir::Program {
 
     auto global_namespace = make_namespace(module.definitions);
 
-    resolve_definitions(global_namespace, global_namespace, &module.source);
+    {
+        resolution::Resolution_context global_context {
+            .scope                 { .parent = nullptr },
+            .current_namespace     = global_namespace,
+            .global_namespace      = global_namespace,
+            .source                = &module.source,
+            .mutability_parameters = nullptr,
+            .is_unevaluated        = false
+        };
+        resolve_definitions(global_context);
+    }
 
     auto* const entry = global_namespace->lower_table.find(lexer::Identifier { "main"sv });
     if (entry) {
