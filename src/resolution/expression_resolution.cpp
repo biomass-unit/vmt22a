@@ -192,7 +192,16 @@ namespace {
                 member_initializers.reserve(structure.members.size());
 
                 for (auto& [name, member] : structure.members.container()) {
-                    if (bu::wrapper auto* const initializer = struct_initializer.member_initializers.find(name)) {
+                    auto const count = std::ranges::count(
+                        struct_initializer.member_initializers.container(),
+                        name,
+                        bu::first
+                    );
+
+                    if (count == 1) {
+                        bu::wrapper auto* const initializer = struct_initializer.member_initializers.find(name);
+                        assert(initializer); // Since count == 1, the initializer should be found
+
                         auto expression = recurse(*initializer);
 
                         if (member.type == expression.type) {
@@ -211,7 +220,14 @@ namespace {
                         }
                     }
                     else {
-                        throw error(std::format("{} is not initialized", name));
+                        throw error(
+                            std::format(
+                                "The struct initializer contains {} initializers "
+                                "for {}, but exactly one is required",
+                                count,
+                                name
+                            )
+                        );
                     }
                 }
 
