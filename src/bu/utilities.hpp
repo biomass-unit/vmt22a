@@ -390,16 +390,29 @@ namespace bu {
         return std::format("{}{}", n, suffixes[x]);
     }
 
-    auto format_delimited_range(std::format_context::iterator        out,
-                                std::ranges::sized_range auto const& range,
-                                std::string_view const               delimiter)
+
+    template <class Range>
+    struct Range_formatter {
+        Range const*     range;
+        std::string_view delimiter;
+    };
+
+    template <std::ranges::sized_range Range>
+    auto delimited_range(Range const& range, std::string_view const delimiter)
+        -> Range_formatter<Range>
+    {
+        return { &range, delimiter };
+    }
+
+    template <class Range>
+    auto format_delimited_range(std::format_context::iterator out, Range_formatter<Range> rf)
         -> std::format_context::iterator
     {
-        if (!range.empty()) {
-            std::format_to(out, "{}", range.front());
+        if (!rf.range->empty()) {
+            std::format_to(out, "{}", rf.range->front());
 
-            for (auto& element : range | std::views::drop(1)) {
-                std::format_to(out, "{}{}", delimiter, element);
+            for (auto& element : *rf.range | std::views::drop(1)) {
+                std::format_to(out, "{}{}", rf.delimiter, element);
             }
         }
         return out;
@@ -447,6 +460,8 @@ template <class T>
 DECLARE_FORMATTER_FOR_TEMPLATE(std::vector<T>);
 template <class F, class S>
 DECLARE_FORMATTER_FOR_TEMPLATE(bu::Pair<F, S>);
+template <class Range>
+DECLARE_FORMATTER_FOR_TEMPLATE(bu::Range_formatter<Range>);
 
 
 template <class... Ts>
@@ -465,12 +480,17 @@ DEFINE_FORMATTER_FOR(std::optional<T>) {
 
 template <class T>
 DEFINE_FORMATTER_FOR(std::vector<T>) {
-    return bu::format_delimited_range(context.out(), value, ", ");
+    return bu::format_delimited_range(context.out(), bu::delimited_range(value, ", "));
 }
 
 template <class F, class S>
 DEFINE_FORMATTER_FOR(bu::Pair<F, S>) {
     return std::format_to(context.out(), "({}, {})", value.first, value.second);
+}
+
+template <class Range>
+DEFINE_FORMATTER_FOR(bu::Range_formatter<Range>) {
+    return bu::format_delimited_range(context.out(), value);
 }
 
 

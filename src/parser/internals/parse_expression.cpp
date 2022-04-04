@@ -313,18 +313,14 @@ namespace {
                 }
                 else {
                     expressions.push_back(ast::unit_value);
+                    break;
                 }
             }
         }
 
         context.consume_required(Token::Type::brace_close);
 
-        if (expressions.empty()) {
-            return ast::expression::Tuple {};
-        }
-        else {
-            return ast::expression::Compound { std::move(expressions) };
-        }
+        return ast::expression::Compound { std::move(expressions) };
     }
 
 

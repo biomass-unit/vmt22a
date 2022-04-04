@@ -65,8 +65,11 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
                 std::format_to(context.out(), "{}", parameter.name);
 
                 if (!parameter.classes.empty()) {
-                    std::format_to(context.out(), ": ");
-                    bu::format_delimited_range(context.out(), parameter.classes, " + ");
+                    std::format_to(
+                        context.out(),
+                        ": {}",
+                        bu::delimited_range(parameter.classes, " + ")
+                    );
                 }
 
                 return context.out();
@@ -188,7 +191,12 @@ namespace {
             return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
         }
         auto operator()(ast::expression::Compound const& compound) {
-            return format("{{ {} }}", compound.expressions);
+            if (compound.expressions.empty()) {
+                return format("{{}}");
+            }
+            else {
+                return format("{{ {} }}", bu::delimited_range(compound.expressions, "; "));
+            }
         }
         auto operator()(ast::expression::Conditional const& conditional) {
             auto& [condition, true_branch, false_branch] = conditional;
@@ -368,21 +376,29 @@ namespace {
         }
 
         auto operator()(ast::definition::Instantiation const& instantiation) {
-            format("inst {} {} {{\n", instantiation.typeclass, instantiation.instance);
-            bu::format_delimited_range(out, instantiation.definitions, "\n\n");
-            return format("}}");
+            return format(
+                "inst {} {} {{\n{}\n}}",
+                instantiation.typeclass,
+                instantiation.instance,
+                bu::delimited_range(instantiation.definitions, "\n\n")
+            );
         }
 
         auto operator()(ast::definition::Implementation const& implementation) {
-            format("impl {} {{\n", implementation.type);
-            bu::format_delimited_range(out, implementation.definitions, "\n\n");
-            return format("}}");
+            return format(
+                "impl {} {{\n{}\n}}",
+                implementation.type,
+                bu::delimited_range(implementation.definitions, "\n\n")
+            );
         }
 
         auto operator()(ast::definition::Namespace const& space) {
-            format("namespace {}{} {{\n", space.name, template_parameters());
-            bu::format_delimited_range(out, space.definitions, "\n\n");
-            return format("\n}}");
+            return format(
+                "namespace {}{} {{\n{}\n}}",
+                space.name,
+                template_parameters(),
+                bu::delimited_range(space.definitions, "\n\n")
+            );
         }
 
         template <class T>
@@ -418,13 +434,12 @@ DEFINE_FORMATTER_FOR(ast::Module) {
     }
 
     for (auto& import_ : value.imports) {
-        std::format_to(context.out(), "import ");
-        bu::format_delimited_range(context.out(), import_.path, ".");
+        std::format_to(context.out(), "import {}", bu::delimited_range(import_.path, "."));
         if (import_.alias) {
             std::format_to(context.out(), " as {}", *import_.alias);
         }
         std::format_to(context.out(), "\n");
     }
 
-    return bu::format_delimited_range(context.out(), value.definitions, "\n\n");
+    return bu::format_delimited_range(context.out(), bu::delimited_range(value.definitions, "\n\n"));
 }

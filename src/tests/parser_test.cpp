@@ -93,7 +93,7 @@ auto run_parser_tests() -> void {
             ast::expression::For_loop {
                 ast::pattern::Name { "x"_id, { .type = ast::Mutability::Type::immut } },
                 ast::expression::Literal { lexer::String { "hello"sv } },
-                ast::unit_value
+                ast::expression::Compound {}
             }
         );
     };

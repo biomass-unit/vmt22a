@@ -461,8 +461,12 @@ namespace {
         }
 
         auto operator()(ast::expression::Compound& compound) -> ir::Expression {
-            // The parser should convert empty compound expressions into the unit value
-            assert(compound.expressions.size() != 0);
+            if (compound.expressions.empty()) {
+                return {
+                    .value = ir::expression::Tuple {},
+                    .type  = ir::type::unit
+                };
+            }
 
             auto child_context = context.make_child_context_with_new_scope();
             auto recurse = recurse_with(child_context); // Shadow the struct member
