@@ -18,27 +18,75 @@ namespace {
     }
 
 
-    auto extract_qualified_lower_name(ast::Root_qualifier&& root, Parse_context& context)
+    auto parse_struct_member_initializer(Parse_context& context)
+        -> std::optional<ast::expression::Struct_initializer::Member_initializer>
+    {
+        if (auto member = parse_lower_id(context)) {
+            context.consume_required(Token::Type::equals);
+            return ast::expression::Struct_initializer::Member_initializer {
+                .member     = *member,
+                .expression = extract_expression(context)
+            };
+        }
+        else {
+            return std::nullopt;
+        }
+    };
+
+    auto extract_struct_initializer(ast::Type&& type, Parse_context& context)
+        -> ast::Expression
+    {
+        static constexpr auto extract_member_initializers =
+            extract_comma_separated_zero_or_more<parse_struct_member_initializer, "a member initializer">;
+
+        auto initializers = extract_member_initializers(context);
+        context.consume_required(Token::Type::brace_close);
+
+        return ast::expression::Struct_initializer {
+            std::move(initializers),
+            std::move(type)
+        };
+    }
+
+
+    auto extract_qualified_lower_name_or_struct_initializer(ast::Root_qualifier&& root, Parse_context& context)
         -> ast::Expression
     {
         auto* const anchor = context.pointer;
         auto name = extract_qualified(std::move(root), context);
 
+        auto template_arguments = parse_template_arguments(context);
+
         if (!name.primary_qualifier.is_upper) {
-            if (auto template_arguments = parse_template_arguments(context)) {
+            if (template_arguments) {
                 return ast::expression::Template_instantiation {
-                    std::move(name),
-                    std::move(*template_arguments)
+                    std::move(*template_arguments),
+                    std::move(name)
                 };
             }
             else {
                 return ast::expression::Variable { std::move(name) };
             }
         }
+        else if (context.try_consume(Token::Type::brace_open)) {
+            auto type = [&]() -> ast::Type {
+                if (template_arguments) {
+                    return ast::type::Template_instantiation {
+                        std::move(*template_arguments),
+                        std::move(name)
+                    };
+                }
+                else {
+                    return ast::type::Typename { std::move(name) };
+                }
+            }();
+
+            return extract_struct_initializer(std::move(type), context);
+        }
         else {
             throw context.error(
                 { anchor, context.pointer },
-                "Expected a lowercase identifier, but found a typename"
+                "Expected an expression, but found a type"
             );
         }
     }
@@ -46,11 +94,11 @@ namespace {
 
     auto extract_identifier(Parse_context& context) -> ast::Expression {
         context.retreat();
-        return extract_qualified_lower_name({ std::monostate {} }, context);
+        return extract_qualified_lower_name_or_struct_initializer({ std::monostate {} }, context);
     }
 
     auto extract_global_identifier(Parse_context& context) -> ast::Expression {
-        return extract_qualified_lower_name({ ast::Root_qualifier::Global {} }, context);
+        return extract_qualified_lower_name_or_struct_initializer({ ast::Root_qualifier::Global {} }, context);
     }
 
     auto extract_tuple(Parse_context& context) -> ast::Expression {
@@ -376,9 +424,12 @@ namespace {
             context.retreat();
             auto* const anchor = context.pointer;
 
-            if (auto root = parse_type(context)) {
+            if (auto type = parse_type(context)) {
                 if (context.try_consume(Token::Type::double_colon)) {
-                    return extract_qualified_lower_name({ std::move(*root) }, context);
+                    return extract_qualified_lower_name_or_struct_initializer(ast::Root_qualifier { std::move(*type) }, context);
+                }
+                else if (context.try_consume(Token::Type::brace_open)) {
+                    return extract_struct_initializer(std::move(*type), context);
                 }
                 else {
                     throw context.error(
@@ -513,12 +564,12 @@ namespace {
 
 
     auto parse_operator(Parse_context& context) -> std::optional<lexer::Identifier> {
-        static auto const asterisk = [] {
+        static std::optional const asterisk = [] {
             auto const identifier = std::get<0>(precedence_table).front();
             assert(identifier.view() == "*");
             return identifier;
         }();
-        static auto const plus = [] {
+        static std::optional const plus = [] {
             auto const identifier = std::get<1>(precedence_table).front();
             assert(identifier.view() == "+");
             return identifier;

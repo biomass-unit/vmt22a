@@ -27,8 +27,8 @@ namespace ast {
         };
 
         struct Template_instantiation {
-            Qualified_name                 name;
             std::vector<Template_argument> template_arguments;
+            Qualified_name                 name;
             DEFAULTED_EQUALITY(Template_instantiation);
         };
 
@@ -46,6 +46,17 @@ namespace ast {
             std::vector<Function_argument> arguments;
             bu::Wrapper<Expression>        invocable;
             DEFAULTED_EQUALITY(Invocation);
+        };
+
+        struct Struct_initializer {
+            struct Member_initializer {
+                lexer::Identifier       member;
+                bu::Wrapper<Expression> expression;
+                DEFAULTED_EQUALITY(Member_initializer);
+            };
+            std::vector<Member_initializer> initializers;
+            bu::Wrapper<Type>               type;
+            DEFAULTED_EQUALITY(Struct_initializer);
         };
 
         struct Binary_operator_invocation {
@@ -165,6 +176,7 @@ namespace ast {
             expression::Tuple,
             expression::Compound,
             expression::Invocation,
+            expression::Struct_initializer,
             expression::Binary_operator_invocation,
             expression::Member_access_chain,
             expression::Member_function_invocation,

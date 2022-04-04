@@ -1,13 +1,23 @@
 import a.b as ab
 
 namespace hmm {
+
     namespace test {
+
         namespace nested {
+
             fn test(_: Int, b: Float): Float = b
+
+            struct Test = a: Int, b: String
+ 
         }
+
     }
+
 }
 
-fn main(): Int = hmm::test::nested::test(5, 5) as Int
+fn do_thing(i: Int) {
+    hmm::test::nested::Test { a = i, b = "Hello" }
+}
 
-fn test() {}
+fn main(): Int = do_thing(5).a
