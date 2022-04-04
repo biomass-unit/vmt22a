@@ -6,6 +6,7 @@ namespace {
 
     struct Type_resolution_visitor {
         resolution::Resolution_context& context;
+        ast::Type                     & this_type;
 
         auto recurse(ast::Type& type) {
             return resolution::resolve_type(type, context);
@@ -14,6 +15,13 @@ namespace {
             return [this](ast::Type& type) {
                 return recurse(type);
             };
+        }
+
+        auto error(std::string_view message) -> std::runtime_error {
+            return context.error({
+                .message        = message,
+                .erroneous_view = this_type.source_view
+            });
         }
 
 
@@ -28,10 +36,30 @@ namespace {
 
         auto operator()(ast::type::Typename& name) -> ir::Type {
             if (auto const upper = context.find_upper(name.identifier)) {
-                bu::unimplemented();
+                return std::visit(bu::Overload {
+                    [&](resolution::Struct_definition structure) -> ir::Type {
+                        if (structure.resolved->has_value()) {
+                            return {
+                                .value      = ir::type::User_defined_struct { **structure.resolved },
+                                .size       = (**structure.resolved)->size,
+                                .is_trivial = (**structure.resolved)->is_trivial
+                            };
+                        }
+                        else {
+                            bu::abort("requested reference to unresolved structure");
+                        }
+                    },
+                    [](resolution::Struct_template_definition)    -> ir::Type { bu::unimplemented(); },
+                    [](resolution::Data_definition)               -> ir::Type { bu::unimplemented(); },
+                    [](resolution::Data_template_definition)      -> ir::Type { bu::unimplemented(); },
+                    [](resolution::Alias_definition)              -> ir::Type { bu::unimplemented(); },
+                    [](resolution::Alias_template_definition)     -> ir::Type { bu::unimplemented(); },
+                    [](resolution::Typeclass_definition)          -> ir::Type { bu::unimplemented(); },
+                    [](resolution::Typeclass_template_definition) -> ir::Type { bu::unimplemented(); },
+                }, *upper);
             }
             else {
-                bu::unimplemented();
+                throw error(std::format("{} does not refer to a type", name.identifier));
             }
         }
 
@@ -133,5 +161,5 @@ namespace {
 
 
 auto resolution::resolve_type(ast::Type& type, Resolution_context& context) -> ir::Type {
-    return std::visit(Type_resolution_visitor { context }, type.value);
+    return std::visit(Type_resolution_visitor { context, type }, type.value);
 }

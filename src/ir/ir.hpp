@@ -42,6 +42,7 @@ namespace ir {
             bu::Flatmap<lexer::Identifier, Constructor> constructors;
             std::string                                 name;
             Size_type                                   size;
+            bool                                        is_trivial = false;
         };
 
         struct Struct {
@@ -53,6 +54,7 @@ namespace ir {
             bu::Flatmap<lexer::Identifier, Member> members;
             std::string                            name;
             Size_type                              size;
+            bool                                   is_trivial = false;
         };
 
         struct Alias {
@@ -113,16 +115,16 @@ namespace ir {
         struct User_defined_data {
             bu::Wrapper<definition::Data> data;
 
-            auto operator==(User_defined_data const&) const noexcept -> bool {
-                bu::unimplemented();
+            auto operator==(User_defined_data const& other) const noexcept -> bool {
+                return std::to_address(data) == std::to_address(other.data);
             }
         };
 
         struct User_defined_struct {
             bu::Wrapper<definition::Struct> structure;
 
-            auto operator==(User_defined_struct const&) const noexcept -> bool {
-                bu::unimplemented();
+            auto operator==(User_defined_struct const& other) const noexcept -> bool {
+                return std::to_address(structure) == std::to_address(other.structure);
             }
         };
 
@@ -203,6 +205,12 @@ namespace ir {
             DEFAULTED_EQUALITY(Invocation);
         };
 
+        struct Struct_initializer {
+            std::vector<Expression> member_initializers;
+            bu::Wrapper<Type>       type;
+            DEFAULTED_EQUALITY(Struct_initializer);
+        };
+
         struct Let_binding {
             bu::Wrapper<Expression> initializer;
             DEFAULTED_EQUALITY(Let_binding);
@@ -271,6 +279,7 @@ namespace ir {
             expression::Array_literal,
             expression::Tuple,
             expression::Invocation,
+            expression::Struct_initializer,
             expression::Let_binding,
             expression::Local_variable,
             expression::Function_reference,

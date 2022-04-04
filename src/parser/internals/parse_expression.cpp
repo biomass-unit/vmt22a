@@ -19,14 +19,11 @@ namespace {
 
 
     auto parse_struct_member_initializer(Parse_context& context)
-        -> std::optional<ast::expression::Struct_initializer::Member_initializer>
+        -> std::optional<bu::Pair<lexer::Identifier, bu::Wrapper<ast::Expression>>>
     {
         if (auto member = parse_lower_id(context)) {
             context.consume_required(Token::Type::equals);
-            return ast::expression::Struct_initializer::Member_initializer {
-                .member     = *member,
-                .expression = extract_expression(context)
-            };
+            return bu::Pair { *member, bu::wrap(extract_expression(context)) };
         }
         else {
             return std::nullopt;
@@ -43,8 +40,8 @@ namespace {
         context.consume_required(Token::Type::brace_close);
 
         return ast::expression::Struct_initializer {
-            std::move(initializers),
-            std::move(type)
+            .member_initializers { std::move(initializers) },
+            .type                = std::move(type)
         };
     }
 
@@ -80,6 +77,14 @@ namespace {
                     return ast::type::Typename { std::move(name) };
                 }
             }();
+
+            // The source_view has to be assigned manually here because the
+            // type hasn't gone through parse_type, which would normally do it.
+            type.source_view = {
+                anchor->source_view.data(),
+                context.pointer[-2].source_view.data() + context.pointer[-2].source_view.size()
+                // pointer[-1] refers to the '{', so pointer[-2] is the last token of the type
+            };
 
             return extract_struct_initializer(std::move(type), context);
         }

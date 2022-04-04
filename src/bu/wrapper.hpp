@@ -49,6 +49,10 @@ namespace bu {
         return Wrapper<std::decay_t<X>> { std::forward<X>(x) };
     };
 
+
+    template <class T>
+    concept wrapper = bu::instance_of<T, Wrapper>;
+
 }
 
 

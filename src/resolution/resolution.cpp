@@ -65,7 +65,7 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
 }
 
 auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> bu::Wrapper<Namespace> {
-    bu::Wrapper root = std::visit(bu::Overload {
+    bu::wrapper auto root = std::visit(bu::Overload {
         [&](std::monostate) {
             return current_namespace;
         },
@@ -82,7 +82,7 @@ auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name)
             bu::unimplemented();
         }
 
-        if (bu::Wrapper<Namespace>* const child = root->children.find(qualifier.name)) {
+        if (bu::wrapper auto* const child = root->children.find(qualifier.name)) {
             root = *child;
         }
         else {
@@ -212,7 +212,7 @@ namespace {
                     std::back_inserter(parameter_types)
                 );
 
-                bu::Wrapper return_type = body.type;
+                bu::wrapper auto return_type = body.type;
 
                 *function.resolved = ir::definition::Function {
                     .name        = std::string { function.syntactic_definition->name.view() },
@@ -236,24 +236,28 @@ namespace {
                 auto* const definition = structure.syntactic_definition;
 
                 ir::definition::Struct resolved_structure {
-                    .name = std::string { definition->name.view() }
+                    .name       = std::string { definition->name.view() },
+                    .is_trivial = true
                 };
                 resolved_structure.members.container().reserve(definition->members.size());
 
                 for (auto& member : definition->members) {
-                    auto       type = resolution::resolve_type(member.type, context);
-                    auto const size = resolved_structure.size;
+                    auto       type   = resolution::resolve_type(member.type, context);
+                    auto const offset = resolved_structure.size;
+                    resolved_structure.size.safe_add(type.size);
+
+                    if (!type.is_trivial) {
+                        resolved_structure.is_trivial = false;
+                    }
 
                     resolved_structure.members.add(
                         bu::copy(member.name),
                         {
                             .type      = std::move(type),
-                            .offset    = size.safe_cast<bu::U16>(),
+                            .offset    = offset.safe_cast<bu::U16>(),
                             .is_public = member.is_public
                         }
                     );
-
-                    resolved_structure.size.safe_add(size);
                 }
 
                 *structure.resolved = std::move(resolved_structure);

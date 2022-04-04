@@ -6,10 +6,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Match::Case) {
     return std::format_to(context.out(), "{} -> {}", value.pattern, value.expression);
 }
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Struct_initializer::Member_initializer) {
-    return std::format_to(context.out(), "{} = {}", value.member, value.expression);
-}
-
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
     if (value.name) {
         return std::format_to(context.out(), "{} = {}", value.name, value.expression);
@@ -182,7 +178,11 @@ namespace {
             return format("{}({})", invocation.invocable, invocation.arguments);
         }
         auto operator()(ast::expression::Struct_initializer const& initializer) {
-            return format("{} {{ {} }}", initializer.type, initializer.initializers);
+            return format(
+                "{} {{ {} }}",
+                initializer.type,
+                initializer.member_initializers.container()
+            );
         }
         auto operator()(ast::expression::Binary_operator_invocation const& invocation) {
             return format("({} {} {})", invocation.left, invocation.op, invocation.right);

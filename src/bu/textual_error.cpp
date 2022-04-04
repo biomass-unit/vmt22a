@@ -42,14 +42,14 @@ namespace {
         }
 
         for (char const* pointer = line_start; ; ++pointer) {
-            if (*pointer == '\n') {
-                lines.push_back({ line_start, pointer });
-                line_start = pointer + 1;
-            }
-            else if (pointer == view_stop) {
+            if (pointer == view_stop) {
                 for (; pointer != file_stop && *pointer != '\n'; ++pointer);
                 lines.push_back({ line_start, pointer });
                 break;
+            }
+            else if (*pointer == '\n') {
+                lines.push_back({ line_start, pointer });
+                line_start = pointer + 1;
             }
         }
 

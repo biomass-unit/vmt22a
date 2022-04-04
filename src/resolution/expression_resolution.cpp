@@ -182,6 +182,58 @@ namespace {
             }
         }
 
+        auto operator()(ast::expression::Struct_initializer& struct_initializer) -> ir::Expression {
+            auto type = resolution::resolve_type(struct_initializer.type, context);
+
+            if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&type.value)) {
+                auto& structure = *uds->structure;
+
+                std::vector<ir::Expression> member_initializers;
+                member_initializers.reserve(structure.members.size());
+
+                for (auto& [name, member] : structure.members.container()) {
+                    if (bu::wrapper auto* const initializer = struct_initializer.member_initializers.find(name)) {
+                        auto expression = recurse(*initializer);
+
+                        if (member.type == expression.type) {
+                            member_initializers.push_back(std::move(expression));
+                        }
+                        else {
+                            throw error(
+                                std::format(
+                                    "{} is of type {}, but the initializer is of type {}",
+                                    name,
+                                    member.type,
+                                    expression.type
+                                ),
+                                *initializer
+                            );
+                        }
+                    }
+                    else {
+                        throw error(std::format("{} is not initialized", name));
+                    }
+                }
+
+                bu::Wrapper wrapped_type { std::move(type) };
+
+                return {
+                    .value = ir::expression::Struct_initializer {
+                        std::move(member_initializers),
+                        wrapped_type
+                    },
+                    .type = wrapped_type
+                };
+            }
+            else {
+                auto const message = std::format("{} is not a struct type", type);
+                throw context.error({
+                    .message        = message,
+                    .erroneous_view = struct_initializer.type->source_view
+                });
+            }
+        }
+
         auto operator()(ast::expression::Let_binding& let_binding) -> ir::Expression {
             auto initializer = recurse(let_binding.initializer);
 

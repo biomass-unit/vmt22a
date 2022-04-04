@@ -49,13 +49,8 @@ namespace ast {
         };
 
         struct Struct_initializer {
-            struct Member_initializer {
-                lexer::Identifier       member;
-                bu::Wrapper<Expression> expression;
-                DEFAULTED_EQUALITY(Member_initializer);
-            };
-            std::vector<Member_initializer> initializers;
-            bu::Wrapper<Type>               type;
+            bu::Flatmap<lexer::Identifier, bu::Wrapper<Expression>> member_initializers;
+            bu::Wrapper<Type>                                       type;
             DEFAULTED_EQUALITY(Struct_initializer);
         };
 

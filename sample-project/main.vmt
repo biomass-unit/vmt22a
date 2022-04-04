@@ -16,8 +16,9 @@ namespace hmm {
 
 }
 
-fn do_thing(i: Int) {
-    hmm::test::nested::Test { a = i, b = "Hello" }
+fn do_thing(i: Int): hmm::test::nested::Test {
+    let x = hmm::test::nested::Test { b = "Hello", a = 50 };
+    x
 }
 
 fn main(): Int = do_thing(5).a

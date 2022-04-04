@@ -39,6 +39,10 @@ namespace {
             return format("{}({})", invocation.invocable, invocation.arguments);
         }
 
+        auto operator()(ir::expression::Struct_initializer const& init) {
+            return format("{} {{ {} }}", init.type, init.member_initializers);
+        }
+
         auto operator()(ir::expression::Let_binding const& binding) {
             return format("bind {}", binding.initializer);
         }
@@ -128,9 +132,7 @@ namespace {
 
 
 DEFINE_FORMATTER_FOR(ir::Expression) {
-    std::format_to(context.out(), "(");
-    std::visit(Expression_format_visitor { { context.out() } }, value.value);
-    return std::format_to(context.out(), ": {})", value.type);
+    return std::visit(Expression_format_visitor { { context.out() } }, value.value);
 }
 
 DEFINE_FORMATTER_FOR(ir::Type) {

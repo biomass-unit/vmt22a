@@ -3,6 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "bu/source.hpp"
+#include "bu/flatmap.hpp"
 #include "lexer/token.hpp"
 
 

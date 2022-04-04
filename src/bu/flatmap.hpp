@@ -26,11 +26,8 @@ namespace bu {
         using Key   = K;
         using Value = V;
 
-        explicit constexpr Flatmap(Usize const capacity) noexcept
-            : pairs { vector_with_capacity<Pair<K, V>>(capacity) } {}
-
-        constexpr Flatmap() noexcept requires requires { pairs.capacity(); }
-            : Flatmap { 32 } {}
+        constexpr Flatmap(decltype(pairs)&& pairs) noexcept
+            : pairs { std::move(pairs) } {}
 
         constexpr Flatmap() noexcept = default;
 
@@ -56,15 +53,19 @@ namespace bu {
             return const_cast<V*>(const_cast<Flatmap const*>(this)->find(key));
         }
 
-        constexpr auto span() const
-            noexcept -> std::span<Pair<K, V> const>
-        {
+        constexpr auto span() const noexcept -> std::span<Pair<K, V> const> {
             return pairs;
+        }
+
+        constexpr auto size() const noexcept -> Usize {
+            return pairs.size();
         }
 
         constexpr decltype(auto) container(this auto&& self) {
             return bu::forward_like<decltype(self)>(self.pairs);
         }
+
+        constexpr auto operator==(Flatmap const&) const noexcept -> bool = default;
     };
 
 
@@ -79,7 +80,9 @@ namespace bu {
         using Parent::Parent;
         using Parent::operator=;
         using Parent::span;
+        using Parent::size;
         using Parent::container;
+        using Parent::operator==;
 
         // The member functions aren't constexpr because
         // std::hash::operator() unfortunately isn't constexpr.
