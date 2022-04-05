@@ -62,3 +62,10 @@ struct std::formatter<bu::Wrapper<T>> : std::formatter<T> {
         return std::formatter<T>::format(*wrapper, context);
     }
 };
+
+template <class T>
+struct std::hash<bu::Wrapper<T>> : std::hash<T> {
+    auto operator()(bu::Wrapper<T> const wrapper) -> bu::Usize {
+        return std::hash<T>::operator()(*wrapper);
+    }
+};

@@ -127,15 +127,21 @@ auto main(int argc, char const** argv) -> int try {
         ("help"   ,                "Show this text"              )
         ("version",                "Show the interpreter version")
         ("repl"   , cli::string(), "Run the given repl"          )
-        ("machine",                "Run the interpreter test"    )
-        ("resolve",                "Run the resolution test"     )
+        ("machine",                "Debug the interpreter"       )
+        ("resolve",                "Debug resolution"            )
         ("nocolor",                "Disable colored output"      )
         ("time"   ,                "Print the execution time"    )
         ("test"   ,                "Run all tests"               );
 
     auto options = cli::parse_command_line(argc, argv, description);
 
-    bu::Timer build_timer;
+    bu::Timer<> execution_timer {
+        .scope_exit_logger = [&](bu::Timer<>::Duration const elapsed) {
+            if (options.find("time")) {
+                bu::print("Total execution time: {}\n", elapsed);
+            }
+        }
+    };
 
     if (options.find("help")) {
         bu::print("Valid options:\n\n{}", description);
@@ -178,7 +184,7 @@ auto main(int argc, char const** argv) -> int try {
             halt
         );
 
-        bu::print("return value: {}\n", machine.run());
+        return machine.run();
     }
 
     if (auto* const name = options.find_str("repl")) {
@@ -197,10 +203,6 @@ auto main(int argc, char const** argv) -> int try {
         else {
             bu::abort("Unrecognized repl name");
         }
-    }
-
-    if (options.find("time")) {
-        bu::print("Total elapsed time: {}\n", build_timer.elapsed());
     }
 }
 

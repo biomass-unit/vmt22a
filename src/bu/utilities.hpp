@@ -286,6 +286,29 @@ namespace bu {
     static_assert(digit_count(12345) == 5);
 
 
+    template <class Head, class... Tail>
+    auto hash_combine_with_seed(Usize          seed,
+                                Head const&    head,
+                                Tail const&... tail) -> Usize
+    {
+        // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
+
+        seed ^= (std::hash<Head>{}(head) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+
+        if constexpr (sizeof...(Tail) != 0) {
+            return hash_combine_with_seed<Tail...>(seed, tail...);
+        }
+        else {
+            return seed;
+        }
+    }
+
+    template <class... Args>
+    auto hash_combine(Args const&... args) -> Usize {
+        return hash_combine_with_seed(0, args...);
+    }
+
+
     namespace dtl {
 
         template <class, template <class...> class>
@@ -413,6 +436,20 @@ namespace bu {
 }
 
 using namespace bu::literals;
+
+
+template <class T>
+struct std::hash<std::vector<T>> {
+    auto operator()(std::vector<T> const& vector) const -> bu::Usize {
+        bu::Usize seed = 0;
+
+        for (auto& element : vector) {
+            seed = bu::hash_combine_with_seed(seed, element);
+        }
+
+        return seed;
+    }
+};
 
 
 #define DEFAULTED_EQUALITY(name) \

@@ -8,21 +8,24 @@
 
 namespace bu {
 
-    template <class Duration = std::chrono::milliseconds>
+    template <class Duration_ = std::chrono::milliseconds>
     struct Timer {
-        using Clock = std::chrono::steady_clock;
+        using Clock    = std::chrono::steady_clock;
+        using Duration = Duration_;
 
-        Clock::time_point start          = Clock::now();
-        bool              log_scope_exit = false;
+        Clock::time_point             start             = Clock::now();
+        std::function<void(Duration)> scope_exit_logger = [](Duration const time) {
+            print(
+                "[{}bu::Timer::~Timer{}]: Total elapsed time: {}\n",
+                Color::purple,
+                Color::white,
+                time
+            );
+        };
 
         ~Timer() {
-            if (log_scope_exit) {
-                print(
-                    "[{}bu::Timer::~Timer{}]: Total elapsed time: {}\n",
-                    Color::purple,
-                    Color::white,
-                    elapsed()
-                );
+            if (scope_exit_logger) {
+                scope_exit_logger(elapsed());
             }
         }
 
