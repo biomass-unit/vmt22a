@@ -1,24 +1,9 @@
 import a.b as ab
 
-namespace hmm {
 
-    namespace test {
+struct Test[T] = a: T
 
-        namespace nested {
-
-            fn test(_: Int, b: Float): Float = b
-
-            struct Test = a: Int, b: String
- 
-        }
-
-    }
-
+fn main(): Int {
+    let test = Test[Int] { a = 50 };
+    test.a
 }
-
-fn do_thing(i: Int): hmm::test::nested::Test {
-    let x = hmm::test::nested::Test { b = "Hello", a = 50 };
-    x
-}
-
-fn main(): Int = do_thing(5, "hi").a

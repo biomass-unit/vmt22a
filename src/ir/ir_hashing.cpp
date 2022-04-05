@@ -138,13 +138,27 @@ namespace {
 }
 
 
+auto ir::Expression::hash() const -> bu::Usize {
+    return bu::hash_combine_with_seed(std::visit(Expression_hash_visitor { { value.index() } }, value), type);
+}
+
+auto ir::Type::hash() const -> bu::Usize {
+    return std::visit(Type_hash_visitor { { value.index() } }, value);
+}
+
+auto ir::Template_argument_set::hash() const -> bu::Usize {
+    return bu::hash_combine_with_seed(__LINE__, expression_arguments, type_arguments, mutability_arguments);
+}
+
+
 auto std::hash<ir::Expression>::operator()(ir::Expression const& expression) const -> bu::Usize {
-    return bu::hash_combine_with_seed(
-        std::visit(Expression_hash_visitor { { expression.value.index() } }, expression.value),
-        expression.type
-    );
+    return expression.hash();
 }
 
 auto std::hash<ir::Type>::operator()(ir::Type const& type) const -> bu::Usize {
-    return std::visit(Type_hash_visitor { { type.value.index() } }, type.value);
+    return type.hash();
+}
+
+auto std::hash<ir::Template_argument_set>::operator()(ir::Template_argument_set const& set) const -> bu::Usize {
+    return set.hash();
 }

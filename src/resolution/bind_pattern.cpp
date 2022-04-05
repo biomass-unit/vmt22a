@@ -13,9 +13,9 @@ namespace {
 
         auto error(std::string_view const message, std::optional<std::string_view> const help = std::nullopt) {
             return context.error({
+                .erroneous_view = this_pattern.source_view,
                 .message        = message,
-                .help_note      = help,
-                .erroneous_view = this_pattern.source_view
+                .help_note      = help
             });
         }
 

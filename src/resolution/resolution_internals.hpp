@@ -56,8 +56,10 @@ namespace resolution {
 
     template <class T>
     struct Definition<ast::definition::Template_definition<T>> {
-        ast::definition::Template_definition<T>*            syntactic_definition;
-        bu::Wrapper<std::vector<bu::Wrapper<AST_to_IR<T>>>> instantiations;
+        ast::definition::Template_definition<T>*                       syntactic_definition;
+        bu::Wrapper<bu::Flatmap<bu::Usize, bu::Wrapper<AST_to_IR<T>>>> instantiations;
+        //                      ^^^^^^^^^
+        //                      hash the template arguments
     };
 
     using Function_definition           = Definition<ast::definition::Function          >;
@@ -126,54 +128,23 @@ namespace resolution {
         bu::Flatmap<lexer::Identifier, bool>* mutability_parameters = nullptr;
         bool                                  is_unevaluated        = false;
 
-        auto make_child_context_with_new_scope() noexcept -> Resolution_context {
-            return {
-                scope.make_child(),
-                current_namespace,
-                global_namespace,
-                source,
-                mutability_parameters,
-                is_unevaluated
-            };
-        }
+        auto make_child_context_with_new_scope() noexcept -> Resolution_context;
 
-        auto find_upper(ast::Qualified_name& name) -> std::optional<Upper_variant> {
-            assert(name.primary_qualifier.is_upper);
-            return find_impl<&Namespace::upper_table, true>(name);
-        }
-
-        auto find_lower(ast::Qualified_name& name) -> std::optional<Lower_variant> {
-            assert(!name.primary_qualifier.is_upper);
-            if (name.is_unqualified()) {
-                if (auto* binding = scope.find(name.primary_qualifier.name)) {
-                    return binding;
-                }
-            }
-            return find_impl<&Namespace::lower_table, false>(name);
-        }
+        auto find_upper(ast::Qualified_name&) -> std::optional<Upper_variant>;
+        auto find_lower(ast::Qualified_name&) -> std::optional<Lower_variant>;
 
         auto resolve_mutability(ast::Mutability) -> bool;
 
         auto bind(ast::Pattern&, bu::Wrapper<ir::Type>) -> void;
 
         struct Error_arguments {
+            std::string_view                erroneous_view;
             std::string_view                message;
             std::optional<std::string_view> help_note = std::nullopt;
-            std::string_view                erroneous_view;
         };
 
         [[nodiscard]]
-        auto error(Error_arguments const arguments) {
-            return std::runtime_error {
-                bu::textual_error({
-                    .erroneous_view = arguments.erroneous_view,
-                    .file_view      = source->string(),
-                    .file_name      = source->name(),
-                    .message        = arguments.message,
-                    .help_note      = arguments.help_note
-                })
-            };
-        }
+        auto error(Error_arguments) -> std::runtime_error;
 
     private:
 
@@ -196,5 +167,12 @@ namespace resolution {
 
     auto resolve_type      (ast::Type      &, Resolution_context&) -> ir::Type;
     auto resolve_expression(ast::Expression&, Resolution_context&) -> ir::Expression;
+
+    auto resolve_template_arguments(ast::Qualified_name&,
+                                    std::string_view,
+                                    std::span<ast::Template_parameter>,
+                                    std::span<ast::Template_argument>,
+                                    Resolution_context&)
+        -> ir::Template_argument_set;
 
 }

@@ -106,3 +106,11 @@ namespace bu {
     };
 
 }
+
+
+template <class K, class V, bu::Flatmap_strategy strategy, template <class...> class Container>
+struct std::hash<bu::Flatmap<K, V, strategy, Container>> {
+    auto operator()(bu::Flatmap<K, V, strategy, Container> const& flatmap) const -> bu::Usize {
+        return bu::hash_combine_with_seed(static_cast<bu::Usize>(strategy) + 1, flatmap.container());
+    }
+};

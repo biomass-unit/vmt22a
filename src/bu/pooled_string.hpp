@@ -12,6 +12,8 @@ namespace bu {
             guaranteed_new_string,
             potential_new_string,
         };
+
+        friend struct std::hash<Pooled_string>;
     private:
         bu::Usize index;
 
@@ -64,9 +66,16 @@ namespace bu {
 }
 
 
-template <class Tag>
-struct std::formatter<bu::Pooled_string<Tag>> : std::formatter<std::string_view> {
-    auto format(bu::Pooled_string<Tag> const string, std::format_context& context) {
+template <bu::instance_of<bu::Pooled_string> String>
+struct std::formatter<String> : std::formatter<std::string_view> {
+    auto format(String const string, std::format_context& context) {
         return std::formatter<std::string_view>::format(string.view(), context);
+    }
+};
+
+template <bu::instance_of<bu::Pooled_string> String>
+struct std::hash<String> : std::hash<std::string_view> {
+    auto operator()(String const string) const -> bu::Usize {
+        return bu::hash_combine_with_seed(string.index, string.view());
     }
 };

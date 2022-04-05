@@ -26,16 +26,16 @@ namespace {
         [[nodiscard]]
         auto error(std::string_view const message, ast::Expression& expression) {
             return context.error({
-                .message        = message,
-                .erroneous_view = expression.source_view
+                .erroneous_view = expression.source_view,
+                .message        = message
             });
         }
         [[nodiscard]]
         auto error(std::string_view message, std::string_view help, ast::Expression& expression) {
             return context.error({
+                .erroneous_view = expression.source_view,
                 .message        = message,
-                .help_note      = help,
-                .erroneous_view = expression.source_view
+                .help_note      = help
             });
         }
         [[nodiscard]]
@@ -245,8 +245,8 @@ namespace {
             else {
                 auto const message = std::format("{} is not a struct type", type);
                 throw context.error({
-                    .message        = message,
-                    .erroneous_view = struct_initializer.type->source_view
+                    .erroneous_view = struct_initializer.type->source_view,
+                    .message        = message
                 });
             }
         }

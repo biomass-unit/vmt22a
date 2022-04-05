@@ -6,107 +6,6 @@
 #include "parser/parser.hpp"
 
 
-auto resolution::Scope::make_child() noexcept -> Scope {
-    return { .current_frame_offset = current_frame_offset, .parent = this };
-}
-
-auto resolution::Scope::find(lexer::Identifier const name) noexcept -> Binding* {
-    if (auto* const pointer = bindings.find(name)) {
-        return pointer;
-    }
-    else {
-        return parent ? parent->find(name) : nullptr;
-    }
-}
-
-auto resolution::Scope::unused_variables() -> std::optional<std::vector<lexer::Identifier>> {
-    std::vector<lexer::Identifier> names;
-
-    for (auto& [name, binding] : bindings.container()) {
-        if (!binding.has_been_mentioned) {
-            names.push_back(name);
-        }
-    }
-
-    if (names.empty()) {
-        return std::nullopt;
-    }
-    else {
-        return names;
-    }
-}
-
-
-auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mutability) -> bool {
-    switch (mutability.type) {
-    case ast::Mutability::Type::mut:
-        return true;
-    case ast::Mutability::Type::immut:
-        return false;
-    case ast::Mutability::Type::parameterized:
-        if (!mutability_parameters) {
-            return false;
-        }
-        else if (bool const* const parameter = mutability_parameters->find(*mutability.parameter_name)) {
-            return *parameter;
-        }
-        else {
-            throw error({
-                .message = std::format(
-                    "{} is not a mutability parameter",
-                    *mutability.parameter_name
-                ),
-                .erroneous_view = {}
-            });
-        }
-    default:
-        bu::unreachable();
-    }
-}
-
-auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> bu::Wrapper<Namespace> {
-    bu::wrapper auto root = std::visit(bu::Overload {
-        [&](std::monostate) {
-            return current_namespace;
-        },
-        [&](ast::Root_qualifier::Global) {
-            return global_namespace;
-        },
-        [](ast::Type&) -> bu::Wrapper<Namespace> {
-            bu::unimplemented();
-        }
-    }, name.root_qualifier->value);
-
-    for (auto& qualifier : name.middle_qualifiers) {
-        if (qualifier.is_upper || qualifier.template_arguments) {
-            bu::unimplemented();
-        }
-
-        if (bu::wrapper auto* const child = root->children.find(qualifier.name)) {
-            root = *child;
-        }
-        else {
-            bu::unimplemented();
-        }
-    }
-
-    return root;
-}
-
-
-auto ir::Type::is_unit() const noexcept -> bool {
-    // Checking size == 0 isn't enough, because compound
-    // types such as ((), ()) would also count as the unit type
-
-    if (auto* const tuple = std::get_if<ir::type::Tuple>(&value)) {
-        return tuple->types.empty();
-    }
-    else {
-        return false;
-    }
-}
-
-
 namespace {
 
     auto handle_imports(ast::Module& module) -> void {
@@ -143,9 +42,14 @@ namespace {
                     space->lower_table.add(bu::copy(function.name), bu::copy(handle));
                     space->definitions_in_order.push_back(handle);
                 },
-                [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(T& definition) {
+                [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(T& definition) -> void {
                     resolution::Definition<T> handle { &definition };
                     space->upper_table.add(bu::copy(definition.name), bu::copy(handle));
+                    space->definitions_in_order.push_back(handle);
+                },
+                [&](Struct_template& structure) -> void {
+                    resolution::Struct_template_definition handle { &structure };
+                    space->upper_table.add(bu::copy(structure.definition.name), bu::copy(handle));
                     space->definitions_in_order.push_back(handle);
                 },
 
@@ -155,14 +59,15 @@ namespace {
                 [](Instantiation&) -> void {
                     bu::unimplemented();
                 },
-                []<class Definition>(Template_definition<Definition>&) -> void {
-                    bu::unimplemented();
-                },
 
                 [&](Namespace& nested_space) -> void {
                     bu::Wrapper child = make_namespace(nested_space.definitions);
                     space->definitions_in_order.push_back(child);
                     space->children.add(bu::copy(nested_space.name), bu::copy(child));
+                },
+
+                [](auto&) -> void {
+                    bu::unimplemented();
                 }
             }, definition.value);
         }
@@ -262,6 +167,10 @@ namespace {
 
                 *structure.resolved = std::move(resolved_structure);
             }
+        }
+
+        auto operator()(resolution::Struct_template_definition) -> void {
+            // typecheck the template here
         }
 
         auto operator()(bu::Wrapper<resolution::Namespace> const child) -> void {

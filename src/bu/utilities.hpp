@@ -451,6 +451,13 @@ struct std::hash<std::vector<T>> {
     }
 };
 
+template <class Fst, class Snd>
+struct std::hash<bu::Pair<Fst, Snd>> {
+    auto operator()(bu::Pair<Fst, Snd> const& pair) const -> bu::Usize {
+        return bu::hash_combine_with_seed(__LINE__, pair.first, pair.second);
+    }
+};
+
 
 #define DEFAULTED_EQUALITY(name) \
 auto operator==(name const&) const noexcept -> bool = default

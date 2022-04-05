@@ -153,6 +153,8 @@ namespace ir {
 
         //auto conforms_to(Typeclass) -> bool
 
+        auto hash() const -> bu::Usize;
+
         auto is_unit() const noexcept -> bool;
 
         DEFAULTED_EQUALITY(Type);
@@ -295,10 +297,24 @@ namespace ir {
         Variant           value;
         bu::Wrapper<Type> type;
 
+        auto hash() const -> bu::Usize;
+
         DEFAULTED_EQUALITY(Expression);
     };
 
     inline bu::Wrapper<Expression> const unit_value { expression::Tuple {}, type::unit };
+
+
+    struct Template_argument_set {
+        template <class T>
+        using Table = bu::Flatmap<lexer::Identifier, T>;
+
+        Table<ir::Expression>        expression_arguments;
+        Table<bu::Wrapper<ir::Type>> type_arguments;
+        Table<bool>                  mutability_arguments;
+
+        auto hash() const -> bu::Usize;
+    };
 
 
     struct Program {};
@@ -314,4 +330,9 @@ struct std::hash<ir::Expression> {
 template <>
 struct std::hash<ir::Type> {
     auto operator()(ir::Type const&) const -> bu::Usize;
+};
+
+template <>
+struct std::hash<ir::Template_argument_set> {
+    auto operator()(ir::Template_argument_set const&) const -> bu::Usize;
 };

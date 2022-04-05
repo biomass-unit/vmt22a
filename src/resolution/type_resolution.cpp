@@ -19,8 +19,8 @@ namespace {
 
         auto error(std::string_view message) -> std::runtime_error {
             return context.error({
-                .message        = message,
-                .erroneous_view = this_type.source_view
+                .erroneous_view = this_type.source_view,
+                .message        = message
             });
         }
 
@@ -65,10 +65,36 @@ namespace {
 
         auto operator()(ast::type::Template_instantiation& instantiation) -> ir::Type {
             if (auto const upper = context.find_upper(instantiation.name)) {
-                bu::unimplemented();
+                return std::visit(bu::Overload {
+                    [&](resolution::Struct_template_definition definition) -> ir::Type {
+                        auto template_argument_set = resolution::resolve_template_arguments(
+                            instantiation.name,
+                            this_type.source_view,
+                            definition.syntactic_definition->parameters,
+                            instantiation.arguments,
+                            context
+                        );
+
+                        bu::Usize const hash = template_argument_set.hash();
+
+                        if (bu::wrapper auto* const existing = definition.instantiations->find(hash)) {
+                            return {
+                                .value      = ir::type::User_defined_struct { *existing },
+                                .size       = (*existing)->size,
+                                .is_trivial = (*existing)->is_trivial
+                            };
+                        }
+                        else {
+                            bu::abort("new instantiation");
+                        }
+                    },
+                    [](auto&) -> ir::Type {
+                        bu::unimplemented();
+                    }
+                }, *upper);
             }
             else {
-                bu::unimplemented();
+                throw error(std::format("{} is undefined", instantiation.name));
             }
         }
 
