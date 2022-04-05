@@ -149,9 +149,6 @@
     <ClInclude Include="src\bu\color.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bu\uninitialized.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\bu\noisy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
