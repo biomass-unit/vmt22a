@@ -127,8 +127,8 @@ namespace bu {
 
 
 template <class T, T... config>
-struct std::formatter<bu::Bounded_integer<T, config...>> : bu::Formatter_base {
+struct std::formatter<bu::Bounded_integer<T, config...>> : std::formatter<T> {
     auto format(bu::Bounded_integer<T, config...> const value, std::format_context& context) {
-        return std::format_to(context.out(), "{}", value.get());
+        return std::formatter<T>::format(value.get(), context);
     }
 };

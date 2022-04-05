@@ -370,60 +370,45 @@ namespace bu {
     Metastring(char const(&)[length]) -> Metastring<length - 1>;
 
 
-    inline auto format_with_ordinal_indicator(Usize const n) -> std::string {
-        // https://stackoverflow.com/questions/61786685/how-do-i-print-ordinal-indicators-in-a-c-program-cant-print-numbers-with-st
+    namespace fmt {
 
-        static constexpr auto suffixes = std::to_array<std::string_view>({ "th", "st", "nd", "rd" });
-
-        Usize x = n % 100;
-
-        if (x == 11 || x == 12 || x == 13) {
-            x = 0;
-        }
-        else {
-            x %= 10;
-            if (x > 3) {
-                x = 0;
+        struct Formatter_base {
+            constexpr auto parse(std::format_parse_context& context)
+                -> std::format_parse_context::iterator
+            {
+                assert(context.begin() == context.end());
+                return context.end();
             }
+        };
+
+
+        template <std::integral T>
+        struct Integer_with_ordinal_indicator_formatter_closure {
+            T value;
+        };
+
+        template <std::integral T>
+        constexpr auto integer_with_ordinal_indicator(T const n) noexcept
+            -> Integer_with_ordinal_indicator_formatter_closure<T>
+        {
+            return { n };
         }
 
-        return std::format("{}{}", n, suffixes[x]);
-    }
 
+        template <std::ranges::sized_range Range>
+        struct Range_formatter_closure {
+            Range const*     range;
+            std::string_view delimiter;
+        };
 
-    template <class Range>
-    struct Range_formatter {
-        Range const*     range;
-        std::string_view delimiter;
-    };
-
-    template <std::ranges::sized_range Range>
-    auto delimited_range(Range const& range, std::string_view const delimiter)
-        -> Range_formatter<Range>
-    {
-        return { &range, delimiter };
-    }
-
-    template <class Range>
-    auto format_delimited_range(std::format_context::iterator out, Range_formatter<Range> rf)
-        -> std::format_context::iterator
-    {
-        if (!rf.range->empty()) {
-            std::format_to(out, "{}", rf.range->front());
-
-            for (auto& element : *rf.range | std::views::drop(1)) {
-                std::format_to(out, "{}{}", rf.delimiter, element);
-            }
+        template <std::ranges::sized_range Range>
+        auto delimited_range(Range const& range, std::string_view const delimiter)
+            -> Range_formatter_closure<Range>
+        {
+            return { &range, delimiter };
         }
-        return out;
-    }
 
-    struct Formatter_base {
-        constexpr auto parse(std::format_parse_context& context) {
-            assert(context.begin() == context.end());
-            return context.end();
-        }
-    };
+    }
 
 }
 
@@ -435,7 +420,7 @@ auto operator==(name const&) const noexcept -> bool = default
 
 
 #define DECLARE_FORMATTER_FOR_TEMPLATE(...)                             \
-struct std::formatter<__VA_ARGS__> : bu::Formatter_base {               \
+struct std::formatter<__VA_ARGS__> : bu::fmt::Formatter_base {          \
     [[nodiscard]] auto format(__VA_ARGS__ const&, std::format_context&) \
         -> std::format_context::iterator;                               \
 }
@@ -461,13 +446,15 @@ DECLARE_FORMATTER_FOR_TEMPLATE(std::vector<T>);
 template <class F, class S>
 DECLARE_FORMATTER_FOR_TEMPLATE(bu::Pair<F, S>);
 template <class Range>
-DECLARE_FORMATTER_FOR_TEMPLATE(bu::Range_formatter<Range>);
+DECLARE_FORMATTER_FOR_TEMPLATE(bu::fmt::Range_formatter_closure<Range>);
+template <class T>
+DECLARE_FORMATTER_FOR_TEMPLATE(bu::fmt::Integer_with_ordinal_indicator_formatter_closure<T>);
 
 
 template <class... Ts>
 DEFINE_FORMATTER_FOR(std::variant<Ts...>) {
-    return std::visit([out = context.out()](auto const& alternative) {
-        return std::format_to(out, "{}", alternative);
+    return std::visit([&](auto const& alternative) {
+        return std::format_to(context.out(), "{}", alternative);
     }, value);
 }
 
@@ -480,7 +467,7 @@ DEFINE_FORMATTER_FOR(std::optional<T>) {
 
 template <class T>
 DEFINE_FORMATTER_FOR(std::vector<T>) {
-    return bu::format_delimited_range(context.out(), bu::delimited_range(value, ", "));
+    return std::format_to(context.out(), "{}", bu::fmt::delimited_range(value, ", "));
 }
 
 template <class F, class S>
@@ -489,13 +476,41 @@ DEFINE_FORMATTER_FOR(bu::Pair<F, S>) {
 }
 
 template <class Range>
-DEFINE_FORMATTER_FOR(bu::Range_formatter<Range>) {
-    return bu::format_delimited_range(context.out(), value);
+DEFINE_FORMATTER_FOR(bu::fmt::Range_formatter_closure<Range>) {
+    if (!value.range->empty()) {
+        std::format_to(context.out(), "{}", value.range->front());
+
+        for (auto& element : *value.range | std::views::drop(1)) {
+            std::format_to(context.out(), "{}{}", value.delimiter, element);
+        }
+    }
+    return context.out();
+}
+
+template <class T>
+DEFINE_FORMATTER_FOR(bu::fmt::Integer_with_ordinal_indicator_formatter_closure<T>) {
+    // https://stackoverflow.com/questions/61786685/how-do-i-print-ordinal-indicators-in-a-c-program-cant-print-numbers-with-st
+
+    static constexpr auto suffixes = std::to_array<std::string_view>({ "th", "st", "nd", "rd" });
+
+    auto x = value.value % 100;
+
+    if (x == 11 || x == 12 || x == 13) {
+        x = 0;
+    }
+    else {
+        x %= 10;
+        if (x > 3) {
+            x = 0;
+        }
+    }
+
+    return std::format_to(context.out(), "{}{}", value.value, suffixes[x]);
 }
 
 
 template <>
-struct std::formatter<std::monostate> : bu::Formatter_base {
+struct std::formatter<std::monostate> : bu::fmt::Formatter_base {
     auto format(std::monostate, std::format_context& context) {
         return std::format_to(context.out(), "std::monostate");
     }

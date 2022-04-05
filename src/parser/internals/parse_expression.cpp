@@ -80,11 +80,7 @@ namespace {
 
             // The source_view has to be assigned manually here because the
             // type hasn't gone through parse_type, which would normally do it.
-            type.source_view = {
-                anchor->source_view.data(),
-                context.pointer[-2].source_view.data() + context.pointer[-2].source_view.size()
-                // pointer[-1] refers to the '{', so pointer[-2] is the last token of the type
-            };
+            assign_source_view(type, anchor, context.pointer - 2);
 
             return extract_struct_initializer(std::move(type), context);
         }
@@ -378,76 +374,78 @@ namespace {
 
 
     auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
-        switch (context.extract().type) {
-        case Token::Type::integer:
-            return extract_literal<bu::Isize>(context);
-        case Token::Type::floating:
-            return extract_literal<bu::Float>(context);
-        case Token::Type::character:
-            return extract_literal<char>(context);
-        case Token::Type::boolean:
-            return extract_literal<bool>(context);
-        case Token::Type::string:
-            return extract_literal<lexer::String>(context);
-        case Token::Type::lower_name:
-        case Token::Type::upper_name:
-            return extract_identifier(context);
-        case Token::Type::double_colon:
-            return extract_global_identifier(context);
-        case Token::Type::paren_open:
-            return extract_tuple(context);
-        case Token::Type::bracket_open:
-            return extract_list_or_array(context);
-        case Token::Type::if_:
-            return extract_conditional(context);
-        case Token::Type::let:
-            return extract_let_binding(context);
-        case Token::Type::loop:
-            return extract_infinite_loop(context);
-        case Token::Type::while_:
-            return extract_while_loop(context);
-        case Token::Type::for_:
-            return extract_for_loop(context);
-        case Token::Type::size_of:
-            return extract_size_of(context);
-        case Token::Type::match:
-            return extract_match(context);
-        case Token::Type::continue_:
-            return extract_continue(context);
-        case Token::Type::break_:
-            return extract_break(context);
-        case Token::Type::ret:
-            return extract_ret(context);
-        case Token::Type::ampersand:
-            return extract_take_reference(context);
-        case Token::Type::meta:
-            return extract_meta(context);
-        case Token::Type::brace_open:
-            return extract_compound_expression(context);
-        default:
-        {
-            context.retreat();
-            auto* const anchor = context.pointer;
+        return parse_and_add_source_view<[](Parse_context& context) -> std::optional<ast::Expression> {
+            switch (context.extract().type) {
+            case Token::Type::integer:
+                return extract_literal<bu::Isize>(context);
+            case Token::Type::floating:
+                return extract_literal<bu::Float>(context);
+            case Token::Type::character:
+                return extract_literal<char>(context);
+            case Token::Type::boolean:
+                return extract_literal<bool>(context);
+            case Token::Type::string:
+                return extract_literal<lexer::String>(context);
+            case Token::Type::lower_name:
+            case Token::Type::upper_name:
+                return extract_identifier(context);
+            case Token::Type::double_colon:
+                return extract_global_identifier(context);
+            case Token::Type::paren_open:
+                return extract_tuple(context);
+            case Token::Type::bracket_open:
+                return extract_list_or_array(context);
+            case Token::Type::if_:
+                return extract_conditional(context);
+            case Token::Type::let:
+                return extract_let_binding(context);
+            case Token::Type::loop:
+                return extract_infinite_loop(context);
+            case Token::Type::while_:
+                return extract_while_loop(context);
+            case Token::Type::for_:
+                return extract_for_loop(context);
+            case Token::Type::size_of:
+                return extract_size_of(context);
+            case Token::Type::match:
+                return extract_match(context);
+            case Token::Type::continue_:
+                return extract_continue(context);
+            case Token::Type::break_:
+                return extract_break(context);
+            case Token::Type::ret:
+                return extract_ret(context);
+            case Token::Type::ampersand:
+                return extract_take_reference(context);
+            case Token::Type::meta:
+                return extract_meta(context);
+            case Token::Type::brace_open:
+                return extract_compound_expression(context);
+            default:
+            {
+                context.retreat();
+                auto* const anchor = context.pointer;
 
-            if (auto type = parse_type(context)) {
-                if (context.try_consume(Token::Type::double_colon)) {
-                    return extract_qualified_lower_name_or_struct_initializer(ast::Root_qualifier { std::move(*type) }, context);
-                }
-                else if (context.try_consume(Token::Type::brace_open)) {
-                    return extract_struct_initializer(std::move(*type), context);
+                if (auto type = parse_type(context)) {
+                    if (context.try_consume(Token::Type::double_colon)) {
+                        return extract_qualified_lower_name_or_struct_initializer(ast::Root_qualifier { std::move(*type) }, context);
+                    }
+                    else if (context.try_consume(Token::Type::brace_open)) {
+                        return extract_struct_initializer(std::move(*type), context);
+                    }
+                    else {
+                        throw context.error(
+                            { anchor, context.pointer },
+                            "Expected an expression, but found a type"
+                        );
+                    }
                 }
                 else {
-                    throw context.error(
-                        { anchor, context.pointer },
-                        "Expected an expression, but found a type"
-                    );
+                    return std::nullopt;
                 }
             }
-            else {
-                return std::nullopt;
             }
-        }
-        }
+        }>(context);
     }
 
 
@@ -474,12 +472,15 @@ namespace {
 
 
     auto parse_potential_invocation(Parse_context& context) -> std::optional<ast::Expression> {
+        auto* const anchor = context.pointer;
+
         if (auto potential_invocable = parse_normal_expression(context)) {
             while (context.try_consume(Token::Type::paren_open)) {
                 *potential_invocable = ast::expression::Invocation {
                     extract_arguments(context),
                     std::move(*potential_invocable)
                 };
+                assign_source_view(*potential_invocable, anchor, context.pointer - 1);
             }
             return potential_invocable;
         }
@@ -503,7 +504,7 @@ namespace {
                                 std::move(accessors),
                                 std::move(*expression)
                             };
-                            accessors = {}; // Silence warnings
+                            accessors = {}; // Silence warnings, even though a moved-from vector is guaranteed to be empty
                         }
                         *expression = ast::expression::Member_function_invocation {
                             extract_arguments(context),

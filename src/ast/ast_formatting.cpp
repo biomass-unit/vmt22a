@@ -68,7 +68,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
                     std::format_to(
                         context.out(),
                         ": {}",
-                        bu::delimited_range(parameter.classes, " + ")
+                        bu::fmt::delimited_range(parameter.classes, " + ")
                     );
                 }
 
@@ -202,7 +202,7 @@ namespace {
                 return format("{{}}");
             }
             else {
-                return format("{{ {} }}", bu::delimited_range(compound.expressions, "; "));
+                return format("{{ {} }}", bu::fmt::delimited_range(compound.expressions, "; "));
             }
         }
         auto operator()(ast::expression::Conditional const& conditional) {
@@ -387,7 +387,7 @@ namespace {
                 "inst {} {} {{\n{}\n}}",
                 instantiation.typeclass,
                 instantiation.instance,
-                bu::delimited_range(instantiation.definitions, "\n\n")
+                bu::fmt::delimited_range(instantiation.definitions, "\n\n")
             );
         }
 
@@ -395,7 +395,7 @@ namespace {
             return format(
                 "impl {} {{\n{}\n}}",
                 implementation.type,
-                bu::delimited_range(implementation.definitions, "\n\n")
+                bu::fmt::delimited_range(implementation.definitions, "\n\n")
             );
         }
 
@@ -404,7 +404,7 @@ namespace {
                 "namespace {}{} {{\n{}\n}}",
                 space.name,
                 template_parameters(),
-                bu::delimited_range(space.definitions, "\n\n")
+                bu::fmt::delimited_range(space.definitions, "\n\n")
             );
         }
 
@@ -441,12 +441,12 @@ DEFINE_FORMATTER_FOR(ast::Module) {
     }
 
     for (auto& import_ : value.imports) {
-        std::format_to(context.out(), "import {}", bu::delimited_range(import_.path, "."));
+        std::format_to(context.out(), "import {}", bu::fmt::delimited_range(import_.path, "."));
         if (import_.alias) {
             std::format_to(context.out(), " as {}", *import_.alias);
         }
         std::format_to(context.out(), "\n");
     }
 
-    return bu::format_delimited_range(context.out(), bu::delimited_range(value.definitions, "\n\n"));
+    return std::format_to(context.out(), "{}", bu::fmt::delimited_range(value.definitions, "\n\n"));
 }

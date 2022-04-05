@@ -27,7 +27,7 @@ namespace {
             case 1:
                 return format("[{};]", array.elements.front());
             default:
-                return format("[{}]", bu::delimited_range(array.elements, "; "));
+                return format("[{}]", bu::fmt::delimited_range(array.elements, "; "));
             }
         }
 

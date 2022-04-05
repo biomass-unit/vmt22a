@@ -84,6 +84,17 @@ namespace {
 
 auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
     auto const [view, file, filename, message, help] = arguments;
+
+    if (view.empty()) {
+        bu::abort(
+            std::format(
+                "Attempted to format an error message with an "
+                "empty source-view. The given message was: '{}'",
+                message
+            )
+        );
+    }
+
     auto const position = find_position(file.data(), view.data());
 
     std::string string;

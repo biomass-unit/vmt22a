@@ -149,7 +149,7 @@ namespace {
                             throw error(
                                 std::format(
                                     "The {} parameter is of type {}, but the given argument is of type {}",
-                                    bu::format_with_ordinal_indicator(i + 1),
+                                    bu::fmt::integer_with_ordinal_indicator(i + 1),
                                     function->parameter_types[i],
                                     argument.type
                                 ),
@@ -169,7 +169,8 @@ namespace {
                 else {
                     throw error(
                         std::format(
-                            "{} takes {} parameters, but {} arguments were supplied",
+                            "The function (of type {}) takes {} "
+                            "parameters, but {} arguments were supplied",
                             invocable.type,
                             function->parameter_types.size(),
                             invocation.arguments.size()

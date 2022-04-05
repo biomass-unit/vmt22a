@@ -12,6 +12,7 @@ namespace ast {
     struct [[nodiscard]] Expression;
     struct [[nodiscard]] Pattern;
     struct [[nodiscard]] Type;
+    struct [[nodiscard]] Definition;
 
     struct Template_argument;
 

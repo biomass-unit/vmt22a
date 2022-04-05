@@ -21,4 +21,4 @@ fn do_thing(i: Int): hmm::test::nested::Test {
     x
 }
 
-fn main(): Int = do_thing(5).a
+fn main(): Int = do_thing(5, "hi").a

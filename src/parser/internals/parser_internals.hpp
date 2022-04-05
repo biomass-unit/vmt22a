@@ -267,14 +267,19 @@ namespace parser {
     }
 
 
+    auto assign_source_view(auto& node, Token* const start, Token* const stop) -> void {
+        assert(!start->source_view.empty() && !stop->source_view.empty());
+        node.source_view = { start->source_view.data(), stop->source_view.data() + stop->source_view.size() };
+    }
+
+
     template <parser auto p>
     auto parse_and_add_source_view(Parse_context& context) {
         auto* const anchor = context.pointer;
         auto result = p(context);
 
         if (result) {
-            auto const view = context.pointer[-1].source_view;
-            result->source_view = { anchor->source_view.data(), view.data() + view.size() };
+            assign_source_view(*result, anchor, context.pointer - 1);
         }
         return result;
     }
