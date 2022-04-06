@@ -166,13 +166,19 @@ namespace resolution {
         auto find_type(ast::Qualified_name&, std::string_view)
             -> bu::Wrapper<ir::Type>;
 
+        auto find_variable_or_function(ast::Qualified_name&, std::string_view)
+            -> Lower_variant;
+
+
         auto find_type_template_instantiation(ast::Qualified_name&,
                                               std::string_view,
                                               std::span<ast::Template_argument>)
             -> bu::Wrapper<ir::Type>;
 
-        auto find_variable_or_function(ast::Qualified_name&, std::string_view)
-            -> Lower_variant;
+        auto find_function_template_instantiation(ast::Qualified_name&,
+                                                  std::string_view,
+                                                  std::span<ast::Template_argument>)
+            -> Function_definition::Resolved_info;
 
 
         auto resolve_mutability(ast::Mutability) -> bool;

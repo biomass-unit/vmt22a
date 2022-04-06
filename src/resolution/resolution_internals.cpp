@@ -175,8 +175,10 @@ auto resolution::Resolution_context::error(Error_arguments const arguments)
 }
 
 
-auto resolution::Resolution_context::find_type(ast::Qualified_name&   full_name,
-                                               std::string_view const source_view)
+auto resolution::Resolution_context::find_type(
+    ast::Qualified_name&   full_name,
+    std::string_view const source_view
+)
     -> bu::Wrapper<ir::Type>
 {
     assert(full_name.primary_qualifier.is_upper);
@@ -201,7 +203,14 @@ auto resolution::Resolution_context::find_type(ast::Qualified_name&   full_name,
                     bu::unimplemented();
                 }
             },
-            [](Data_definition)      -> bu::Wrapper<ir::Type> { bu::unimplemented(); },
+            [](Data_definition data) -> bu::Wrapper<ir::Type> {
+                if (data.has_been_resolved()) {
+                    return (*data.resolved_info)->type_handle;
+                }
+                else {
+                    bu::unimplemented();
+                }
+            },
             [](Alias_definition)     -> bu::Wrapper<ir::Type> { bu::unimplemented(); },
             [](Typeclass_definition) -> bu::Wrapper<ir::Type> { bu::unimplemented(); },
             []<class T>(Definition<ast::definition::Template_definition<T>>)
@@ -217,91 +226,10 @@ auto resolution::Resolution_context::find_type(ast::Qualified_name&   full_name,
     }
 }
 
-auto resolution::Resolution_context::find_type_template_instantiation(ast::Qualified_name&                    full_name,
-                                                                      std::string_view const                  source_view,
-                                                                      std::span<ast::Template_argument> const arguments)
-    -> bu::Wrapper<ir::Type>
-{
-    assert(full_name.primary_qualifier.is_upper);
-    bu::wrapper auto space = apply_qualifiers(full_name);
-
-    if (auto* const upper = space->upper_table.find(full_name.primary_qualifier.name)) {
-        return std::visit(bu::Overload {
-            [&]<class T>(Definition<ast::definition::Template_definition<T>> template_definition)
-                -> bu::Wrapper<ir::Type>
-            {
-                ir::Template_argument_set argument_set = resolve_template_arguments(
-                    full_name,
-                    source_view,
-                    template_definition.template_parameters,
-                    arguments,
-                    *this
-                );
-
-                if (auto* const existing = template_definition.instantiations->find(argument_set)) {
-                    return existing->type_handle;
-                }
-
-                Resolution_context instantiation_context {
-                    .scope                { .parent = nullptr },
-                    .current_namespace    = template_definition.home_namespace,
-                    .global_namespace     = global_namespace,
-                    .source               = source,
-                    .mutability_arguments = &argument_set.mutability_arguments,
-                    .is_unevaluated       = false
-                };
-
-                if (argument_set.expression_arguments.size() || argument_set.mutability_arguments.size()) {
-                    bu::unimplemented();
-                }
-
-                for (auto& [name, type] : argument_set.type_arguments.container()) {
-                    instantiation_context.scope.local_type_aliases.add(
-                        bu::copy(name),
-                        {
-                            .type               = type,
-                            .has_been_mentioned = false
-                        }
-                    );
-                }
-
-                Definition<T> concrete {
-                    .syntactic_definition = template_definition.syntactic_definition,
-                    .home_namespace       = template_definition.home_namespace,
-                    .resolved_info        = std::nullopt
-                };
-
-                // Resolve the instantiation as a regular non-template definition in the instantiation context
-                resolve_definition(concrete, instantiation_context);
-
-                if (!concrete.resolved_info->has_value()) {
-                    bu::abort("how");
-                }
-
-                bu::trivially_copyable auto instantiation_info = **concrete.resolved_info;
-
-                // Add the template arguments to the name
-                argument_set.append_formatted_arguments(instantiation_info.resolved->name);
-
-                // Register the instantiation so that it can be retrieved later
-                template_definition.instantiations->add(argument_set, bu::copy(instantiation_info));
-
-                // Return a handle to the newly instantiated type
-                return instantiation_info.type_handle;
-            },
-            [](auto&) -> bu::Wrapper<ir::Type> {
-                bu::unimplemented();
-            }
-        }, *upper);
-    }
-    else {
-        auto const message = std::format("{} is undefined", full_name);
-        throw error({ .erroneous_view = source_view, .message = message });
-    }
-}
-
-auto resolution::Resolution_context::find_variable_or_function(ast::Qualified_name&   full_name,
-                                                               std::string_view const source_view)
+auto resolution::Resolution_context::find_variable_or_function(
+    ast::Qualified_name&   full_name,
+    std::string_view const source_view
+)
     -> Lower_variant
 {
     assert(!full_name.primary_qualifier.is_upper);
@@ -325,11 +253,160 @@ auto resolution::Resolution_context::find_variable_or_function(ast::Qualified_na
 }
 
 
-auto resolution::resolve_template_arguments(ast::Qualified_name&               name,
-                                            std::string_view                   name_source_view,
-                                            std::span<ast::Template_parameter> parameters,
-                                            std::span<ast::Template_argument>  arguments,
-                                            Resolution_context&                context)
+namespace {
+
+    template <class T>
+    auto instantiate_template(
+        ast::Qualified_name&                                            full_name,
+        std::string_view const                                          source_view,
+        resolution::Definition<ast::definition::Template_definition<T>> template_definition,
+        std::span<ast::Template_argument> const                         arguments,
+        resolution::Resolution_context&                                 context
+    )
+        -> resolution::Definition<T>::Resolved_info
+    {
+        ir::Template_argument_set argument_set = resolution::resolve_template_arguments(
+            full_name,
+            source_view,
+            template_definition.template_parameters,
+            arguments,
+            context
+        );
+
+        if (auto* const existing = template_definition.instantiations->find(argument_set)) {
+            return *existing;
+        }
+
+        resolution::Resolution_context instantiation_context {
+            .scope                { .parent = nullptr },
+            .current_namespace    = template_definition.home_namespace,
+            .global_namespace     = context.global_namespace,
+            .source               = context.source,
+            .mutability_arguments = &argument_set.mutability_arguments,
+            .is_unevaluated       = false
+        };
+
+        if (argument_set.expression_arguments.size()) {
+            bu::unimplemented();
+        }
+
+        for (auto& [name, type] : argument_set.type_arguments.container()) {
+            instantiation_context.scope.local_type_aliases.add(
+                bu::copy(name),
+                {
+                    .type               = type,
+                    .has_been_mentioned = false
+                }
+            );
+        }
+
+        resolution::Definition<T> concrete {
+            .syntactic_definition = template_definition.syntactic_definition,
+            .home_namespace       = template_definition.home_namespace,
+            .resolved_info        = std::nullopt
+        };
+
+        // Resolve the instantiation as a regular non-template definition in the instantiation context
+        resolution::resolve_definition(concrete, instantiation_context);
+
+        if (!concrete.resolved_info->has_value()) {
+            bu::abort("how");
+        }
+
+        bu::trivially_copyable auto instantiation_info = **concrete.resolved_info;
+
+        // Add the template arguments to the name of the new concrete entity
+        argument_set.append_formatted_arguments_to(instantiation_info.resolved->name);
+
+        // Register the instantiation so that it can be retrieved later
+        template_definition.instantiations->add(argument_set, bu::copy(instantiation_info));
+
+        return instantiation_info;
+    }
+
+}
+
+
+auto resolution::Resolution_context::find_type_template_instantiation(
+    ast::Qualified_name&                    full_name,
+    std::string_view const                  source_view,
+    std::span<ast::Template_argument> const arguments
+)
+    -> bu::Wrapper<ir::Type>
+{
+    assert(full_name.primary_qualifier.is_upper);
+    bu::wrapper auto space = apply_qualifiers(full_name);
+
+    if (auto* const upper = space->upper_table.find(full_name.primary_qualifier.name)) {
+        return std::visit(bu::Overload {
+            [&, this]<class T>(Definition<ast::definition::Template_definition<T>> template_definition)
+                -> bu::Wrapper<ir::Type>
+            {
+                bu::trivially_copyable auto instantiation_info = instantiate_template(
+                    full_name,
+                    source_view,
+                    template_definition,
+                    arguments,
+                    *this
+                );
+
+                // Return a handle to the newly instantiated type
+                return instantiation_info.type_handle;
+            },
+            [](auto&) -> bu::Wrapper<ir::Type> {
+                bu::unimplemented();
+            }
+        }, *upper);
+    }
+    else {
+        auto const message = std::format("{} is undefined", full_name);
+        throw error({ .erroneous_view = source_view, .message = message });
+    }
+}
+
+auto resolution::Resolution_context::find_function_template_instantiation(
+    ast::Qualified_name&                    full_name,
+    std::string_view const                  source_view,
+    std::span<ast::Template_argument> const template_arguments
+)
+    -> Function_definition::Resolved_info
+{
+    assert(!full_name.primary_qualifier.is_upper);
+    bu::wrapper auto space = apply_qualifiers(full_name);
+
+    if (auto* const lower = space->lower_table.find(full_name.primary_qualifier.name)) {
+        return std::visit(bu::Overload {
+            [&](Binding*) -> Function_definition::Resolved_info {
+                bu::unimplemented();
+            },
+            [&](Function_definition) -> Function_definition::Resolved_info {
+                bu::unimplemented();
+            },
+            [&](Function_template_definition function_template) -> Function_definition::Resolved_info {
+                return instantiate_template(
+                    full_name,
+                    source_view,
+                    function_template,
+                    template_arguments,
+                    *this
+                );
+            }
+        }, *lower);
+    }
+    else {
+        auto const message = std::format("{} is undefined", full_name);
+        throw error({ .erroneous_view = source_view, .message = message });
+    }
+}
+
+
+auto resolution::resolve_template_arguments(
+    ast::Qualified_name&               name,
+    std::string_view                   name_source_view,
+    std::span<ast::Template_parameter> parameters,
+    std::span<ast::Template_argument>  arguments,
+    Resolution_context&                context
+)
         -> ir::Template_argument_set
 {
     auto const error = [&](std::string_view const message,
@@ -419,7 +496,7 @@ auto resolution::resolve_template_arguments(ast::Qualified_name&               n
 }
 
 
-auto ir::Template_argument_set::append_formatted_arguments(std::string& string) const -> void {
+auto ir::Template_argument_set::append_formatted_arguments_to(std::string& string) const -> void {
     string.push_back('[');
 
     auto out = std::back_inserter(string);

@@ -26,9 +26,14 @@ namespace hmm {
         }
     }
 
+
+    fn test[m: mut, T](t: &mut?m T): &mut?m T = t
+
 }
 
 
 fn main(): Int {
-    hmm::do_thing(10).c.a
+    let mut i = 0;
+    let _: &mut Int = hmm::test[mut, Int](&mut i);
+    i
 }

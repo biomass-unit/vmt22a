@@ -338,13 +338,26 @@ namespace {
             }, context.find_variable_or_function(variable.name, this_expression.source_view));
         }
 
+        auto operator()(ast::expression::Template_instantiation& instantiation) -> ir::Expression {
+            bu::trivially_copyable auto info = context.find_function_template_instantiation(
+                instantiation.name,
+                this_expression.source_view,
+                instantiation.template_arguments
+            );
+
+            return {
+                .value = ir::expression::Function_reference { info.resolved },
+                .type  = info.type_handle
+            };
+        }
+
         auto operator()(ast::expression::Take_reference& take_reference) -> ir::Expression {
             bool const take_mutable_ref =
                 context.resolve_mutability(take_reference.mutability);
 
             if (auto* binding = context.scope.find(take_reference.name)) {
                 if (take_mutable_ref && !binding->is_mutable) {
-                    bu::unimplemented();
+                    throw error("Can not acquire a mutable reference to an immutable binding");
                 }
 
                 binding->has_been_mentioned = true;
@@ -354,14 +367,19 @@ namespace {
                         .frame_offset = binding->frame_offset
                     },
                     .type = ir::Type {
-                        .value      = ir::type::Reference { binding->type },
+                        .value = ir::type::Reference {
+                            ir::type::Pointer {
+                                .type = binding->type,
+                                .mut  = take_mutable_ref
+                            }
+                        },
                         .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                         .is_trivial = true
                     }
                 };
             }
             else {
-                bu::unimplemented();
+                throw error(std::format("{} is not a local variable", take_reference.name));
             }
         }
 

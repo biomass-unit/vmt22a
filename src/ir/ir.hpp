@@ -318,7 +318,7 @@ namespace ir {
         };
         std::vector<Argument_indicator> arguments_in_order;
 
-        auto append_formatted_arguments(std::string&) const -> void;
+        auto append_formatted_arguments_to(std::string&) const -> void;
 
         auto hash() const -> bu::Usize;
     };

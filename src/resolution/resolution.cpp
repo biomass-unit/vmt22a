@@ -71,6 +71,15 @@ namespace {
                     space->definitions_in_order.push_back(handle);
                     space->upper_table.add(bu::copy(template_definition.definition.name), bu::copy(handle));
                 },
+                [&](Function_template& function_template) -> void {
+                    resolution::Function_template_definition handle {
+                        .syntactic_definition = &function_template.definition,
+                        .home_namespace       = space,
+                        .template_parameters  = function_template.parameters
+                    };
+                    space->definitions_in_order.push_back(handle);
+                    space->lower_table.add(bu::copy(function_template.definition.name), bu::copy(handle));
+                },
 
                 [](Implementation&) -> void {
                     bu::unimplemented();
@@ -102,6 +111,9 @@ namespace {
             if (function.has_been_resolved()) {
                 return;
             }
+
+            // Shadow the struct member, prevent polluting the global scope
+            auto context = this->context.make_child_context_with_new_scope();
 
             auto* const definition = function.syntactic_definition;
 
