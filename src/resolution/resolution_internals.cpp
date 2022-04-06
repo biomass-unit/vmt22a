@@ -15,6 +15,15 @@ auto resolution::Scope::find(lexer::Identifier const name) noexcept -> Binding* 
     }
 }
 
+auto resolution::Scope::find_type(lexer::Identifier const name) noexcept -> Local_type_alias* {
+    if (auto* const pointer = local_type_aliases.find(name)) {
+        return pointer;
+    }
+    else {
+        return parent ? parent->find_type(name) : nullptr;
+    }
+}
+
 auto resolution::Scope::unused_variables() -> std::optional<std::vector<lexer::Identifier>> {
     std::vector<lexer::Identifier> names;
 
@@ -33,29 +42,71 @@ auto resolution::Scope::unused_variables() -> std::optional<std::vector<lexer::I
 }
 
 
+auto resolution::Namespace::find_root(ast::Qualifier& qualifier) -> bu::Wrapper<Namespace> {
+    if (qualifier.is_upper || qualifier.template_arguments) {
+        bu::unimplemented();
+    }
+
+    static constexpr auto to_pointer = [](std::optional<bu::Wrapper<Namespace>> space)
+        noexcept -> Namespace*
+    {
+        return space ? &**space : nullptr;
+    };
+
+    for (Namespace* space = this; space; space = to_pointer(space->parent)) {
+        if (bu::wrapper auto* child = space->children.find(qualifier.name)) {
+            return *child;
+        }
+    }
+
+    bu::abort("couldn't find root namespace");
+}
+
+auto resolution::Namespace::format_name_as_member(lexer::Identifier const name) const -> std::string {
+    std::string string;
+    auto out = std::back_inserter(string);
+
+    [out](this auto recurse, Namespace const* const space) -> void {
+        if (space->parent) {
+            recurse(std::to_address(*space->parent));
+            std::format_to(out, "{}::", space->name);
+        }
+    }(this);
+
+    std::format_to(out, "{}", name);
+
+    return string;
+}
+
+
 auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mutability) -> bool {
     switch (mutability.type) {
     case ast::Mutability::Type::mut:
         return true;
     case ast::Mutability::Type::immut:
         return false;
-    case ast::Mutability::Type::parameterized:
-        if (!mutability_parameters) {
+    /*case ast::Mutability::Type::parameterized:
+        if (!template_instantiation_info) {
             return false;
         }
-        else if (bool const* const parameter = mutability_parameters->find(*mutability.parameter_name)) {
-            return *parameter;
-        }
         else {
-            auto const message = std::format(
-                "{} is not a mutability parameter",
-                *mutability.parameter_name
-            );
-            throw error({
-                .erroneous_view = {},
-                .message = message
-            });
-        }
+            auto& mutability_arguments =
+                template_instantiation_info->argument_set->mutability_arguments;
+
+            if (bool const* const argument = mutability_arguments.find(*mutability.parameter_name)) {
+                return *argument;
+            }
+            else {
+                auto const message = std::format(
+                    "{} is not a mutability parameter",
+                    *mutability.parameter_name
+                );
+                throw error({
+                    .erroneous_view = mutability.source_view,
+                    .message        = message
+                });
+            }
+        }*/
     default:
         bu::unreachable();
     }
@@ -70,20 +121,28 @@ auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name)
             return global_namespace;
         },
         [](ast::Type&) -> bu::Wrapper<Namespace> {
-            bu::unimplemented();
+            bu::unimplemented(); // ir::definition::User_defined_*::associated_namespace
         }
     }, name.root_qualifier->value);
 
-    for (auto& qualifier : name.middle_qualifiers) {
-        if (qualifier.is_upper || qualifier.template_arguments) {
+    auto const ensure_regular_qualifier = [](ast::Qualifier& qualifier) -> void {
+        if (qualifier.is_upper || qualifier.template_arguments.has_value()) {
             bu::unimplemented();
         }
+    };
 
-        if (bu::wrapper auto* const child = root->children.find(qualifier.name)) {
-            root = *child;
-        }
-        else {
-            bu::unimplemented();
+    if (!name.middle_qualifiers.empty()) {
+        root = root->find_root(name.middle_qualifiers.front());
+
+        for (auto& qualifier : name.middle_qualifiers | std::views::drop(1)) {
+            ensure_regular_qualifier(qualifier);
+
+            if (bu::wrapper auto* const child = root->children.find(qualifier.name)) {
+                root = *child;
+            }
+            else {
+                bu::unimplemented();
+            }
         }
     }
 
@@ -99,28 +158,8 @@ auto resolution::Resolution_context::make_child_context_with_new_scope() noexcep
         current_namespace,
         global_namespace,
         source,
-        mutability_parameters,
         is_unevaluated
     };
-}
-
-auto resolution::Resolution_context::find_upper(ast::Qualified_name& name)
-    -> std::optional<Upper_variant>
-{
-    assert(name.primary_qualifier.is_upper);
-    return find_impl<&Namespace::upper_table, true>(name);
-}
-
-auto resolution::Resolution_context::find_lower(ast::Qualified_name& name)
-    -> std::optional<Lower_variant>
-{
-    assert(!name.primary_qualifier.is_upper);
-    if (name.is_unqualified()) {
-        if (auto* binding = scope.find(name.primary_qualifier.name)) {
-            return binding;
-        }
-    }
-    return find_impl<&Namespace::lower_table, false>(name);
 }
 
 auto resolution::Resolution_context::error(Error_arguments const arguments)
@@ -135,6 +174,81 @@ auto resolution::Resolution_context::error(Error_arguments const arguments)
             .help_note      = arguments.help_note
         })
     };
+}
+
+
+auto resolution::Resolution_context::find_type(ast::Qualified_name&   full_name,
+                                               std::string_view const source_view)
+    -> bu::Wrapper<ir::Type>
+{
+    assert(full_name.primary_qualifier.is_upper);
+    lexer::Identifier const name = full_name.primary_qualifier.name;
+
+    if (full_name.is_unqualified()) {
+        if (Local_type_alias* const alias = scope.find_type(name)) {
+            alias->has_been_mentioned = true;
+            return alias->type;
+        }
+    }
+
+    bu::wrapper auto space = apply_qualifiers(full_name);
+
+    if (auto* const upper = space->upper_table.find(name)) {
+        return std::visit(bu::Overload {
+            [](Struct_definition structure) -> bu::Wrapper<ir::Type> {
+                if (structure.has_been_resolved()) {
+                    return (*structure.resolved_info)->type_handle;
+                }
+                else {
+                    bu::unimplemented();
+                }
+            },
+            [](Data_definition)      -> bu::Wrapper<ir::Type> { bu::unimplemented(); },
+            [](Alias_definition)     -> bu::Wrapper<ir::Type> { bu::unimplemented(); },
+            [](Typeclass_definition) -> bu::Wrapper<ir::Type> { bu::unimplemented(); },
+            []<class T>(Definition<ast::definition::Template_definition<T>>)
+                -> bu::Wrapper<ir::Type>
+            {
+                bu::abort("was expecting a type but found a template");
+            }
+        }, *upper);
+    }
+    else {
+        auto const message = std::format("{} is undefined", full_name);
+        throw error({ .erroneous_view = source_view, .message = message });
+    }
+}
+
+auto resolution::Resolution_context::find_type_template_instantiation(ast::Qualified_name&                    /*full_name*/,
+                                                                      std::string_view const                  /*source_view*/,
+                                                                      std::span<ast::Template_argument> const /*arguments*/)
+    -> bu::Wrapper<ir::Type>
+{
+    bu::unimplemented();
+}
+
+auto resolution::Resolution_context::find_variable_or_function(ast::Qualified_name&   full_name,
+                                                               std::string_view const source_view)
+    -> Lower_variant
+{
+    assert(!full_name.primary_qualifier.is_upper);
+    lexer::Identifier const name = full_name.primary_qualifier.name;
+
+    if (full_name.is_unqualified()) {
+        if (Binding* const binding = scope.find(name)) {
+            return binding;
+        }
+    }
+
+    bu::wrapper auto space = apply_qualifiers(full_name);
+
+    if (Lower_variant* const variant = space->lower_table.find(name)) {
+        return *variant;
+    }
+    else {
+        auto const message = std::format("{} is undefined", full_name);
+        throw error({ .erroneous_view = source_view, .message = message });
+    }
 }
 
 

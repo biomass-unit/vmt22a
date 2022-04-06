@@ -19,18 +19,27 @@ namespace resolution {
         bool                  has_been_mentioned = false;
     };
 
+    struct Local_type_alias {
+        bu::Wrapper<ir::Type> type;
+        bool                  has_been_mentioned = false;
+    };
+
     struct Scope {
-        bu::Flatmap<lexer::Identifier, Binding> bindings;
-        std::vector<bu::Wrapper<ir::Type>>      destroy_in_reverse_order;
-        bu::Bounded_u16                         current_frame_offset;
-        Scope*                                  parent = nullptr;
+        bu::Flatmap<lexer::Identifier, Binding>          bindings;
+        bu::Flatmap<lexer::Identifier, Local_type_alias> local_type_aliases;
+        std::vector<bu::Wrapper<ir::Type>>               destroy_in_reverse_order;
+        bu::Bounded_u16                                  current_frame_offset;
+        Scope*                                           parent = nullptr;
 
         auto make_child() noexcept -> Scope;
 
-        auto find(lexer::Identifier) noexcept -> Binding*;
+        auto find     (lexer::Identifier) noexcept -> Binding*;
+        auto find_type(lexer::Identifier) noexcept -> Local_type_alias*;
 
         auto unused_variables() -> std::optional<std::vector<lexer::Identifier>>;
     };
+
+    struct Namespace;
 
 
     namespace dtl {
@@ -50,16 +59,32 @@ namespace resolution {
 
     template <class T>
     struct Definition {
-        T*                                                    syntactic_definition;
-        bu::Wrapper<std::optional<bu::Wrapper<AST_to_IR<T>>>> resolved;
+        struct Resolved_info {
+            bu::Wrapper<AST_to_IR<T>> resolved;
+            bu::Wrapper<ir::Type>     type_handle;
+
+            // The type_handle, for type definitions, represents the only handle to the resolved
+            // type, and for function definitions, represents a handle to the function type.
+        };
+
+        T*                                        syntactic_definition;
+        bu::Wrapper<Namespace>                    home_namespace;
+        bu::Wrapper<std::optional<Resolved_info>> resolved_info;
+
+        [[nodiscard]]
+        auto has_been_resolved() const noexcept -> bool {
+            return resolved_info->has_value();
+        }
     };
 
     template <class T>
     struct Definition<ast::definition::Template_definition<T>> {
-        ast::definition::Template_definition<T>*                       syntactic_definition;
-        bu::Wrapper<bu::Flatmap<bu::Usize, bu::Wrapper<AST_to_IR<T>>>> instantiations;
-        //                      ^^^^^^^^^
-        //                      hash the template arguments
+        using Instantiation_info = Definition<T>::Resolved_info;
+
+        T*                                                                      syntactic_definition;
+        bu::Wrapper<Namespace>                                                  home_namespace;
+        std::span<ast::Template_parameter>                                      template_parameters;
+        bu::Wrapper<bu::Flatmap<ir::Template_argument_set, Instantiation_info>> instantiations;
     };
 
     using Function_definition           = Definition<ast::definition::Function          >;
@@ -73,6 +98,7 @@ namespace resolution {
     using Typeclass_definition          = Definition<ast::definition::Typeclass         >;
     using Typeclass_template_definition = Definition<ast::definition::Typeclass_template>;
 
+
     using Definition_variant = std::variant<
         Function_definition,
         Function_template_definition,
@@ -85,10 +111,11 @@ namespace resolution {
         Typeclass_definition,
         Typeclass_template_definition,
 
-        bu::Wrapper<struct Namespace>
+        bu::Wrapper<Namespace>
     >;
 
     static_assert(std::is_trivially_copyable_v<Definition_variant>);
+
 
     using Upper_variant = std::variant<
         Struct_definition,
@@ -112,26 +139,40 @@ namespace resolution {
         template <class T>
         using Table = bu::Flatmap<lexer::Identifier, T>;
 
-        std::vector<Definition_variant> definitions_in_order;
+        std::vector<Definition_variant>       definitions_in_order;
+        Table<Lower_variant>                  lower_table;
+        Table<Upper_variant>                  upper_table;
+        Table<bu::Wrapper<Namespace>>         children;
+        std::optional<bu::Wrapper<Namespace>> parent;
+        std::optional<lexer::Identifier>      name;
 
-        Table<Lower_variant>          lower_table;
-        Table<Upper_variant>          upper_table;
-        Table<bu::Wrapper<Namespace>> children;
+        auto find_root(ast::Qualifier& first) -> bu::Wrapper<Namespace>;
+
+        auto format_name_as_member(lexer::Identifier) const -> std::string;
     };
 
 
     struct Resolution_context {
-        Scope                                 scope;
-        bu::Wrapper<Namespace>                current_namespace;
-        bu::Wrapper<Namespace>                global_namespace;
-        bu::Source                          * source                = nullptr;
-        bu::Flatmap<lexer::Identifier, bool>* mutability_parameters = nullptr;
-        bool                                  is_unevaluated        = false;
+        Scope                  scope;
+        bu::Wrapper<Namespace> current_namespace;
+        bu::Wrapper<Namespace> global_namespace;
+        bu::Source*            source         = nullptr;
+        bool                   is_unevaluated = false;
 
         auto make_child_context_with_new_scope() noexcept -> Resolution_context;
 
-        auto find_upper(ast::Qualified_name&) -> std::optional<Upper_variant>;
-        auto find_lower(ast::Qualified_name&) -> std::optional<Lower_variant>;
+
+        auto find_type(ast::Qualified_name&, std::string_view)
+            -> bu::Wrapper<ir::Type>;
+
+        auto find_type_template_instantiation(ast::Qualified_name&,
+                                              std::string_view,
+                                              std::span<ast::Template_argument>)
+            -> bu::Wrapper<ir::Type>;
+
+        auto find_variable_or_function(ast::Qualified_name&, std::string_view)
+            -> Lower_variant;
+
 
         auto resolve_mutability(ast::Mutability) -> bool;
 
@@ -143,30 +184,19 @@ namespace resolution {
             std::optional<std::string_view> help_note = std::nullopt;
         };
 
-        [[nodiscard]]
         auto error(Error_arguments) -> std::runtime_error;
 
     private:
-
-        template <auto Namespace::* member, bool upper>
-        auto find_impl(ast::Qualified_name& name)
-            -> std::optional<std::conditional_t<upper, Upper_variant, Lower_variant>>
-        {
-            if (auto* const pointer = (std::to_address(apply_qualifiers(name))->*member).find(name.primary_qualifier.name)) {
-                return *pointer;
-            }
-            else {
-                return std::nullopt;
-            }
-        }
 
         auto apply_qualifiers(ast::Qualified_name&) -> bu::Wrapper<Namespace>;
 
     };
 
 
-    auto resolve_type      (ast::Type      &, Resolution_context&) -> ir::Type;
+    auto resolve_type      (ast::Type      &, Resolution_context&) -> bu::Wrapper<ir::Type>;
     auto resolve_expression(ast::Expression&, Resolution_context&) -> ir::Expression;
+
+    auto resolve_definition(Definition_variant, Resolution_context&) -> void;
 
     auto resolve_template_arguments(ast::Qualified_name&,
                                     std::string_view,

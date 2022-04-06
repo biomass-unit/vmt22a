@@ -30,27 +30,46 @@ namespace {
         }
     }
 
-    auto make_namespace(std::span<ast::Definition> const definitions) -> bu::Wrapper<resolution::Namespace> {
-        bu::Wrapper<resolution::Namespace> space;
+    auto make_namespace(std::optional<bu::Wrapper<resolution::Namespace>> parent,
+                        std::optional<lexer::Identifier>                  name,
+                        std::span<ast::Definition> const                  definitions)
+        -> bu::Wrapper<resolution::Namespace>
+    {
+        bu::Wrapper space {
+            resolution::Namespace {
+                .parent = parent,
+                .name   = name
+            }
+        };
 
         for (auto& definition : definitions) {
             using namespace ast::definition;
 
             std::visit(bu::Overload {
                 [&](Function& function) -> void {
-                    resolution::Function_definition handle { &function };
-                    space->lower_table.add(bu::copy(function.name), bu::copy(handle));
+                    resolution::Function_definition handle {
+                        .syntactic_definition = &function,
+                        .home_namespace       = space
+                    };
                     space->definitions_in_order.push_back(handle);
+                    space->lower_table.add(bu::copy(function.name), bu::copy(handle));
                 },
                 [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(T& definition) -> void {
-                    resolution::Definition<T> handle { &definition };
+                    resolution::Definition<T> handle {
+                        .syntactic_definition = &definition,
+                        .home_namespace       = space
+                    };
+                    space->definitions_in_order.push_back(handle);
                     space->upper_table.add(bu::copy(definition.name), bu::copy(handle));
-                    space->definitions_in_order.push_back(handle);
                 },
-                [&](Struct_template& structure) -> void {
-                    resolution::Struct_template_definition handle { &structure };
-                    space->upper_table.add(bu::copy(structure.definition.name), bu::copy(handle));
+                [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(Template_definition<T>& template_definition) -> void {
+                    resolution::Definition<Template_definition<T>> handle {
+                        .syntactic_definition = &template_definition.definition,
+                        .home_namespace       = space,
+                        .template_parameters  = template_definition.parameters
+                    };
                     space->definitions_in_order.push_back(handle);
+                    space->upper_table.add(bu::copy(template_definition.definition.name), bu::copy(handle));
                 },
 
                 [](Implementation&) -> void {
@@ -61,7 +80,7 @@ namespace {
                 },
 
                 [&](Namespace& nested_space) -> void {
-                    bu::Wrapper child = make_namespace(nested_space.definitions);
+                    bu::wrapper auto child = make_namespace(space, nested_space.name, nested_space.definitions);
                     space->definitions_in_order.push_back(child);
                     space->children.add(bu::copy(nested_space.name), bu::copy(child));
                 },
@@ -76,107 +95,124 @@ namespace {
     }
 
 
-    auto resolve_definitions(resolution::Resolution_context&) -> void;
-
-
     struct Definition_resolution_visitor {
         resolution::Resolution_context& context;
 
         auto operator()(resolution::Function_definition function) -> void {
-            if (!function.resolved->has_value()) {
-                auto* const definition = function.syntactic_definition;
-
-                std::vector<ir::definition::Function::Parameter> parameters;
-                parameters.reserve(definition->parameters.size());
-
-                for (auto& [pattern, type, default_value] : definition->parameters) {
-                    bu::Wrapper ir_type = resolution::resolve_type(type, context);
-                    context.bind(pattern, ir_type);
-
-                    parameters.emplace_back(
-                        ir_type,
-                        default_value.transform([&](ast::Expression& expression) -> bu::Wrapper<ir::Expression> {
-                            return resolution::resolve_expression(expression, context);
-                        })
-                    );
-                }
-
-                auto body = resolution::resolve_expression(definition->body, context);
-
-                if (definition->return_type) {
-                    if (body.type != resolution::resolve_type(*definition->return_type, context)) {
-                        bu::abort("function return type mismatch");
-                    }
-                }
-
-                std::vector<bu::Wrapper<ir::Type>> parameter_types;
-                parameter_types.reserve(parameters.size());
-
-                std::ranges::copy(
-                    parameters | std::views::transform(&ir::definition::Function::Parameter::type),
-                    std::back_inserter(parameter_types)
-                );
-
-                bu::wrapper auto return_type = body.type;
-
-                *function.resolved = ir::definition::Function {
-                    .name        = std::string { function.syntactic_definition->name.view() },
-                    .parameters  = std::move(parameters),
-                    .return_type = std::move(return_type),
-                    .body        = std::move(body),
-
-                    .function_type = ir::Type {
-                        .value = ir::type::Function {
-                            .parameter_types = std::move(parameter_types),
-                            .return_type     = return_type
-                        },
-                        .size = ir::Size_type { bu::unchecked_tag, 2 * sizeof(std::byte*) }
-                    }
-                };
+            if (function.has_been_resolved()) {
+                return;
             }
+
+            auto* const definition = function.syntactic_definition;
+
+            std::vector<ir::definition::Function::Parameter> parameters;
+            parameters.reserve(definition->parameters.size());
+
+            for (auto& [pattern, type, default_value] : definition->parameters) {
+                bu::wrapper auto ir_type = resolution::resolve_type(type, context);
+                context.bind(pattern, ir_type);
+
+                parameters.emplace_back(
+                    ir_type,
+                    default_value.transform([&](ast::Expression& expression) -> bu::Wrapper<ir::Expression> {
+                        return resolution::resolve_expression(expression, context);
+                    })
+                );
+            }
+
+            bu::Wrapper body = resolution::resolve_expression(definition->body, context);
+
+            if (definition->return_type) {
+                if (body->type != resolution::resolve_type(*definition->return_type, context)) {
+                    bu::abort("function return type mismatch");
+                }
+            }
+
+            std::vector<bu::Wrapper<ir::Type>> parameter_types;
+            parameter_types.reserve(parameters.size());
+
+            std::ranges::copy(
+                parameters | std::views::transform(&ir::definition::Function::Parameter::type),
+                std::back_inserter(parameter_types)
+            );
+
+            *function.resolved_info = resolution::Function_definition::Resolved_info {
+                .resolved = ir::definition::Function {
+                    .name        = context.current_namespace->format_name_as_member(definition->name),
+                    .parameters  = std::move(parameters),
+                    .return_type = body->type,
+                    .body        = body
+                },
+                .type_handle = ir::Type {
+                    .value      = ir::type::Function { std::move(parameter_types), body->type },
+                    .size       = ir::Size_type { bu::unchecked_tag, 2 * sizeof(std::byte*) },
+                    .is_trivial = true // for now
+                }
+            };
         }
 
         auto operator()(resolution::Struct_definition structure) -> void {
-            if (!structure.resolved->has_value()) {
-                auto* const definition = structure.syntactic_definition;
-
-                ir::definition::Struct resolved_structure {
-                    .name       = std::string { definition->name.view() },
-                    .is_trivial = true
-                };
-                resolved_structure.members.container().reserve(definition->members.size());
-
-                for (auto& member : definition->members) {
-                    auto       type   = resolution::resolve_type(member.type, context);
-                    auto const offset = resolved_structure.size;
-                    resolved_structure.size.safe_add(type.size);
-
-                    if (!type.is_trivial) {
-                        resolved_structure.is_trivial = false;
-                    }
-
-                    resolved_structure.members.add(
-                        bu::copy(member.name),
-                        {
-                            .type      = std::move(type),
-                            .offset    = offset.safe_cast<bu::U16>(),
-                            .is_public = member.is_public
-                        }
-                    );
-                }
-
-                *structure.resolved = std::move(resolved_structure);
+            if (structure.has_been_resolved()) {
+                return;
             }
-        }
 
-        auto operator()(resolution::Struct_template_definition) -> void {
-            // typecheck the template here
+            auto* const definition = structure.syntactic_definition;
+
+            bu::Flatmap<lexer::Identifier, ir::definition::Struct::Member> members;
+            members.container().reserve(definition->members.size());
+
+            ir::Size_type size;
+            bool is_trivial = true;
+
+            for (auto& member : definition->members) {
+                bu::wrapper auto    type   = resolution::resolve_type(member.type, context);
+                ir::Size_type const offset = size;
+
+                if (!type->is_trivial) {
+                    is_trivial = false;
+                }
+                size.safe_add(type->size);
+
+                members.add(
+                    bu::copy(member.name),
+                    {
+                        .type      = type,
+                        .offset    = offset.safe_cast<bu::U16>(),
+                        .is_public = member.is_public
+                    }
+                );
+            }
+
+            bu::Wrapper resolved_structure = ir::definition::Struct {
+                .members    = std::move(members),
+                .name       = context.current_namespace->format_name_as_member(definition->name),
+                .size       = size,
+                .is_trivial = is_trivial
+            };
+
+            *structure.resolved_info = resolution::Struct_definition::Resolved_info {
+                .resolved = resolved_structure,
+                .type_handle = ir::Type {
+                    .value      = ir::type::User_defined_struct { resolved_structure },
+                    .size       = resolved_structure->size,
+                    .is_trivial = resolved_structure->is_trivial
+                }
+            };
         }
 
         auto operator()(bu::Wrapper<resolution::Namespace> const child) -> void {
-            auto current_namespace = std::exchange(context.current_namespace, child);
-            resolve_definitions(context);
+            bu::wrapper auto current_namespace = std::exchange(context.current_namespace, child);
+
+            for (auto& definition : child->definitions_in_order) {
+                resolution::resolve_definition(definition, context);
+            }
+
             context.current_namespace = current_namespace;
+        }
+
+        template <class T>
+        auto operator()(resolution::Definition<ast::definition::Template_definition<T>>) -> void {
+            // typecheck the templates here
         }
 
         auto operator()(auto&) -> void {
@@ -184,37 +220,34 @@ namespace {
         }
     };
 
+}
 
-    auto resolve_definitions(resolution::Resolution_context& context) -> void {
-        for (auto& definition : context.current_namespace->definitions_in_order) {
-            std::visit(Definition_resolution_visitor { context }, definition);
-        }
-    }
 
+auto resolution::resolve_definition(Definition_variant const variant, Resolution_context& context) -> void {
+    std::visit(Definition_resolution_visitor { context }, variant);
 }
 
 
 auto resolution::resolve(ast::Module&& module) -> ir::Program {
     handle_imports(module);
 
-    auto global_namespace = make_namespace(module.definitions);
+    auto global_namespace = make_namespace(std::nullopt, std::nullopt, module.definitions);
 
     {
         resolution::Resolution_context global_context {
-            .scope                 { .parent = nullptr },
-            .current_namespace     = global_namespace,
-            .global_namespace      = global_namespace,
-            .source                = &module.source,
-            .mutability_parameters = nullptr,
-            .is_unevaluated        = false
+            .scope                       { .parent = nullptr },
+            .current_namespace           = global_namespace,
+            .global_namespace            = global_namespace,
+            .source                      = &module.source,
+            .is_unevaluated              = false
         };
-        resolve_definitions(global_context);
+        Definition_resolution_visitor { global_context } (global_namespace);
     }
 
     auto* const entry = global_namespace->lower_table.find(lexer::Identifier { "main"sv });
     if (entry) {
         auto& function = std::get<resolution::Function_definition>(*entry);
-        bu::print("entry: {}\n", function.resolved->value()->body);
+        bu::print("entry: {}\n", function.resolved_info->value().resolved->body);
     }
     else {
         bu::print("no entry point defined\n");

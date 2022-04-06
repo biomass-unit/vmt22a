@@ -1,9 +1,25 @@
 import a.b as ab
 
 
-struct Test[T] = a: T
+namespace hmm {
 
-fn main(): Int {
-    let test = Test[Int] { a = 50 };
-    test.a
+    namespace aaa {
+        namespace bbb {
+            struct Test_struct = a: Int, b: String
+        }
+    }
+
+    namespace ccc {
+        namespace ddd {
+            fn test_function(n: Int): hmm::aaa::bbb::Test_struct {
+                aaa::bbb::Test_struct { b = "Hi", a = n }
+            }
+        }
+    }
+
+}
+
+
+fn main() {
+    hmm::ccc::ddd::test_function(10).a
 }

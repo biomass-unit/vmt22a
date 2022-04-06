@@ -184,9 +184,9 @@ namespace {
         }
 
         auto operator()(ast::expression::Struct_initializer& struct_initializer) -> ir::Expression {
-            auto type = resolution::resolve_type(struct_initializer.type, context);
+            bu::wrapper auto type = resolution::resolve_type(struct_initializer.type, context);
 
-            if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&type.value)) {
+            if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&type->value)) {
                 auto& structure = *uds->structure;
 
                 std::vector<ir::Expression> member_initializers;
@@ -232,14 +232,12 @@ namespace {
                     }
                 }
 
-                bu::Wrapper wrapped_type { std::move(type) };
-
                 return {
                     .value = ir::expression::Struct_initializer {
-                        std::move(member_initializers),
-                        wrapped_type
+                        .member_initializers = std::move(member_initializers),
+                        .type                = type
                     },
-                    .type = wrapped_type
+                    .type = type
                 };
             }
             else {
@@ -256,7 +254,7 @@ namespace {
 
             if (let_binding.type) {
                 auto explicit_type = resolution::resolve_type(*let_binding.type, context);
-                if (explicit_type != *initializer.type) {
+                if (explicit_type != initializer.type) {
                     throw error(
                         std::format(
                             "The binding is explicitly specified to be of "
@@ -278,46 +276,41 @@ namespace {
         }
 
         auto operator()(ast::expression::Variable& variable) -> ir::Expression {
-            if (auto const value = context.find_lower(variable.name)) {
-                return std::visit(bu::Overload {
-                    [&](resolution::Binding* binding) -> ir::Expression {
-                        binding->has_been_mentioned = true;
+            return std::visit(bu::Overload {
+                [this](resolution::Binding* const binding) -> ir::Expression {
+                    binding->has_been_mentioned = true;
 
-                        if (!context.is_unevaluated && !binding->type->is_trivial) {
-                            if (binding->moved_by) {
-                                bu::unimplemented();
-                            }
-                            else {
-                                binding->moved_by = &this_expression;
-                            }
-                        }
-
-                        return {
-                            .value = ir::expression::Local_variable {
-                                .frame_offset = binding->frame_offset
-                            },
-                            .type = binding->type
-                        };
-                    },
-                    [&](resolution::Function_definition function) -> ir::Expression {
-                        if (function.resolved->has_value()) {
-                            return {
-                                .value = ir::expression::Function_reference { **function.resolved },
-                                .type  = (**function.resolved)->function_type
-                            };
+                    if (!context.is_unevaluated && !binding->type->is_trivial) {
+                        if (binding->moved_by) {
+                            bu::unimplemented();
                         }
                         else {
-                            bu::abort("requested reference to unresolved function");
+                            binding->moved_by = &this_expression;
                         }
-                    },
-                    [&](resolution::Function_template_definition) -> ir::Expression {
+                    }
+
+                    return {
+                        .value = ir::expression::Local_variable {
+                            .frame_offset = binding->frame_offset
+                        },
+                        .type = binding->type
+                    };
+                },
+                [](resolution::Function_definition function) -> ir::Expression {
+                    if (function.has_been_resolved()) {
+                        return {
+                            .value = ir::expression::Function_reference { (*function.resolved_info)->resolved },
+                            .type  = (*function.resolved_info)->type_handle
+                        };
+                    }
+                    else {
                         bu::unimplemented();
                     }
-                }, *value);
-            }
-            else {
-                throw error(std::format("The name {} is unbound", variable.name));
-            }
+                },
+                [](resolution::Function_template_definition) -> ir::Expression {
+                    bu::unimplemented();
+                }
+            }, context.find_variable_or_function(variable.name, this_expression.source_view));
         }
 
         auto operator()(ast::expression::Take_reference& take_reference) -> ir::Expression {
@@ -349,20 +342,20 @@ namespace {
 
         auto operator()(ast::expression::Size_of& size_of) -> ir::Expression {
             bool const is_unevaluated = std::exchange(context.is_unevaluated, true);
-            auto type = resolution::resolve_type(size_of.type, context);
+            bu::wrapper auto type = resolution::resolve_type(size_of.type, context);
             context.is_unevaluated = is_unevaluated;
 
             return {
                 .value = ir::expression::Literal<bu::Isize> {
-                    type.size.safe_cast<bu::Isize>()
+                    type->size.safe_cast<bu::Isize>()
                 },
                 .type = ir::type::integer
             };
         }
 
         auto operator()(ast::expression::Member_access_chain& chain) -> ir::Expression {
-            auto expression = recurse(chain.expression);
-            auto most_recent_type = expression.type;
+            auto             expression       = recurse(chain.expression);
+            bu::wrapper auto most_recent_type = expression.type;
 
             bu::Bounded_integer<bu::U16> offset;
 
@@ -373,7 +366,7 @@ namespace {
                             throw error("Negative tuple member indices are not allowed");
                         }
 
-                        auto const index = static_cast<bu::Usize>(member_index);
+                        bu::Usize const index = static_cast<bu::Usize>(member_index);
 
                         if (auto* const tuple = std::get_if<ir::type::Tuple>(&most_recent_type->value)) {
                             if (index < tuple->types.size()) {
@@ -478,11 +471,11 @@ namespace {
                 .type = resolution::resolve_type(cast.target, context)
             };
 
-            auto type = ir_cast.type;
+            bu::wrapper auto type = ir_cast.type;
 
             return {
                 .value = std::move(ir_cast),
-                .type = type
+                .type  = type
             };
         }
 

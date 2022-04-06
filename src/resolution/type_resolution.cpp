@@ -8,11 +8,11 @@ namespace {
         resolution::Resolution_context& context;
         ast::Type                     & this_type;
 
-        auto recurse(ast::Type& type) {
+        auto recurse(ast::Type& type) -> bu::Wrapper<ir::Type> {
             return resolution::resolve_type(type, context);
         }
         auto recurse() {
-            return [this](ast::Type& type) {
+            return [this](ast::Type& type) -> bu::Wrapper<ir::Type> {
                 return recurse(type);
             };
         }
@@ -26,79 +26,23 @@ namespace {
 
 
         template <class T>
-        auto operator()(ast::type::Primitive<T>&) -> ir::Type {
-            return {
-                .value      = ir::type::Primitive<T> {},
-                .size       = ir::Size_type { bu::unchecked_tag, sizeof(T) },
-                .is_trivial = true
-            };
+        auto operator()(ast::type::Primitive<T>&) -> bu::Wrapper<ir::Type> {
+            return ir::type::dtl::make_primitive<T>;
         }
 
-        auto operator()(ast::type::Typename& name) -> ir::Type {
-            if (auto const upper = context.find_upper(name.identifier)) {
-                return std::visit(bu::Overload {
-                    [&](resolution::Struct_definition structure) -> ir::Type {
-                        if (structure.resolved->has_value()) {
-                            return {
-                                .value      = ir::type::User_defined_struct { **structure.resolved },
-                                .size       = (**structure.resolved)->size,
-                                .is_trivial = (**structure.resolved)->is_trivial
-                            };
-                        }
-                        else {
-                            bu::abort("requested reference to unresolved structure");
-                        }
-                    },
-                    [](resolution::Struct_template_definition)    -> ir::Type { bu::unimplemented(); },
-                    [](resolution::Data_definition)               -> ir::Type { bu::unimplemented(); },
-                    [](resolution::Data_template_definition)      -> ir::Type { bu::unimplemented(); },
-                    [](resolution::Alias_definition)              -> ir::Type { bu::unimplemented(); },
-                    [](resolution::Alias_template_definition)     -> ir::Type { bu::unimplemented(); },
-                    [](resolution::Typeclass_definition)          -> ir::Type { bu::unimplemented(); },
-                    [](resolution::Typeclass_template_definition) -> ir::Type { bu::unimplemented(); },
-                }, *upper);
-            }
-            else {
-                throw error(std::format("{} does not refer to a type", name.identifier));
-            }
+        auto operator()(ast::type::Typename& name) -> bu::Wrapper<ir::Type> {
+            return context.find_type(name.identifier, this_type.source_view);
         }
 
-        auto operator()(ast::type::Template_instantiation& instantiation) -> ir::Type {
-            if (auto const upper = context.find_upper(instantiation.name)) {
-                return std::visit(bu::Overload {
-                    [&](resolution::Struct_template_definition definition) -> ir::Type {
-                        auto template_argument_set = resolution::resolve_template_arguments(
-                            instantiation.name,
-                            this_type.source_view,
-                            definition.syntactic_definition->parameters,
-                            instantiation.arguments,
-                            context
-                        );
-
-                        bu::Usize const hash = template_argument_set.hash();
-
-                        if (bu::wrapper auto* const existing = definition.instantiations->find(hash)) {
-                            return {
-                                .value      = ir::type::User_defined_struct { *existing },
-                                .size       = (*existing)->size,
-                                .is_trivial = (*existing)->is_trivial
-                            };
-                        }
-                        else {
-                            bu::abort("new instantiation");
-                        }
-                    },
-                    [](auto&) -> ir::Type {
-                        bu::unimplemented();
-                    }
-                }, *upper);
-            }
-            else {
-                throw error(std::format("{} is undefined", instantiation.name));
-            }
+        auto operator()(ast::type::Template_instantiation& instantiation) -> bu::Wrapper<ir::Type> {
+            return context.find_type_template_instantiation(
+                instantiation.name,
+                this_type.source_view,
+                instantiation.arguments
+            );
         }
 
-        auto operator()(ast::type::Tuple& tuple) -> ir::Type {
+        auto operator()(ast::type::Tuple& tuple) -> bu::Wrapper<ir::Type> {
             ir::type::Tuple ir_tuple;
             ir::Size_type   size;
             bool            is_trivial = true;
@@ -106,25 +50,25 @@ namespace {
             ir_tuple.types.reserve(tuple.types.size());
 
             for (auto& type : tuple.types) {
-                auto ir_type = recurse(type);
+                bu::wrapper auto ir_type = recurse(type);
 
-                size.safe_add(ir_type.size.get());
+                size.safe_add(ir_type->size.get());
 
-                if (!ir_type.is_trivial) {
+                if (!ir_type->is_trivial) {
                     is_trivial = false;
                 }
 
-                ir_tuple.types.push_back(std::move(ir_type));
+                ir_tuple.types.push_back(ir_type);
             }
 
-            return {
+            return ir::Type {
                 .value      = std::move(ir_tuple),
                 .size       = size,
                 .is_trivial = is_trivial
             };
         }
 
-        auto operator()(ast::type::Array& array) -> ir::Type {
+        auto operator()(ast::type::Array& array) -> bu::Wrapper<ir::Type> {
             if (auto* const length = std::get_if<ast::expression::Literal<bu::Isize>>(&array.length->value)) {
                 // do meta evaluation later, the length shouldn't be restricted to a literal
 
@@ -136,7 +80,10 @@ namespace {
                 };
                 auto const size = type.element_type->size.copy().safe_mul(type.length);
 
-                return { .value = std::move(type), .size = size };
+                return ir::Type {
+                    .value = std::move(type),
+                    .size  = size
+                };
             }
             else {
                 bu::abort("non-literal array lengths are not supported yet");
@@ -150,35 +97,29 @@ namespace {
             };
         }
 
-        auto operator()(ast::type::Pointer& pointer) -> ir::Type {
-            return {
+        auto operator()(ast::type::Pointer& pointer) -> bu::Wrapper<ir::Type> {
+            return ir::Type {
                 .value      = resolve_pointer(pointer),
                 .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };
         }
 
-        auto operator()(ast::type::Reference& reference) -> ir::Type {
-            return {
+        auto operator()(ast::type::Reference& reference) -> bu::Wrapper<ir::Type> {
+            return ir::Type {
                 .value      = ir::type::Reference { resolve_pointer(reference) },
                 .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
                 .is_trivial = true
             };
         }
 
-        auto operator()(ast::type::Type_of& type_of) -> ir::Type {
+        auto operator()(ast::type::Type_of& type_of) -> bu::Wrapper<ir::Type> {
             auto child_context = context.make_child_context_with_new_scope();
             child_context.is_unevaluated = true;
-
-            return std::move(
-                *resolution::resolve_expression(
-                    type_of.expression,
-                    child_context
-                ).type
-            );
+            return resolution::resolve_expression(type_of.expression, child_context).type;
         }
 
-        auto operator()(auto&) -> ir::Type {
+        auto operator()(auto&) -> bu::Wrapper<ir::Type> {
             bu::unimplemented();
         }
     };
@@ -186,6 +127,6 @@ namespace {
 }
 
 
-auto resolution::resolve_type(ast::Type& type, Resolution_context& context) -> ir::Type {
+auto resolution::resolve_type(ast::Type& type, Resolution_context& context) -> bu::Wrapper<ir::Type> {
     return std::visit(Type_resolution_visitor { context, type }, type.value);
 }

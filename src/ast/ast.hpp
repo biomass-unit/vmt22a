@@ -40,14 +40,7 @@ namespace ast {
         DEFAULTED_EQUALITY(Qualified_name);
 
         inline auto is_unqualified() const noexcept -> bool;
-    };
-
-    struct Mutability {
-        enum class Type { mut, immut, parameterized };
-
-        std::optional<lexer::Identifier> parameter_name;
-        Type                             type;
-        DEFAULTED_EQUALITY(Mutability);
+        inline auto is_absolute   () const noexcept -> bool;
     };
 
 
@@ -58,6 +51,19 @@ namespace ast {
         };
 
     }
+
+
+    struct Mutability : dtl::Source_tracked {
+        enum class Type { mut, immut, parameterized };
+
+        std::optional<lexer::Identifier> parameter_name;
+        Type                             type;
+
+        auto operator==(this Mutability const self, Mutability const other) noexcept -> bool {
+            return (self.type == other.type) && (self.parameter_name == other.parameter_name);
+        }
+    };
+
 
     // Provide equality comparisons for all node types
     template <class T> requires requires { typename T::Variant; }
@@ -100,6 +106,10 @@ struct ast::Root_qualifier {
 auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
     return middle_qualifiers.empty()
         && std::holds_alternative<std::monostate>(root_qualifier->value);
+}
+
+auto ast::Qualified_name::is_absolute() const noexcept -> bool {
+    return std::holds_alternative<ast::Root_qualifier::Global>(root_qualifier->value);
 }
 
 

@@ -9,8 +9,8 @@ namespace {
 
     // We give a unique tag for each IR node type to decrease the chance of collision
 
-    template <> struct IR_node_tag<ir::Expression> : std::integral_constant<bu::Usize, __LINE__> {};
-    template <> struct IR_node_tag<ir::Type      > : std::integral_constant<bu::Usize, __LINE__> {};
+    template <> struct IR_node_tag<ir::Expression> : std::integral_constant<bu::Usize, bu::get_unique_seed()> {};
+    template <> struct IR_node_tag<ir::Type      > : std::integral_constant<bu::Usize, bu::get_unique_seed()> {};
 
 
     template <class T>
@@ -147,7 +147,12 @@ auto ir::Type::hash() const -> bu::Usize {
 }
 
 auto ir::Template_argument_set::hash() const -> bu::Usize {
-    return bu::hash_combine_with_seed(__LINE__, expression_arguments, type_arguments, mutability_arguments);
+    return bu::hash_combine_with_seed(
+        bu::get_unique_seed(),
+        expression_arguments,
+        type_arguments,
+        mutability_arguments
+    );
 }
 
 

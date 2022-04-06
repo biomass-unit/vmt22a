@@ -185,7 +185,7 @@ namespace bu {
     };
 
 
-    template <class F, class G, class... Hs>
+    template <class F, class G, class... Hs> [[nodiscard]]
     constexpr auto compose(F&& f, G&& g, Hs&&... hs) noexcept {
         if constexpr (sizeof...(Hs) != 0) {
             return compose(std::forward<F>(f), compose(std::forward<G>(g), std::forward<Hs>(hs)...));
@@ -257,6 +257,7 @@ namespace bu {
         std::vector<T> {}.swap(vector);
     }
 
+    [[nodiscard]]
     inline constexpr auto string_without_sso() noexcept -> std::string {
         std::string string;
         string.reserve(sizeof string);
@@ -308,6 +309,15 @@ namespace bu {
         return hash_combine_with_seed(0, args...);
     }
 
+
+    inline consteval auto get_unique_seed(std::source_location caller = std::source_location::current())
+        noexcept -> bu::Usize
+    {
+        return (std::string_view { caller.file_name() }.size()
+              * std::string_view { caller.function_name() }.size()
+              + static_cast<Usize>(caller.line())
+              * static_cast<Usize>(caller.column()));
+    }
 
     namespace dtl {
 
@@ -454,7 +464,7 @@ struct std::hash<std::vector<T>> {
 template <class Fst, class Snd>
 struct std::hash<bu::Pair<Fst, Snd>> {
     auto operator()(bu::Pair<Fst, Snd> const& pair) const -> bu::Usize {
-        return bu::hash_combine_with_seed(__LINE__, pair.first, pair.second);
+        return bu::hash_combine_with_seed(bu::get_unique_seed(), pair.first, pair.second);
     }
 };
 

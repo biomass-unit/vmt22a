@@ -31,7 +31,6 @@ namespace ir {
             std::vector<Parameter>  parameters;
             bu::Wrapper<Type>       return_type;
             bu::Wrapper<Expression> body;
-            bu::Wrapper<Type>       function_type;
         };
 
         struct Data {

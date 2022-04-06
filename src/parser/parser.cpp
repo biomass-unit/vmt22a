@@ -110,6 +110,8 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
 }
 
 auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
+    auto* const anchor = context.pointer;
+
     ast::Mutability mutability;
 
     if (context.try_consume(Token::Type::mut)) {
@@ -125,6 +127,7 @@ auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
         mutability.type = ast::Mutability::Type::immut;
     }
 
+    assign_source_view(mutability, anchor, context.pointer - 1);
     return mutability;
 }
 
