@@ -153,11 +153,12 @@ namespace resolution {
 
 
     struct Resolution_context {
-        Scope                  scope;
-        bu::Wrapper<Namespace> current_namespace;
-        bu::Wrapper<Namespace> global_namespace;
-        bu::Source*            source         = nullptr;
-        bool                   is_unevaluated = false;
+        Scope                                 scope;
+        bu::Wrapper<Namespace>                current_namespace;
+        bu::Wrapper<Namespace>                global_namespace;
+        bu::Source                          * source               = nullptr;
+        bu::Flatmap<lexer::Identifier, bool>* mutability_arguments = nullptr;
+        bool                                  is_unevaluated       = false;
 
         auto make_child_context_with_new_scope() noexcept -> Resolution_context;
 

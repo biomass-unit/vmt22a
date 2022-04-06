@@ -17,9 +17,18 @@ namespace hmm {
         }
     }
 
+    struct Hmm[A, B] = c: A, d: B
+
+    fn do_thing(n: Int) {
+        Hmm[aaa::bbb::Test_struct, Float] {
+            c = aaa::bbb::Test_struct { a = n, b = "" },
+            d = n as Float
+        }
+    }
+
 }
 
 
-fn main() {
-    hmm::ccc::ddd::test_function(10).a
+fn main(): Int {
+    hmm::do_thing(10).c.a
 }

@@ -366,6 +366,9 @@ namespace bu {
     template <class T>
     concept trivial = std::is_trivial_v<T>;
 
+    template <class T>
+    concept trivially_copyable = std::is_trivially_copyable_v<T>;
+
     template <class>
     constexpr bool always_false = false;
 

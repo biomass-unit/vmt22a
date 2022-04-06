@@ -57,11 +57,11 @@ namespace ir {
         };
 
         struct Alias {
-
+            std::string name;
         };
 
         struct Typeclass {
-
+            std::string name;
         };
 
     }
@@ -311,6 +311,14 @@ namespace ir {
         Table<ir::Expression>        expression_arguments;
         Table<bu::Wrapper<ir::Type>> type_arguments;
         Table<bool>                  mutability_arguments;
+
+        struct Argument_indicator {
+            enum class Kind { expression, type, mutability } kind;
+            bu::Usize                                        index;
+        };
+        std::vector<Argument_indicator> arguments_in_order;
+
+        auto append_formatted_arguments(std::string&) const -> void;
 
         auto hash() const -> bu::Usize;
     };

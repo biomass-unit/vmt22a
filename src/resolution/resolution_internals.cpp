@@ -85,15 +85,12 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
         return true;
     case ast::Mutability::Type::immut:
         return false;
-    /*case ast::Mutability::Type::parameterized:
-        if (!template_instantiation_info) {
+    case ast::Mutability::Type::parameterized:
+        if (!mutability_arguments) {
             return false;
         }
         else {
-            auto& mutability_arguments =
-                template_instantiation_info->argument_set->mutability_arguments;
-
-            if (bool const* const argument = mutability_arguments.find(*mutability.parameter_name)) {
+            if (bool const* const argument = mutability_arguments->find(*mutability.parameter_name)) {
                 return *argument;
             }
             else {
@@ -106,7 +103,7 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
                     .message        = message
                 });
             }
-        }*/
+        }
     default:
         bu::unreachable();
     }
@@ -158,6 +155,7 @@ auto resolution::Resolution_context::make_child_context_with_new_scope() noexcep
         current_namespace,
         global_namespace,
         source,
+        mutability_arguments,
         is_unevaluated
     };
 }
@@ -219,12 +217,87 @@ auto resolution::Resolution_context::find_type(ast::Qualified_name&   full_name,
     }
 }
 
-auto resolution::Resolution_context::find_type_template_instantiation(ast::Qualified_name&                    /*full_name*/,
-                                                                      std::string_view const                  /*source_view*/,
-                                                                      std::span<ast::Template_argument> const /*arguments*/)
+auto resolution::Resolution_context::find_type_template_instantiation(ast::Qualified_name&                    full_name,
+                                                                      std::string_view const                  source_view,
+                                                                      std::span<ast::Template_argument> const arguments)
     -> bu::Wrapper<ir::Type>
 {
-    bu::unimplemented();
+    assert(full_name.primary_qualifier.is_upper);
+    bu::wrapper auto space = apply_qualifiers(full_name);
+
+    if (auto* const upper = space->upper_table.find(full_name.primary_qualifier.name)) {
+        return std::visit(bu::Overload {
+            [&]<class T>(Definition<ast::definition::Template_definition<T>> template_definition)
+                -> bu::Wrapper<ir::Type>
+            {
+                ir::Template_argument_set argument_set = resolve_template_arguments(
+                    full_name,
+                    source_view,
+                    template_definition.template_parameters,
+                    arguments,
+                    *this
+                );
+
+                if (auto* const existing = template_definition.instantiations->find(argument_set)) {
+                    return existing->type_handle;
+                }
+
+                Resolution_context instantiation_context {
+                    .scope                { .parent = nullptr },
+                    .current_namespace    = template_definition.home_namespace,
+                    .global_namespace     = global_namespace,
+                    .source               = source,
+                    .mutability_arguments = &argument_set.mutability_arguments,
+                    .is_unevaluated       = false
+                };
+
+                if (argument_set.expression_arguments.size() || argument_set.mutability_arguments.size()) {
+                    bu::unimplemented();
+                }
+
+                for (auto& [name, type] : argument_set.type_arguments.container()) {
+                    instantiation_context.scope.local_type_aliases.add(
+                        bu::copy(name),
+                        {
+                            .type               = type,
+                            .has_been_mentioned = false
+                        }
+                    );
+                }
+
+                Definition<T> concrete {
+                    .syntactic_definition = template_definition.syntactic_definition,
+                    .home_namespace       = template_definition.home_namespace,
+                    .resolved_info        = std::nullopt
+                };
+
+                // Resolve the instantiation as a regular non-template definition in the instantiation context
+                resolve_definition(concrete, instantiation_context);
+
+                if (!concrete.resolved_info->has_value()) {
+                    bu::abort("how");
+                }
+
+                bu::trivially_copyable auto instantiation_info = **concrete.resolved_info;
+
+                // Add the template arguments to the name
+                argument_set.append_formatted_arguments(instantiation_info.resolved->name);
+
+                // Register the instantiation so that it can be retrieved later
+                template_definition.instantiations->add(argument_set, bu::copy(instantiation_info));
+
+                // Return a handle to the newly instantiated type
+                return instantiation_info.type_handle;
+            },
+            [](auto&) -> bu::Wrapper<ir::Type> {
+                bu::unimplemented();
+            }
+        }, *upper);
+    }
+    else {
+        auto const message = std::format("{} is undefined", full_name);
+        throw error({ .erroneous_view = source_view, .message = message });
+    }
 }
 
 auto resolution::Resolution_context::find_variable_or_function(ast::Qualified_name&   full_name,
@@ -279,6 +352,10 @@ auto resolution::resolve_template_arguments(ast::Qualified_name&               n
                 [&](Parameter::Type_parameter& parameter, ast::Type& type) {
                     // Check constraints here
 
+                    argument_set.arguments_in_order.emplace_back(
+                        ir::Template_argument_set::Argument_indicator::Kind::type,
+                        argument_set.type_arguments.size()
+                    );
                     argument_set.type_arguments.add(
                         bu::copy(parameter.name),
                         resolve_type(type, context)
@@ -289,6 +366,10 @@ auto resolution::resolve_template_arguments(ast::Qualified_name&               n
                     auto required_type  = resolve_type(parameter.type, context);
 
                     if (required_type == given_argument.type) {
+                        argument_set.arguments_in_order.emplace_back(
+                            ir::Template_argument_set::Argument_indicator::Kind::expression,
+                            argument_set.expression_arguments.size()
+                        );
                         argument_set.expression_arguments.add(
                             bu::copy(parameter.name),
                             std::move(given_argument)
@@ -308,6 +389,10 @@ auto resolution::resolve_template_arguments(ast::Qualified_name&               n
                     }
                 },
                 [&](Parameter::Mutability_parameter& parameter, ast::Mutability const mutability) {
+                    argument_set.arguments_in_order.emplace_back(
+                        ir::Template_argument_set::Argument_indicator::Kind::mutability,
+                        argument_set.mutability_arguments.size()
+                    );
                     argument_set.mutability_arguments.add(
                         bu::copy(parameter.name),
                         context.resolve_mutability(mutability)
@@ -333,6 +418,35 @@ auto resolution::resolve_template_arguments(ast::Qualified_name&               n
     }
 }
 
+
+auto ir::Template_argument_set::append_formatted_arguments(std::string& string) const -> void {
+    string.push_back('[');
+
+    auto out = std::back_inserter(string);
+    for (auto [kind, index] : arguments_in_order) {
+        switch (kind) {
+        case Argument_indicator::Kind::type:
+            std::format_to(out, "{}, ", type_arguments.container().at(index).second);
+            break;
+        case Argument_indicator::Kind::expression:
+            std::format_to(out, "{}, ", expression_arguments.container().at(index).second);
+            break;
+        case Argument_indicator::Kind::mutability:
+            std::format_to(out, "{}, ", mutability_arguments.container().at(index).second ? "mut" : "immut");
+            break;
+        default:
+            bu::unreachable();
+        }
+    }
+
+    if (string.ends_with(", ")) {
+        string.erase(string.end() - 2, string.end());
+    }
+
+    string.push_back(']');
+
+    // Improve later
+}
 
 auto ir::Type::is_unit() const noexcept -> bool {
     // Checking size == 0 isn't enough, because compound
