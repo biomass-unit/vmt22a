@@ -19,7 +19,7 @@ namespace bu {
         T min = std::numeric_limits<T>::min(),
         T max = std::numeric_limits<T>::max(),
         T default_value = (std::cmp_less_equal(min, 0) && std::cmp_less_equal(0, max))
-            ? 0 // If zero is in range then it is the default-default
+            ? 0 // If zero is in range then it is the default-default-value, otherwise it must be explicitly specified
             : throw "please specify a default value"
     >
     class Bounded_integer {

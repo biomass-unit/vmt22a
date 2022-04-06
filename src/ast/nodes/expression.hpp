@@ -106,6 +106,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Let_binding);
         };
 
+        struct Local_type_alias {
+            lexer::Identifier name;
+            bu::Wrapper<Type> type;
+            DEFAULTED_EQUALITY(Local_type_alias);
+        };
+
         struct Infinite_loop {
             bu::Wrapper<Expression> body;
             DEFAULTED_EQUALITY(Infinite_loop);
@@ -179,6 +185,7 @@ namespace ast {
             expression::Match,
             expression::Type_cast,
             expression::Let_binding,
+            expression::Local_type_alias,
             expression::Infinite_loop,
             expression::While_loop,
             expression::For_loop,

@@ -36,8 +36,14 @@ namespace {
             // it, and if the identifier is new, then ranges::find returns a
             // past-the-end iterator, meaning the pair is inserted at the end.
 
+            auto const it = std::ranges::find(bindings, pattern.identifier, bu::first);
+
+            if (it != bindings.end() && !it->second.has_been_mentioned) {
+                throw error(std::format("{} would shadow an unused variable", pattern.identifier));
+            }
+
             bindings.emplace(
-                std::ranges::find(bindings, pattern.identifier, bu::first),
+                it,
                 pattern.identifier,
                 resolution::Binding {
                     .type               = this_type,
@@ -49,7 +55,10 @@ namespace {
 
             if (!context.is_unevaluated) {
                 context.scope.current_frame_offset.safe_add(this_type->size);
-                context.scope.destroy_in_reverse_order.push_back(this_type);
+
+                if (!this_type->is_trivial) {
+                    context.scope.destroy_in_reverse_order.push_back(this_type);
+                }
             }
         }
 

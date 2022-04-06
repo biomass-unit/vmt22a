@@ -275,6 +275,31 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Local_type_alias& alias) -> ir::Expression {
+            auto& bindings = context.scope.local_type_aliases.container();
+            auto  it       = std::ranges::find(bindings, alias.name, bu::first);
+
+            bu::wrapper auto type = resolution::resolve_type(alias.type, context);
+
+            if (it != bindings.end() && !it->second.has_been_mentioned) {
+                throw error(std::format("{} would shadow an unused local type alias", alias.name));
+            }
+
+            bindings.emplace(
+                it,
+                alias.name,
+                resolution::Local_type_alias {
+                    .type               = type,
+                    .has_been_mentioned = false
+                }
+            );
+
+            return {
+                .value = ir::expression::Tuple {},
+                .type  = ir::type::unit
+            };
+        }
+
         auto operator()(ast::expression::Variable& variable) -> ir::Expression {
             return std::visit(bu::Overload {
                 [this](resolution::Binding* const binding) -> ir::Expression {

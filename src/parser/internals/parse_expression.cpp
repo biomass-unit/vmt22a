@@ -236,6 +236,15 @@ namespace {
         };
     }
 
+    auto extract_local_type_alias(Parse_context& context) -> ast::Expression {
+        auto name = extract_upper_id(context, "an alias name");
+        context.consume_required(Token::Type::equals);
+        return ast::expression::Local_type_alias {
+            std::move(name),
+            extract_type(context)
+        };
+    }
+
     auto extract_loop_body(Parse_context& context) -> ast::Expression {
         if (auto body = parse_compound_expression(context)) {
             return std::move(*body);
@@ -399,6 +408,8 @@ namespace {
                 return extract_conditional(context);
             case Token::Type::let:
                 return extract_let_binding(context);
+            case Token::Type::alias:
+                return extract_local_type_alias(context);
             case Token::Type::loop:
                 return extract_infinite_loop(context);
             case Token::Type::while_:
