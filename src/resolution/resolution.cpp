@@ -212,6 +212,61 @@ namespace {
             };
         }
 
+        auto operator()(resolution::Data_definition data) -> void {
+            if (data.has_been_resolved()) {
+                return;
+            }
+
+            auto* const definition = data.syntactic_definition;
+
+            bu::Flatmap<lexer::Identifier, ir::definition::Data::Constructor> constructors;
+            constructors.container().reserve(definition->constructors.size());
+
+            ir::Size_type size;
+            bool          is_trivial = true;
+            bu::U8        tag        = 0;
+            // The tag doesn't have to be a bu::bounded_u8 because the
+            // parser disallows data-definitions with too many constructors
+
+            for (auto& constructor : definition->constructors) {
+                auto type = constructor.type.transform([&](ast::Type& type) {
+                    return resolution::resolve_type(type, context);
+                });
+
+                if (type) {
+                    if (!(*type)->is_trivial) {
+                        is_trivial = false;
+                    }
+                    size = ir::Size_type { std::max(size.get(), (*type)->size.get()) };
+                }
+
+                constructors.add(
+                    bu::copy(constructor.name),
+                    {
+                        .type = type,
+                        .tag  = tag++
+                    }
+                );
+            }
+
+
+            bu::Wrapper resolved_data = ir::definition::Data {
+                .constructors = std::move(constructors),
+                .name         = context.current_namespace->format_name_as_member(definition->name),
+                .size         = size,
+                .is_trivial   = is_trivial
+            };
+
+            *data.resolved_info = resolution::Data_definition::Resolved_info {
+                .resolved = resolved_data,
+                .type_handle = ir::Type {
+                    .value      = ir::type::User_defined_data { resolved_data },
+                    .size       = resolved_data->size,
+                    .is_trivial = resolved_data->is_trivial
+                }
+            };
+        }
+
         auto operator()(bu::Wrapper<resolution::Namespace> const child) -> void {
             bu::wrapper auto current_namespace = std::exchange(context.current_namespace, child);
 

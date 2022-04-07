@@ -32,8 +32,11 @@ namespace hmm {
 }
 
 
+data Maybe = nothing | just(Int)
+
+
 fn main(): Int {
-    let mut i = 0;
-    let _: &mut Int = hmm::test[mut, Int](&mut i);
-    i
+    let m: Maybe = "Hello";
+    m as ();
+    6
 }

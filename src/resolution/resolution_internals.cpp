@@ -291,6 +291,9 @@ namespace {
         }
 
         for (auto& [name, type] : argument_set.type_arguments.container()) {
+
+            // fix
+
             instantiation_context.scope.local_type_aliases.add(
                 bu::copy(name),
                 {
@@ -342,16 +345,14 @@ auto resolution::Resolution_context::find_type_template_instantiation(
             [&, this]<class T>(Definition<ast::definition::Template_definition<T>> template_definition)
                 -> bu::Wrapper<ir::Type>
             {
-                bu::trivially_copyable auto instantiation_info = instantiate_template(
+                // Return a handle to the newly instantiated type
+                return instantiate_template(
                     full_name,
                     source_view,
                     template_definition,
                     arguments,
                     *this
-                );
-
-                // Return a handle to the newly instantiated type
-                return instantiation_info.type_handle;
+                ).type_handle;
             },
             [](auto&) -> bu::Wrapper<ir::Type> {
                 bu::unimplemented();
@@ -420,6 +421,7 @@ auto resolution::resolve_template_arguments(
     };
 
     ir::Template_argument_set argument_set;
+    argument_set.arguments_in_order.reserve(parameters.size());
 
     if (parameters.size() == arguments.size()) {
         for (bu::Usize i = 0; i != arguments.size(); ++i) {
@@ -500,6 +502,7 @@ auto ir::Template_argument_set::append_formatted_arguments_to(std::string& strin
     string.push_back('[');
 
     auto out = std::back_inserter(string);
+
     for (auto [kind, index] : arguments_in_order) {
         switch (kind) {
         case Argument_indicator::Kind::type:
