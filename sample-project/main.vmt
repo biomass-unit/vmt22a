@@ -1,12 +1,17 @@
 import a.b as ab
 
 
-struct Test = a: Int, b: Int
+namespace test {
+    struct A = a: Int
+    
+    namespace nested {
+        fn hmm[T](): T = 0
+    }
+
+    fn hmmm() = ::test::A { a = nested::hmm[Int]() } 
+}
 
 
-//impl Test {
-//    fn magic(): Int = 5
-//}
-
-
-fn main(): Int = Test::magic()
+fn main(): Int {
+    test::hmmm().a
+}

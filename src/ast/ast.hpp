@@ -14,20 +14,32 @@ namespace ast {
     struct [[nodiscard]] Type;
     struct [[nodiscard]] Definition;
 
+
+    namespace dtl {
+        struct Source_tracked {
+            std::string_view source_view;
+
+            constexpr auto operator==(Source_tracked const&) const noexcept -> bool {
+                return true;
+            }
+        };
+    }
+
+
     struct Template_argument;
 
     struct Function_argument;
 
     struct Root_qualifier;
 
-    struct Qualifier {
+    struct Qualifier : dtl::Source_tracked {
         std::optional<std::vector<Template_argument>> template_arguments;
         lexer::Identifier                             name;
         bool                                          is_upper;
         DEFAULTED_EQUALITY(Qualifier);
     };
 
-    struct Primary_qualifier {
+    struct Primary_qualifier : dtl::Source_tracked {
         lexer::Identifier name;
         bool              is_upper;
         DEFAULTED_EQUALITY(Primary_qualifier);
@@ -40,17 +52,7 @@ namespace ast {
         DEFAULTED_EQUALITY(Qualified_name);
 
         inline auto is_unqualified() const noexcept -> bool;
-        inline auto is_absolute   () const noexcept -> bool;
     };
-
-
-    namespace dtl {
-
-        struct Source_tracked {
-            std::string_view source_view;
-        };
-
-    }
 
 
     struct Mutability : dtl::Source_tracked {
@@ -59,9 +61,7 @@ namespace ast {
         std::optional<lexer::Identifier> parameter_name;
         Type                             type;
 
-        auto operator==(this Mutability const self, Mutability const other) noexcept -> bool {
-            return (self.type == other.type) && (self.parameter_name == other.parameter_name);
-        }
+        DEFAULTED_EQUALITY(Mutability);
     };
 
 
@@ -106,10 +106,6 @@ struct ast::Root_qualifier {
 auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
     return middle_qualifiers.empty()
         && std::holds_alternative<std::monostate>(root_qualifier->value);
-}
-
-auto ast::Qualified_name::is_absolute() const noexcept -> bool {
-    return std::holds_alternative<ast::Root_qualifier::Global>(root_qualifier->value);
 }
 
 

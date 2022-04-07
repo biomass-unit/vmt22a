@@ -215,6 +215,7 @@
     <ClCompile Include="src\resolution\bind_pattern.cpp" />
     <ClCompile Include="src\resolution\expression_resolution.cpp" />
     <ClCompile Include="src\ir\ir_formatting.cpp" />
+    <ClCompile Include="src\resolution\namespace_lookup.cpp" />
     <ClCompile Include="src\resolution\resolution.cpp" />
     <ClCompile Include="src\resolution\resolution_internals.cpp" />
     <ClCompile Include="src\resolution\type_resolution.cpp" />

@@ -67,17 +67,20 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
         switch (auto& token = context.extract(); token.type) {
         case Token::Type::lower_name:
         case Token::Type::upper_name:
+        {
             template_argument_anchor = context.pointer;
 
-            qualifiers.push_back(
-                ast::Qualifier {
-                    .template_arguments = parse_template_arguments(context),
-                    .name               = token.as_identifier(),
-                    .is_upper           = token.type == Token::Type::upper_name
-                }
-            );
+            ast::Qualifier qualifier {
+                .template_arguments = parse_template_arguments(context),
+                .name               = token.as_identifier(),
+                .is_upper           = token.type == Token::Type::upper_name
+            };
+            assign_source_view(qualifier, context.pointer - 2, context.pointer - 1);
+
+            qualifiers.push_back(std::move(qualifier));
 
             return true;
+        }
         default:
             context.retreat();
             return false;
@@ -97,10 +100,16 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
         // Ignore potential template arguments, they are handled separately
         context.pointer = template_argument_anchor;
 
+        ast::Primary_qualifier primary {
+            .name     = back.name,
+            .is_upper = back.is_upper
+        };
+        assign_source_view(primary, context.pointer - 2, context.pointer - 1);
+
         return {
             .root_qualifier    = std::move(root),
             .middle_qualifiers = std::move(qualifiers),
-            .primary_qualifier { back.name, back.is_upper }
+            .primary_qualifier = std::move(primary)
         };
     }
     else {

@@ -135,6 +135,9 @@ namespace resolution {
     >;
 
 
+    struct Resolution_context;
+
+
     struct Namespace {
         template <class T>
         using Table = bu::Flatmap<lexer::Identifier, T>;
@@ -145,6 +148,12 @@ namespace resolution {
         Table<bu::Wrapper<Namespace>>         children;
         std::optional<bu::Wrapper<Namespace>> parent;
         std::optional<lexer::Identifier>      name;
+
+        auto find_type_here(lexer::Identifier,
+                            std::string_view,
+                            std::optional<std::span<ast::Template_argument>>,
+                            Resolution_context&)
+            -> std::optional<bu::Wrapper<ir::Type>>;
 
         auto format_name_as_member(lexer::Identifier) const -> std::string;
     };
@@ -161,22 +170,18 @@ namespace resolution {
         auto make_child_context_with_new_scope() noexcept -> Resolution_context;
 
 
-        auto find_type(ast::Qualified_name&, std::string_view)
+        auto new_find_upper(ast::Qualified_name&, std::string_view) -> Upper_variant;
+        auto new_find_lower(ast::Qualified_name&, std::string_view) -> Lower_variant;
+
+        auto new_find_type(ast::Qualified_name&,
+                           std::string_view,
+                           std::optional<std::span<ast::Template_argument>>)
             -> bu::Wrapper<ir::Type>;
 
-        auto find_variable_or_function(ast::Qualified_name&, std::string_view)
-            -> Lower_variant;
-
-
-        auto find_type_template_instantiation(ast::Qualified_name&,
-                                              std::string_view,
-                                              std::span<ast::Template_argument>)
-            -> bu::Wrapper<ir::Type>;
-
-        auto find_function_template_instantiation(ast::Qualified_name&,
-                                                  std::string_view,
-                                                  std::span<ast::Template_argument>)
-            -> Function_definition::Resolved_info;
+        auto new_find_variable_or_function(ast::Qualified_name&,
+                                           ast::Expression&,
+                                           std::optional<std::span<ast::Template_argument>>)
+            -> ir::Expression;
 
 
         auto find_associated_namespace(bu::Wrapper<ir::Type>, std::string_view)
@@ -194,10 +199,6 @@ namespace resolution {
 
         auto error(Error_arguments) -> std::runtime_error;
 
-    private:
-
-        auto apply_qualifiers(ast::Qualified_name&) -> bu::Wrapper<Namespace>;
-
     };
 
 
@@ -206,11 +207,12 @@ namespace resolution {
 
     auto resolve_definition(Definition_variant, Resolution_context&) -> void;
 
-    auto resolve_template_arguments(ast::Qualified_name&,
-                                    std::string_view,
-                                    std::span<ast::Template_parameter>,
-                                    std::span<ast::Template_argument>,
-                                    Resolution_context&)
+    auto resolve_template_arguments(Namespace&                         current_namespace,
+                                    lexer::Identifier                  name,
+                                    std::string_view                   source_view,
+                                    std::span<ast::Template_parameter> parameters,
+                                    std::span<ast::Template_argument>  arguments,
+                                    Resolution_context&                context)
         -> ir::Template_argument_set;
 
 }

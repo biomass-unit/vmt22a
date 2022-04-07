@@ -301,54 +301,11 @@ namespace {
         }
 
         auto operator()(ast::expression::Variable& variable) -> ir::Expression {
-            return std::visit(bu::Overload {
-                [this](resolution::Binding* const binding) -> ir::Expression {
-                    binding->has_been_mentioned = true;
-
-                    if (!context.is_unevaluated && !binding->type->is_trivial) {
-                        if (binding->moved_by) {
-                            bu::unimplemented();
-                        }
-                        else {
-                            binding->moved_by = &this_expression;
-                        }
-                    }
-
-                    return {
-                        .value = ir::expression::Local_variable {
-                            .frame_offset = binding->frame_offset
-                        },
-                        .type = binding->type
-                    };
-                },
-                [](resolution::Function_definition function) -> ir::Expression {
-                    if (function.has_been_resolved()) {
-                        return {
-                            .value = ir::expression::Function_reference { (*function.resolved_info)->resolved },
-                            .type  = (*function.resolved_info)->type_handle
-                        };
-                    }
-                    else {
-                        bu::unimplemented();
-                    }
-                },
-                [](resolution::Function_template_definition) -> ir::Expression {
-                    bu::unimplemented();
-                }
-            }, context.find_variable_or_function(variable.name, this_expression.source_view));
+            return context.new_find_variable_or_function(variable.name, this_expression, std::nullopt);
         }
 
         auto operator()(ast::expression::Template_instantiation& instantiation) -> ir::Expression {
-            bu::trivially_copyable auto info = context.find_function_template_instantiation(
-                instantiation.name,
-                this_expression.source_view,
-                instantiation.template_arguments
-            );
-
-            return {
-                .value = ir::expression::Function_reference { info.resolved },
-                .type  = info.type_handle
-            };
+            return context.new_find_variable_or_function(instantiation.name, this_expression, instantiation.template_arguments);
         }
 
         auto operator()(ast::expression::Take_reference& take_reference) -> ir::Expression {

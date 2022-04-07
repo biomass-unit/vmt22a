@@ -31,11 +31,15 @@ namespace {
         }
 
         auto operator()(ast::type::Typename& name) -> bu::Wrapper<ir::Type> {
-            return context.find_type(name.identifier, this_type.source_view);
+            return context.new_find_type(
+                name.identifier,
+                this_type.source_view,
+                std::nullopt
+            );
         }
 
         auto operator()(ast::type::Template_instantiation& instantiation) -> bu::Wrapper<ir::Type> {
-            return context.find_type_template_instantiation(
+            return context.new_find_type(
                 instantiation.name,
                 this_type.source_view,
                 instantiation.arguments
