@@ -213,6 +213,3 @@ catch (cli::Unrecognized_option const& exception) {
 catch (std::exception const& exception) {
     error_stream << exception.what() << '\n';
 }
-
-
-// add associated namespaces to types

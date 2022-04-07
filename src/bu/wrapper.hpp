@@ -7,7 +7,7 @@ namespace bu {
 
     template <class T>
     class [[nodiscard]] Wrapper {
-        inline static auto vector = bu::vector_with_capacity<T>(256);
+        static std::vector<T> vector;
 
         Usize index;
     public:
@@ -33,6 +33,10 @@ namespace bu {
             bu::release_vector_memory(vector);
         }
     };
+
+    // Initializer lifted out of the class due to apparent compiler bug
+    template <class T>
+    std::vector<T> Wrapper<T>::vector = bu::vector_with_capacity<T>(256);
 
     template <class T>
     Wrapper(T) -> Wrapper<T>;

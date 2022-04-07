@@ -42,26 +42,6 @@ auto resolution::Scope::unused_variables() -> std::optional<std::vector<lexer::I
 }
 
 
-auto resolution::Namespace::find_root(ast::Qualifier& qualifier) -> bu::Wrapper<Namespace> {
-    if (qualifier.is_upper || qualifier.template_arguments) {
-        bu::unimplemented();
-    }
-
-    static constexpr auto to_pointer = [](std::optional<bu::Wrapper<Namespace>> space)
-        noexcept -> Namespace*
-    {
-        return space ? &**space : nullptr;
-    };
-
-    for (Namespace* space = this; space; space = to_pointer(space->parent)) {
-        if (bu::wrapper auto* child = space->children.find(qualifier.name)) {
-            return *child;
-        }
-    }
-
-    bu::abort("couldn't find root namespace");
-}
-
 auto resolution::Namespace::format_name_as_member(lexer::Identifier const name) const -> std::string {
     std::string string;
     auto out = std::back_inserter(string);
@@ -111,28 +91,65 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
 
 auto resolution::Resolution_context::apply_qualifiers(ast::Qualified_name& name) -> bu::Wrapper<Namespace> {
     bu::wrapper auto root = std::visit(bu::Overload {
-        [&](std::monostate) {
+        [this](std::monostate) {
             return current_namespace;
         },
-        [&](ast::Root_qualifier::Global) {
+        [this](ast::Root_qualifier::Global) {
             return global_namespace;
         },
-        [](ast::Type&) -> bu::Wrapper<Namespace> {
-            bu::unimplemented(); // ir::definition::User_defined_*::associated_namespace
+        [this](ast::Type& type) -> bu::Wrapper<Namespace> {
+            return find_associated_namespace(resolve_type(type, *this), type.source_view);
         }
     }, name.root_qualifier->value);
 
-    auto const ensure_regular_qualifier = [](ast::Qualifier& qualifier) -> void {
-        if (qualifier.is_upper || qualifier.template_arguments.has_value()) {
-            bu::unimplemented();
-        }
-    };
-
     if (!name.middle_qualifiers.empty()) {
-        root = root->find_root(name.middle_qualifiers.front());
+        
+
+        {
+            auto& first = name.middle_qualifiers.front();
+
+            static constexpr auto to_pointer = [](std::optional<bu::Wrapper<Namespace>> space)
+                noexcept -> Namespace*
+            {
+                return space ? &**space : nullptr;
+            };
+
+            for (Namespace* space = &*root; space; space = to_pointer(space->parent)) {
+                if (first.is_upper) {
+                    if (Upper_variant* const upper = space->upper_table.find(first.name)) {
+                        std::visit(bu::Overload {
+                            [&]<bu::one_of<ast::definition::Struct, ast::definition::Data> T>(Definition<T> definition) {
+                                if (definition.has_been_resolved()) {
+                                    root = (*definition.resolved_info)->resolved->associated_namespace;
+                                }
+                                else {
+                                    bu::unimplemented();
+                                }
+                            },
+                            [&](auto&) {
+                                bu::unimplemented();
+                            }
+                        }, *upper);
+                        break;
+                    }
+                }
+                else {
+                    if (first.template_arguments) {
+                        bu::unimplemented();
+                    }
+                    if (bu::wrapper auto* child = space->children.find(first.name)) {
+                        root = *child;
+                        break;
+                    }
+                }
+            }
+        }
+
 
         for (auto& qualifier : name.middle_qualifiers | std::views::drop(1)) {
-            ensure_regular_qualifier(qualifier);
+            if (qualifier.template_arguments) {
+                bu::unimplemented();
+            }
 
             if (bu::wrapper auto* const child = root->children.find(qualifier.name)) {
                 root = *child;
@@ -172,6 +189,34 @@ auto resolution::Resolution_context::error(Error_arguments const arguments)
             .help_note      = arguments.help_note
         })
     };
+}
+
+
+auto resolution::Resolution_context::find_associated_namespace(
+    bu::Wrapper<ir::Type>  type,
+    std::string_view const source_view
+)
+    -> bu::Wrapper<Namespace>
+{
+    return std::visit(bu::Overload {
+        [](ir::type::User_defined_struct uds) {
+            return uds.structure->associated_namespace;
+        },
+        [](ir::type::User_defined_data udd) {
+            return udd.data->associated_namespace;
+        },
+        [&, this](auto&) -> bu::Wrapper<Namespace> {
+            auto const message = std::format(
+                "{} is not a user-defined type, and so it "
+                "does not have an associated namespace",
+                type
+            );
+            throw error({
+                .erroneous_view = source_view,
+                .message        = message
+            });
+        }
+    }, type->value);
 }
 
 
@@ -408,7 +453,7 @@ auto resolution::resolve_template_arguments(
     std::span<ast::Template_argument>  arguments,
     Resolution_context&                context
 )
-        -> ir::Template_argument_set
+    -> ir::Template_argument_set
 {
     auto const error = [&](std::string_view const message,
                            ast::Expression* const expression = nullptr)

@@ -107,6 +107,12 @@ namespace {
     struct Definition_resolution_visitor {
         resolution::Resolution_context& context;
 
+
+        auto make_associated_namespace() -> bu::Wrapper<resolution::Namespace> {
+            return resolution::Namespace { .parent = context.current_namespace };
+        }
+
+
         auto operator()(resolution::Function_definition function) -> void {
             if (function.has_been_resolved()) {
                 return;
@@ -196,10 +202,11 @@ namespace {
             }
 
             bu::Wrapper resolved_structure = ir::definition::Struct {
-                .members    = std::move(members),
-                .name       = context.current_namespace->format_name_as_member(definition->name),
-                .size       = size,
-                .is_trivial = is_trivial
+                .members              = std::move(members),
+                .name                 = context.current_namespace->format_name_as_member(definition->name),
+                .associated_namespace = make_associated_namespace(),
+                .size                 = size,
+                .is_trivial           = is_trivial
             };
 
             *structure.resolved_info = resolution::Struct_definition::Resolved_info {
@@ -251,10 +258,11 @@ namespace {
 
 
             bu::Wrapper resolved_data = ir::definition::Data {
-                .constructors = std::move(constructors),
-                .name         = context.current_namespace->format_name_as_member(definition->name),
-                .size         = size,
-                .is_trivial   = is_trivial
+                .constructors         = std::move(constructors),
+                .name                 = context.current_namespace->format_name_as_member(definition->name),
+                .associated_namespace = make_associated_namespace(),
+                .size                 = size,
+                .is_trivial           = is_trivial
             };
 
             *data.resolved_info = resolution::Data_definition::Resolved_info {

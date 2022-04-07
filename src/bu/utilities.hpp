@@ -238,7 +238,7 @@ namespace bu {
     constexpr Value<x> value;
 
 
-    template <class, class>
+    template <class Variant, class Alternative>
     constexpr Usize alternative_index;
     template <class... Ts, class T>
     constexpr Usize alternative_index<std::variant<Ts...>, T> =

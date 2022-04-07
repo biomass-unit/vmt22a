@@ -1,42 +1,12 @@
 import a.b as ab
 
 
-namespace hmm {
-
-    namespace aaa {
-        namespace bbb {
-            struct Test_struct = a: Int, b: String
-        }
-    }
-
-    namespace ccc {
-        namespace ddd {
-            fn test_function(n: Int): hmm::aaa::bbb::Test_struct {
-                aaa::bbb::Test_struct { b = "Hi", a = n }
-            }
-        }
-    }
-
-    struct Hmm[A, B] = c: A, d: B
-
-    fn do_thing(n: Int) {
-        Hmm[aaa::bbb::Test_struct, Float] {
-            c = aaa::bbb::Test_struct { a = n, b = "" },
-            d = n as Float
-        }
-    }
+struct Test = a: Int, b: Int
 
 
-    fn test[m: mut, T](t: &mut?m T): &mut?m T = t
-
-}
-
-
-data Maybe = nothing | just(Int)
+//impl Test {
+//    fn magic(): Int = 5
+//}
 
 
-fn main(): Int {
-    let m: Maybe = "Hello";
-    m as ();
-    6
-}
+fn main(): Int = Test::magic()

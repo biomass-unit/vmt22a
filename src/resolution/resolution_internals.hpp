@@ -146,8 +146,6 @@ namespace resolution {
         std::optional<bu::Wrapper<Namespace>> parent;
         std::optional<lexer::Identifier>      name;
 
-        auto find_root(ast::Qualifier& first) -> bu::Wrapper<Namespace>;
-
         auto format_name_as_member(lexer::Identifier) const -> std::string;
     };
 
@@ -180,6 +178,9 @@ namespace resolution {
                                                   std::span<ast::Template_argument>)
             -> Function_definition::Resolved_info;
 
+
+        auto find_associated_namespace(bu::Wrapper<ir::Type>, std::string_view)
+            -> bu::Wrapper<Namespace>;
 
         auto resolve_mutability(ast::Mutability) -> bool;
 

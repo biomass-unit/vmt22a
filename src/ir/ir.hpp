@@ -8,6 +8,13 @@
 #include "vm/virtual_machine.hpp"
 
 
+namespace resolution {
+
+    struct Namespace; // Forward declared because Struct and Data definitions need associated namespaces
+
+}
+
+
 namespace ir {
 
     using Size_type = bu::Bounded_integer<
@@ -40,6 +47,7 @@ namespace ir {
             };
             bu::Flatmap<lexer::Identifier, Constructor> constructors;
             std::string                                 name;
+            bu::Wrapper<resolution::Namespace>          associated_namespace;
             Size_type                                   size;
             bool                                        is_trivial = false;
         };
@@ -52,6 +60,7 @@ namespace ir {
             };
             bu::Flatmap<lexer::Identifier, Member> members;
             std::string                            name;
+            bu::Wrapper<resolution::Namespace>     associated_namespace;
             Size_type                              size;
             bool                                   is_trivial = false;
         };
