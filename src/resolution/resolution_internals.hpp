@@ -191,8 +191,8 @@ namespace resolution {
 
         auto bind(ast::Pattern&, bu::Wrapper<ir::Type>) -> void;
 
-        auto error(bu::Source_view  source_view,
-                   std::string_view message,
+        auto error(bu::Source_view                 source_view,
+                   std::string_view                message,
                    std::optional<std::string_view> help = std::nullopt)
             -> std::runtime_error;
 

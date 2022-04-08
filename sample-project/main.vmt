@@ -2,16 +2,19 @@ import a.b as ab
 
 
 namespace test {
-    struct A = a: Int, b: Int
+    
+    alias Test[T] = (Float, T)
+
+    struct A = a: Test[Int]
     
     namespace nested {
         fn id[X](x: X): X = x
     }
 
-    fn hmmm() = A { b = 10, a = nested::id[Float](5.2) as Int } 
+    fn hmmm() = A { a = (3.14, nested::id[Float](5.2) as Int) } 
 }
 
 
 fn main(): Int {
-    test::hmmm().b
+    test::hmmm().a.1
 }

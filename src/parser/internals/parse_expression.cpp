@@ -502,6 +502,7 @@ namespace {
 
 
     auto parse_potential_member_access(Parse_context& context) -> std::optional<ast::Expression> {
+        auto* const anchor = context.pointer;
         auto expression = parse_potential_invocation(context);
 
         if (expression) {
@@ -515,6 +516,7 @@ namespace {
                                 std::move(accessors),
                                 std::move(*expression)
                             };
+                            assign_source_view(*expression, anchor, context.pointer - 1);
                             accessors = {}; // Silence warnings, even though a moved-from vector is guaranteed to be empty
                         }
                         *expression = ast::expression::Member_function_invocation {
@@ -522,6 +524,7 @@ namespace {
                             std::move(*expression),
                             *member_name
                         };
+                        assign_source_view(*expression, anchor, context.pointer - 1);
                     }
                     else {
                         accessors.emplace_back(*member_name);
@@ -536,10 +539,11 @@ namespace {
             }
 
             if (!accessors.empty()) {
-                return ast::expression::Member_access_chain {
+                *expression = ast::expression::Member_access_chain {
                     std::move(accessors),
                     std::move(*expression)
                 };
+                assign_source_view(*expression, anchor, context.pointer - 1);
             }
         }
 

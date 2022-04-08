@@ -222,10 +222,18 @@ namespace {
                     ).type_handle;
                 }
                 else {
-                    bu::abort("no template arguments were provided");
+                    throw context.error(
+                        source_view,
+                        std::format(
+                            "{} is a template, but no template arguments were provided",
+                            name
+                        )
+                    );
                 }
             },
-            []<bu::one_of<ast::definition::Struct, ast::definition::Data> T>(resolution::Definition<T> definition)
+            []<bu::one_of<ast::definition::Struct, ast::definition::Data, ast::definition::Alias> T>(
+                resolution::Definition<T> definition
+            )
                 -> bu::Wrapper<ir::Type>
             {
                 if (definition.has_been_resolved()) {

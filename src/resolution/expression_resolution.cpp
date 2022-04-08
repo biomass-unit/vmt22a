@@ -34,7 +34,7 @@ namespace {
         auto error(std::string_view const message, std::optional<std::string_view> const help = std::nullopt)
             -> std::runtime_error
         {
-            return error(message, *help, this_expression);
+            return context.error(this_expression.source_view, message, help);
         }
 
         [[nodiscard]]
@@ -228,6 +228,15 @@ namespace {
                                 count,
                                 name
                             )
+                        );
+                    }
+                }
+
+                for (auto& [name, initializer] : struct_initializer.member_initializers.container()) {
+                    if (!structure.members.find(name)) {
+                        throw context.error(
+                            initializer->source_view,
+                            std::format("{} contains no member {}", structure.name, name)
                         );
                     }
                 }

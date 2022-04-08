@@ -141,8 +141,18 @@ namespace {
             bu::Wrapper body = resolution::resolve_expression(definition->body, context);
 
             if (definition->return_type) {
-                if (body->type != resolution::resolve_type(*definition->return_type, context)) {
-                    bu::abort("function return type mismatch");
+                bu::wrapper auto explicit_type = resolution::resolve_type(*definition->return_type, context);
+
+                if (body->type != explicit_type) {
+                    throw context.error(
+                        (*definition->return_type)->source_view,
+                        std::format(
+                            "The function is explicitly specified to have a "
+                            "return type of {}, but its body is of type {}",
+                            explicit_type,
+                            body->type
+                        )
+                    );
                 }
             }
 
@@ -272,6 +282,24 @@ namespace {
                     .size       = resolved_data->size,
                     .is_trivial = resolved_data->is_trivial
                 }
+            };
+        }
+
+        auto operator()(resolution::Alias_definition alias) -> void {
+            if (alias.has_been_resolved()) {
+                return;
+            }
+
+            auto* const definition = alias.syntactic_definition;
+
+            bu::Wrapper resolved_alias = ir::definition::Alias {
+                .name = context.current_namespace->format_name_as_member(definition->name),
+                .type = resolution::resolve_type(definition->type, context)
+            };
+
+            *alias.resolved_info = resolution::Alias_definition::Resolved_info {
+                .resolved    = resolved_alias,
+                .type_handle = resolved_alias->type
             };
         }
 

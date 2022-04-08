@@ -103,7 +103,7 @@ namespace bu {
 
 
     template <std::ostream& os = std::cout>
-    auto print(std::string_view fmt, auto const&... args) -> void {
+    auto print(std::string_view const fmt, auto const&... args) -> void {
         if constexpr (sizeof...(args) != 0) {
             auto const buffer = std::vformat(fmt, std::make_format_args(args...));
             os.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
@@ -115,7 +115,7 @@ namespace bu {
 
     [[noreturn]]
     inline auto abort(std::string_view message, std::source_location caller = std::source_location::current()) -> void {
-        throw std::runtime_error(
+        throw std::runtime_error {
             std::format(
                 "bu::abort invoked in {}, in file {} on line {}, with message: {}",
                 caller.function_name(),
@@ -123,7 +123,7 @@ namespace bu {
                 caller.line(),
                 message
             )
-        );
+        };
     }
 
     [[noreturn]]
@@ -373,7 +373,7 @@ namespace bu {
     constexpr bool always_false = false;
 
 
-    auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto... args)
+    auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto const... args)
         noexcept -> void
     {
         // The lambda member i is a workaround for a very strange
@@ -420,14 +420,14 @@ namespace bu {
 
         template <std::integral T>
         struct Integer_with_ordinal_indicator_formatter_closure {
-            T value;
+            T integer;
         };
 
         template <std::integral T>
         constexpr auto integer_with_ordinal_indicator(T const n) noexcept
             -> Integer_with_ordinal_indicator_formatter_closure<T>
         {
-            return { n };
+            return { .integer = n };
         }
 
 
@@ -454,7 +454,7 @@ using namespace bu::literals;
 template <class T>
 struct std::hash<std::vector<T>> {
     auto operator()(std::vector<T> const& vector) const -> bu::Usize {
-        bu::Usize seed = 0;
+        bu::Usize seed = bu::get_unique_seed();
 
         for (auto& element : vector) {
             seed = bu::hash_combine_with_seed(seed, element);
@@ -550,7 +550,7 @@ DEFINE_FORMATTER_FOR(bu::fmt::Integer_with_ordinal_indicator_formatter_closure<T
 
     static constexpr auto suffixes = std::to_array<std::string_view>({ "th", "st", "nd", "rd" });
 
-    auto x = value.value % 100;
+    T x = value.integer % 100;
 
     if (x == 11 || x == 12 || x == 13) {
         x = 0;
@@ -562,7 +562,7 @@ DEFINE_FORMATTER_FOR(bu::fmt::Integer_with_ordinal_indicator_formatter_closure<T
         }
     }
 
-    return std::format_to(context.out(), "{}{}", value.value, suffixes[x]);
+    return std::format_to(context.out(), "{}{}", value.integer, suffixes[x]);
 }
 
 
