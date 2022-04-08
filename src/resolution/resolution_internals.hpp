@@ -147,6 +147,7 @@ namespace resolution {
 
     using Lower_variant = std::variant<
         Binding*,
+        bu::Wrapper<ir::definition::Data_constructor>,
         Function_definition,
         Function_template_definition
     >;

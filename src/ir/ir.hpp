@@ -40,16 +40,21 @@ namespace ir {
             bu::Wrapper<Expression> body;
         };
 
+        struct Data_constructor {
+            std::optional<bu::Wrapper<Type>> payload_type;
+            bu::Wrapper<Type>                function_type;
+            bu::Wrapper<Type>                data_type;
+            lexer::Identifier                name;
+            bu::U8                           tag;
+
+            DEFAULTED_EQUALITY(Data_constructor);
+        };
+
         struct Data {
-            struct Constructor {
-                std::optional<bu::Wrapper<Type>> type;
-                bu::U8                           tag;
-            };
-            bu::Flatmap<lexer::Identifier, Constructor> constructors;
-            std::string                                 name;
-            bu::Wrapper<resolution::Namespace>          associated_namespace;
-            Size_type                                   size;
-            bool                                        is_trivial = false;
+            std::string                        name;
+            bu::Wrapper<resolution::Namespace> associated_namespace;
+            Size_type                          size;
+            bool                               is_trivial = false;
         };
 
         struct Struct {
@@ -237,6 +242,11 @@ namespace ir {
             DEFAULTED_EQUALITY(Function_reference);
         };
 
+        struct Data_constructor_reference {
+            bu::Wrapper<definition::Data_constructor> constructor;
+            DEFAULTED_EQUALITY(Data_constructor_reference);
+        };
+
         struct Reference {
             bu::U16 frame_offset;
             DEFAULTED_EQUALITY(Reference);
@@ -294,6 +304,7 @@ namespace ir {
             expression::Let_binding,
             expression::Local_variable,
             expression::Function_reference,
+            expression::Data_constructor_reference,
             expression::Reference,
             expression::Member_access,
             expression::Conditional,

@@ -31,8 +31,8 @@ namespace {
     }
 
     auto make_namespace(std::optional<bu::Wrapper<resolution::Namespace>> parent,
-                        std::optional<lexer::Identifier>                  name,
-                        std::span<ast::Definition> const                  definitions)
+                        std::optional<lexer::Identifier>            const name,
+                        std::span<ast::Definition>                  const definitions)
         -> bu::Wrapper<resolution::Namespace>
     {
         bu::Wrapper space {
@@ -245,7 +245,7 @@ namespace {
 
             auto* const definition = data.syntactic_definition;
 
-            bu::Flatmap<lexer::Identifier, ir::definition::Data::Constructor> constructors;
+            bu::Flatmap<lexer::Identifier, bu::Pair<std::optional<bu::Wrapper<ir::Type>>, bu::U8>> constructors;
             constructors.container().reserve(definition->constructors.size());
 
             ir::Size_type size;
@@ -266,31 +266,55 @@ namespace {
                     size = ir::Size_type { std::max(size.get(), (*type)->size.get()) };
                 }
 
-                constructors.add(
-                    bu::copy(constructor.name),
-                    {
-                        .type = type,
-                        .tag  = tag++
-                    }
-                );
+                constructors.add(bu::copy(constructor.name), { type, tag++ });
             }
 
 
             bu::Wrapper resolved_data = ir::definition::Data {
-                .constructors         = std::move(constructors),
                 .name                 = context.current_namespace->format_name_as_member(definition->name),
                 .associated_namespace = make_associated_namespace(definition->name),
                 .size                 = size,
                 .is_trivial           = is_trivial
             };
 
-            *data.resolved_info = resolution::Data_definition::Resolved_info {
-                .resolved = resolved_data,
-                .type_handle = ir::Type {
-                    .value      = ir::type::User_defined_data { resolved_data },
-                    .size       = resolved_data->size,
-                    .is_trivial = resolved_data->is_trivial
+            bu::Wrapper type_handle = ir::Type {
+                .value      = ir::type::User_defined_data { resolved_data },
+                .size       = size,
+                .is_trivial = is_trivial
+            };
+
+
+            for (auto& [name, constructor] : constructors.container()) {
+                auto& [type, tag] = constructor;
+
+                std::vector<bu::Wrapper<ir::Type>> parameter_types;
+                if (type) {
+                    parameter_types.push_back(*type);
                 }
+
+                resolved_data->associated_namespace->lower_table.add(
+                    bu::copy(name),
+                    ir::definition::Data_constructor {
+                        .payload_type = type,
+                        .function_type = ir::Type {
+                            .value = ir::type::Function {
+                                .parameter_types = std::move(parameter_types),
+                                .return_type     = type_handle
+                            },
+                            .size       = ir::Size_type { bu::unchecked_tag, 2 * sizeof(std::byte*) },
+                            .is_trivial = true
+                        },
+                        .data_type = type_handle,
+                        .name      = name,
+                        .tag       = tag
+                    }
+                );
+            }
+
+
+            *data.resolved_info = resolution::Data_definition::Resolved_info {
+                .resolved    = resolved_data,
+                .type_handle = type_handle
             };
         }
 
@@ -325,9 +349,7 @@ namespace {
 
             implementation_namespace->parent = associated_namespace;
 
-            bu::wrapper auto current_namespace = std::exchange(context.current_namespace, associated_namespace);
             operator()(implementation_namespace);
-            context.current_namespace = current_namespace;
 
             {
                 // Quick & dirty solution, fix later

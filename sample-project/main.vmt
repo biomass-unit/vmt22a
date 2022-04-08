@@ -1,21 +1,11 @@
 import a.b as ab
 
 
-struct Test = x: Int
-
-
-impl Test {
-    fn magic(n: Int) = n
-}
-
-impl Test {
-    namespace hmm {
-        fn other[X](x: X): X = x
-    }
-}
+data Maybe[T] = nothing | just(T)
 
 
 fn main(): Int {
-    Test :: magic ( 5 ) as ();
-    Test::hmm::other[Int](10)
+    let m: Int = Maybe[Int]::just(5);
+    m as ();
+    5
 }

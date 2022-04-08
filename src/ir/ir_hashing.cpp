@@ -60,6 +60,10 @@ namespace {
             return hash(function.definition->name);
         }
 
+        auto operator()(ir::expression::Data_constructor_reference const& reference) -> bu::Usize {
+            return hash(reference.constructor->data_type, reference.constructor->tag);
+        }
+
         auto operator()(ir::expression::Member_access const& member_access) -> bu::Usize {
             return hash(member_access.expression, member_access.offset.get());
         }

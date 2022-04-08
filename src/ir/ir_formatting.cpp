@@ -55,6 +55,10 @@ namespace {
             return format("{}", function.definition->name);
         }
 
+        auto operator()(ir::expression::Data_constructor_reference const& reference) {
+            return format("{}::{}", reference.constructor->data_type, reference.constructor->name);
+        }
+
         auto operator()(ir::expression::Reference const& reference) {
             return format("(Ref offset {})", reference.frame_offset);
         }

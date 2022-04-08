@@ -316,6 +316,12 @@ auto resolution::Resolution_context::find_variable_or_function(
         [](Binding*) -> ir::Expression {
             bu::unimplemented(); // Unreachable?
         },
+        [](bu::Wrapper<ir::definition::Data_constructor> constructor) -> ir::Expression {
+            return {
+                .value = ir::expression::Data_constructor_reference { constructor },
+                .type  = constructor->function_type
+            };
+        },
         [&](Function_definition function) -> ir::Expression {
             if (arguments) {
                 throw error(
