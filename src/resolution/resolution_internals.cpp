@@ -74,14 +74,13 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
                 return *argument;
             }
             else {
-                auto const message = std::format(
-                    "{} is not a mutability parameter",
-                    *mutability.parameter_name
+                throw error(
+                    mutability.source_view,
+                    std::format(
+                        "{} is not a mutability parameter",
+                        *mutability.parameter_name
+                    )
                 );
-                throw error({
-                    .erroneous_view = mutability.source_view,
-                    .message        = message
-                });
             }
         }
     default:
@@ -102,16 +101,20 @@ auto resolution::Resolution_context::make_child_context_with_new_scope() noexcep
     };
 }
 
-auto resolution::Resolution_context::error(Error_arguments const arguments)
+auto resolution::Resolution_context::error(
+    bu::Source_view                 const source_view,
+    std::string_view                const message,
+    std::optional<std::string_view> const help
+)
     -> std::runtime_error
 {
     return std::runtime_error {
         bu::textual_error({
-            .erroneous_view = arguments.erroneous_view,
+            .erroneous_view = source_view,
             .file_view      = source->string(),
             .file_name      = source->name(),
-            .message        = arguments.message,
-            .help_note      = arguments.help_note
+            .message        = message,
+            .help_note      = help
         })
     };
 }
@@ -123,7 +126,7 @@ namespace {
     auto instantiate_template(
         resolution::Namespace&                                          current_namespace,
         lexer::Identifier                                         const name,
-        std::string_view                                          const source_view,
+        bu::Source_view                                           const source_view,
         resolution::Definition<ast::definition::Template_definition<T>> template_definition,
         std::span<ast::Template_argument>                         const arguments,
         resolution::Resolution_context&                                 context
@@ -197,7 +200,7 @@ namespace {
     auto find_type_impl(
         resolution::Namespace&                                 current_namespace,
         lexer::Identifier                                const name,
-        std::string_view                                 const source_view,
+        bu::Source_view                                  const source_view,
         resolution::Upper_variant                        const upper,
         std::optional<std::span<ast::Template_argument>> const arguments,
         resolution::Resolution_context&                        context
@@ -241,9 +244,9 @@ namespace {
 }
 
 
-auto resolution::Resolution_context::new_find_type(
+auto resolution::Resolution_context::find_type(
     ast::Qualified_name&                                   full_name,
-    std::string_view                                 const source_view,
+    bu::Source_view                                  const source_view,
     std::optional<std::span<ast::Template_argument>> const arguments
 )
     -> bu::Wrapper<ir::Type>
@@ -261,14 +264,14 @@ auto resolution::Resolution_context::new_find_type(
         current_namespace,
         full_name.primary_qualifier.name,
         source_view,
-        new_find_upper(full_name, source_view),
+        find_upper(full_name, source_view),
         arguments,
         *this
     );
 }
 
 
-auto resolution::Resolution_context::new_find_variable_or_function(
+auto resolution::Resolution_context::find_variable_or_function(
     ast::Qualified_name&                                   full_name,
     ast::Expression&                                       expression,
     std::optional<std::span<ast::Template_argument>> const arguments
@@ -305,11 +308,13 @@ auto resolution::Resolution_context::new_find_variable_or_function(
         },
         [&](Function_definition function) -> ir::Expression {
             if (arguments) {
-                auto const message = std::format(
-                    "{} is not a function template, but template arguments were provided",
-                    full_name
+                throw error(
+                    expression.source_view,
+                    std::format(
+                        "{} is not a function template, but template arguments were provided",
+                        full_name
+                    )
                 );
-                throw error({ .erroneous_view = expression.source_view, .message = message });
             }
             if (function.has_been_resolved()) {
                 return {
@@ -323,11 +328,13 @@ auto resolution::Resolution_context::new_find_variable_or_function(
         },
         [&](Function_template_definition function_template) -> ir::Expression {
             if (!arguments) {
-                auto const message = std::format(
-                    "{} is a function template, but no template arguments were provided",
-                    full_name
+                throw error(
+                    expression.source_view,
+                    std::format(
+                        "{} is a function template, but no template arguments were provided",
+                        full_name
+                    )
                 );
-                throw error({ .erroneous_view = expression.source_view, .message = message });
             }
 
             auto info = instantiate_template(
@@ -344,13 +351,13 @@ auto resolution::Resolution_context::new_find_variable_or_function(
                 .type  = info.type_handle
             };
         }
-    }, new_find_lower(full_name, expression.source_view));
+    }, find_lower(full_name, expression.source_view));
 }
 
 
 auto resolution::Namespace::find_type_here(
     lexer::Identifier                                const name,
-    std::string_view                                 const source_view,
+    bu::Source_view                                  const source_view,
     std::optional<std::span<ast::Template_argument>> const arguments,
     Resolution_context&                                    context
 )
@@ -375,23 +382,13 @@ auto resolution::Namespace::find_type_here(
 auto resolution::resolve_template_arguments(
     Namespace&                               current_namespace,
     lexer::Identifier                  const name,
-    std::string_view                   const source_view,
+    bu::Source_view                    const source_view,
     std::span<ast::Template_parameter> const parameters,
     std::span<ast::Template_argument>  const arguments,
     Resolution_context&                      context
 )
     -> ir::Template_argument_set
 {
-    auto const error = [&](std::string_view const message,
-                           ast::Expression* const expression = nullptr)
-        -> std::runtime_error
-    {
-        return context.error({
-            .erroneous_view = expression ? expression->source_view : source_view,
-            .message        = message
-        });
-    };
-
     ir::Template_argument_set argument_set;
     argument_set.arguments_in_order.reserve(parameters.size());
 
@@ -427,15 +424,15 @@ auto resolution::resolve_template_arguments(
                         );
                     }
                     else {
-                        throw error(
+                        throw context.error(
+                            expression.source_view,
                             std::format(
                                 "The {} template argument should be of type "
                                 "{}, but the given argument is of type {}",
                                 bu::fmt::integer_with_ordinal_indicator(i + 1),
                                 required_type,
                                 given_argument.type
-                            ),
-                            &expression
+                            )
                         );
                     }
                 },
@@ -458,7 +455,8 @@ auto resolution::resolve_template_arguments(
         return argument_set;
     }
     else {
-        throw error(
+        throw context.error(
+            source_view,
             std::format(
                 "{} expects {} template arguments, but {} were supplied",
                 current_namespace.format_name_as_member(name),

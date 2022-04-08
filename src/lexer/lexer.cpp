@@ -84,7 +84,7 @@ namespace {
         auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = view,
+                    .erroneous_view = bu::Source_view { view },
                     .file_view      = source->string(),
                     .file_name      = source->name(),
                     .message        = message,

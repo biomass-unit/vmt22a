@@ -17,11 +17,11 @@ namespace {
             };
         }
 
-        auto error(std::string_view message) -> std::runtime_error {
-            return context.error({
-                .erroneous_view = this_type.source_view,
-                .message        = message
-            });
+        [[nodiscard]]
+        auto error(std::string_view const message, std::optional<std::string_view> const help)
+            -> std::runtime_error
+        {
+            return context.error(this_type.source_view, message, help);
         }
 
 
@@ -31,7 +31,7 @@ namespace {
         }
 
         auto operator()(ast::type::Typename& name) -> bu::Wrapper<ir::Type> {
-            return context.new_find_type(
+            return context.find_type(
                 name.identifier,
                 this_type.source_view,
                 std::nullopt
@@ -39,7 +39,7 @@ namespace {
         }
 
         auto operator()(ast::type::Template_instantiation& instantiation) -> bu::Wrapper<ir::Type> {
-            return context.new_find_type(
+            return context.find_type(
                 instantiation.name,
                 this_type.source_view,
                 instantiation.arguments

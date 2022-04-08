@@ -24,26 +24,26 @@ namespace {
 
 
         [[nodiscard]]
-        auto error(std::string_view const message, ast::Expression& expression) {
-            return context.error({
-                .erroneous_view = expression.source_view,
-                .message        = message
-            });
+        auto error(std::string_view const message, std::string_view const help, ast::Expression& expression)
+            -> std::runtime_error
+        {
+            return context.error(expression.source_view, message, help);
         }
+
         [[nodiscard]]
-        auto error(std::string_view message, std::string_view help, ast::Expression& expression) {
-            return context.error({
-                .erroneous_view = expression.source_view,
-                .message        = message,
-                .help_note      = help
-            });
+        auto error(std::string_view const message, std::optional<std::string_view> const help = std::nullopt)
+            -> std::runtime_error
+        {
+            return error(message, *help, this_expression);
         }
+
         [[nodiscard]]
-        auto error(std::string_view message, std::optional<std::string> help = std::nullopt) {
-            return help
-                ? error(message, *help, this_expression)
-                : error(message, this_expression);
+        auto error(std::string_view const message, ast::Expression& expression)
+            -> std::runtime_error
+        {
+            return context.error(expression.source_view, message, std::nullopt);
         }
+
 
 
         template <class T>
@@ -241,11 +241,10 @@ namespace {
                 };
             }
             else {
-                auto const message = std::format("{} is not a struct type", type);
-                throw context.error({
-                    .erroneous_view = struct_initializer.type->source_view,
-                    .message        = message
-                });
+                throw context.error(
+                    struct_initializer.type->source_view,
+                    std::format("{} is not a struct type", type)
+                );
             }
         }
 
@@ -301,11 +300,11 @@ namespace {
         }
 
         auto operator()(ast::expression::Variable& variable) -> ir::Expression {
-            return context.new_find_variable_or_function(variable.name, this_expression, std::nullopt);
+            return context.find_variable_or_function(variable.name, this_expression, std::nullopt);
         }
 
         auto operator()(ast::expression::Template_instantiation& instantiation) -> ir::Expression {
-            return context.new_find_variable_or_function(instantiation.name, this_expression, instantiation.template_arguments);
+            return context.find_variable_or_function(instantiation.name, this_expression, instantiation.template_arguments);
         }
 
         auto operator()(ast::expression::Take_reference& take_reference) -> ir::Expression {

@@ -150,7 +150,7 @@ namespace resolution {
         std::optional<lexer::Identifier>      name;
 
         auto find_type_here(lexer::Identifier,
-                            std::string_view,
+                            bu::Source_view,
                             std::optional<std::span<ast::Template_argument>>,
                             Resolution_context&)
             -> std::optional<bu::Wrapper<ir::Type>>;
@@ -170,34 +170,31 @@ namespace resolution {
         auto make_child_context_with_new_scope() noexcept -> Resolution_context;
 
 
-        auto new_find_upper(ast::Qualified_name&, std::string_view) -> Upper_variant;
-        auto new_find_lower(ast::Qualified_name&, std::string_view) -> Lower_variant;
+        auto find_upper(ast::Qualified_name&, bu::Source_view) -> Upper_variant;
+        auto find_lower(ast::Qualified_name&, bu::Source_view) -> Lower_variant;
 
-        auto new_find_type(ast::Qualified_name&,
-                           std::string_view,
-                           std::optional<std::span<ast::Template_argument>>)
+        auto find_type(ast::Qualified_name&,
+                       bu::Source_view,
+                       std::optional<std::span<ast::Template_argument>>)
             -> bu::Wrapper<ir::Type>;
 
-        auto new_find_variable_or_function(ast::Qualified_name&,
-                                           ast::Expression&,
-                                           std::optional<std::span<ast::Template_argument>>)
+        auto find_variable_or_function(ast::Qualified_name&,
+                                       ast::Expression&,
+                                       std::optional<std::span<ast::Template_argument>>)
             -> ir::Expression;
 
 
-        auto find_associated_namespace(bu::Wrapper<ir::Type>, std::string_view)
+        auto get_associated_namespace(bu::Wrapper<ir::Type>, bu::Source_view)
             -> bu::Wrapper<Namespace>;
 
         auto resolve_mutability(ast::Mutability) -> bool;
 
         auto bind(ast::Pattern&, bu::Wrapper<ir::Type>) -> void;
 
-        struct Error_arguments {
-            std::string_view                erroneous_view;
-            std::string_view                message;
-            std::optional<std::string_view> help_note = std::nullopt;
-        };
-
-        auto error(Error_arguments) -> std::runtime_error;
+        auto error(bu::Source_view  source_view,
+                   std::string_view message,
+                   std::optional<std::string_view> help = std::nullopt)
+            -> std::runtime_error;
 
     };
 
@@ -209,7 +206,7 @@ namespace resolution {
 
     auto resolve_template_arguments(Namespace&                         current_namespace,
                                     lexer::Identifier                  name,
-                                    std::string_view                   source_view,
+                                    bu::Source_view                    source_view,
                                     std::span<ast::Template_parameter> parameters,
                                     std::span<ast::Template_argument>  arguments,
                                     Resolution_context&                context)

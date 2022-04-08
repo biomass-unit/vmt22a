@@ -107,8 +107,8 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
         assign_source_view(primary, context.pointer - 2, context.pointer - 1);
 
         return {
-            .root_qualifier    = std::move(root),
             .middle_qualifiers = std::move(qualifiers),
+            .root_qualifier    = std::move(root),
             .primary_qualifier = std::move(primary)
         };
     }

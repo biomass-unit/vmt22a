@@ -12,11 +12,11 @@ namespace {
         inline static lexer::Identifier const nameless_identifier { ""sv };
 
         auto error(std::string_view const message, std::optional<std::string_view> const help = std::nullopt) {
-            return context.error({
-                .erroneous_view = this_pattern.source_view,
-                .message        = message,
-                .help_note      = help
-            });
+            return context.error(
+                this_pattern.source_view,
+                message,
+                help
+            );
         }
 
 

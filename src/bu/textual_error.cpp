@@ -85,7 +85,7 @@ namespace {
 auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
     auto const [view, file, filename, message, help] = arguments;
 
-    if (view.empty()) {
+    if (view.string.empty()) {
         bu::abort(
             std::format(
                 "Attempted to format an error message with an "
@@ -95,7 +95,7 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
         );
     }
 
-    auto const position = find_position(file.data(), view.data());
+    auto const position = find_position(file.data(), view.string.data());
 
     std::string string;
     string.reserve(256);
@@ -109,7 +109,7 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
         position.column
     );
 
-    auto const lines       = lines_of_occurrence(file, view);
+    auto const lines       = lines_of_occurrence(file, view.string);
     auto const digit_count = bu::digit_count(find_position(file, lines.back().data()).line);
     auto       line_number = position.line;
 
@@ -125,9 +125,9 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
 
     if (lines.size() == 1) {
         auto whitespace_length =
-            view.size() + digit_count + bu::unsigned_distance(lines.front().data(), view.data());
+            view.string.size() + digit_count + bu::unsigned_distance(lines.front().data(), view.string.data());
 
-        if (view.size() == 0) { // only reached if the error occurs at EOI
+        if (view.string.size() == 0) { // only reached if the error occurs at EOI
             ++whitespace_length;
         }
 
@@ -135,7 +135,7 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
             out,
             "\n    {}{:>{}} {}here",
             bu::Color::red,
-            std::string(std::max(view.size(), 1_uz), '^'),
+            std::string(std::max(view.string.size(), 1_uz), '^'),
             whitespace_length,
             bu::Color::white
         );

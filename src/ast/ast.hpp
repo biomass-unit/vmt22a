@@ -17,7 +17,7 @@ namespace ast {
 
     namespace dtl {
         struct Source_tracked {
-            std::string_view source_view;
+            bu::Source_view source_view;
 
             constexpr auto operator==(Source_tracked const&) const noexcept -> bool {
                 return true;
@@ -46,8 +46,8 @@ namespace ast {
     };
 
     struct Qualified_name {
-        bu::Wrapper<Root_qualifier> root_qualifier;
         std::vector<Qualifier>      middle_qualifiers;
+        bu::Wrapper<Root_qualifier> root_qualifier;
         Primary_qualifier           primary_qualifier;
         DEFAULTED_EQUALITY(Qualified_name);
 

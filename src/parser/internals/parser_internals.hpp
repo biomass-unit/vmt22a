@@ -70,7 +70,7 @@ namespace parser {
             };
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = view,
+                    .erroneous_view = bu::Source_view { view },
                     .file_view      = source->string(),
                     .file_name      = source->name(),
                     .message        = message,
@@ -269,7 +269,7 @@ namespace parser {
 
     auto assign_source_view(auto& node, Token* const start, Token* const stop) -> void {
         assert(!start->source_view.empty() && !stop->source_view.empty());
-        node.source_view = { start->source_view.data(), stop->source_view.data() + stop->source_view.size() };
+        node.source_view.string = { start->source_view.data(), stop->source_view.data() + stop->source_view.size() };
     }
 
 

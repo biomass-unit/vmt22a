@@ -101,7 +101,7 @@ namespace {
             }
 
             return bu::textual_error({
-                .erroneous_view = erroneous_view,
+                .erroneous_view = bu::Source_view { erroneous_view },
                 .file_view      = fake_file,
                 .file_name      = "the command line",
                 .message        = message,
