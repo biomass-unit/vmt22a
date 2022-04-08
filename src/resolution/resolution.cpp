@@ -81,8 +81,12 @@ namespace {
                     space->lower_table.add(bu::copy(function_template.definition.name), bu::copy(handle));
                 },
 
-                [](Implementation&) -> void {
-                    bu::unimplemented();
+                [&](Implementation& implementation) -> void {
+                    resolution::Implementation_definition handle {
+                        .syntactic_definition = &implementation,
+                        .home_namespace       = make_namespace(std::nullopt, std::nullopt, implementation.definitions)
+                    };
+                    space->definitions_in_order.push_back(handle);
                 },
                 [](Instantiation&) -> void {
                     bu::unimplemented();
@@ -108,8 +112,13 @@ namespace {
         resolution::Resolution_context& context;
 
 
-        auto make_associated_namespace() -> bu::Wrapper<resolution::Namespace> {
-            return resolution::Namespace { .parent = context.current_namespace };
+        auto make_associated_namespace(lexer::Identifier const type_name)
+            -> bu::Wrapper<resolution::Namespace>
+        {
+            return resolution::Namespace {
+                .parent = context.current_namespace,
+                .name   = type_name
+            };
         }
 
 
@@ -214,7 +223,7 @@ namespace {
             bu::Wrapper resolved_structure = ir::definition::Struct {
                 .members              = std::move(members),
                 .name                 = context.current_namespace->format_name_as_member(definition->name),
-                .associated_namespace = make_associated_namespace(),
+                .associated_namespace = make_associated_namespace(definition->name),
                 .size                 = size,
                 .is_trivial           = is_trivial
             };
@@ -270,7 +279,7 @@ namespace {
             bu::Wrapper resolved_data = ir::definition::Data {
                 .constructors         = std::move(constructors),
                 .name                 = context.current_namespace->format_name_as_member(definition->name),
-                .associated_namespace = make_associated_namespace(),
+                .associated_namespace = make_associated_namespace(definition->name),
                 .size                 = size,
                 .is_trivial           = is_trivial
             };
@@ -301,6 +310,43 @@ namespace {
                 .resolved    = resolved_alias,
                 .type_handle = resolved_alias->type
             };
+        }
+
+        auto operator()(resolution::Implementation_definition implementation) -> void {
+            assert(!implementation.has_been_resolved());
+            // It should be impossible for the implementation to be resolved at this point, because
+            // there is no way to refer to an implementation block or its contents before it has been resolved
+
+            auto* const definition = implementation.syntactic_definition;
+
+            bu::wrapper auto type                     = resolution::resolve_type(definition->type, context);
+            bu::wrapper auto associated_namespace     = context.get_associated_namespace(type, definition->type->source_view);
+            bu::wrapper auto implementation_namespace = implementation.home_namespace;
+
+            implementation_namespace->parent = associated_namespace;
+
+            bu::wrapper auto current_namespace = std::exchange(context.current_namespace, associated_namespace);
+            operator()(implementation_namespace);
+            context.current_namespace = current_namespace;
+
+            {
+                // Quick & dirty solution, fix later
+
+                auto& old_lower = associated_namespace    ->lower_table.container();
+                auto& new_lower = implementation_namespace->lower_table.container();
+
+                old_lower.insert(old_lower.end(), new_lower.begin(), new_lower.end());
+
+                auto& old_upper = associated_namespace    ->upper_table.container();
+                auto& new_upper = implementation_namespace->upper_table.container();
+
+                old_upper.insert(old_upper.end(), new_upper.begin(), new_upper.end());
+
+                auto& old_children = associated_namespace    ->children.container();
+                auto& new_children = implementation_namespace->children.container();
+
+                old_children.insert(old_children.end(), new_children.begin(), new_children.end());
+            }
         }
 
         auto operator()(bu::Wrapper<resolution::Namespace> const child) -> void {

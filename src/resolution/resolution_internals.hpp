@@ -77,6 +77,19 @@ namespace resolution {
         }
     };
 
+    template <>
+    struct Definition<ast::definition::Implementation> {
+        using Resolved_info = bool;
+
+        ast::definition::Implementation* syntactic_definition;
+        bu::Wrapper<Namespace>           home_namespace;
+        Resolved_info                    resolved_info;
+
+        auto has_been_resolved() const noexcept -> bool {
+            return resolved_info;
+        }
+    };
+
     template <class T>
     struct Definition<ast::definition::Template_definition<T>> {
         using Instantiation_info = Definition<T>::Resolved_info;
@@ -87,16 +100,18 @@ namespace resolution {
         bu::Wrapper<bu::Flatmap<ir::Template_argument_set, Instantiation_info>> instantiations;
     };
 
-    using Function_definition           = Definition<ast::definition::Function          >;
-    using Function_template_definition  = Definition<ast::definition::Function_template >;
-    using Struct_definition             = Definition<ast::definition::Struct            >;
-    using Struct_template_definition    = Definition<ast::definition::Struct_template   >;
-    using Data_definition               = Definition<ast::definition::Data              >;
-    using Data_template_definition      = Definition<ast::definition::Data_template     >;
-    using Alias_definition              = Definition<ast::definition::Alias             >;
-    using Alias_template_definition     = Definition<ast::definition::Alias_template    >;
-    using Typeclass_definition          = Definition<ast::definition::Typeclass         >;
-    using Typeclass_template_definition = Definition<ast::definition::Typeclass_template>;
+    using Function_definition                = Definition<ast::definition::Function               >;
+    using Function_template_definition       = Definition<ast::definition::Function_template      >;
+    using Struct_definition                  = Definition<ast::definition::Struct                 >;
+    using Struct_template_definition         = Definition<ast::definition::Struct_template        >;
+    using Data_definition                    = Definition<ast::definition::Data                   >;
+    using Data_template_definition           = Definition<ast::definition::Data_template          >;
+    using Alias_definition                   = Definition<ast::definition::Alias                  >;
+    using Alias_template_definition          = Definition<ast::definition::Alias_template         >;
+    using Typeclass_definition               = Definition<ast::definition::Typeclass              >;
+    using Typeclass_template_definition      = Definition<ast::definition::Typeclass_template     >;
+    using Implementation_definition          = Definition<ast::definition::Implementation         >;
+    using Implementation_template_definition = Definition<ast::definition::Implementation_template>;
 
 
     using Definition_variant = std::variant<
@@ -110,6 +125,8 @@ namespace resolution {
         Alias_template_definition,
         Typeclass_definition,
         Typeclass_template_definition,
+        Implementation_definition,
+        Implementation_template_definition,
 
         bu::Wrapper<Namespace>
     >;

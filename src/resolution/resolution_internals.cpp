@@ -49,7 +49,9 @@ auto resolution::Namespace::format_name_as_member(lexer::Identifier const name) 
     [out](this auto recurse, Namespace const* const space) -> void {
         if (space->parent) {
             recurse(std::to_address(*space->parent));
-            std::format_to(out, "{}::", space->name);
+            if (space->name) {
+                std::format_to(out, "{}::", space->name);
+            }
         }
     }(this);
 

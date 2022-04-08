@@ -1,20 +1,21 @@
 import a.b as ab
 
 
-namespace test {
-    
-    alias Test[T] = (Float, T)
+struct Test = x: Int
 
-    struct A = a: Test[Int]
-    
-    namespace nested {
-        fn id[X](x: X): X = x
+
+impl Test {
+    fn magic(n: Int) = n
+}
+
+impl Test {
+    namespace hmm {
+        fn other[X](x: X): X = x
     }
-
-    fn hmmm() = A { a = (3.14, nested::id[Float](5.2) as Int) } 
 }
 
 
 fn main(): Int {
-    test::hmmm().a.1
+    Test :: magic ( 5 ) as ();
+    Test::hmm::other[Int](10)
 }

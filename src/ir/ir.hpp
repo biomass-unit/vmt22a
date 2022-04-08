@@ -66,7 +66,7 @@ namespace ir {
         };
 
         struct Alias {
-            std::string       name;
+            std::string       name; // Unnecessary?
             bu::Wrapper<Type> type;
         };
 

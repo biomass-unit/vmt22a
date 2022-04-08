@@ -75,7 +75,7 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
                 .name               = token.as_identifier(),
                 .is_upper           = token.type == Token::Type::upper_name
             };
-            assign_source_view(qualifier, context.pointer - 2, context.pointer - 1);
+            assign_source_view(qualifier, context.pointer - 1, context.pointer - 1);
 
             qualifiers.push_back(std::move(qualifier));
 
@@ -104,7 +104,7 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
             .name     = back.name,
             .is_upper = back.is_upper
         };
-        assign_source_view(primary, context.pointer - 2, context.pointer - 1);
+        assign_source_view(primary, context.pointer - 1, context.pointer - 1);
 
         return {
             .middle_qualifiers = std::move(qualifiers),
