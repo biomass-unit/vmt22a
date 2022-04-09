@@ -1,11 +1,20 @@
-import a.b as ab
+// import a.b as ab
 
 
-data Maybe[T] = nothing | just(T)
+data Mode = a(Int) | b(Int) | c | d
 
 
-fn main(): Int {
-    let m: Int = Maybe[Int]::just(5);
-    m as ();
-    5
+fn f(mode: Mode): () = mode as ()
+
+
+
+struct Test = a: Int, a: Float
+
+
+fn main() {
+    f(Mode::a(3));
+    f(Mode::b(2));
+    f(Mode::c());
+
+    //let t = Test { a = 5.2 };
 }

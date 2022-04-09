@@ -284,29 +284,47 @@ namespace {
             };
 
 
+            bu::Flatmap<
+                std::optional<bu::Wrapper<ir::Type>>,
+                bu::Wrapper<ir::Type>
+            > function_types;
+
             for (auto& [name, constructor] : constructors.container()) {
                 auto& [type, tag] = constructor;
 
-                std::vector<bu::Wrapper<ir::Type>> parameter_types;
-                if (type) {
-                    parameter_types.push_back(*type);
-                }
+                bu::wrapper auto function_type = [&] {
+                    if (bu::wrapper auto* const existing = function_types.find(type)) {
+                        return *existing;
+                    }
+                    else {
+                        std::vector<bu::Wrapper<ir::Type>> parameter_types;
+                        if (type) {
+                            parameter_types.push_back(*type);
+                        }
 
-                resolved_data->associated_namespace->lower_table.add(
-                    bu::copy(name),
-                    ir::definition::Data_constructor {
-                        .payload_type = type,
-                        .function_type = ir::Type {
+                        bu::Wrapper function_type = ir::Type {
                             .value = ir::type::Function {
                                 .parameter_types = std::move(parameter_types),
                                 .return_type     = type_handle
                             },
                             .size       = ir::Size_type { bu::unchecked_tag, 2 * sizeof(std::byte*) },
                             .is_trivial = true
-                        },
-                        .data_type = type_handle,
-                        .name      = name,
-                        .tag       = tag
+                        };
+
+                        function_types.add(bu::copy(type), bu::copy(function_type));
+
+                        return function_type;
+                    }
+                }();
+
+                resolved_data->associated_namespace->lower_table.add(
+                    bu::copy(name),
+                    ir::definition::Data_constructor {
+                        .payload_type  = type,
+                        .function_type = function_type,
+                        .data_type     = type_handle,
+                        .name          = name,
+                        .tag           = tag
                     }
                 );
             }
