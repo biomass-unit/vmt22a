@@ -28,7 +28,7 @@ namespace {
                 return context.global_namespace;
             },
             [&](ast::Type& type) -> bu::Wrapper<resolution::Namespace> {
-                return context.get_associated_namespace(resolve_type(type, context), type.source_view);
+                return context.get_associated_namespace(context.resolve_type(type), type.source_view);
             }
         }, root.value);
 

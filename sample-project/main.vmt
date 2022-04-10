@@ -14,7 +14,7 @@ struct Test = a: Int, a: Float
 fn main() {
     f(Mode::a(3));
     f(Mode::b(2));
-    f(Mode::c());
+    f(Mode::c);
 
     //let t = Test { a = 5.2 };
 }

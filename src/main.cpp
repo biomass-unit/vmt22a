@@ -92,7 +92,7 @@ namespace {
             .source            = &tokenized_source.source,
             .is_unevaluated    = false
         };
-        auto expression = resolution::resolve_expression(result, resolution_context);
+        auto expression = resolution_context.resolve_expression(result);
 
         bu::print("ir: {}\n", expression);
     });

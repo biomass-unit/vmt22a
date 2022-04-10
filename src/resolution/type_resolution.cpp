@@ -8,15 +8,6 @@ namespace {
         resolution::Resolution_context& context;
         ast::Type                     & this_type;
 
-        auto recurse(ast::Type& type) -> bu::Wrapper<ir::Type> {
-            return resolution::resolve_type(type, context);
-        }
-        auto recurse() {
-            return [this](ast::Type& type) -> bu::Wrapper<ir::Type> {
-                return recurse(type);
-            };
-        }
-
         [[nodiscard]]
         auto error(std::string_view const message, std::optional<std::string_view> const help)
             -> std::runtime_error
@@ -54,7 +45,7 @@ namespace {
             ir_tuple.types.reserve(tuple.types.size());
 
             for (auto& type : tuple.types) {
-                bu::wrapper auto ir_type = recurse(type);
+                bu::wrapper auto ir_type = context.resolve_type(type);
 
                 size.safe_add(ir_type->size.get());
 
@@ -79,7 +70,7 @@ namespace {
                 assert(length->value >= 0);
 
                 auto type = ir::type::Array {
-                    .element_type = recurse(array.element_type),
+                    .element_type = context.resolve_type(array.element_type),
                     .length       = static_cast<bu::Usize>(length->value)
                 };
                 auto const size = type.element_type->size.copy().safe_mul(type.length);
@@ -96,7 +87,7 @@ namespace {
 
         auto resolve_pointer(auto& pointer) -> ir::type::Pointer {
             return {
-                .type = recurse(pointer.type),
+                .type = context.resolve_type(pointer.type),
                 .mut  = context.resolve_mutability(pointer.mutability)
             };
         }
@@ -120,7 +111,7 @@ namespace {
         auto operator()(ast::type::Type_of& type_of) -> bu::Wrapper<ir::Type> {
             auto child_context = context.make_child_context_with_new_scope();
             child_context.is_unevaluated = true;
-            return resolution::resolve_expression(type_of.expression, child_context).type;
+            return context.resolve_expression(type_of.expression).type;
         }
 
         auto operator()(auto&) -> bu::Wrapper<ir::Type> {
@@ -131,6 +122,6 @@ namespace {
 }
 
 
-auto resolution::resolve_type(ast::Type& type, Resolution_context& context) -> bu::Wrapper<ir::Type> {
-    return std::visit(Type_resolution_visitor { context, type }, type.value);
+auto resolution::Resolution_context::resolve_type(ast::Type& type) -> bu::Wrapper<ir::Type> {
+    return std::visit(Type_resolution_visitor { *this, type }, type.value);
 }

@@ -181,7 +181,7 @@ namespace {
         };
 
         // Resolve the instantiation as a regular non-template definition in the instantiation context
-        resolution::resolve_definition(concrete, instantiation_context);
+        instantiation_context.resolve_definition(concrete);
 
         if (!concrete.resolved_info->has_value()) {
             bu::abort("how");
@@ -422,12 +422,12 @@ auto resolution::resolve_template_arguments(
                     );
                     argument_set.type_arguments.add(
                         bu::copy(parameter.name),
-                        resolve_type(type, context)
+                        context.resolve_type(type)
                     );
                 },
                 [&](Parameter::Value_parameter& parameter, ast::Expression& expression) {
-                    auto given_argument = resolve_expression(expression, context);
-                    auto required_type  = resolve_type(parameter.type, context);
+                    auto given_argument = context.resolve_expression(expression);
+                    auto required_type  = context.resolve_type(parameter.type);
 
                     if (required_type == given_argument.type) {
                         argument_set.arguments_in_order.emplace_back(

@@ -191,6 +191,7 @@ namespace resolution {
         auto find_upper(ast::Qualified_name&, bu::Source_view) -> Upper_variant;
         auto find_lower(ast::Qualified_name&, bu::Source_view) -> Lower_variant;
 
+
         auto find_type(ast::Qualified_name&,
                        bu::Source_view,
                        std::optional<std::span<ast::Template_argument>>)
@@ -205,7 +206,14 @@ namespace resolution {
         auto get_associated_namespace(bu::Wrapper<ir::Type>, bu::Source_view)
             -> bu::Wrapper<Namespace>;
 
+
+        auto resolve_type      (ast::Type      &) -> bu::Wrapper<ir::Type>;
+        auto resolve_expression(ast::Expression&) -> ir::Expression;
+
+        auto resolve_definition(Definition_variant) -> void;
+
         auto resolve_mutability(ast::Mutability) -> bool;
+
 
         auto bind(ast::Pattern&, bu::Wrapper<ir::Type>) -> void;
 
@@ -217,10 +225,13 @@ namespace resolution {
     };
 
 
-    auto resolve_type      (ast::Type      &, Resolution_context&) -> bu::Wrapper<ir::Type>;
-    auto resolve_expression(ast::Expression&, Resolution_context&) -> ir::Expression;
+    inline auto resolve_type_with(Resolution_context& context) noexcept {
+        return [&](ast::Type& type) { return context.resolve_type(type); };
+    }
+    inline auto resolve_expression_with(Resolution_context& context) noexcept {
+        return [&](ast::Expression& expression) { return context.resolve_expression(expression); };
+    }
 
-    auto resolve_definition(Definition_variant, Resolution_context&) -> void;
 
     auto resolve_template_arguments(Namespace&                         current_namespace,
                                     lexer::Identifier                  name,

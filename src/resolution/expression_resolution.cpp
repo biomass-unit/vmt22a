@@ -8,20 +8,6 @@ namespace {
         resolution::Resolution_context& context;
         ast::Expression&                this_expression;
 
-        auto recurse_with(resolution::Resolution_context& context) {
-            return [&](ast::Expression& expression) {
-                return resolution::resolve_expression(expression, context);
-            };
-        };
-        auto recurse(ast::Expression& expression) {
-            return recurse_with(context)(expression);
-        }
-        auto recurse() noexcept {
-            return [this](ast::Expression& expression) {
-                return recurse(expression);
-            };
-        }
-
 
         [[nodiscard]]
         auto error(std::string_view const message, std::string_view const help, ast::Expression& expression)
@@ -62,11 +48,11 @@ namespace {
                 bu::unimplemented();
             }
 
-            elements.push_back(recurse(array.elements.front()));
+            elements.push_back(context.resolve_expression(array.elements.front()));
             auto& head = elements.front();
 
             for (auto& element : array.elements | std::views::drop(1)) {
-                auto elem = recurse(element);
+                auto elem = context.resolve_expression(element);
 
                 if (head.type != elem.type) {
                     throw error(
@@ -109,7 +95,7 @@ namespace {
             types      .reserve(tuple.expressions.size());
 
             for (auto& expression : tuple.expressions) {
-                auto ir_expr = recurse(expression);
+                auto ir_expr = context.resolve_expression(expression);
 
                 if (!ir_expr.type->is_trivial) {
                     is_trivial = false;
@@ -131,7 +117,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Invocation& invocation) -> ir::Expression {
-            auto invocable = recurse(invocation.invocable);
+            auto invocable = context.resolve_expression(invocation.invocable);
 
             if (auto* const function = std::get_if<ir::type::Function>(&invocable.type->value)) {
                 if (function->parameter_types.size() == invocation.arguments.size()) {
@@ -139,7 +125,7 @@ namespace {
                     arguments.reserve(invocation.arguments.size());
 
                     for (bu::Usize i = 0; i != invocation.arguments.size(); ++i) {
-                        auto argument = recurse(invocation.arguments[i].expression);
+                        auto argument = context.resolve_expression(invocation.arguments[i].expression);
                         assert(!invocation.arguments[i].name);
 
                         if (argument.type == function->parameter_types[i]) {
@@ -184,7 +170,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Struct_initializer& struct_initializer) -> ir::Expression {
-            bu::wrapper auto type = resolution::resolve_type(struct_initializer.type, context);
+            bu::wrapper auto type = context.resolve_type(struct_initializer.type);
 
             if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&type->value)) {
                 auto& structure = *uds->structure;
@@ -203,7 +189,7 @@ namespace {
                         bu::wrapper auto* const initializer = struct_initializer.member_initializers.find(name);
                         assert(initializer); // Since count == 1, the initializer should be found
 
-                        auto expression = recurse(*initializer);
+                        auto expression = context.resolve_expression(*initializer);
 
                         if (member.type == expression.type) {
                             member_initializers.push_back(std::move(expression));
@@ -258,10 +244,12 @@ namespace {
         }
 
         auto operator()(ast::expression::Let_binding& let_binding) -> ir::Expression {
-            auto initializer = recurse(let_binding.initializer);
+            auto initializer = context.resolve_expression(let_binding.initializer);
 
             if (let_binding.type) {
-                auto explicit_type = resolution::resolve_type(*let_binding.type, context);
+                bu::wrapper auto explicit_type =
+                    context.resolve_type(*let_binding.type);
+
                 if (explicit_type != initializer.type) {
                     throw error(
                         std::format(
@@ -287,7 +275,7 @@ namespace {
             auto& bindings = context.scope.local_type_aliases.container();
             auto  it       = std::ranges::find(bindings, alias.name, bu::first);
 
-            bu::wrapper auto type = resolution::resolve_type(alias.type, context);
+            bu::wrapper auto type = context.resolve_type(alias.type);
 
             if (it != bindings.end() && !it->second.has_been_mentioned) {
                 throw error(std::format("{} would shadow an unused local type alias", alias.name));
@@ -350,7 +338,7 @@ namespace {
 
         auto operator()(ast::expression::Size_of& size_of) -> ir::Expression {
             bool const is_unevaluated = std::exchange(context.is_unevaluated, true);
-            bu::wrapper auto type = resolution::resolve_type(size_of.type, context);
+            bu::wrapper auto type = context.resolve_type(size_of.type);
             context.is_unevaluated = is_unevaluated;
 
             return {
@@ -362,7 +350,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Member_access_chain& chain) -> ir::Expression {
-            auto             expression       = recurse(chain.expression);
+            auto             expression       = context.resolve_expression(chain.expression);
             bu::wrapper auto most_recent_type = expression.type;
 
             bu::Bounded_integer<bu::U16> offset;
@@ -434,7 +422,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Conditional& conditional) -> ir::Expression {
-            auto condition = recurse(conditional.condition);
+            auto condition = context.resolve_expression(conditional.condition);
 
             if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
                 throw error(
@@ -446,10 +434,10 @@ namespace {
                 );
             }
 
-            auto true_branch = recurse(conditional.true_branch);
+            auto true_branch = context.resolve_expression(conditional.true_branch);
 
             auto false_branch = conditional.false_branch
-                              . transform(bu::compose(bu::wrap, recurse()))
+                              . transform(bu::compose(bu::wrap, resolution::resolve_expression_with(context)))
                               . value_or(ir::unit_value);
 
             if (true_branch.type != false_branch->type) {
@@ -475,8 +463,8 @@ namespace {
 
         auto operator()(ast::expression::Type_cast& cast) -> ir::Expression {
             ir::expression::Type_cast ir_cast {
-                .expression = recurse(cast.expression),
-                .type = resolution::resolve_type(cast.target, context)
+                .expression = context.resolve_expression(cast.expression),
+                .type       = context.resolve_type(cast.target)
             };
 
             bu::wrapper auto type = ir_cast.type;
@@ -497,7 +485,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Infinite_loop& loop) -> ir::Expression {
-            auto body = recurse(loop.body);
+            auto body = context.resolve_expression(loop.body);
             ensure_loop_body_is_of_unit_type(loop.body, body.type);
 
             return {
@@ -507,7 +495,7 @@ namespace {
         }
 
         auto operator()(ast::expression::While_loop& loop) -> ir::Expression {
-            auto condition = recurse(loop.condition);
+            auto condition = context.resolve_expression(loop.condition);
             if (!std::holds_alternative<ir::type::Boolean>(condition.type->value)) {
                 throw error(
                     std::format(
@@ -518,7 +506,7 @@ namespace {
                 );
             }
 
-            auto body = recurse(loop.body);
+            auto body = context.resolve_expression(loop.body);
             ensure_loop_body_is_of_unit_type(loop.body, body.type);
 
             return {
@@ -539,13 +527,13 @@ namespace {
             }
 
             auto child_context = context.make_child_context_with_new_scope();
-            auto recurse = recurse_with(child_context); // Shadow the struct member
+            //auto recurse = recurse_with(child_context); // Shadow the struct member
 
             std::vector<ir::Expression> side_effects;
             side_effects.reserve(compound.expressions.size() - 1);
 
             for (auto& expression : compound.expressions | std::views::take(compound.expressions.size() - 1)) {
-                auto side_effect = recurse(expression);
+                auto side_effect = child_context.resolve_expression(expression);
 
                 if (!side_effect.type->is_unit()) {
                     throw error(
@@ -567,7 +555,7 @@ namespace {
                 side_effects.push_back(std::move(side_effect));
             }
 
-            auto result = recurse(compound.expressions.back());
+            auto result = child_context.resolve_expression(compound.expressions.back());
 
             if (auto unused = child_context.scope.unused_variables()) {
                 bu::abort("unused variables");
@@ -595,6 +583,6 @@ namespace {
 }
 
 
-auto resolution::resolve_expression(ast::Expression& expression, Resolution_context& context) -> ir::Expression {
-    return std::visit(Expression_resolution_visitor { context, expression }, expression.value);
+auto resolution::Resolution_context::resolve_expression(ast::Expression& expression) -> ir::Expression {
+    return std::visit(Expression_resolution_visitor { *this, expression }, expression.value);
 }

@@ -136,21 +136,21 @@ namespace {
             parameters.reserve(definition->parameters.size());
 
             for (auto& [pattern, type, default_value] : definition->parameters) {
-                bu::wrapper auto ir_type = resolution::resolve_type(type, context);
+                bu::wrapper auto ir_type = context.resolve_type(type);
                 context.bind(pattern, ir_type);
 
                 parameters.emplace_back(
                     ir_type,
-                    default_value.transform([&](ast::Expression& expression) -> bu::Wrapper<ir::Expression> {
-                        return resolution::resolve_expression(expression, context);
-                    })
+                    default_value.transform(
+                        bu::compose(bu::wrap, resolution::resolve_expression_with(context))
+                    )
                 );
             }
 
-            bu::Wrapper body = resolution::resolve_expression(definition->body, context);
+            bu::Wrapper body = context.resolve_expression(definition->body);
 
             if (definition->return_type) {
-                bu::wrapper auto explicit_type = resolution::resolve_type(*definition->return_type, context);
+                bu::wrapper auto explicit_type = context.resolve_type(*definition->return_type);
 
                 if (body->type != explicit_type) {
                     throw context.error(
@@ -202,7 +202,7 @@ namespace {
             bool is_trivial = true;
 
             for (auto& member : definition->members) {
-                bu::wrapper auto    type   = resolution::resolve_type(member.type, context);
+                bu::wrapper auto    type   = context.resolve_type(member.type);
                 ir::Size_type const offset = size;
 
                 if (!type->is_trivial) {
@@ -255,9 +255,7 @@ namespace {
             // parser disallows data-definitions with too many constructors
 
             for (auto& constructor : definition->constructors) {
-                auto type = constructor.type.transform([&](ast::Type& type) {
-                    return resolution::resolve_type(type, context);
-                });
+                auto type = constructor.type.transform(resolution::resolve_type_with(context));
 
                 if (type) {
                     if (!(*type)->is_trivial) {
@@ -345,7 +343,7 @@ namespace {
 
             bu::Wrapper resolved_alias = ir::definition::Alias {
                 .name = context.current_namespace->format_name_as_member(definition->name),
-                .type = resolution::resolve_type(definition->type, context)
+                .type = context.resolve_type(definition->type)
             };
 
             *alias.resolved_info = resolution::Alias_definition::Resolved_info {
@@ -361,7 +359,7 @@ namespace {
 
             auto* const definition = implementation.syntactic_definition;
 
-            bu::wrapper auto type                     = resolution::resolve_type(definition->type, context);
+            bu::wrapper auto type                     = context.resolve_type(definition->type);
             bu::wrapper auto associated_namespace     = context.get_associated_namespace(type, definition->type->source_view);
             bu::wrapper auto implementation_namespace = implementation.home_namespace;
 
@@ -393,7 +391,7 @@ namespace {
             bu::wrapper auto current_namespace = std::exchange(context.current_namespace, child);
 
             for (auto& definition : child->definitions_in_order) {
-                resolution::resolve_definition(definition, context);
+                context.resolve_definition(definition);
             }
 
             context.current_namespace = current_namespace;
@@ -412,8 +410,8 @@ namespace {
 }
 
 
-auto resolution::resolve_definition(Definition_variant const variant, Resolution_context& context) -> void {
-    std::visit(Definition_resolution_visitor { context }, variant);
+auto resolution::Resolution_context::resolve_definition(Definition_variant const variant) -> void {
+    std::visit(Definition_resolution_visitor { *this }, variant);
 }
 
 
