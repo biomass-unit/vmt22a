@@ -8,13 +8,9 @@ fn f(mode: Mode): () = mode as ()
 
 
 
-struct Test = a: Int, a: Float
+struct Test = a: Int, b: Float
 
 
 fn main() {
-    f(Mode::a(3));
-    f(Mode::b(2));
-    f(Mode::c);
-
-    //let t = Test { a = 5.2 };
+    
 }

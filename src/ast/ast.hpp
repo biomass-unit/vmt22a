@@ -20,7 +20,7 @@ namespace ast {
             bu::Source_view source_view;
 
             constexpr auto operator==(Source_tracked const&) const noexcept -> bool {
-                return true;
+                return true; // Allows using DEFAULTED_EQUALITY on derived types
             }
         };
     }

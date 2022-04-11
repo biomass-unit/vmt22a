@@ -527,7 +527,6 @@ namespace {
             }
 
             auto child_context = context.make_child_context_with_new_scope();
-            //auto recurse = recurse_with(child_context); // Shadow the struct member
 
             std::vector<ir::Expression> side_effects;
             side_effects.reserve(compound.expressions.size() - 1);

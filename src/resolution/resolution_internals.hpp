@@ -203,6 +203,9 @@ namespace resolution {
             -> ir::Expression;
 
 
+        auto get_associated_namespace_if(bu::Wrapper<ir::Type>)
+            noexcept -> std::optional<bu::Wrapper<Namespace>>;
+
         auto get_associated_namespace(bu::Wrapper<ir::Type>, bu::Source_view)
             -> bu::Wrapper<Namespace>;
 

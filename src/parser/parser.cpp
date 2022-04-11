@@ -196,6 +196,7 @@ namespace {
             extract_separated_zero_or_more<parse_class_reference, Token::Type::plus, "a class name">;
 
         auto classes = extract_classes(context);
+
         if (classes.empty()) {
             throw context.expected("one or more class names");
         }
@@ -337,18 +338,44 @@ namespace {
     }
 
 
+    template <class Member>
+    auto ensure_no_duplicate_members(
+        Parse_context            & context,
+        std::vector<Member> const& range,
+        std::string_view    const  description
+    ) -> void {
+        for (auto it = range.cbegin(); it != range.cend(); ++it) {
+            auto found = std::ranges::find(range.cbegin(), it, it->name, &Member::name);
+
+            if (found != it) {
+                throw context.error(
+                    it->source_view,
+                    std::format("A {} with this name was already listed", description)
+                );
+
+                // TODO: add more info to the error message
+            }
+        }
+    }
+
+
     auto parse_struct_member(Parse_context& context)
         -> std::optional<ast::definition::Struct::Member>
     {
-        bool const is_public = context.try_consume(Token::Type::pub);
+        auto* const anchor    = context.pointer;
+        bool  const is_public = context.try_consume(Token::Type::pub);
 
         if (auto name = parse_lower_id(context)) {
             context.consume_required(Token::Type::colon);
-            return ast::definition::Struct::Member {
+
+            ast::definition::Struct::Member member {
                 .name      = *name,
                 .type      = extract_type(context),
                 .is_public = is_public
             };
+
+            assign_source_view(member, anchor, context.pointer - 1);
+            return member;
         }
         else if (is_public) {
             throw context.expected("a struct member name");
@@ -370,6 +397,8 @@ namespace {
         context.consume_required(Token::Type::equals);
 
         if (auto members = parse_members(context)) {
+            ensure_no_duplicate_members(context, *members, "member");
+
             return {
                 std::move(template_parameters),
                 ast::definition::Struct {
@@ -387,6 +416,8 @@ namespace {
     auto parse_data_constructor(Parse_context& context)
         -> std::optional<ast::definition::Data::Constructor>
     {
+        auto* const anchor = context.pointer;
+
         if (auto name = parse_lower_id(context)) {
             std::optional<bu::Wrapper<ast::Type>> type;
 
@@ -404,7 +435,13 @@ namespace {
                 context.consume_required(Token::Type::paren_close);
             }
 
-            return ast::definition::Data::Constructor { *name, type };
+            ast::definition::Data::Constructor constructor {
+                .name = *name,
+                .type = type
+            };
+
+            assign_source_view(constructor, anchor, context.pointer - 1);
+            return constructor;
         }
         else {
             return std::nullopt;
@@ -424,6 +461,8 @@ namespace {
 
         context.consume_required(Token::Type::equals);
         if (auto constructors = parse_constructors(context)) {
+            ensure_no_duplicate_members(context, *constructors, "constructor");
+
             static constexpr auto max =
                 std::numeric_limits<bu::U8>::max();
 

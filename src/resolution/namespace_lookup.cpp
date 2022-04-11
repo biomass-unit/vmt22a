@@ -214,28 +214,37 @@ auto resolution::Resolution_context::find_lower(ast::Qualified_name& full_name, 
 }
 
 
+auto resolution::Resolution_context::get_associated_namespace_if(bu::Wrapper<ir::Type> type)
+    noexcept -> std::optional<bu::Wrapper<Namespace>>
+{
+    if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&type->value)) {
+        return uds->structure->associated_namespace;
+    }
+    else if (auto* const udd = std::get_if<ir::type::User_defined_data>(&type->value)) {
+        return udd->data->associated_namespace;
+    }
+    else {
+        return std::nullopt;
+    }
+}
+
 auto resolution::Resolution_context::get_associated_namespace(
     bu::Wrapper<ir::Type> type,
     bu::Source_view const source_view
 )
     -> bu::Wrapper<Namespace>
 {
-    return std::visit(bu::Overload {
-        [](ir::type::User_defined_struct uds) {
-            return uds.structure->associated_namespace;
-        },
-        [](ir::type::User_defined_data udd) {
-            return udd.data->associated_namespace;
-        },
-        [&, this](auto&) -> bu::Wrapper<Namespace> {
-            throw error(
-                source_view,
-                std::format(
-                    "{} is not a user-defined type, so it "
-                    "does not have an associated namespace",
-                    type
-                )
-            );
-        }
-    }, type->value);
+    if (auto space = get_associated_namespace_if(type)) {
+        return *space;
+    }
+    else {
+        throw error(
+            source_view,
+            std::format(
+                "{} is not a user-defined type, so it "
+                "does not have an associated namespace",
+                type
+            )
+        );
+    }
 }

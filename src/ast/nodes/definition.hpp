@@ -72,7 +72,7 @@ namespace ast {
         };
 
         struct Struct {
-            struct Member {
+            struct Member : dtl::Source_tracked {
                 lexer::Identifier name;
                 bu::Wrapper<Type> type;
                 bool              is_public = false;
@@ -84,7 +84,7 @@ namespace ast {
         };
 
         struct Data {
-            struct Constructor {
+            struct Constructor : dtl::Source_tracked {
                 lexer::Identifier                name;
                 std::optional<bu::Wrapper<Type>> type;
                 DEFAULTED_EQUALITY(Constructor);

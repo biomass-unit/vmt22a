@@ -359,31 +359,47 @@ namespace {
 
             auto* const definition = implementation.syntactic_definition;
 
-            bu::wrapper auto type                     = context.resolve_type(definition->type);
-            bu::wrapper auto associated_namespace     = context.get_associated_namespace(type, definition->type->source_view);
-            bu::wrapper auto implementation_namespace = implementation.home_namespace;
+            bu::wrapper auto type = context.resolve_type(definition->type);
 
-            implementation_namespace->parent = associated_namespace;
 
-            operator()(implementation_namespace);
+            if (auto space = context.get_associated_namespace_if(type)) {
+                bu::wrapper auto associated_namespace     = *space;
+                bu::wrapper auto implementation_namespace = implementation.home_namespace;
 
-            {
-                // Quick & dirty solution, fix later
+                implementation_namespace->parent = associated_namespace;
 
-                auto& old_lower = associated_namespace    ->lower_table.container();
-                auto& new_lower = implementation_namespace->lower_table.container();
+                operator()(implementation_namespace);
 
-                old_lower.insert(old_lower.end(), new_lower.begin(), new_lower.end());
+                {
+                    // Quick & dirty solution, fix later
 
-                auto& old_upper = associated_namespace    ->upper_table.container();
-                auto& new_upper = implementation_namespace->upper_table.container();
+                    auto& old_lower = associated_namespace    ->lower_table.container();
+                    auto& new_lower = implementation_namespace->lower_table.container();
 
-                old_upper.insert(old_upper.end(), new_upper.begin(), new_upper.end());
+                    old_lower.insert(old_lower.end(), new_lower.begin(), new_lower.end());
 
-                auto& old_children = associated_namespace    ->children.container();
-                auto& new_children = implementation_namespace->children.container();
+                    auto& old_upper = associated_namespace    ->upper_table.container();
+                    auto& new_upper = implementation_namespace->upper_table.container();
 
-                old_children.insert(old_children.end(), new_children.begin(), new_children.end());
+                    old_upper.insert(old_upper.end(), new_upper.begin(), new_upper.end());
+
+                    auto& old_children = associated_namespace    ->children.container();
+                    auto& new_children = implementation_namespace->children.container();
+
+                    old_children.insert(old_children.end(), new_children.begin(), new_children.end());
+                }
+            }
+            else {
+                throw context.error(
+                    definition->type->source_view,
+                    std::format(
+                        "{} is not a user-defined type, so it can "
+                        "not have associated implementation blocks",
+                        type
+                    ),
+                    "Consider defining a class with the necessary "
+                    "members, and instantiating it for the type"
+                );
             }
         }
 
