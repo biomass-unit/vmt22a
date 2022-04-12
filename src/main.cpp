@@ -70,7 +70,7 @@ namespace {
         parser::Parse_context context { tokenized_source };
 
         auto result = parser::parse_expression(context);
-        bu::print("Result: {}\nRemaining input: '{}'\n", result, context.pointer->source_view.data());
+        bu::print("Result: {}\nRemaining input: '{}'\n", result, context.pointer->source_view.string.data());
     });
 
     [[maybe_unused]]

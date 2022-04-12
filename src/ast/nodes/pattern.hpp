@@ -32,7 +32,7 @@ namespace ast {
     }
 
 
-    struct Pattern : dtl::Source_tracked {
+    struct Pattern {
         using Variant = std::variant<
             pattern::Wildcard,
             pattern::Literal<bu::Isize>,
@@ -45,9 +45,8 @@ namespace ast {
             pattern::Guarded
         >;
 
-        Variant value;
-
-        DEFINE_NODE_CTOR(Pattern);
+        Variant         value;
+        bu::Source_view source_view;
     };
 
 }

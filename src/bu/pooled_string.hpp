@@ -5,28 +5,28 @@
 
 namespace bu {
 
+    enum class Pooled_string_strategy {
+        guaranteed_new_string,
+        potential_new_string
+    };
+
     template <class /* tag */>
     class [[nodiscard]] Pooled_string {
     public:
-        enum Strategy {
-            guaranteed_new_string,
-            potential_new_string,
-        };
-
         friend struct std::hash<Pooled_string>;
     private:
-        bu::Usize index;
+        Usize index;
 
         inline static auto vector =
-            bu::vector_with_capacity<Pair<std::string, bu::Usize>>(256);
+            vector_with_capacity<Pair<std::string, bu::Usize>>(256);
 
-        explicit Pooled_string(auto&& string, auto f, Strategy strategy) noexcept {
-            auto const hash = std::hash<std::string_view>{}(string);
+        explicit Pooled_string(auto&& string, auto f, Pooled_string_strategy const strategy) noexcept {
+            Usize const hash = std::hash<std::string_view>{}(string);
 
-            if (strategy == potential_new_string) {
+            if (strategy == Pooled_string_strategy::potential_new_string) {
                 auto const it = std::ranges::find(vector, hash, bu::second);
                 if (it != vector.end()) {
-                    index = bu::unsigned_distance(vector.begin(), it);
+                    index = unsigned_distance(vector.begin(), it);
                     return;
                 }
             }
@@ -35,9 +35,16 @@ namespace bu {
             vector.emplace_back(f(string), hash);
         }
     public:
-        explicit Pooled_string(std::string&& string, Strategy strategy = potential_new_string) noexcept
+        explicit Pooled_string(
+            std::string&&                string,
+            Pooled_string_strategy const strategy = Pooled_string_strategy::potential_new_string
+        ) noexcept
             : Pooled_string(std::move(string), bu::move, strategy) {}
-        explicit Pooled_string(std::string_view string, Strategy strategy = potential_new_string) noexcept
+
+        explicit Pooled_string(
+            std::string_view       const string,
+            Pooled_string_strategy const strategy = Pooled_string_strategy::potential_new_string
+        ) noexcept
             : Pooled_string(string, bu::make<std::string>, strategy) {}
 
         [[nodiscard]]
@@ -55,11 +62,7 @@ namespace bu {
         }
 
         static auto release() noexcept -> void {
-            decltype(vector){}.swap(vector);
-        }
-
-        static auto string_count() noexcept -> Usize {
-            return vector.size();
+            decltype(vector) {}.swap(vector);
         }
     };
 
@@ -76,6 +79,6 @@ struct std::formatter<String> : std::formatter<std::string_view> {
 template <bu::instance_of<bu::Pooled_string> String>
 struct std::hash<String> : std::hash<std::string_view> {
     auto operator()(String const string) const -> bu::Usize {
-        return bu::hash_combine_with_seed(string.index, string.view());
+        return bu::hash_combine_with_seed(bu::get_unique_seed(), string.hash());
     }
 };

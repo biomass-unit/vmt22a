@@ -14,8 +14,8 @@ namespace parser {
 
 
     struct Parse_context {
-        Token* start;
-        Token* pointer;
+        Token     * start;
+        Token     * pointer;
         bu::Source* source;
 
         explicit Parse_context(lexer::Tokenized_source& ts) noexcept
@@ -88,16 +88,7 @@ namespace parser {
         )
             const -> std::runtime_error
         {
-            return error(
-                bu::Source_view {
-                    std::string_view {
-                        span.front().source_view.data(),
-                        span.back().source_view.data() + span.back().source_view.size()
-                    }
-                },
-                message,
-                help
-            );
+            return error(span.front().source_view + span.back().source_view, message, help);
         }
 
         auto error(
@@ -298,27 +289,41 @@ namespace parser {
     constexpr auto parse_upper_id = parse_id<Token::Type::upper_name>;
 
 
-    template <parser auto p>
-    auto parse_wrapped(Parse_context& context) {
-        return p(context).transform(bu::make<bu::Wrapper<Parse_result<p>>>);
-    }
+    template <class T>
+    class Extractor {
+        typename T::Variant(*function)(Parse_context&);
+    public:
+        constexpr Extractor(decltype(function) const function) noexcept
+            : function { function } {}
 
-
-    auto assign_source_view(auto& node, Token* const start, Token* const stop) -> void {
-        assert(!start->source_view.empty() && !stop->source_view.empty());
-        node.source_view.string = { start->source_view.data(), stop->source_view.data() + stop->source_view.size() };
-    }
-
-
-    template <parser auto p>
-    auto parse_and_add_source_view(Parse_context& context) {
-        auto* const anchor = context.pointer;
-        auto result = p(context);
-
-        if (result) {
-            assign_source_view(*result, anchor, context.pointer - 1);
+        constexpr auto operator()(Parse_context& context) const -> T {
+            auto* const anchor = context.pointer - 1;
+            auto        value  = function(context);
+            return T {
+                .value = std::move(value),
+                .source_view = anchor->source_view + context.pointer[-1].source_view
+            };
         }
-        return result;
+    };
+
+    namespace dtl {
+        template <class>
+        struct Variant_map;
+
+        template <> struct Variant_map<ast::Expression::Variant> : std::type_identity<ast::Expression> {};
+        template <> struct Variant_map<ast::Pattern   ::Variant> : std::type_identity<ast::Pattern   > {};
+        template <> struct Variant_map<ast::Type      ::Variant> : std::type_identity<ast::Type      > {};
+        template <> struct Variant_map<ast::Definition::Variant> : std::type_identity<ast::Definition> {};
+    }
+
+    template <class Variant>
+    Extractor(Variant(*)(Parse_context&)) -> Extractor<typename dtl::Variant_map<Variant>::type>;
+
+
+    constexpr auto make_source_view(Token* const first, Token* const last)
+        noexcept -> bu::Source_view
+    {
+        return bu::Source_view { first->source_view + last->source_view };
     }
 
 }

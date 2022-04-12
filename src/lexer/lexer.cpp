@@ -15,45 +15,110 @@ namespace {
         bu::Source*        source;
         char const*        start;
         char const*        stop;
-        char const*        pointer;
-        char const*        token_start = nullptr;
+
+        struct State {
+            char const* pointer = nullptr;
+            bu::Usize   line    = 1;
+            bu::Usize   column  = 1;
+        };
+
+        State token_start;
+
+    private:
+
+        State state;
+
+        auto update_location(char const c) noexcept -> void {
+            if (c == '\n') {
+                ++state.line;
+                state.column = 1;
+            }
+            else {
+                ++state.column;
+            }
+        }
+
+        [[nodiscard]]
+        auto get_location(char const* const p) const
+            noexcept -> bu::Pair<bu::Usize>
+        {
+            bu::Usize line = 1, column = 1;
+
+            for (char const* ptr = start; ptr != p; ++ptr) {
+                if (*ptr == '\n') {
+                    ++line;
+                    column = 1;
+                }
+                else {
+                    ++column;
+                }
+            }
+
+            return { line, column };
+        }
+
+    public:
 
         explicit Lex_context(bu::Source& source) noexcept
-            : source  { &source }
-            , start   { source.string().data() }
-            , stop    { start + source.string().size() }
-            , pointer { start }
+            : source      { &source }
+            , start       { source.string().data() }
+            , stop        { start + source.string().size() }
+            , token_start { .pointer = start }
+            , state       { .pointer = start }
         {
             tokens.reserve(1024);
         }
 
+
+        auto current_state() const noexcept -> State {
+            return state;
+        }
+
+        auto restore(State const old) noexcept -> void {
+            state = old;
+        }
+
         auto is_finished() const noexcept -> bool {
-            return pointer == stop;
+            return state.pointer == stop;
+        }
+
+        auto advance(bu::Usize const distance = 1) noexcept -> void {
+            for (bu::Usize i = 0; i != distance; ++i) {
+                update_location(*state.pointer++);
+            }
+        }
+
+        auto current_pointer() const noexcept -> char const* {
+            return state.pointer;
         }
 
         auto current() const noexcept -> char {
-            return *pointer;
+            return *state.pointer;
         }
 
         auto extract_current() noexcept -> char {
-            return *pointer++;
+            update_location(*state.pointer);
+            return *state.pointer++;
         }
 
         auto consume(std::predicate<char> auto const predicate) noexcept -> void {
-            for (; (pointer != stop) && predicate(*pointer); ++pointer);
+            for (; (state.pointer != stop) && predicate(*state.pointer); ++state.pointer) {
+                update_location(*state.pointer);
+            }
         }
 
         auto extract(std::predicate<char> auto const predicate) noexcept -> std::string_view {
-            auto const anchor = pointer;
+            auto* const anchor = state.pointer;
             consume(predicate);
-            return { anchor, pointer };
+            return { anchor, state.pointer };
         }
 
         auto try_consume(char const c) noexcept -> bool {
             assert(c != '\n');
 
-            if (*pointer == c) {
-                ++pointer;
+            if (*state.pointer == c) {
+                ++state.column;
+                ++state.pointer;
                 return true;
             }
             else {
@@ -61,8 +126,8 @@ namespace {
             }
         }
 
-        auto try_consume(std::string_view string) noexcept -> bool {
-            auto ptr = pointer;
+        auto try_consume(std::string_view const string) noexcept -> bool {
+            char const* ptr = state.pointer;
 
             for (char const character : string) {
                 assert(character != '\n');
@@ -71,20 +136,40 @@ namespace {
                 }
             }
 
-            pointer = ptr;
+            state.pointer = ptr;
+            state.column += string.size();
+
             return true;
         }
 
-        auto success(lexer::Token&& token) noexcept -> std::true_type {
-            token.source_view = { token_start, pointer };
-            tokens.push_back(std::move(token));
+        auto success(Token::Type const type, Token::Variant&& value = std::monostate {})
+            noexcept -> std::true_type
+        {
+            tokens.emplace_back(
+                std::move(value),
+                type,
+                bu::Source_view {
+                    std::string_view { token_start.pointer, state.pointer },
+                    token_start.line,
+                    token_start.column
+                }
+            );
+
             return {};
         }
 
-        auto error(std::string_view view, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
+        auto error(
+            std::string_view                const view,
+            std::string_view                const message,
+            std::optional<std::string_view> const help = std::nullopt
+        )
+            const -> std::runtime_error
+        {
+            auto const [line, column] = get_location(view.data());
+
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = bu::Source_view { view },
+                    .erroneous_view = bu::Source_view { view, line, column },
                     .file_view      = source->string(),
                     .file_name      = source->name(),
                     .message        = message,
@@ -93,7 +178,13 @@ namespace {
             };
         }
 
-        auto error(char const* location, std::string_view message, std::optional<std::string_view> help = std::nullopt) const -> std::runtime_error {
+        auto error(
+            char const*                     const location,
+            std::string_view                const message,
+            std::optional<std::string_view> const help = std::nullopt
+        )
+            const -> std::runtime_error
+        {
             return error({ location, location + 1 }, message, help);
         }
 
@@ -125,8 +216,8 @@ namespace {
         auto parse(auto const... args) noexcept -> Parse_result<T> {
             static_assert(sizeof...(args) < 2); // The variadic parameter pack is used
             T value;                            // for the optional base parameter
-            auto const result = std::from_chars(pointer, stop, value, args...);
-            return { result, pointer, value };
+            auto const result = std::from_chars(state.pointer, stop, value, args...);
+            return { result, state.pointer, value };
         }
     };
 
@@ -160,14 +251,14 @@ namespace {
     constexpr auto is_alnum = satisfies_one_of<is_alpha, is_digit>;
 
     auto new_id(std::string_view const id) noexcept {
-        return lexer::Identifier { id, lexer::Identifier::guaranteed_new_string };
+        return lexer::Identifier { id, bu::Pooled_string_strategy::guaranteed_new_string };
     }
 
 
     auto skip_comments_and_whitespace(Lex_context& context) -> void {
         context.consume(is_space);
 
-        auto* const anchor = context.pointer;
+        auto const state = context.current_state();
 
         if (context.try_consume('/')) {
             switch (context.extract_current()) {
@@ -178,7 +269,7 @@ namespace {
                 for (bu::Usize depth = 1; depth != 0; ) {
                     if (context.is_finished()) {
                         throw context.error(
-                            anchor,
+                            state.pointer,
                             "Unterminating comment",
                             "Comments starting with '/*' can be terminated with '*/'"
                         );
@@ -190,12 +281,12 @@ namespace {
                         ++depth;
                     }
                     else {
-                        ++context.pointer;
+                        context.advance();
                     }
                 }
                 break;
             default:
-                context.pointer -= 2;
+                context.restore(state);
                 return;
             }
 
@@ -215,7 +306,7 @@ namespace {
         auto const view = context.extract(is_identifier);
 
         if (std::ranges::all_of(view, is_one_of<'_'>)) [[unlikely]] {
-            return context.success({ .type = Token::Type::underscore });
+            return context.success(Token::Type::underscore);
         }
 
         static auto const options = std::to_array<bu::Pair<lexer::Identifier, Token::Type>>({
@@ -253,32 +344,32 @@ namespace {
             { new_id("pub")       , Token::Type::pub        },
         });
 
-        static auto const
+        static lexer::Identifier const
             true_id  = new_id("true" ),
             false_id = new_id("false");
 
         lexer::Identifier const identifier { view };
 
         if (identifier == true_id || identifier == false_id) {
-            return context.success({ view.front() == 't', Token::Type::boolean });
+            return context.success(Token::Type::boolean, view.front() == 't');
         }
 
         for (auto const [keyword, keyword_type] : options) {
             if (identifier == keyword) {
-                return context.success({ .type = keyword_type });
+                return context.success(keyword_type);
             }
         }
 
-        return context.success({
-            identifier,
+        return context.success(
             is_upper(view.front())
                 ? Token::Type::upper_name
-                : Token::Type::lower_name
-        });
+                : Token::Type::lower_name,
+            identifier
+        );
     }
 
     auto extract_operator(Lex_context& context) -> bool {
-        constexpr auto is_operator = is_one_of<
+        static constexpr auto is_operator = is_one_of<
             '+', '-', '*', '/', '.', '|', '<', '=', '>', ':',
             '!', '?', '#', '%', '&', '^', '~', '$', '@', '\\'
         >;
@@ -303,11 +394,11 @@ namespace {
 
         for (auto [punctuation, punctuation_type] : clashing) {
             if (view == punctuation) {
-                return context.success({ .type = punctuation_type });
+                return context.success(punctuation_type);
             }
         }
 
-        return context.success({ lexer::Identifier { view }, Token::Type::operator_name });
+        return context.success(Token::Type::operator_name, lexer::Identifier { view });
     }
 
     auto extract_punctuation(Lex_context& context) -> bool {
@@ -322,15 +413,15 @@ namespace {
             { ']', Token::Type::bracket_close },
         });
 
-        char const current = context.extract_current();
+        char const current = context.current();
 
         for (auto const [character, punctuation_type] : options) {
             if (character == current) {
-                return context.success({ .type = punctuation_type });
+                context.advance();
+                return context.success(punctuation_type);
             }
         }
 
-        --context.pointer;
         return false;
     }
 
@@ -338,6 +429,8 @@ namespace {
     auto extract_numeric_base(Lex_context& context) -> int {
         int base = 10;
         
+        auto const state = context.current_state();
+
         if (context.try_consume('0')) {
             switch (context.extract_current()) {
             case 'b': base = 2; break;
@@ -346,12 +439,15 @@ namespace {
             case 'd': base = 12; break;
             case 'x': base = 16; break;
             default:
-                context.pointer -= 2;
+                context.restore(state);
                 return base;
             }
 
             if (context.try_consume('-')) {
-                throw context.error(context.pointer - 1, "'-' must be applied before the base specifier");
+                throw context.error(
+                    state.pointer - 1,
+                    "'-' must be applied before the base specifier"
+                );
             }
         }
 
@@ -371,7 +467,7 @@ namespace {
                 }
                 if (exponent.get() < 0) [[unlikely]] {
                     throw context.error(
-                        context.pointer,
+                        context.current_pointer(),
                         "Negative exponent",
                         "use a floating point literal if this was intended"
                     );
@@ -390,7 +486,12 @@ namespace {
                 }
 
                 integer *= coefficient;
-                context.pointer = exponent.result.ptr;
+                context.advance(
+                    bu::unsigned_distance(
+                        context.current_pointer(),
+                        exponent.result.ptr
+                    )
+                );
             }
             else if (exponent.was_non_numeric()) {
                 throw context.error(
@@ -405,7 +506,7 @@ namespace {
     }
 
     auto extract_numeric(Lex_context& context) -> bool {
-        auto* const anchor = context.pointer;
+        auto const state = context.current_state();
 
         bool const negative = context.try_consume('-');
         auto const base     = extract_numeric_base(context);
@@ -413,19 +514,19 @@ namespace {
 
         if (integer.was_non_numeric()) {
             if (base == 10) {
-                context.pointer = anchor;
+                context.restore(state);
                 return false;
             }
             else {
                 throw context.error(
-                    { anchor, anchor + 2 }, // view of the base specifier
+                    { state.pointer, 2 }, // view of the base specifier
                     std::format("Expected an integer literal after the base-{} specifier", base)
                 );
             }
         }
         else if (integer.is_too_large()) {
             throw context.error(
-                { anchor, integer.result.ptr },
+                { state.pointer, integer.result.ptr },
                 "Integer literal is too large"
             );
         }
@@ -434,35 +535,40 @@ namespace {
         }
 
         if (negative && integer.get() < 0) {
-            throw context.error(anchor + 1, "Only one '-' may be applied");
+            throw context.error(state.pointer + 1, "Only one '-' may be applied");
         }
 
         auto const is_tuple_member_index = [&] {
             // If the numeric literal is preceded by '.', then don't attempt to
             // parse a float. This allows nested tuple member-access: tuple.0.0
-            return anchor != context.start
-                ? anchor[-1] == '.'
+            return state.pointer != context.start
+                ? state.pointer[-1] == '.'
                 : false;
         };
 
         if (*integer.result.ptr == '.' && !is_tuple_member_index()) {
             if (base != 10) {
-                throw context.error({ anchor, anchor + 2 }, "Float literals must be base-10");
+                throw context.error({ state.pointer, 2 }, "Float literals must be base-10");
             }
 
-            context.pointer = anchor;
+            context.restore(state);
             auto const floating = context.parse<bu::Float>();
 
             if (floating.did_parse()) {
                 if (floating.is_too_large()) {
                     throw context.error(
-                        { anchor, floating.result.ptr },
+                        { state.pointer, floating.result.ptr },
                         "Floating-point literal is too large"
                     );
                 }
                 else {
-                    context.pointer = floating.result.ptr;
-                    return context.success({ floating.get(), Token::Type::floating });
+                    context.advance(
+                        bu::unsigned_distance(
+                            context.current_pointer(),
+                            floating.result.ptr
+                        )
+                    );
+                    return context.success(Token::Type::floating, floating.get());
                 }
             }
             else {
@@ -473,15 +579,20 @@ namespace {
         auto value = integer.get();
         value *= (negative ? -1 : 1);
 
-        context.pointer = integer.result.ptr;
-        apply_scientific_coefficient(value, anchor, context);
+        context.advance(
+            bu::unsigned_distance(
+                context.current_pointer(),
+                integer.result.ptr
+            )
+        );
+        apply_scientific_coefficient(value, state.pointer, context);
 
-        return context.success({ value, Token::Type::integer });
+        return context.success(Token::Type::integer, value);
     }
 
 
     auto handle_escape_sequence(Lex_context& context) -> char {
-        auto* const anchor = context.pointer;
+        auto* const anchor = context.current_pointer();
 
         switch (context.extract_current()) {
         case 'a': return '\a';
@@ -503,7 +614,7 @@ namespace {
 
 
     auto extract_character(Lex_context& context) -> bool {
-        auto* const anchor = context.pointer;
+        auto* const anchor = context.current_pointer();
 
         if (context.try_consume('\'')) {
             char c = context.extract_current();
@@ -516,10 +627,10 @@ namespace {
             }
 
             if (context.try_consume('\'')) {
-                return context.success({ c, Token::Type::character });
+                return context.success(Token::Type::character, c);
             }
             else {
-                throw context.error(context.pointer, "Expected a closing single-quote");
+                throw context.error(context.current_pointer(), "Expected a closing single-quote");
             }
         }
         else {
@@ -528,7 +639,7 @@ namespace {
     }
 
     auto extract_string(Lex_context& context) -> bool {
-        auto* const anchor = context.pointer;
+        auto* const anchor = context.current_pointer();
 
         if (context.try_consume('"')) {
             std::string string;
@@ -544,7 +655,7 @@ namespace {
                         string.insert(0, context.tokens.back().as_string().view());
                         context.tokens.pop_back(); // Pop the previous string
                     }
-                    return context.success({ lexer::String { std::move(string) }, Token::Type::string });
+                    return context.success(Token::Type::string, lexer::String { std::move(string) });
                 case '\\':
                     c = handle_escape_sequence(context);
                     [[fallthrough]];
@@ -564,7 +675,7 @@ namespace {
 auto lexer::lex(bu::Source&& source) -> Tokenized_source {
     Lex_context context { source };
 
-    constexpr std::array extractors {
+    static constexpr std::array extractors {
         extract_identifier,
         extract_numeric,
         extract_operator,
@@ -575,7 +686,7 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
 
     for (;;) {
         skip_comments_and_whitespace(context);
-        context.token_start = context.pointer;
+        context.token_start = context.current_state();
 
         bool did_extract = false;
 
@@ -588,11 +699,27 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
 
         if (!did_extract) {
             if (context.is_finished()) {
-                context.tokens.push_back({ .type = Token::Type::end_of_input, .source_view = context.pointer });
+                auto const state = context.current_state();
+
+                context.tokens.push_back(
+                    Token {
+                        .value       = std::monostate {},
+                        .type        = Token::Type::end_of_input,
+                        .source_view = bu::Source_view {
+                            std::string_view { state.pointer, 1 },
+                            state.line,
+                            state.column
+                        }
+                    }
+                );
+
                 return { std::move(source), std::move(context.tokens) };
             }
             else {
-                throw context.error(context.pointer, "Syntax error; unable to extract lexical token");
+                throw context.error(
+                    context.current_pointer(),
+                    "Syntax error; unable to extract lexical token"
+                );
             }
         }
     }

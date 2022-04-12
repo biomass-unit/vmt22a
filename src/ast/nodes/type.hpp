@@ -38,8 +38,8 @@ namespace ast {
         };
 
         struct Function {
-            std::vector<bu::Wrapper<Type>> argument_types;
-            bu::Wrapper<Type>              return_type;
+            std::vector<Type> argument_types;
+            bu::Wrapper<Type> return_type;
             DEFAULTED_EQUALITY(Function);
         };
 
@@ -66,15 +66,10 @@ namespace ast {
             DEFAULTED_EQUALITY(Template_instantiation);
         };
 
-        struct Inference_variable {
-            bu::Usize tag;
-            DEFAULTED_EQUALITY(Inference_variable);
-        };
-
     }
 
 
-    struct Type : dtl::Source_tracked {
+    struct Type {
         using Variant = std::variant<
             type::Integer,
             type::Floating,
@@ -89,26 +84,11 @@ namespace ast {
             type::Type_of,
             type::Reference,
             type::Pointer,
-            type::Template_instantiation,
-            type::Inference_variable
+            type::Template_instantiation
         >;
 
-        Variant value;
-
-        DEFINE_NODE_CTOR(Type);
+        Variant         value;
+        bu::Source_view source_view;
     };
-
-
-    namespace type {
-
-        inline bu::Wrapper<Type> const
-            integer   = Integer   {},
-            floating  = Floating  {},
-            character = Character {},
-            boolean   = Boolean   {},
-            string    = String    {},
-            unit      = Tuple     {};
-
-    }
 
 }

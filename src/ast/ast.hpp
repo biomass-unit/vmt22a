@@ -15,33 +15,26 @@ namespace ast {
     struct [[nodiscard]] Definition;
 
 
-    namespace dtl {
-        struct Source_tracked {
-            bu::Source_view source_view;
-
-            constexpr auto operator==(Source_tracked const&) const noexcept -> bool {
-                return true; // Allows using DEFAULTED_EQUALITY on derived types
-            }
-        };
-    }
-
-
     struct Template_argument;
 
     struct Function_argument;
 
     struct Root_qualifier;
 
-    struct Qualifier : dtl::Source_tracked {
+    struct Qualifier {
         std::optional<std::vector<Template_argument>> template_arguments;
         lexer::Identifier                             name;
         bool                                          is_upper;
+
+        bu::Source_view source_view;
         DEFAULTED_EQUALITY(Qualifier);
     };
 
-    struct Primary_qualifier : dtl::Source_tracked {
+    struct Primary_qualifier {
         lexer::Identifier name;
         bool              is_upper;
+
+        bu::Source_view source_view;
         DEFAULTED_EQUALITY(Primary_qualifier);
     };
 
@@ -55,12 +48,13 @@ namespace ast {
     };
 
 
-    struct Mutability : dtl::Source_tracked {
+    struct Mutability {
         enum class Type { mut, immut, parameterized };
 
         std::optional<lexer::Identifier> parameter_name;
         Type                             type;
 
+        bu::Source_view source_view;
         DEFAULTED_EQUALITY(Mutability);
     };
 
@@ -74,17 +68,10 @@ namespace ast {
 }
 
 
-#define DEFINE_NODE_CTOR(name)                                      \
-template <class X> requires (!bu::similar_to<X, name>)              \
-name(X&& x) noexcept(std::is_nothrow_constructible_v<Variant, X&&>) \
-    : value { std::forward<X>(x) } {}
-
 #include "nodes/expression.hpp"
 #include "nodes/pattern.hpp"
 #include "nodes/type.hpp"
 #include "nodes/definition.hpp"
-
-#undef DEFINE_NODE_CTOR
 
 
 struct ast::Function_argument {
@@ -110,8 +97,6 @@ auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
 
 
 namespace ast {
-
-    inline bu::Wrapper<Expression> const unit_value = expression::Tuple {};
 
     using Module_path = std::vector<lexer::Identifier>;
 

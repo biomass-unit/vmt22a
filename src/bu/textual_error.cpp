@@ -57,35 +57,14 @@ namespace {
         return lines;
     }
 
-
-    auto find_position(std::string_view file, char const* current) -> bu::Position {
-        bu::Position position { 1, 1 };
-
-        if (file.data() <= current && current <= (file.data() + file.size())) {
-            for (char const* start = file.data(); start != current; ++start) {
-                if (*start == '\n') {
-                    ++position.line;
-                    position.column = 1;
-                }
-                else {
-                    ++position.column;
-                }
-            }
-        }
-        else {
-            position = { 0, 0 };
-        }
-
-        return position;
-    }
-
 }
 
 
 auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
-    auto const [view, file, filename, message, help] = arguments;
+    auto const [source_view, file, filename, message, help] = arguments;
+    auto const [view, line, column] = source_view;
 
-    if (view.string.empty()) {
+    if (view.empty()) {
         bu::abort(
             std::format(
                 "Attempted to format an error message with an "
@@ -95,23 +74,15 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
         );
     }
 
-    auto const position = find_position(file.data(), view.string.data());
-
     std::string string;
     string.reserve(256);
     auto out = std::back_inserter(string);
 
-    std::format_to(
-        out,
-        "In {}, on line {}, column {}:\n",
-        filename,
-        position.line,
-        position.column
-    );
+    std::format_to(out, "In {}, on line {}, column {}:\n", filename, line, column);
 
-    auto const lines       = lines_of_occurrence(file, view.string);
-    auto const digit_count = bu::digit_count(find_position(file, lines.back().data()).line);
-    auto       line_number = position.line;
+    auto const lines       = lines_of_occurrence(file, view);
+    auto const digit_count = bu::digit_count(line + lines.size());
+    auto       line_number = line;
 
     for (auto line : lines) {
         std::format_to(
@@ -125,9 +96,9 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
 
     if (lines.size() == 1) {
         auto whitespace_length =
-            view.string.size() + digit_count + bu::unsigned_distance(lines.front().data(), view.string.data());
+            view.size() + digit_count + bu::unsigned_distance(lines.front().data(), view.data());
 
-        if (view.string.size() == 0) { // only reached if the error occurs at EOI
+        if (view.size() == 0) { // only reached if the error occurs at EOI
             ++whitespace_length;
         }
 
@@ -135,7 +106,7 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
             out,
             "\n    {}{:>{}} {}here",
             bu::Color::red,
-            std::string(std::max(view.string.size(), 1_uz), '^'),
+            std::string(std::max(view.size(), 1_uz), '^'),
             whitespace_length,
             bu::Color::white
         );

@@ -6,7 +6,7 @@
 auto parser::parse_template_arguments(Parse_context& context)
     -> std::optional<std::vector<ast::Template_argument>>
 {
-    constexpr auto extract_arguments = extract_comma_separated_zero_or_more<[](Parse_context& context)
+    static constexpr auto extract_arguments = extract_comma_separated_zero_or_more<[](Parse_context& context)
         -> std::optional<ast::Template_argument>
     {
         if (auto type = parse_type(context)) {
@@ -18,19 +18,27 @@ auto parser::parse_template_arguments(Parse_context& context)
         else {
             std::optional<ast::Mutability> mutability;
 
+            auto* const anchor = context.pointer;
+
+            auto const get_source_view = [&] {
+                return make_source_view(anchor, context.pointer - 1);
+            };
+
             if (context.try_consume(Token::Type::mut)) {
                 if (context.try_consume(Token::Type::question)) {
                     mutability.emplace(
                         ast::Mutability {
                             .parameter_name = extract_lower_id(context, "a mutability parameter name"),
-                            .type           = ast::Mutability::Type::parameterized
+                            .type           = ast::Mutability::Type::parameterized,
+                            .source_view    = get_source_view()
                         }
                     );
                 }
                 else {
                     mutability.emplace(
                         ast::Mutability {
-                            .type = ast::Mutability::Type::mut
+                            .type        = ast::Mutability::Type::mut,
+                            .source_view = get_source_view()
                         }
                     );
                 }
@@ -38,7 +46,8 @@ auto parser::parse_template_arguments(Parse_context& context)
             else if (context.try_consume(Token::Type::immut)) {
                 mutability.emplace(
                     ast::Mutability {
-                        .type = ast::Mutability::Type::immut
+                        .type        = ast::Mutability::Type::immut,
+                        .source_view = get_source_view()
                     }
                 );
             }
@@ -73,12 +82,11 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
             ast::Qualifier qualifier {
                 .template_arguments = parse_template_arguments(context),
                 .name               = token.as_identifier(),
-                .is_upper           = token.type == Token::Type::upper_name
+                .is_upper           = token.type == Token::Type::upper_name,
+                .source_view        = make_source_view(context.pointer - 1, context.pointer - 1)
             };
-            assign_source_view(qualifier, context.pointer - 1, context.pointer - 1);
 
             qualifiers.push_back(std::move(qualifier));
-
             return true;
         }
         default:
@@ -101,10 +109,10 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
         context.pointer = template_argument_anchor;
 
         ast::Primary_qualifier primary {
-            .name     = back.name,
-            .is_upper = back.is_upper
+            .name        = back.name,
+            .is_upper    = back.is_upper,
+            .source_view = make_source_view(context.pointer - 1, context.pointer - 1)
         };
-        assign_source_view(primary, context.pointer - 1, context.pointer - 1);
 
         return {
             .middle_qualifiers = std::move(qualifiers),
@@ -121,23 +129,31 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
 auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
     auto* const anchor = context.pointer;
 
-    ast::Mutability mutability;
+    auto const get_source_view = [&] {
+        return make_source_view(anchor, context.pointer - 1);
+    };
 
     if (context.try_consume(Token::Type::mut)) {
         if (context.try_consume(Token::Type::question)) {
-            mutability.type           = ast::Mutability::Type::parameterized;
-            mutability.parameter_name = extract_lower_id(context, "a mutability parameter name");
+            return {
+                .parameter_name = extract_lower_id(context, "a mutability parameter name"),
+                .type           = ast::Mutability::Type::parameterized,
+                .source_view    = get_source_view()
+            };
         }
         else {
-            mutability.type = ast::Mutability::Type::mut;
+            return {
+                .type        = ast::Mutability::Type::mut,
+                .source_view = get_source_view()
+            };
         }
     }
     else {
-        mutability.type = ast::Mutability::Type::immut;
+        return {
+            .type        = ast::Mutability::Type::immut,
+            .source_view = get_source_view()
+        };
     }
-
-    assign_source_view(mutability, anchor, context.pointer - 1);
-    return mutability;
 }
 
 
@@ -146,24 +162,15 @@ namespace {
     using namespace parser;
 
 
-    template <class T>
-    using Components = bu::Pair<std::optional<std::vector<ast::Template_parameter>>, T>;
-
-
-    template <auto extract>
-    auto extract_from_components(Parse_context& context) -> ast::Definition {
-        auto&& [template_parameters, definition] = extract(context);
-
-        if (template_parameters) {
-            return {
-                ast::definition::Template_definition {
-                    std::move(definition),
-                    std::move(*template_parameters)
-                }
-            };
+    auto definition(auto&& value, std::optional<std::vector<ast::Template_parameter>>&& parameters)
+        -> ast::Definition::Variant
+        requires std::is_rvalue_reference_v<decltype(value)>
+    {
+        if (parameters) {
+            return ast::definition::Template_definition { std::move(value), std::move(*parameters) };
         }
         else {
-            return { std::move(definition) };
+            return { std::move(value) };
         }
     }
 
@@ -289,8 +296,8 @@ namespace {
         }
     }
 
-    auto extract_function_components(Parse_context& context)
-        -> Components<ast::definition::Function>
+    constexpr Extractor extract_function = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
         auto const name                = extract_lower_id(context, "a function name");
         auto       template_parameters = parse_template_parameters(context);
@@ -322,20 +329,20 @@ namespace {
                 }
             }();
 
-            return {
-                std::move(template_parameters),
+            return definition(
                 ast::definition::Function {
                     std::move(body),
                     std::move(parameters),
                     name,
                     return_type
-                }
-            };
+                },
+                std::move(template_parameters)
+            );
         }
         else {
             throw context.expected("a parenthesized list of function parameters");
         }
-    }
+    };
 
 
     template <class Member>
@@ -343,14 +350,16 @@ namespace {
         Parse_context            & context,
         std::vector<Member> const& range,
         std::string_view    const  description
-    ) -> void {
+    )
+        -> void
+    {
         for (auto it = range.cbegin(); it != range.cend(); ++it) {
             auto found = std::ranges::find(range.cbegin(), it, it->name, &Member::name);
 
             if (found != it) {
                 throw context.error(
                     it->source_view,
-                    std::format("A {} with this name was already listed", description)
+                    std::format("A {} with this name has already been defined", description)
                 );
 
                 // TODO: add more info to the error message
@@ -368,14 +377,14 @@ namespace {
         if (auto name = parse_lower_id(context)) {
             context.consume_required(Token::Type::colon);
 
-            ast::definition::Struct::Member member {
-                .name      = *name,
-                .type      = extract_type(context),
-                .is_public = is_public
-            };
+            auto type = extract_type(context);
 
-            assign_source_view(member, anchor, context.pointer - 1);
-            return member;
+            return ast::definition::Struct::Member {
+                .name        = *name,
+                .type        = std::move(type),
+                .is_public   = is_public,
+                .source_view = make_source_view(anchor, context.pointer - 1)
+            };
         }
         else if (is_public) {
             throw context.expected("a struct member name");
@@ -385,10 +394,10 @@ namespace {
         }
     }
 
-    auto extract_struct_components(Parse_context& context)
-        -> Components<ast::definition::Struct>
+    constexpr Extractor extract_struct = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
-        constexpr auto parse_members =
+        static constexpr auto parse_members =
             parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
 
         auto const name                = extract_upper_id(context, "a struct name");
@@ -399,18 +408,18 @@ namespace {
         if (auto members = parse_members(context)) {
             ensure_no_duplicate_members(context, *members, "member");
 
-            return {
-                std::move(template_parameters),
+            return definition(
                 ast::definition::Struct {
                     std::move(*members),
                     name
-                }
-            };
+                },
+                std::move(template_parameters)
+            );
         }
         else {
             throw context.expected("one or more struct members");
         }
-    }
+    };
 
 
     auto parse_data_constructor(Parse_context& context)
@@ -423,35 +432,38 @@ namespace {
 
             if (context.try_consume(Token::Type::paren_open)) {
                 auto types = extract_comma_separated_zero_or_more<parse_type, "a type">(context);
+
                 switch (types.size()) {
                 case 0:
                     break;
                 case 1:
-                    type.emplace(std::move(types.front()));
+                    type = std::move(types.front());
                     break;
                 default:
-                    type.emplace(ast::type::Tuple { std::move(types) });
+                    type = ast::Type {
+                        .value       = ast::type::Tuple { std::move(types) },
+                        .source_view = types.front().source_view + types.back().source_view
+                    };
                 }
+
                 context.consume_required(Token::Type::paren_close);
             }
 
-            ast::definition::Data::Constructor constructor {
-                .name = *name,
-                .type = type
+            return ast::definition::Data::Constructor {
+                .name        = *name,
+                .type        = type,
+                .source_view = make_source_view(anchor, context.pointer - 1)
             };
-
-            assign_source_view(constructor, anchor, context.pointer - 1);
-            return constructor;
         }
         else {
             return std::nullopt;
         }
     }
 
-    auto extract_data_components(Parse_context& context)
-        -> Components<ast::definition::Data>
+    constexpr Extractor extract_data = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
-        constexpr auto parse_constructors =
+        static constexpr auto parse_constructors =
             parse_separated_one_or_more<parse_data_constructor, Token::Type::pipe, "a data constructor">;
 
         auto* anchor = context.pointer;
@@ -482,36 +494,36 @@ namespace {
                 );
             }
 
-            return {
-                std::move(template_parameters),
+            return definition(
                 ast::definition::Data {
                     std::move(*constructors),
                     name
-                }
-            };
+                },
+                std::move(template_parameters)
+            );
         }
         else {
             throw context.expected("one or more data constructors");
         }
-    }
+    };
 
 
-    auto extract_alias_components(Parse_context& context)
-        -> Components<ast::definition::Alias>
+    constexpr Extractor extract_alias = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
         auto const name                = extract_upper_id(context, "an alias name");
         auto       template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
 
-        return {
-            std::move(template_parameters),
+        return definition(
             ast::definition::Alias {
                 name,
                 extract_type(context)
-            }
-        };
-    }
+            },
+            std::move(template_parameters)
+        );
+    };
 
 
     auto parse_class_reference(Parse_context& context)
@@ -556,25 +568,25 @@ namespace {
     }
 
 
-    auto extract_implementation_components(Parse_context& context)
-        -> Components<ast::definition::Implementation>
+    constexpr Extractor extract_implementation = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
         auto template_parameters = parse_template_parameters(context);
         auto type                = extract_type(context);
         auto definitions         = extract_braced_definition_sequence(context);
 
-        return {
-            std::move(template_parameters),
+        return definition(
             ast::definition::Implementation {
                 std::move(type),
                 std::move(definitions)
-            }
-        };
-    }
+            },
+            std::move(template_parameters)
+        );
+    };
 
 
-    auto extract_instantiation_components(Parse_context& context)
-        -> Components<ast::definition::Instantiation>
+    constexpr Extractor extract_instantiation = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
         auto template_parameters = parse_template_parameters(context);
 
@@ -582,19 +594,19 @@ namespace {
             auto type        = extract_type(context);
             auto definitions = extract_braced_definition_sequence(context);
 
-            return {
-                std::move(template_parameters),
+            return definition(
                 ast::definition::Instantiation {
                     .typeclass   = std::move(*typeclass),
                     .instance    = std::move(type),
                     .definitions = std::move(definitions)
-                }
-            };
+                },
+                std::move(template_parameters)
+            );
         }
         else {
             throw context.expected("a class name");
         }
-    }
+    };
 
 
     auto extract_function_signature(Parse_context& context) -> ast::Function_signature {
@@ -602,7 +614,7 @@ namespace {
         auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::paren_open);
-        auto parameters = extract_comma_separated_zero_or_more<parse_wrapped<parse_type>, "a parameter type">(context);
+        auto parameters = extract_comma_separated_zero_or_more<parse_type, "a parameter type">(context);
         context.consume_required(Token::Type::paren_close);
 
         context.consume_required(Token::Type::colon);
@@ -633,8 +645,8 @@ namespace {
         };
     }
 
-    auto extract_class_components(Parse_context& context)
-        -> Components<ast::definition::Typeclass>
+    constexpr Extractor extract_class = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
         auto name = extract_upper_id(context, "a class name");
 
@@ -665,59 +677,57 @@ namespace {
                     context.consume_required(Token::Type::brace_close);
                 }
 
-                return {
-                    std::move(template_parameters),
+                return definition(
                     ast::definition::Typeclass {
                         std::move(function_signatures),
                         std::move(type_signatures),
                         name
-                    }
-                };
+                    },
+                    std::move(template_parameters)
+                );
             }
         }
-    }
+    };
 
 
-    auto extract_namespace_components(Parse_context& context)
-        -> Components<ast::definition::Namespace>
+    constexpr Extractor extract_namespace = +[](Parse_context& context)
+        -> ast::Definition::Variant
     {
         auto name                = extract_lower_id(context, "a namespace name");
         auto template_parameters = parse_template_parameters(context);
 
-        return {
-            std::move(template_parameters),
+        return definition(
             ast::definition::Namespace {
                 extract_braced_definition_sequence(context),
                 std::move(name)
-            }
-        };
-    }
+            },
+            std::move(template_parameters)
+        );
+    };
 
 
     auto parse_definition(Parse_context& context) -> std::optional<ast::Definition> {
-        return parse_and_add_source_view<[](Parse_context& context) -> std::optional<ast::Definition> {
-            switch (context.extract().type) {
-            case Token::Type::fn:
-                return extract_from_components<extract_function_components>(context);
-            case Token::Type::struct_:
-                return extract_from_components<extract_struct_components>(context);
-            case Token::Type::data:
-                return extract_from_components<extract_data_components>(context);
-            case Token::Type::alias:
-                return extract_from_components<extract_alias_components>(context);
-            case Token::Type::class_:
-                return extract_from_components<extract_class_components>(context);
-            case Token::Type::impl:
-                return extract_from_components<extract_implementation_components>(context);
-            case Token::Type::inst:
-                return extract_from_components<extract_instantiation_components>(context);
-            case Token::Type::namespace_:
-                return extract_from_components<extract_namespace_components>(context);
-            default:
-                context.retreat();
-                return std::nullopt;
-            }
-        }>(context);
+        switch (context.extract().type) {
+        case Token::Type::fn:
+            return extract_function(context);
+        case Token::Type::struct_:
+            return extract_struct(context);
+        case Token::Type::data:
+            return extract_data(context);
+        case Token::Type::alias:
+            return extract_alias(context);
+        case Token::Type::class_:
+            return extract_class(context);
+        case Token::Type::impl:
+            return extract_implementation(context);
+        case Token::Type::inst:
+            return extract_instantiation(context);
+        case Token::Type::namespace_:
+            return extract_namespace(context);
+        default:
+            context.retreat();
+            return std::nullopt;
+        }
     }
 
 }

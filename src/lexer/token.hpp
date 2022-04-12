@@ -88,14 +88,14 @@ namespace lexer {
             character,
             boolean,
 
-            end_of_input
+            end_of_input,
+
+            _token_type_count
         };
 
-        Variant          value;
-        Type             type;
-        std::string_view source_view;
-
-        static constexpr auto type_count = static_cast<bu::Usize>(Type::end_of_input) + 1;
+        Variant         value;
+        Type            type;
+        bu::Source_view source_view;
 
         template <class T>
         inline auto value_as() noexcept -> T& {

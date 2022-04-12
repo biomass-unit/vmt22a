@@ -72,10 +72,12 @@ namespace ast {
         };
 
         struct Struct {
-            struct Member : dtl::Source_tracked {
+            struct Member {
                 lexer::Identifier name;
                 bu::Wrapper<Type> type;
                 bool              is_public = false;
+
+                bu::Source_view source_view;
                 DEFAULTED_EQUALITY(Member);
             };
             std::vector<Member> members;
@@ -84,9 +86,11 @@ namespace ast {
         };
 
         struct Data {
-            struct Constructor : dtl::Source_tracked {
+            struct Constructor {
                 lexer::Identifier                name;
                 std::optional<bu::Wrapper<Type>> type;
+
+                bu::Source_view source_view;
                 DEFAULTED_EQUALITY(Constructor);
             };
             std::vector<Constructor> constructors;
@@ -146,7 +150,7 @@ namespace ast {
     }
 
 
-    struct Definition : dtl::Source_tracked {
+    struct Definition {
         using Variant = std::variant<
             definition::Function,
             definition::Function_template,
@@ -166,9 +170,8 @@ namespace ast {
             definition::Namespace_template
         >;
 
-        Variant value;
-
-        DEFINE_NODE_CTOR(Definition);
+        Variant         value;
+        bu::Source_view source_view;
     };
 
 }

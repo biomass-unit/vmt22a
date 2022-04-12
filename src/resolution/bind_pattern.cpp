@@ -11,7 +11,12 @@ namespace {
 
         inline static lexer::Identifier const nameless_identifier { ""sv };
 
-        auto error(std::string_view const message, std::optional<std::string_view> const help = std::nullopt) {
+        auto error(
+            std::string_view                const message,
+            std::optional<std::string_view> const help = std::nullopt
+        )
+            -> std::runtime_error
+        {
             return context.error(
                 this_pattern.source_view,
                 message,
@@ -21,9 +26,15 @@ namespace {
 
 
         auto operator()(ast::pattern::Wildcard&, auto&) -> void {
-            static ast::Pattern name = ast::pattern::Name {
-                .identifier = nameless_identifier,
-                .mutability { .type = ast::Mutability::Type::immut }
+            static ast::Pattern name {
+                .value = ast::pattern::Name {
+                    .identifier = nameless_identifier,
+                    .mutability {
+                        .type        = ast::Mutability::Type::immut,
+                        .source_view = this_pattern.source_view
+                    },
+                },
+                .source_view = this_pattern.source_view
             };
             context.bind(name, this_type);
         }

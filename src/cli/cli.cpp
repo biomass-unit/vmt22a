@@ -101,7 +101,11 @@ namespace {
             }
 
             return bu::textual_error({
-                .erroneous_view = bu::Source_view { erroneous_view },
+                .erroneous_view = bu::Source_view {
+                    erroneous_view,
+                    0,
+                    bu::unsigned_distance(fake_file.c_str(), erroneous_view.data())
+                },
                 .file_view      = fake_file,
                 .file_name      = "the command line",
                 .message        = message,

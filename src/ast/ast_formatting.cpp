@@ -305,10 +305,6 @@ namespace {
         auto operator()(ast::type::Template_instantiation const& instantiation) {
             return format("{}[{}]", instantiation.name, instantiation.arguments);
         }
-
-        auto operator()(ast::type::Inference_variable const& variable) {
-            return format("${}", variable.tag);
-        }
     };
 
 

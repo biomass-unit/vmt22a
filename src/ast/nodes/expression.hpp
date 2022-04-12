@@ -163,7 +163,7 @@ namespace ast {
     }
 
 
-    struct Expression : dtl::Source_tracked {
+    struct Expression {
         using Variant = std::variant<
             expression::Literal<bu::Isize>,
             expression::Literal<bu::Float>,
@@ -197,9 +197,8 @@ namespace ast {
             expression::Meta
         >;
 
-        Variant value;
-
-        DEFINE_NODE_CTOR(Expression);
+        Variant         value;
+        bu::Source_view source_view;
     };
 
     static_assert(std::is_trivially_copyable_v<bu::Wrapper<Expression>>);
