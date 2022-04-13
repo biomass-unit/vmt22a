@@ -99,7 +99,7 @@ namespace {
 
 
     template <auto extract>
-    auto debug_parse(std::string_view string) {
+    auto debug_parse(std::string_view const string) {
         auto input = bu::string_without_sso();
         input = string;
 

@@ -30,9 +30,57 @@ namespace {
         }
     }
 
-    auto make_namespace(std::optional<bu::Wrapper<resolution::Namespace>> parent,
-                        std::optional<lexer::Identifier>            const name,
-                        std::span<ast::Definition>                  const definitions)
+
+    auto ensure_no_clashing_definitions(
+        resolution::Namespace const& space,
+        lexer::Identifier     const  name,
+        bool                  const  is_upper,
+        bu::Source const*     const  source,
+        bu::Source_view       const  source_view
+    )
+        -> void
+    {
+        auto const error = [&](std::string_view const description)
+            noexcept -> std::runtime_error
+        {
+            auto const message = std::format(
+                "This namespace already contains {} with name {}",
+                description,
+                name
+            );
+
+            return std::runtime_error {
+                bu::textual_error({
+                    .erroneous_view = source_view,
+                    .file_view      = source->string(),
+                    .file_name      = source->name(),
+                    .message        = message
+                })
+            };
+        };
+
+        if (is_upper) {
+            if (auto* const variant = space.upper_table.find(name)) {
+                throw error(resolution::definition_description(*variant));
+            }
+        }
+        else {
+            if (auto* const variant = space.lower_table.find(name)) {
+                throw error(resolution::definition_description(*variant));
+            }
+            else if (space.children.find(name)) {
+                throw error("a namespace definition");
+            }
+        }
+    }
+
+
+    auto make_namespace(
+        std::optional<bu::Wrapper<resolution::Namespace>> parent,
+        std::optional<lexer::Identifier>            const name,
+        bu::Source const*                           const source,
+        std::span<ast::Definition>                  const definitions
+    )
         -> bu::Wrapper<resolution::Namespace>
     {
         bu::Wrapper space {
@@ -45,12 +93,20 @@ namespace {
         for (auto& definition : definitions) {
             using namespace ast::definition;
 
+            auto const ensure_no_clashes = [&](
+                lexer::Identifier     const  name,
+                bool                  const  is_upper)
+            {
+                ensure_no_clashing_definitions(space, name, is_upper, source, definition.source_view);
+            };
+
             std::visit(bu::Overload {
                 [&](Function& function) -> void {
                     resolution::Function_definition handle {
                         .syntactic_definition = &function,
                         .home_namespace       = space
                     };
+                    ensure_no_clashes(function.name, false);
                     space->definitions_in_order.push_back(handle);
                     space->lower_table.add(bu::copy(function.name), bu::copy(handle));
                 },
@@ -59,6 +115,7 @@ namespace {
                         .syntactic_definition = &definition,
                         .home_namespace       = space
                     };
+                    ensure_no_clashes(definition.name, true);
                     space->definitions_in_order.push_back(handle);
                     space->upper_table.add(bu::copy(definition.name), bu::copy(handle));
                 },
@@ -68,6 +125,7 @@ namespace {
                         .home_namespace       = space,
                         .template_parameters  = template_definition.parameters
                     };
+                    ensure_no_clashes(template_definition.definition.name, true);
                     space->definitions_in_order.push_back(handle);
                     space->upper_table.add(bu::copy(template_definition.definition.name), bu::copy(handle));
                 },
@@ -77,6 +135,7 @@ namespace {
                         .home_namespace       = space,
                         .template_parameters  = function_template.parameters
                     };
+                    ensure_no_clashes(function_template.definition.name, false);
                     space->definitions_in_order.push_back(handle);
                     space->lower_table.add(bu::copy(function_template.definition.name), bu::copy(handle));
                 },
@@ -84,7 +143,12 @@ namespace {
                 [&](Implementation& implementation) -> void {
                     resolution::Implementation_definition handle {
                         .syntactic_definition = &implementation,
-                        .home_namespace       = make_namespace(std::nullopt, std::nullopt, implementation.definitions)
+                        .home_namespace = make_namespace(
+                            std::nullopt,
+                            std::nullopt,
+                            source,
+                            implementation.definitions
+                        )
                     };
                     space->definitions_in_order.push_back(handle);
                 },
@@ -93,7 +157,12 @@ namespace {
                 },
 
                 [&](Namespace& nested_space) -> void {
-                    bu::wrapper auto child = make_namespace(space, nested_space.name, nested_space.definitions);
+                    bu::wrapper auto child = make_namespace(
+                        space,
+                        nested_space.name,
+                        source,
+                        nested_space.definitions
+                    );
                     space->definitions_in_order.push_back(child);
                     space->children.add(bu::copy(nested_space.name), bu::copy(child));
                 },
@@ -112,7 +181,7 @@ namespace {
         resolution::Resolution_context& context;
 
 
-        auto make_associated_namespace(lexer::Identifier const type_name)
+        auto make_associated_namespace(lexer::Identifier const type_name) const
             -> bu::Wrapper<resolution::Namespace>
         {
             return resolution::Namespace {
@@ -434,7 +503,12 @@ auto resolution::Resolution_context::resolve_definition(Definition_variant const
 auto resolution::resolve(ast::Module&& module) -> ir::Program {
     handle_imports(module);
 
-    auto global_namespace = make_namespace(std::nullopt, std::nullopt, module.definitions);
+    auto global_namespace = make_namespace(
+        std::nullopt,
+        std::nullopt,
+        &module.source,
+        module.definitions
+    );
 
     {
         resolution::Resolution_context global_context {

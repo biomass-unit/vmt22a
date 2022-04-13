@@ -15,33 +15,37 @@ namespace ast {
     struct [[nodiscard]] Definition;
 
 
-    struct Template_argument;
+    struct Name {
+        lexer::Identifier identifier;
+        bool              is_upper;
+        bu::Source_view   source_view;
+
+        auto operator==(Name const& other) const noexcept -> bool {
+            return identifier == other.identifier;
+        }
+    };
+
 
     struct Function_argument;
 
-    struct Root_qualifier;
+    struct Template_argument;
+
 
     struct Qualifier {
         std::optional<std::vector<Template_argument>> template_arguments;
-        lexer::Identifier                             name;
-        bool                                          is_upper;
+        Name                                          name;
 
         bu::Source_view source_view;
         DEFAULTED_EQUALITY(Qualifier);
     };
 
-    struct Primary_qualifier {
-        lexer::Identifier name;
-        bool              is_upper;
-
-        bu::Source_view source_view;
-        DEFAULTED_EQUALITY(Primary_qualifier);
-    };
+    struct Root_qualifier;
 
     struct Qualified_name {
         std::vector<Qualifier>      middle_qualifiers;
         bu::Wrapper<Root_qualifier> root_qualifier;
-        Primary_qualifier           primary_qualifier;
+        Name                        primary_name;
+
         DEFAULTED_EQUALITY(Qualified_name);
 
         inline auto is_unqualified() const noexcept -> bool;
@@ -59,8 +63,7 @@ namespace ast {
     };
 
 
-    // Provide equality comparisons for all node types
-    template <class T> requires requires { typename T::Variant; }
+    template <bu::one_of<Expression, Pattern, Type, Definition> T>
     auto operator==(T const& lhs, T const& rhs) noexcept -> bool {
         return lhs.value == rhs.value;
     }

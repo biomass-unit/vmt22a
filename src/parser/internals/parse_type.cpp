@@ -13,7 +13,7 @@ namespace {
         auto* const anchor = context.pointer;
         auto name = extract_qualified(std::move(root), context);
 
-        if (name.primary_qualifier.is_upper) {
+        if (name.primary_name.is_upper) {
             if (auto template_arguments = parse_template_arguments(context)) {
                 return ast::type::Template_instantiation {
                     std::move(*template_arguments),
@@ -215,7 +215,7 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
     if (type && context.try_consume(Token::Type::double_colon)) {
         auto name = extract_qualified({ std::move(*type) }, context);
 
-        if (name.primary_qualifier.is_upper) {
+        if (name.primary_name.is_upper) {
             auto template_arguments = parse_template_arguments(context);
 
             type = ast::Type {

@@ -42,21 +42,21 @@ namespace {
         -> resolution::Namespace*
     {
         for (ast::Qualifier& qualifier : qualifiers) {
-            if (qualifier.is_upper) {
+            if (qualifier.name.is_upper) {
                 auto type = space->find_type_here(
-                    qualifier.name,
-                    qualifier.source_view,
+                    qualifier.name.identifier,
+                    qualifier.name.source_view,
                     qualifier.template_arguments.transform(
                         bu::make<std::span<ast::Template_argument>>
                     ),
                     context
                 );
                 if (type) {
-                    space = context.get_associated_namespace(*type, qualifier.source_view);
+                    space = context.get_associated_namespace(*type, qualifier.name.source_view);
                 }
                 else {
                     throw context.error(
-                        qualifier.source_view,
+                        qualifier.name.source_view,
                         std::format(
                             "{} does not contain a {} {}",
                             get_namespace_name(space),
@@ -71,18 +71,20 @@ namespace {
                     bu::unimplemented();
                 }
 
-                if (bu::Wrapper<resolution::Namespace>* const child = space->children.find(qualifier.name)) {
-                    space = *child;
-                }
-                else {
+                bu::wrapper auto* const child = space->children.find(qualifier.name.identifier);
+
+                if (!child) {
                     throw context.error(
-                        qualifier.source_view,
+                        qualifier.name.source_view,
                         std::format(
                             "{} does not contain a namespace {}",
                             get_namespace_name(space),
                             qualifier.name
                         )
                     );
+                }
+                else {
+                    space = *child;
                 }
             }
         }
@@ -97,9 +99,9 @@ namespace {
         -> bu::Wrapper<resolution::Namespace>
     {
         for (;;) {
-            if (first.is_upper) {
+            if (first.name.is_upper) {
                 std::optional<bu::Wrapper<ir::Type>> type = root->find_type_here(
-                    first.name,
+                    first.name.identifier,
                     first.source_view,
                     first.template_arguments.transform(
                         bu::make<std::span<ast::Template_argument>>
@@ -116,7 +118,7 @@ namespace {
                 if (first.template_arguments) {
                     bu::unimplemented();
                 }
-                if (bu::Wrapper<resolution::Namespace>* const child = root->children.find(first.name)) {
+                if (bu::Wrapper<resolution::Namespace>* const child = root->children.find(first.name.identifier)) {
                     root = *child;
                     break;
                 }
@@ -143,7 +145,7 @@ namespace {
                    resolution::Resolution_context& context)
         -> std::conditional_t<is_upper, resolution::Upper_variant, resolution::Lower_variant>
     {
-        auto const primary = full_name.primary_qualifier;
+        auto const primary = full_name.primary_name;
         assert(primary.is_upper == is_upper);
 
         auto [is_absolute, root] = find_root(full_name.root_qualifier, context);
@@ -152,19 +154,21 @@ namespace {
 
         if (!is_absolute) {
             /*
-            *    If the path is not absolute, we must search for a match for the first qualifier. Without
-            *    this step, the following code wouldn't work, as `example::g` would not be able to find `::f`
-            *    
-            *    fn f() ()
-            *    
-            *    namespace example {
-            *        fn g() = f()
-            *    }
+
+                If the path is not absolute, we must search for a match for the first qualifier. Without
+                this step, the following code wouldn't work, as `example::g` would not be able to find `::f`
+                
+                fn f() ()
+                
+                namespace example {
+                    fn g() = f()
+                }
+
             */
 
             if (qualifiers.empty()) {
                 for (;;) {
-                    if (auto* const pointer = ((&*root)->*lookup_table).find(primary.name)) {
+                    if (auto* const pointer = ((&*root)->*lookup_table).find(primary.identifier)) {
                         return *pointer;
                     }
                     else if (root->parent) {
@@ -173,7 +177,7 @@ namespace {
                     else {
                         throw context.error(
                             source_view,
-                            std::format("{} is undefined", primary.name)
+                            std::format("{} is undefined", primary.identifier)
                         );
                     }
                 }
@@ -187,7 +191,7 @@ namespace {
         resolution::Namespace* const space =
             apply_qualifiers(root, qualifiers, context);
 
-        if (auto* const pointer = (space->*lookup_table).find(primary.name)) {
+        if (auto* const pointer = (space->*lookup_table).find(primary.identifier)) {
             return *pointer;
         }
         else {
@@ -196,7 +200,7 @@ namespace {
                 std::format(
                     "{} does not contain a definition for {}",
                     get_namespace_name(*space),
-                    primary.name
+                    primary.identifier
                 )
             );
         }

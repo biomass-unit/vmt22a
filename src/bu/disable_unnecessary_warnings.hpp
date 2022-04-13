@@ -25,7 +25,6 @@ DISABLE(4355) // 'this' used in member initializer list
 DISABLE(4371) // layout of class may have changed from a previous version of the compiler
 
 DISABLE(4456) // declaration hides previous local declaration
-DISABLE(4458) // declaration hides class member (occurs incorrectly)
 DISABLE(4459) // declaration hides global declaration
 
 DISABLE(4514) // unreferenced inline function has been removed
@@ -46,6 +45,12 @@ DISABLE(5026) // move constructor was implicitly defined as deleted
 DISABLE(5027) // move assignment operator was implicitly defined as deleted
 
 DISABLE(5045) // spectre mitigation inserted if /Qspectre is specified
+
+
+// Incorrectly triggered warnings:
+
+DISABLE(4458) // declaration hides class member
+DISABLE(5246) // The initialization of a subobject should be wrapped in braces
 
 
 

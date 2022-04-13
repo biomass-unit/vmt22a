@@ -11,7 +11,7 @@ namespace bu {
 
         Usize index;
     public:
-        template <class... Args> // The constraint ensures that the copy constructor isn't deleted
+        template <class... Args>
             requires ((sizeof...(Args) != 1) || (!similar_to<Wrapper, Args> && ...))
         constexpr Wrapper(Args&&... args)
             noexcept(std::is_nothrow_constructible_v<T, Args&&...>)

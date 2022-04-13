@@ -236,12 +236,15 @@ namespace resolution {
     }
 
 
-    auto resolve_template_arguments(Namespace&                         current_namespace,
-                                    lexer::Identifier                  name,
+    auto resolve_template_arguments(lexer::Identifier                  name,
                                     bu::Source_view                    source_view,
                                     std::span<ast::Template_parameter> parameters,
                                     std::span<ast::Template_argument>  arguments,
                                     Resolution_context&                context)
         -> ir::Template_argument_set;
+
+
+    auto definition_description(Lower_variant) noexcept -> std::string_view;
+    auto definition_description(Upper_variant) noexcept -> std::string_view;
 
 }

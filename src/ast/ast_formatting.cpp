@@ -8,7 +8,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Match::Case) {
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
     if (value.name) {
-        return std::format_to(context.out(), "{} = {}", value.name, value.expression);
+        return std::format_to(context.out(), "{} = {}", *value.name, value.expression);
     }
     else {
         return std::format_to(context.out(), "{}", value.expression);
@@ -104,6 +104,10 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
 }
 
 
+DEFINE_FORMATTER_FOR(ast::Name) {
+    return std::format_to(context.out(), "{}", value.identifier);
+}
+
 DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     auto out = context.out();
 
@@ -122,7 +126,7 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
         );
     }
 
-    return std::format_to(out, "{}", value.primary_qualifier.name);
+    return std::format_to(out, "{}", value.primary_name.identifier);
 }
 
 

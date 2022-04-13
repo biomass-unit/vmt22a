@@ -38,8 +38,8 @@ namespace {
 
     auto unqualified(std::string_view const name) {
         return ast::Qualified_name {
-            .primary_qualifier {
-                .name        = lexer::Identifier { name },
+            .primary_name {
+                .identifier  = lexer::Identifier { name },
                 .is_upper    = std::isupper(name.front()) != 0,
                 .source_view = empty_view()
             }
@@ -208,8 +208,11 @@ auto run_parser_tests() -> void {
                 .identifier {
                     .middle_qualifiers {
                         ast::Qualifier {
-                            .name        = "std"_id,
-                            .is_upper    = false,
+                            .name {
+                                .identifier  = "std"_id,
+                                .is_upper    = false,
+                                .source_view = empty_view()
+                            },
                             .source_view = empty_view()
                         },
                         ast::Qualifier {
@@ -218,13 +221,16 @@ auto run_parser_tests() -> void {
                                     mk_type(ast::type::Typename { unqualified("Long") })
                                 }
                             },
-                            .name        = "Vector"_id,
-                            .is_upper    = true,
+                            .name {
+                                .identifier  = "Vector"_id,
+                                .is_upper    = true,
+                                .source_view = empty_view()
+                            },
                             .source_view = empty_view()
                         }
                     },
-                    .primary_qualifier {
-                        .name        = "Element"_id,
+                    .primary_name {
+                        .identifier  = "Element"_id,
                         .is_upper    = true,
                         .source_view = empty_view()
                     }

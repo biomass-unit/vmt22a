@@ -126,7 +126,6 @@ namespace {
 
     template <class T>
     auto instantiate_template(
-        resolution::Namespace&                                          current_namespace,
         lexer::Identifier                                         const name,
         bu::Source_view                                           const source_view,
         resolution::Definition<ast::definition::Template_definition<T>> template_definition,
@@ -136,7 +135,6 @@ namespace {
         -> resolution::Definition<T>::Resolved_info
     {
         ir::Template_argument_set argument_set = resolution::resolve_template_arguments(
-            current_namespace,
             name,
             source_view,
             template_definition.template_parameters,
@@ -200,7 +198,6 @@ namespace {
 
 
     auto find_type_impl(
-        resolution::Namespace&                                 current_namespace,
         lexer::Identifier                                const name,
         bu::Source_view                                  const source_view,
         resolution::Upper_variant                        const upper,
@@ -215,7 +212,6 @@ namespace {
             {
                 if (arguments) {
                     return instantiate_template(
-                        current_namespace,
                         name,
                         source_view,
                         definition,
@@ -261,18 +257,17 @@ auto resolution::Resolution_context::find_type(
 )
     -> bu::Wrapper<ir::Type>
 {
-    assert(full_name.primary_qualifier.is_upper);
+    assert(full_name.primary_name.is_upper);
 
     if (full_name.is_unqualified()) {
-        if (Local_type_alias* const alias = scope.find_type(full_name.primary_qualifier.name)) {
+        if (Local_type_alias* const alias = scope.find_type(full_name.primary_name.identifier)) {
             alias->has_been_mentioned = true;
             return alias->type;
         }
     }
 
     return find_type_impl(
-        current_namespace,
-        full_name.primary_qualifier.name,
+        full_name.primary_name.identifier,
         source_view,
         find_upper(full_name, source_view),
         arguments,
@@ -288,10 +283,12 @@ auto resolution::Resolution_context::find_variable_or_function(
 )
     -> ir::Expression
 {
-    assert(!full_name.primary_qualifier.is_upper);
+    assert(!full_name.primary_name.is_upper);
 
     if (full_name.is_unqualified()) {
-        if (Binding* const binding = scope.bindings.find(full_name.primary_qualifier.name)) {
+        // Try local lookup first
+
+        if (Binding* const binding = scope.bindings.find(full_name.primary_name.identifier)) {
             binding->has_been_mentioned = true;
 
             if (!is_unevaluated && !binding->type->is_trivial) {
@@ -354,8 +351,7 @@ auto resolution::Resolution_context::find_variable_or_function(
             }
 
             auto info = instantiate_template(
-                current_namespace,
-                full_name.primary_qualifier.name,
+                full_name.primary_name.identifier,
                 expression.source_view,
                 function_template,
                 *arguments,
@@ -381,7 +377,6 @@ auto resolution::Namespace::find_type_here(
 {
     if (auto* const upper = upper_table.find(name)) {
         return find_type_impl(
-            *this,
             name,
             source_view,
             *upper,
@@ -396,7 +391,6 @@ auto resolution::Namespace::find_type_here(
 
 
 auto resolution::resolve_template_arguments(
-    Namespace&                               current_namespace,
     lexer::Identifier                  const name,
     bu::Source_view                    const source_view,
     std::span<ast::Template_parameter> const parameters,
@@ -475,12 +469,39 @@ auto resolution::resolve_template_arguments(
             source_view,
             std::format(
                 "{} expects {} template arguments, but {} were supplied",
-                current_namespace.format_name_as_member(name),
+                context.current_namespace->format_name_as_member(name),
                 parameters.size(),
                 arguments.size()
             )
         );
     }
+}
+
+
+auto resolution::definition_description(Lower_variant const variant)
+    noexcept -> std::string_view
+{
+    return std::visit(bu::Overload {
+        [](Binding                          const*) { return "a let-binding"; },
+        [](ir::definition::Data_constructor const&) { return "a data constructor"; },
+        [](Function_definition              const&) { return "a function definition"; },
+        [](Function_template_definition     const&) { return "a function template definition"; }
+    }, variant);
+}
+
+auto resolution::definition_description(Upper_variant const variant)
+    noexcept -> std::string_view
+{
+    return std::visit(bu::Overload {
+        [](Struct_definition             const&) { return "a struct definition"; },
+        [](Struct_template_definition    const&) { return "a struct template definition"; },
+        [](Data_definition               const&) { return "a data definition"; },
+        [](Data_template_definition      const&) { return "a data template definition"; },
+        [](Alias_definition              const&) { return "an alias definition"; },
+        [](Alias_template_definition     const&) { return "an alias template definition"; },
+        [](Typeclass_definition          const&) { return "a class definition"; },
+        [](Typeclass_template_definition const&) { return "a class template definition"; },
+    }, variant);
 }
 
 

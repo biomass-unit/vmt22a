@@ -78,12 +78,16 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
         case Token::Type::upper_name:
         {
             template_argument_anchor = context.pointer;
+            auto template_arguments = parse_template_arguments(context);
 
             ast::Qualifier qualifier {
-                .template_arguments = parse_template_arguments(context),
-                .name               = token.as_identifier(),
-                .is_upper           = token.type == Token::Type::upper_name,
-                .source_view        = make_source_view(context.pointer - 1, context.pointer - 1)
+                .template_arguments = std::move(template_arguments),
+                .name {
+                    .identifier  = token.as_identifier(),
+                    .is_upper    = token.type == Token::Type::upper_name,
+                    .source_view = template_argument_anchor[-1].source_view
+                },
+                .source_view = make_source_view(template_argument_anchor - 1, context.pointer - 1)
             };
 
             qualifiers.push_back(std::move(qualifier));
@@ -108,16 +112,10 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
         // Ignore potential template arguments, they are handled separately
         context.pointer = template_argument_anchor;
 
-        ast::Primary_qualifier primary {
-            .name        = back.name,
-            .is_upper    = back.is_upper,
-            .source_view = make_source_view(context.pointer - 1, context.pointer - 1)
-        };
-
         return {
             .middle_qualifiers = std::move(qualifiers),
             .root_qualifier    = std::move(root),
-            .primary_qualifier = std::move(primary)
+            .primary_name      = std::move(back.name)
         };
     }
     else {
@@ -545,7 +543,7 @@ namespace {
 
             auto name = extract_qualified(std::move(root), context);
 
-            if (name.primary_qualifier.is_upper) {
+            if (name.primary_name.is_upper) {
                 return name;
             }
             else {

@@ -7,10 +7,15 @@ data Mode = a(Int) | b(Int) | c | d
 fn f(mode: Mode): () = mode as ()
 
 
+data Maybe = nothing | just(Int)
 
-struct Test = a: Int, b: Float
+
+impl Maybe {
+    fn just(): Int = 0
+}
 
 
 fn main() {
-    
+    let m = Maybe::just(5);
+    m as ()
 }
