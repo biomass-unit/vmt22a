@@ -283,6 +283,9 @@
     <ClInclude Include="src\vm\virtual_machine.hpp" />
     <ClInclude Include="src\vm\vm_formatting.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="vmt22a.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
