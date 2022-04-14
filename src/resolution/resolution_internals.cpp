@@ -110,13 +110,17 @@ auto resolution::Resolution_context::error(
 )
     -> std::runtime_error
 {
+    bu::Highlighted_text_section const section {
+        .source_view = source_view,
+        .source      = source
+    };
+
     return std::runtime_error {
         bu::textual_error({
-            .erroneous_view = source_view,
-            .file_view      = source->string(),
-            .file_name      = source->name(),
-            .message        = message,
-            .help_note      = help
+            .sections  { &section, 1 },
+            .source    = source,
+            .message   = message,
+            .help_note = help,
         })
     };
 }
@@ -479,29 +483,53 @@ auto resolution::resolve_template_arguments(
 
 
 auto resolution::definition_description(Lower_variant const variant)
-    noexcept -> std::string_view
+    -> bu::Pair<std::string_view, bu::Source_view>
 {
-    return std::visit(bu::Overload {
-        [](Binding                          const*) { return "a let-binding"; },
-        [](ir::definition::Data_constructor const&) { return "a data constructor"; },
-        [](Function_definition              const&) { return "a function definition"; },
-        [](Function_template_definition     const&) { return "a function template definition"; }
-    }, variant);
+    static constexpr auto descriptions = std::to_array<std::string_view>({
+        "a let-binding",
+        "a data constructor",
+        "a function definition",
+        "a function template definition"
+    });
+    static_assert(descriptions.size() == std::variant_size_v<decltype(variant)>);
+
+    return {
+        descriptions[variant.index()],
+        std::visit(bu::Overload {
+            [](Binding* const) -> bu::Source_view {
+                bu::unimplemented(); // Should be unreachable?
+            },
+            [](bu::Wrapper<ir::definition::Data_constructor> constructor) {
+                return constructor->source_view;
+            },
+            [](auto const& definition) {
+                return definition.syntactic_definition->name.source_view;
+            }
+        }, variant)
+    };
 }
 
 auto resolution::definition_description(Upper_variant const variant)
-    noexcept -> std::string_view
+    -> bu::Pair<std::string_view, bu::Source_view>
 {
-    return std::visit(bu::Overload {
-        [](Struct_definition             const&) { return "a struct definition"; },
-        [](Struct_template_definition    const&) { return "a struct template definition"; },
-        [](Data_definition               const&) { return "a data definition"; },
-        [](Data_template_definition      const&) { return "a data template definition"; },
-        [](Alias_definition              const&) { return "an alias definition"; },
-        [](Alias_template_definition     const&) { return "an alias template definition"; },
-        [](Typeclass_definition          const&) { return "a class definition"; },
-        [](Typeclass_template_definition const&) { return "a class template definition"; },
-    }, variant);
+    static constexpr auto descriptions = std::to_array<std::string_view>({
+        "a struct definition",
+        "a struct template definition",
+        "a data definition",
+        "a data template definition",
+        "an alias definition",
+        "an alias template definition",
+        "a class definition",
+        "a class template definition"
+    });
+    static_assert(descriptions.size() == std::variant_size_v<decltype(variant)>);
+
+    return {
+        descriptions[variant.index()],
+        std::visit([](auto const& upper) {
+            return upper.syntactic_definition->name.source_view;
+        }, variant)
+    };
 }
 
 

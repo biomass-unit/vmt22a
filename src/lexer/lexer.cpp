@@ -167,13 +167,17 @@ namespace {
         {
             auto const [line, column] = get_location(view.data());
 
+            bu::Highlighted_text_section const section {
+                .source_view = bu::Source_view { view, line, column },
+                .source      = source
+            };
+
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = bu::Source_view { view, line, column },
-                    .file_view      = source->string(),
-                    .file_name      = source->name(),
-                    .message        = message,
-                    .help_note      = help
+                    .sections  { &section, 1 },
+                    .source    = source,
+                    .message   = message,
+                    .help_note = help,
                 })
             };
         }

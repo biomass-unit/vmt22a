@@ -72,12 +72,15 @@ namespace {
 
             std::string fake_file;
             fake_file.reserve(
-                std::transform_reduce(
-                    start,
-                    stop,
-                    bu::unsigned_distance(start, stop), // Account for whitespace delimiters
-                    std::plus {},
-                    std::mem_fn(&std::string_view::size)
+                std::max(
+                    std::transform_reduce(
+                        start,
+                        stop,
+                        bu::unsigned_distance(start, stop), // Account for whitespace delimiters
+                        std::plus {},
+                        std::mem_fn(&std::string_view::size)
+                    ),
+                    sizeof(std::string) // Disable SSO
                 )
             );
 
@@ -100,15 +103,26 @@ namespace {
                 erroneous_view = { view_begin, pointer->size() };
             }
 
-            return bu::textual_error({
-                .erroneous_view = bu::Source_view {
+            bu::Source fake_source {
+                bu::Source::Mock_tag {
+                    .filename = "the command line"
+                },
+                std::move(fake_file)
+            };
+
+            bu::Highlighted_text_section section {
+                .source_view = bu::Source_view {
                     erroneous_view,
                     0,
-                    bu::unsigned_distance(fake_file.c_str(), erroneous_view.data())
+                    bu::unsigned_distance(fake_source.string().data(), erroneous_view.data())
                 },
-                .file_view      = fake_file,
-                .file_name      = "the command line",
-                .message        = message,
+                .source = &fake_source
+            };
+
+            return bu::textual_error({
+                .sections { &section, 1 },
+                .source   = &fake_source,
+                .message  = message,
             });
         }
 

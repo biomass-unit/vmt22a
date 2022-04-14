@@ -165,7 +165,7 @@ namespace resolution {
         Table<Upper_variant>                  upper_table;
         Table<bu::Wrapper<Namespace>>         children;
         std::optional<bu::Wrapper<Namespace>> parent;
-        std::optional<lexer::Identifier>      name;
+        std::optional<ast::Name>              name;
 
         auto find_type_here(lexer::Identifier,
                             bu::Source_view,
@@ -244,7 +244,7 @@ namespace resolution {
         -> ir::Template_argument_set;
 
 
-    auto definition_description(Lower_variant) noexcept -> std::string_view;
-    auto definition_description(Upper_variant) noexcept -> std::string_view;
+    auto definition_description(Lower_variant) -> bu::Pair<std::string_view, bu::Source_view>;
+    auto definition_description(Upper_variant) -> bu::Pair<std::string_view, bu::Source_view>;
 
 }

@@ -78,8 +78,8 @@ namespace ast {
 
 
 struct ast::Function_argument {
-    Expression                       expression;
-    std::optional<lexer::Identifier> name;
+    Expression          expression;
+    std::optional<Name> name;
     DEFAULTED_EQUALITY(Function_argument);
 };
 

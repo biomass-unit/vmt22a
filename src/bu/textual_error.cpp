@@ -26,7 +26,9 @@ namespace {
     }
 
 
-    auto lines_of_occurrence(std::string_view file, std::string_view view) -> std::vector<std::string_view> {
+    auto lines_of_occurrence(std::string_view file, std::string_view view)
+        -> std::vector<std::string_view>
+    {
         auto const file_start = file.data();
         auto const file_stop  = file_start + file.size();
         auto const view_start = view.data();
@@ -57,62 +59,110 @@ namespace {
         return lines;
     }
 
+
+    auto format_highlighted_section(
+        std::back_insert_iterator<std::string> const  out,
+        bu::Highlighted_text_section           const& section,
+        std::optional<std::string>             const& location_info
+    )
+        -> void
+    {
+        auto const lines       = lines_of_occurrence(section.source->string(), section.source_view.string);
+        auto const digit_count = bu::digit_count(section.source_view.line + lines.size());
+        auto       line_number = section.source_view.line;
+
+        static constexpr auto line_info_color = bu::Color::dark_cyan;
+
+        if (location_info) {
+            std::string const whitespace(digit_count, ' ');
+            std::format_to(
+                out,
+                "{}{} --> {}{}\n",
+                line_info_color,
+                whitespace,
+                *location_info,
+                bu::Color::white
+            );
+        }
+
+        for (auto line : lines) {
+            std::format_to(
+                out,
+                "\n {}{:<{}} |{} {}",
+                line_info_color,
+                line_number++,
+                digit_count,
+                bu::Color::white,
+                line
+            );
+        }
+
+        if (lines.size() == 1) {
+            auto whitespace_length = section.source_view.string.size()
+                                   + digit_count
+                                   + bu::unsigned_distance(
+                                       lines.front().data(),
+                                       section.source_view.string.data()
+                                   );
+
+            if (section.source_view.string.empty()) { // only reached if the error occurs at EOI
+                ++whitespace_length;
+            }
+
+            std::format_to(
+                out,
+                "\n    {}{:>{}} {}{}",
+                section.note_color,
+                std::string(std::max(section.source_view.string.size(), 1_uz), '^'),
+                whitespace_length,
+                section.note,
+                bu::Color::white
+            );
+        }
+        else {
+            bu::abort("multiline errors not supported yet");
+        }
+    }
+
 }
 
 
 auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
-    auto const [source_view, file, filename, message, help] = arguments;
-    auto const [view, line, column] = source_view;
+    auto const [sections, source, message, help] = arguments;
 
-    if (view.empty()) {
-        bu::abort(
-            std::format(
-                "Attempted to format an error message with an "
-                "empty source-view. The given message was: '{}'",
-                message
-            )
-        );
-    }
+    assert(!sections.empty());
 
     std::string string;
     string.reserve(256);
     auto out = std::back_inserter(string);
 
-    std::format_to(out, "In {}, on line {}, column {}:\n", filename, line, column);
+    std::format_to(out, "{}\n\n", message);
 
-    auto const lines       = lines_of_occurrence(file, view);
-    auto const digit_count = bu::digit_count(line + lines.size());
-    auto       line_number = line;
+    bu::Source* current_source = nullptr;
 
-    for (auto line : lines) {
-        std::format_to(
-            out,
-            "\n {:<{}} | {}",
-            line_number++,
-            digit_count,
-            line
-        );
-    }
+    for (auto& section : sections) {
+        assert(section.source);
 
-    if (lines.size() == 1) {
-        auto whitespace_length =
-            view.size() + digit_count + bu::unsigned_distance(lines.front().data(), view.data());
+        std::optional<std::string> location_info;
 
-        if (view.size() == 0) { // only reached if the error occurs at EOI
-            ++whitespace_length;
+        if (current_source != section.source) {
+            current_source = section.source;
+
+            location_info = std::format(
+                "{}:{}:{}",
+                bu::dtl::filename_without_path(current_source->name()), // fix
+                section.source_view.line,
+                section.source_view.column
+            );
         }
 
-        std::format_to(
-            out,
-            "\n    {}{:>{}} {}here",
-            bu::Color::red,
-            std::string(std::max(view.size(), 1_uz), '^'),
-            whitespace_length,
-            bu::Color::white
-        );
+        format_highlighted_section(out, section, location_info);
+
+        if (&section != &sections.back()) {
+            std::format_to(out, "\n");
+        }
     }
 
-    std::format_to(out, "\n\nMessage: {}", message);
     if (help) {
         std::format_to(out, "\n\nHelpful note: {}", *help);
     }

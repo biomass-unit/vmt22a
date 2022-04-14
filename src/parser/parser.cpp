@@ -216,22 +216,26 @@ namespace {
         constexpr auto extract_parameters = parse_comma_separated_one_or_more<[](Parse_context& context)
             -> std::optional<ast::Template_parameter>
         {
+            auto const get_source_view = [&, anchor = context.pointer] {
+                return make_source_view(anchor, context.pointer - 1);
+            };
+
             if (auto name = parse_lower_id(context)) {
                 context.consume_required(Token::Type::colon);
 
                 if (context.try_consume(Token::Type::mut)) {
                     return ast::Template_parameter {
-                        ast::Template_parameter::Mutability_parameter {
-                            *name
-                        }
+                        .value       = ast::Template_parameter::Mutability_parameter { *name },
+                        .source_view = get_source_view()
                     };
                 }
                 else if (auto type = parse_type(context)) {
                     return ast::Template_parameter {
-                        ast::Template_parameter::Value_parameter {
+                        .value = ast::Template_parameter::Value_parameter {
                             *name,
                             std::move(*type)
-                        }
+                        },
+                        .source_view = get_source_view()
                     };
                 }
                 else {
@@ -245,10 +249,11 @@ namespace {
                 }
 
                 return ast::Template_parameter {
-                    ast::Template_parameter::Type_parameter {
+                    .value = ast::Template_parameter::Type_parameter {
                         std::move(classes),
                         *name
-                    }
+                    },
+                    .source_view = get_source_view()
                 };
             }
             else {
@@ -527,6 +532,8 @@ namespace {
     auto parse_class_reference(Parse_context& context)
         -> std::optional<ast::Class_reference>
     {
+        auto* const anchor = context.pointer;
+
         auto name = [&]() -> std::optional<ast::Qualified_name> {
             ast::Root_qualifier root;
             auto* const anchor = context.pointer;
@@ -555,9 +562,12 @@ namespace {
         }();
 
         if (name) {
+            auto template_arguments = parse_template_arguments(context);
+
             return ast::Class_reference {
-                .template_arguments = parse_template_arguments(context),
-                .name               = std::move(*name)
+                .template_arguments = std::move(template_arguments),
+                .name               = std::move(*name),
+                .source_view        = make_source_view(anchor, context.pointer - 1)
             };
         }
         else {
@@ -608,7 +618,7 @@ namespace {
 
 
     auto extract_function_signature(Parse_context& context) -> ast::Function_signature {
-        auto name = extract_lower_id(context, "a function name");
+        auto name                = extract_lower_name(context, "a function name");
         auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::paren_open);
@@ -622,12 +632,12 @@ namespace {
                 .argument_types = std::move(parameters),
                 .return_type    = extract_type(context)
             },
-            name
+            std::move(name)
         };
     }
 
     auto extract_type_signature(Parse_context& context) -> ast::Type_signature {
-        auto name = extract_upper_id(context, "an alias name");
+        auto name = extract_upper_name(context, "an alias name");
 
         auto template_parameters = parse_template_parameters(context);
 
@@ -639,7 +649,7 @@ namespace {
         return ast::Type_signature {
             std::move(template_parameters),
             std::move(classes),
-            name
+            std::move(name)
         };
     }
 

@@ -34,25 +34,39 @@ namespace {
     auto ensure_no_clashing_definitions(
         resolution::Namespace const& space,
         ast::Name             const& name,
-        bu::Source const*     const  source
+        bu::Source*           const  source
     )
         -> void
     {
-        auto const error = [&](std::string_view const description)
+        auto const error = [&](bu::Pair<std::string_view, bu::Source_view> description)
             noexcept -> std::runtime_error
         {
+            auto const sections = std::to_array({
+                bu::Highlighted_text_section {
+                    .source_view = description.second,
+                    .source      = source,
+                    .note        = "Originally defined here",
+                    .note_color  = bu::text_warning_color
+                },
+                bu::Highlighted_text_section {
+                    .source_view = name.source_view,
+                    .source      = source,
+                    .note        = "Later redefined here",
+                    .note_color  = bu::text_error_color
+                }
+            });
+
             auto const message = std::format(
                 "This namespace already contains {} with name {}",
-                description,
+                description.first,
                 name
             );
 
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = name.source_view,
-                    .file_view      = source->string(),
-                    .file_name      = source->name(),
-                    .message        = message
+                    .sections = sections,
+                    .source   = source,
+                    .message  = message,
                 })
             };
         };
@@ -66,8 +80,13 @@ namespace {
             if (auto* const variant = space.lower_table.find(name.identifier)) {
                 throw error(resolution::definition_description(*variant));
             }
-            else if (space.children.find(name.identifier)) {
-                throw error("a namespace definition");
+            else if (auto* const child = space.children.find(name.identifier)) {
+                if ((*child)->name.has_value()) {
+                    throw error({ "a namespace definition", (*child)->name->source_view });
+                }
+                else {
+                    bu::unimplemented();
+                }
             }
         }
     }
@@ -75,8 +94,8 @@ namespace {
 
     auto make_namespace(
         std::optional<bu::Wrapper<resolution::Namespace>> parent,
-        std::optional<lexer::Identifier>            const name,
-        bu::Source const*                           const source,
+        std::optional<ast::Name>                    const name,
+        bu::Source*                                 const source,
         std::span<ast::Definition>                  const definitions
     )
         -> bu::Wrapper<resolution::Namespace>
@@ -154,7 +173,7 @@ namespace {
                 [&](Namespace& nested_space) -> void {
                     bu::wrapper auto child = make_namespace(
                         space,
-                        nested_space.name.identifier,
+                        nested_space.name,
                         source,
                         nested_space.definitions
                     );
@@ -182,7 +201,7 @@ namespace {
             assert(type_name.is_upper);
             return resolution::Namespace {
                 .parent = context.current_namespace,
-                .name   = type_name.identifier
+                .name   = type_name
             };
         }
 
@@ -310,7 +329,7 @@ namespace {
 
             auto* const definition = data.syntactic_definition;
 
-            bu::Flatmap<lexer::Identifier, bu::Pair<std::optional<bu::Wrapper<ir::Type>>, bu::U8>> constructors;
+            bu::Flatmap<ast::Name, bu::Pair<std::optional<bu::Wrapper<ir::Type>>, bu::U8>> constructors;
             constructors.container().reserve(definition->constructors.size());
 
             ir::Size_type size;
@@ -329,7 +348,14 @@ namespace {
                     size = ir::Size_type { std::max(size.get(), (*type)->size.get()) };
                 }
 
-                constructors.add(bu::copy(constructor.name), { type, tag++ });
+                constructors.add(
+                    {
+                        .identifier  = constructor.name,
+                        .is_upper    = false,
+                        .source_view = constructor.source_view
+                    },
+                    { type, tag++ }
+                );
             }
 
 
@@ -381,13 +407,14 @@ namespace {
                 }();
 
                 resolved_data->associated_namespace->lower_table.add(
-                    bu::copy(name),
+                    bu::copy(name.identifier),
                     ir::definition::Data_constructor {
                         .payload_type  = type,
                         .function_type = function_type,
                         .data_type     = type_handle,
-                        .name          = name,
-                        .tag           = tag
+                        .name          = name.identifier,
+                        .tag           = tag,
+                        .source_view   = name.source_view
                     }
                 );
             }

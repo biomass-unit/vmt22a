@@ -8,8 +8,8 @@ namespace {
         noexcept -> std::string_view
     {
         return space.name
-            .transform(&lexer::Identifier::view)
-            .value_or("The global namespace"sv);
+            ? space.name->identifier.view()
+            : "The global namespace"sv;
     }
 
 

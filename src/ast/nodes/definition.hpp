@@ -14,6 +14,8 @@ namespace ast {
     struct Class_reference {
         std::optional<std::vector<Template_argument>> template_arguments;
         Qualified_name                                name;
+
+        bu::Source_view source_view;
         DEFAULTED_EQUALITY(Class_reference);
     };
 
@@ -37,20 +39,22 @@ namespace ast {
             Value_parameter,
             Mutability_parameter
         > value;
+
+        bu::Source_view source_view;
         DEFAULTED_EQUALITY(Template_parameter);
     };
 
     struct Function_signature {
         std::optional<std::vector<Template_parameter>> template_parameters;
         type::Function                                 type;
-        lexer::Identifier                              name;
+        Name                                           name;
         DEFAULTED_EQUALITY(Function_signature);
     };
 
     struct Type_signature {
         std::optional<std::vector<Template_parameter>> template_parameters;
         std::vector<Class_reference>                   classes;
-        lexer::Identifier                              name;
+        Name                                           name;
         DEFAULTED_EQUALITY(Type_signature);
     };
 

@@ -47,6 +47,7 @@ namespace ir {
             lexer::Identifier                name;
             bu::U8                           tag;
 
+            bu::Source_view source_view;
             DEFAULTED_EQUALITY(Data_constructor);
         };
 

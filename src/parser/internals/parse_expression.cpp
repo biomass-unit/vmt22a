@@ -520,9 +520,12 @@ namespace {
 
 
     auto parse_argument(Parse_context& context) -> std::optional<ast::Function_argument> {
-        if (auto name = parse_lower_id(context)) {
+        if (auto name = parse_lower_name(context)) {
             if (context.try_consume(Token::Type::equals)) {
-                return ast::Function_argument { extract_expression(context), *name };
+                return ast::Function_argument {
+                    .expression = extract_expression(context),
+                    .name       = std::move(*name)
+                };
             }
             else {
                 context.retreat();

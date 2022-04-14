@@ -71,13 +71,17 @@ namespace parser {
         )
             const -> std::runtime_error
         {
+            bu::Highlighted_text_section const section {
+                .source_view = source_view,
+                .source      = source
+            };
+
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = source_view,
-                    .file_view      = source->string(),
-                    .file_name      = source->name(),
-                    .message        = message,
-                    .help_note      = help
+                    .sections  { &section, 1 },
+                    .source    = source,
+                    .message   = message,
+                    .help_note = help,
                 })
             };
         }
@@ -293,15 +297,31 @@ namespace parser {
 
 
     template <Token::Type id_type>
-    auto extract_name(Parse_context& context, std::string_view const description)
-        -> ast::Name
+    auto parse_name(Parse_context& context)
+        -> std::optional<ast::Name>
     {
         if (auto* const token = context.try_extract(id_type)) {
-            return {
+            return ast::Name {
                 .identifier  = token->as_identifier(),
                 .is_upper    = id_type == Token::Type::upper_name,
                 .source_view = token->source_view
             };
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    constexpr auto parse_lower_name = parse_name<Token::Type::lower_name>;
+    constexpr auto parse_upper_name = parse_name<Token::Type::upper_name>;
+
+
+    template <Token::Type id_type>
+    auto extract_name(Parse_context& context, std::string_view const description)
+        -> ast::Name
+    {
+        if (auto name = parse_name<id_type>(context)) {
+            return std::move(*name);
         }
         else {
             throw context.expected(description);
@@ -346,7 +366,7 @@ namespace parser {
     constexpr auto make_source_view(Token* const first, Token* const last)
         noexcept -> bu::Source_view
     {
-        return bu::Source_view { first->source_view + last->source_view };
+        return first->source_view + last->source_view;
     }
 
 }
