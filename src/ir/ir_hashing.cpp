@@ -158,16 +158,3 @@ auto ir::Template_argument_set::hash() const -> bu::Usize {
         mutability_arguments
     );
 }
-
-
-auto std::hash<ir::Expression>::operator()(ir::Expression const& expression) const -> bu::Usize {
-    return expression.hash();
-}
-
-auto std::hash<ir::Type>::operator()(ir::Type const& type) const -> bu::Usize {
-    return type.hash();
-}
-
-auto std::hash<ir::Template_argument_set>::operator()(ir::Template_argument_set const& set) const -> bu::Usize {
-    return set.hash();
-}

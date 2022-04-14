@@ -466,8 +466,25 @@ struct std::hash<std::vector<T>> {
 
 template <class Fst, class Snd>
 struct std::hash<bu::Pair<Fst, Snd>> {
-    auto operator()(bu::Pair<Fst, Snd> const& pair) const -> bu::Usize {
+    auto operator()(bu::Pair<Fst, Snd> const& pair) const
+        noexcept(
+            std::is_nothrow_invocable_v<std::hash<Fst>, Fst const&> &&
+            std::is_nothrow_invocable_v<std::hash<Snd>, Snd const&>
+        ) -> bu::Usize
+    {
         return bu::hash_combine_with_seed(bu::get_unique_seed(), pair.first, pair.second);
+    }
+};
+
+template <class X>
+    requires requires (X const& x) {
+        { x.hash() } -> std::same_as<bu::Usize>;
+    }
+struct std::hash<X> {
+    auto operator()(X const& x) const
+        noexcept(noexcept(x.hash())) -> bu::Usize
+    {
+        return x.hash();
     }
 };
 

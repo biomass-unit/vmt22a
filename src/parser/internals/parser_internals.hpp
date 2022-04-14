@@ -6,6 +6,7 @@
 #include "lexer/lexer.hpp"
 #include "lexer/token_formatting.hpp"
 #include "ast/ast.hpp"
+#include "ast/ast_formatting.hpp"
 
 
 namespace parser {
@@ -262,7 +263,9 @@ namespace parser {
 
 
     template <Token::Type id_type>
-    auto extract_id(Parse_context& context, std::string_view const description) -> lexer::Identifier {
+    auto extract_id(Parse_context& context, std::string_view const description)
+        -> lexer::Identifier
+    {
         if (auto* const token = context.try_extract(id_type)) {
             return token->as_identifier();
         }
@@ -287,6 +290,26 @@ namespace parser {
 
     constexpr auto parse_lower_id = parse_id<Token::Type::lower_name>;
     constexpr auto parse_upper_id = parse_id<Token::Type::upper_name>;
+
+
+    template <Token::Type id_type>
+    auto extract_name(Parse_context& context, std::string_view const description)
+        -> ast::Name
+    {
+        if (auto* const token = context.try_extract(id_type)) {
+            return {
+                .identifier  = token->as_identifier(),
+                .is_upper    = id_type == Token::Type::upper_name,
+                .source_view = token->source_view
+            };
+        }
+        else {
+            throw context.expected(description);
+        }
+    }
+
+    constexpr auto extract_lower_name = extract_name<Token::Type::lower_name>;
+    constexpr auto extract_upper_name = extract_name<Token::Type::upper_name>;
 
 
     template <class T>

@@ -297,8 +297,8 @@ namespace {
     constexpr Extractor extract_function = +[](Parse_context& context)
         -> ast::Definition::Variant
     {
-        auto const name                = extract_lower_id(context, "a function name");
-        auto       template_parameters = parse_template_parameters(context);
+        auto name                = extract_lower_name(context, "a function name");
+        auto template_parameters = parse_template_parameters(context);
 
         if (context.try_consume(Token::Type::paren_open)) {
             constexpr auto parse_parameters =
@@ -331,7 +331,7 @@ namespace {
                 ast::definition::Function {
                     std::move(body),
                     std::move(parameters),
-                    name,
+                    std::move(name),
                     return_type
                 },
                 std::move(template_parameters)
@@ -398,8 +398,8 @@ namespace {
         static constexpr auto parse_members =
             parse_comma_separated_one_or_more<parse_struct_member, "a struct member">;
 
-        auto const name                = extract_upper_id(context, "a struct name");
-        auto       template_parameters = parse_template_parameters(context);
+        auto name                = extract_upper_name(context, "a struct name");
+        auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
 
@@ -409,7 +409,7 @@ namespace {
             return definition(
                 ast::definition::Struct {
                     std::move(*members),
-                    name
+                    std::move(name)
                 },
                 std::move(template_parameters)
             );
@@ -466,8 +466,8 @@ namespace {
 
         auto* anchor = context.pointer;
 
-        auto const name                = extract_upper_id(context, "a data name");
-        auto       template_parameters = parse_template_parameters(context);
+        auto name                = extract_upper_name(context, "a data name");
+        auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
         if (auto constructors = parse_constructors(context)) {
@@ -495,7 +495,7 @@ namespace {
             return definition(
                 ast::definition::Data {
                     std::move(*constructors),
-                    name
+                    std::move(name)
                 },
                 std::move(template_parameters)
             );
@@ -509,8 +509,8 @@ namespace {
     constexpr Extractor extract_alias = +[](Parse_context& context)
         -> ast::Definition::Variant
     {
-        auto const name                = extract_upper_id(context, "an alias name");
-        auto       template_parameters = parse_template_parameters(context);
+        auto name                = extract_upper_name(context, "an alias name");
+        auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
 
@@ -646,7 +646,7 @@ namespace {
     constexpr Extractor extract_class = +[](Parse_context& context)
         -> ast::Definition::Variant
     {
-        auto name = extract_upper_id(context, "a class name");
+        auto name = extract_upper_name(context, "a class name");
 
         auto template_parameters = parse_template_parameters(context);
 
@@ -679,7 +679,7 @@ namespace {
                     ast::definition::Typeclass {
                         std::move(function_signatures),
                         std::move(type_signatures),
-                        name
+                        std::move(name)
                     },
                     std::move(template_parameters)
                 );
@@ -691,7 +691,7 @@ namespace {
     constexpr Extractor extract_namespace = +[](Parse_context& context)
         -> ast::Definition::Variant
     {
-        auto name                = extract_lower_id(context, "a namespace name");
+        auto name                = extract_lower_name(context, "a namespace name");
         auto template_parameters = parse_template_parameters(context);
 
         return definition(

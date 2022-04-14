@@ -33,10 +33,8 @@ namespace {
 
     auto ensure_no_clashing_definitions(
         resolution::Namespace const& space,
-        lexer::Identifier     const  name,
-        bool                  const  is_upper,
-        bu::Source const*     const  source,
-        bu::Source_view       const  source_view
+        ast::Name             const& name,
+        bu::Source const*     const  source
     )
         -> void
     {
@@ -51,7 +49,7 @@ namespace {
 
             return std::runtime_error {
                 bu::textual_error({
-                    .erroneous_view = source_view,
+                    .erroneous_view = name.source_view,
                     .file_view      = source->string(),
                     .file_name      = source->name(),
                     .message        = message
@@ -59,16 +57,16 @@ namespace {
             };
         };
 
-        if (is_upper) {
-            if (auto* const variant = space.upper_table.find(name)) {
+        if (name.is_upper) {
+            if (auto* const variant = space.upper_table.find(name.identifier)) {
                 throw error(resolution::definition_description(*variant));
             }
         }
         else {
-            if (auto* const variant = space.lower_table.find(name)) {
+            if (auto* const variant = space.lower_table.find(name.identifier)) {
                 throw error(resolution::definition_description(*variant));
             }
-            else if (space.children.find(name)) {
+            else if (space.children.find(name.identifier)) {
                 throw error("a namespace definition");
             }
         }
@@ -93,11 +91,8 @@ namespace {
         for (auto& definition : definitions) {
             using namespace ast::definition;
 
-            auto const ensure_no_clashes = [&](
-                lexer::Identifier     const  name,
-                bool                  const  is_upper)
-            {
-                ensure_no_clashing_definitions(space, name, is_upper, source, definition.source_view);
+            auto const ensure_no_clashes = [&](ast::Name const& name) {
+                ensure_no_clashing_definitions(space, name, source);
             };
 
             std::visit(bu::Overload {
@@ -106,18 +101,18 @@ namespace {
                         .syntactic_definition = &function,
                         .home_namespace       = space
                     };
-                    ensure_no_clashes(function.name, false);
+                    ensure_no_clashes(function.name);
                     space->definitions_in_order.push_back(handle);
-                    space->lower_table.add(bu::copy(function.name), bu::copy(handle));
+                    space->lower_table.add(bu::copy(function.name.identifier), bu::copy(handle));
                 },
                 [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(T& definition) -> void {
                     resolution::Definition<T> handle {
                         .syntactic_definition = &definition,
                         .home_namespace       = space
                     };
-                    ensure_no_clashes(definition.name, true);
+                    ensure_no_clashes(definition.name);
                     space->definitions_in_order.push_back(handle);
-                    space->upper_table.add(bu::copy(definition.name), bu::copy(handle));
+                    space->upper_table.add(bu::copy(definition.name.identifier), bu::copy(handle));
                 },
                 [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(Template_definition<T>& template_definition) -> void {
                     resolution::Definition<Template_definition<T>> handle {
@@ -125,9 +120,9 @@ namespace {
                         .home_namespace       = space,
                         .template_parameters  = template_definition.parameters
                     };
-                    ensure_no_clashes(template_definition.definition.name, true);
+                    ensure_no_clashes(template_definition.definition.name);
                     space->definitions_in_order.push_back(handle);
-                    space->upper_table.add(bu::copy(template_definition.definition.name), bu::copy(handle));
+                    space->upper_table.add(bu::copy(template_definition.definition.name.identifier), bu::copy(handle));
                 },
                 [&](Function_template& function_template) -> void {
                     resolution::Function_template_definition handle {
@@ -135,9 +130,9 @@ namespace {
                         .home_namespace       = space,
                         .template_parameters  = function_template.parameters
                     };
-                    ensure_no_clashes(function_template.definition.name, false);
+                    ensure_no_clashes(function_template.definition.name);
                     space->definitions_in_order.push_back(handle);
-                    space->lower_table.add(bu::copy(function_template.definition.name), bu::copy(handle));
+                    space->lower_table.add(bu::copy(function_template.definition.name.identifier), bu::copy(handle));
                 },
 
                 [&](Implementation& implementation) -> void {
@@ -159,12 +154,12 @@ namespace {
                 [&](Namespace& nested_space) -> void {
                     bu::wrapper auto child = make_namespace(
                         space,
-                        nested_space.name,
+                        nested_space.name.identifier,
                         source,
                         nested_space.definitions
                     );
                     space->definitions_in_order.push_back(child);
-                    space->children.add(bu::copy(nested_space.name), bu::copy(child));
+                    space->children.add(bu::copy(nested_space.name.identifier), bu::copy(child));
                 },
 
                 [](auto&) -> void {
@@ -181,12 +176,13 @@ namespace {
         resolution::Resolution_context& context;
 
 
-        auto make_associated_namespace(lexer::Identifier const type_name) const
+        auto make_associated_namespace(ast::Name const& type_name) const
             -> bu::Wrapper<resolution::Namespace>
         {
+            assert(type_name.is_upper);
             return resolution::Namespace {
                 .parent = context.current_namespace,
-                .name   = type_name
+                .name   = type_name.identifier
             };
         }
 
@@ -244,7 +240,7 @@ namespace {
 
             *function.resolved_info = resolution::Function_definition::Resolved_info {
                 .resolved = ir::definition::Function {
-                    .name        = context.current_namespace->format_name_as_member(definition->name),
+                    .name        = context.current_namespace->format_name_as_member(definition->name.identifier),
                     .parameters  = std::move(parameters),
                     .return_type = body->type,
                     .body        = body
@@ -291,7 +287,7 @@ namespace {
 
             bu::Wrapper resolved_structure = ir::definition::Struct {
                 .members              = std::move(members),
-                .name                 = context.current_namespace->format_name_as_member(definition->name),
+                .name                 = context.current_namespace->format_name_as_member(definition->name.identifier),
                 .associated_namespace = make_associated_namespace(definition->name),
                 .size                 = size,
                 .is_trivial           = is_trivial
@@ -338,7 +334,7 @@ namespace {
 
 
             bu::Wrapper resolved_data = ir::definition::Data {
-                .name                 = context.current_namespace->format_name_as_member(definition->name),
+                .name                 = context.current_namespace->format_name_as_member(definition->name.identifier),
                 .associated_namespace = make_associated_namespace(definition->name),
                 .size                 = size,
                 .is_trivial           = is_trivial
@@ -411,7 +407,7 @@ namespace {
             auto* const definition = alias.syntactic_definition;
 
             bu::Wrapper resolved_alias = ir::definition::Alias {
-                .name = context.current_namespace->format_name_as_member(definition->name),
+                .name = context.current_namespace->format_name_as_member(definition->name.identifier),
                 .type = context.resolve_type(definition->type)
             };
 

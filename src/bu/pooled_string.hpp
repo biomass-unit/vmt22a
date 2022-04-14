@@ -75,10 +75,3 @@ struct std::formatter<String> : std::formatter<std::string_view> {
         return std::formatter<std::string_view>::format(string.view(), context);
     }
 };
-
-template <bu::instance_of<bu::Pooled_string> String>
-struct std::hash<String> : std::hash<std::string_view> {
-    auto operator()(String const string) const -> bu::Usize {
-        return bu::hash_combine_with_seed(bu::get_unique_seed(), string.hash());
-    }
-};

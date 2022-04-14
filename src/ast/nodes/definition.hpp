@@ -66,7 +66,7 @@ namespace ast {
             };
             Expression                       body;
             std::vector<Parameter>           parameters;
-            lexer::Identifier                name;
+            Name                             name;
             std::optional<bu::Wrapper<Type>> return_type;
             DEFAULTED_EQUALITY(Function);
         };
@@ -81,7 +81,7 @@ namespace ast {
                 DEFAULTED_EQUALITY(Member);
             };
             std::vector<Member> members;
-            lexer::Identifier   name;
+            Name                name;
             DEFAULTED_EQUALITY(Struct);
         };
 
@@ -94,12 +94,12 @@ namespace ast {
                 DEFAULTED_EQUALITY(Constructor);
             };
             std::vector<Constructor> constructors;
-            lexer::Identifier        name;
+            Name                     name;
             DEFAULTED_EQUALITY(Data);
         };
 
         struct Alias {
-            lexer::Identifier name;
+            Name              name;
             bu::Wrapper<Type> type;
             DEFAULTED_EQUALITY(Alias);
         };
@@ -107,7 +107,7 @@ namespace ast {
         struct Typeclass {
             std::vector<Function_signature> function_signatures;
             std::vector<Type_signature>     type_signatures;
-            lexer::Identifier               name;
+            Name                            name;
             DEFAULTED_EQUALITY(Typeclass);
         };
 
@@ -126,7 +126,7 @@ namespace ast {
 
         struct Namespace {
             std::vector<Definition> definitions;
-            lexer::Identifier       name;
+            Name                    name;
             DEFAULTED_EQUALITY(Namespace);
         };
 

@@ -348,19 +348,3 @@ namespace ir {
     struct Program {};
 
 }
-
-
-template <>
-struct std::hash<ir::Expression> {
-    auto operator()(ir::Expression const&) const -> bu::Usize;
-};
-
-template <>
-struct std::hash<ir::Type> {
-    auto operator()(ir::Type const&) const -> bu::Usize;
-};
-
-template <>
-struct std::hash<ir::Template_argument_set> {
-    auto operator()(ir::Template_argument_set const&) const -> bu::Usize;
-};
