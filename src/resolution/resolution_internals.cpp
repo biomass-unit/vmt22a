@@ -24,21 +24,21 @@ auto resolution::Scope::find_type(lexer::Identifier const name) noexcept -> Loca
     }
 }
 
-auto resolution::Scope::unused_variables() -> std::optional<std::vector<lexer::Identifier>> {
-    std::vector<lexer::Identifier> names;
+auto resolution::Scope::unused_variables() -> std::vector<Binding*> {
+    std::vector<Binding*> unused_bindings;
 
-    for (auto& [name, binding] : bindings.container()) {
-        if (!binding.has_been_mentioned) {
-            names.push_back(name);
-        }
-    }
+    auto const is_unused = [](Binding const* binding) noexcept {
+        return !binding->has_been_mentioned;
+    };
 
-    if (names.empty()) {
-        return std::nullopt;
-    }
-    else {
-        return names;
-    }
+    std::ranges::copy(
+        bindings.container()
+            | std::views::transform(bu::compose(bu::address, bu::second))
+            | std::views::filter(is_unused),
+        std::back_inserter(unused_bindings)
+    );
+
+    return unused_bindings;
 }
 
 
@@ -110,17 +110,12 @@ auto resolution::Resolution_context::error(
 )
     -> std::runtime_error
 {
-    bu::Highlighted_text_section const section {
-        .source_view = source_view,
-        .source      = source
-    };
-
     return std::runtime_error {
-        bu::textual_error({
-            .sections  { &section, 1 },
-            .source    = source,
-            .message   = message,
-            .help_note = help,
+        bu::simple_textual_error({
+            .erroneous_view = source_view,
+            .source         = source,
+            .message        = message,
+            .help_note      = help
         })
     };
 }
@@ -292,12 +287,33 @@ auto resolution::Resolution_context::find_variable_or_function(
     if (full_name.is_unqualified()) {
         // Try local lookup first
 
-        if (Binding* const binding = scope.bindings.find(full_name.primary_name.identifier)) {
+        if (Binding* const binding = scope.find(full_name.primary_name.identifier)) {
             binding->has_been_mentioned = true;
 
             if (!is_unevaluated && !binding->type->is_trivial) {
                 if (binding->moved_by) {
-                    bu::unimplemented();
+                    auto const sections = std::to_array({
+                        bu::Highlighted_text_section {
+                            .source_view = binding->moved_by->source_view,
+                            .source      = source,
+                            .note        = "The value is moved here",
+                            .note_color  = bu::text_warning_color
+                        },
+                        bu::Highlighted_text_section {
+                            .source_view = full_name.primary_name.source_view,
+                            .source      = source,
+                            .note        = "The value is used here after being moved",
+                            .note_color  = bu::text_error_color
+                        }
+                    });
+
+                    throw std::runtime_error {
+                        bu::textual_error({
+                            .sections = sections,
+                            .source   = source,
+                            .message  = "Use of moved value"
+                        })
+                    };
                 }
                 else {
                     binding->moved_by = &expression;

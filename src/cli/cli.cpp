@@ -110,19 +110,14 @@ namespace {
                 std::move(fake_file)
             };
 
-            bu::Highlighted_text_section section {
-                .source_view = bu::Source_view {
+            return bu::simple_textual_error({
+                .erroneous_view = bu::Source_view {
                     erroneous_view,
-                    0,
-                    bu::unsigned_distance(fake_source.string().data(), erroneous_view.data())
+                    1,
+                    1 + bu::unsigned_distance(fake_source.string().data(), erroneous_view.data())
                 },
-                .source = &fake_source
-            };
-
-            return bu::textual_error({
-                .sections { &section, 1 },
-                .source   = &fake_source,
-                .message  = message,
+                .source  = &fake_source,
+                .message = message
             });
         }
 

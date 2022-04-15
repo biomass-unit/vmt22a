@@ -251,15 +251,34 @@ namespace {
                     context.resolve_type(*let_binding.type);
 
                 if (explicit_type != initializer.type) {
-                    throw error(
-                        std::format(
-                            "The binding is explicitly specified to be of "
-                            "type {}, but the initializer is of type {}",
-                            explicit_type,
-                            initializer.type
-                        ),
-                        let_binding.initializer
+                    auto const type_requirement_message = std::format(
+                        "Expected {}, but found {}",
+                        explicit_type,
+                        initializer.type
                     );
+
+                    auto const sections = std::to_array({
+                        bu::Highlighted_text_section {
+                            .source_view = let_binding.type.value()->source_view,
+                            .source      = context.source,
+                            .note        = "Type explicitly specified here",
+                            .note_color  = bu::text_warning_color
+                        },
+                        bu::Highlighted_text_section {
+                            .source_view = let_binding.initializer->source_view,
+                            .source      = context.source,
+                            .note        = type_requirement_message,
+                            .note_color  = bu::text_error_color
+                        }
+                    });
+
+                    throw std::runtime_error {
+                        bu::textual_error({
+                            .sections = sections,
+                            .source   = context.source,
+                            .message  = "Mismatched types"
+                        })
+                    };
                 }
             }
 
@@ -310,7 +329,29 @@ namespace {
 
             if (auto* binding = context.scope.find(take_reference.name)) {
                 if (take_mutable_ref && !binding->is_mutable) {
-                    throw error("Can not acquire a mutable reference to an immutable binding");
+                    auto const sections = std::to_array({
+                        bu::Highlighted_text_section {
+                            .source_view = binding->source_view,
+                            .source      = context.source,
+                            .note        = "Immutable binding declared here",
+                            .note_color  = bu::text_warning_color
+                        },
+                        bu::Highlighted_text_section {
+                            .source_view = this_expression.source_view,
+                            .source      = context.source,
+                            .note        = "Attempted to acquire mutable reference here",
+                            .note_color  = bu::text_error_color
+                        }
+                    });
+
+                    throw std::runtime_error {
+                        bu::textual_error({
+                            .sections  = sections,
+                            .source    = context.source,
+                            .message   = "Can not acquire a mutable reference to an immutable binding",
+                            .help_note = "If a mutable reference is necessary, declare the binding with mut"
+                        })
+                    };
                 }
 
                 binding->has_been_mentioned = true;
@@ -542,7 +583,8 @@ namespace {
                             side_effect.type
                         ),
                         std::format(
-                            "If this is intentional, cast the expression to (), like this: {}{} as (){}",
+                            "If this is intentional, cast the expression "
+                            "to the unit type, like this: {}{} as (){}",
                             bu::Color::dark_cyan,
                             expression,
                             bu::Color::white
@@ -556,8 +598,39 @@ namespace {
 
             auto result = child_context.resolve_expression(compound.expressions.back());
 
-            if (auto unused = child_context.scope.unused_variables()) {
-                bu::abort("unused variables");
+            {
+                auto unused_variables = child_context.scope.unused_variables();
+
+                if (!unused_variables.empty()) {
+                    std::vector<bu::Highlighted_text_section> sections;
+
+                    for (resolution::Binding* const binding : unused_variables) {
+                        sections.push_back(
+                            bu::Highlighted_text_section {
+                                .source_view = binding->source_view,
+                                .source      = context.source,
+                                .note        = "Unused variable declared here",
+                                .note_color  = bu::text_warning_color
+                            }
+                        );
+                    }
+
+                    std::string message = "Unused local variable";
+                    if (unused_variables.size() > 1) {
+                        message.push_back('s');
+                    }
+
+                    throw std::runtime_error {
+                        bu::textual_error({
+                            .sections  = sections,
+                            .source    = context.source,
+                            .message   = message,
+                            .help_note =
+                                "If you wish to intentionally ignore a "
+                                "variable, prefix it with an underscore"
+                        })
+                    };
+                }
             }
 
             return {

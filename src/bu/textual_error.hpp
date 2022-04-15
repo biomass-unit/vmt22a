@@ -21,12 +21,20 @@ namespace bu {
 
     struct Textual_error_arguments {
         std::span<Highlighted_text_section const> sections;
-        Source*                                   source;
+        Source*                                   source = nullptr;
         std::string_view                          message;
         std::optional<std::string_view>           help_note;
     };
 
+    struct Simple_textual_error_arguments {
+        bu::Source_view                 erroneous_view;
+        Source*                         source = nullptr;
+        std::string_view                message;
+        std::optional<std::string_view> help_note;
+    };
 
-    auto textual_error(Textual_error_arguments) -> std::string;
+
+    auto        textual_error(       Textual_error_arguments) -> std::string;
+    auto simple_textual_error(Simple_textual_error_arguments) -> std::string;
 
 }

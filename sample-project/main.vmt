@@ -4,15 +4,13 @@
 data Maybe = nothing | just(Int)
 
 
-struct Maybe = x: Int
-
-
 impl Maybe {
     fn just(): Int = 0
 }
 
 
 fn main() {
-    let m = Maybe::just(5);
-    m as ()
+    let _i = 0;
+    ();
+    let _j = "";
 }

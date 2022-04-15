@@ -171,6 +171,12 @@ namespace bu {
         return x;
     };
 
+    constexpr auto address = [](auto& x)
+        noexcept -> auto*
+    {
+        return std::addressof(x);
+    };
+
     constexpr auto dereference = [](auto const& x)
         noexcept(noexcept(*x)) -> decltype(auto)
     {

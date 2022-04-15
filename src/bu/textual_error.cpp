@@ -145,7 +145,7 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
 
         std::optional<std::string> location_info;
 
-        if (current_source != section.source) {
+        if (section.source && current_source != section.source) {
             current_source = section.source;
 
             location_info = std::format(
@@ -168,4 +168,23 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
     }
 
     return string;
+}
+
+
+auto bu::simple_textual_error(Simple_textual_error_arguments const arguments)
+    -> std::string
+{
+    Highlighted_text_section const section {
+        .source_view = arguments.erroneous_view,
+        .source      = arguments.source,
+        .note        = "here",
+        .note_color  = text_error_color
+    };
+
+    return textual_error({
+        .sections  { &section, 1 }, // Treat the section as a one-element span
+        .source    = arguments.source,
+        .message   = arguments.message,
+        .help_note = arguments.help_note
+    });
 }

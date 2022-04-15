@@ -12,6 +12,7 @@
 namespace resolution {
 
     struct Binding {
+        bu::Source_view       source_view;
         bu::Wrapper<ir::Type> type;
         vm::Local_size_type   frame_offset       = 0;
         ast::Expression*      moved_by           = nullptr;
@@ -36,7 +37,7 @@ namespace resolution {
         auto find     (lexer::Identifier) noexcept -> Binding*;
         auto find_type(lexer::Identifier) noexcept -> Local_type_alias*;
 
-        auto unused_variables() -> std::optional<std::vector<lexer::Identifier>>;
+        auto unused_variables() -> std::vector<Binding*>;
     };
 
     struct Namespace;

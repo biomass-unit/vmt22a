@@ -50,17 +50,46 @@ namespace {
             auto const it = std::ranges::find(bindings, pattern.identifier, bu::first);
 
             if (it != bindings.end() && !it->second.has_been_mentioned) {
-                throw error(std::format("{} would shadow an unused variable", pattern.identifier));
+                auto const sections = std::to_array({
+                    bu::Highlighted_text_section {
+                        .source_view = it->second.source_view,
+                        .source      = context.source,
+                        .note        = "Unused variable declared here",
+                        .note_color  = bu::text_warning_color
+                    },
+                    bu::Highlighted_text_section {
+                        .source_view = this_pattern.source_view,
+                        .source      = context.source,
+                        .note        = "Shadowed here",
+                        .note_color  = bu::text_error_color
+                    }
+                });
+
+                auto const message = std::format(
+                    "{} would shadow an unused local variable",
+                    pattern.identifier
+                );
+
+                throw std::runtime_error {
+                    bu::textual_error({
+                        .sections = sections,
+                        .source   = context.source,
+                        .message  = message
+                    })
+                };
             }
 
             bindings.emplace(
                 it,
                 pattern.identifier,
                 resolution::Binding {
+                    .source_view        = this_pattern.source_view,
                     .type               = this_type,
                     .frame_offset       = context.scope.current_frame_offset.get(),
                     .is_mutable         = context.resolve_mutability(pattern.mutability),
-                    .has_been_mentioned = pattern.identifier == nameless_identifier
+                    .has_been_mentioned =
+                        pattern.identifier == nameless_identifier ||
+                        pattern.identifier.view().starts_with('_')
                 }
             );
 

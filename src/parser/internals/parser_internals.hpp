@@ -71,17 +71,12 @@ namespace parser {
         )
             const -> std::runtime_error
         {
-            bu::Highlighted_text_section const section {
-                .source_view = source_view,
-                .source      = source
-            };
-
             return std::runtime_error {
-                bu::textual_error({
-                    .sections  { &section, 1 },
-                    .source    = source,
-                    .message   = message,
-                    .help_note = help,
+                bu::simple_textual_error({
+                    .erroneous_view = source_view,
+                    .source         = source,
+                    .message        = message,
+                    .help_note      = help
                 })
             };
         }
