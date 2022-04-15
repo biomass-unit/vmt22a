@@ -9,7 +9,7 @@ namespace {
         ast::Pattern&                   this_pattern;
         bu::Wrapper<ir::Type>           this_type;
 
-        inline static lexer::Identifier const nameless_identifier { ""sv };
+        inline static lexer::Identifier const wildcard_identifier { "_"sv };
 
         auto error(
             std::string_view                const message,
@@ -28,7 +28,7 @@ namespace {
         auto operator()(ast::pattern::Wildcard&, auto&) -> void {
             static ast::Pattern name {
                 .value = ast::pattern::Name {
-                    .identifier = nameless_identifier,
+                    .identifier = wildcard_identifier,
                     .mutability {
                         .type        = ast::Mutability::Type::immut,
                         .source_view = this_pattern.source_view
@@ -87,9 +87,7 @@ namespace {
                     .type               = this_type,
                     .frame_offset       = context.scope.current_frame_offset.get(),
                     .is_mutable         = context.resolve_mutability(pattern.mutability),
-                    .has_been_mentioned =
-                        pattern.identifier == nameless_identifier ||
-                        pattern.identifier.view().starts_with('_')
+                    .has_been_mentioned = pattern.identifier.view().starts_with('_')
                 }
             );
 

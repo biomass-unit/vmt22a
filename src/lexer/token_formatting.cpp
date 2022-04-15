@@ -64,6 +64,13 @@ auto lexer::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::boolean:       return "a boolean literal";
     case Token::Type::end_of_input:  return "the end of input";
 
+    case Token::Type::string_type:
+    case Token::Type::integer_type:
+    case Token::Type::floating_type:
+    case Token::Type::character_type:
+    case Token::Type::boolean_type:
+        return "a primitive typename";
+
     default:
         bu::abort(std::format("Unimplemented for {}", type));
     }
@@ -73,8 +80,18 @@ auto lexer::token_description(Token::Type const type) -> std::string_view {
 DEFINE_FORMATTER_FOR(lexer::Token::Type) {
     constexpr auto strings = std::to_array<std::string_view>({
         ".", ",", ":", ";", "::", "&", "*", "+", "?", "=", "|", "->", "(", ")", "{", "}", "[", "]",
-        "let", "mut", "immut", "if", "else", "elif", "for", "in", "while", "loop", "continue", "break", "match", "ret", "fn", "as", "data", "struct", "class", "inst", "impl", "alias", "namespace", "import", "export", "module", "size_of", "type_of", "meta", "where", "dyn", "pub",
-        "underscore", "lower", "upper", "op", "str", "int", "float", "char", "bool", "end of input"
+
+        "let", "mut", "immut", "if", "else", "elif", "for", "in", "while", "loop", "continue",
+        "break", "match", "ret", "fn", "as", "data", "struct", "class", "inst", "impl", "alias",
+        "namespace", "import", "export", "module", "size_of", "type_of", "meta", "where", "dyn", "pub",
+
+        "underscore", "lower", "upper", "op",
+
+        "str", "int", "float", "char", "bool",
+
+        "String", "Int", "Float", "Char", "Bool",
+
+        "end of input"
     });
     static_assert(strings.size() == static_cast<bu::Usize>(lexer::Token::Type::_token_type_count));
     return std::format_to(context.out(), "{}", strings[static_cast<bu::Usize>(value)]);

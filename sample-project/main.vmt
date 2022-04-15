@@ -4,18 +4,13 @@
 data Maybe = nothing | just(Int)
 
 
+alias Int' = Float
+
+
+
 impl Maybe {
     fn just(): Int = 0
 }
 
 
-fn if'[T](c: Bool, a: T, b: T) = if c { a } else { b }
-
-
-fn main() {
-    let _: Float = if'[Int](
-        true,
-        10,
-        20
-    );
-}
+fn main(): Int = { 0 }

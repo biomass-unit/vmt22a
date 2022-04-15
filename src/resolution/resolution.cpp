@@ -237,15 +237,34 @@ namespace {
                 bu::wrapper auto explicit_type = context.resolve_type(*definition->return_type);
 
                 if (body->type != explicit_type) {
-                    throw context.error(
-                        (*definition->return_type)->source_view,
-                        std::format(
-                            "The function is explicitly specified to have a "
-                            "return type of {}, but its body is of type {}",
-                            explicit_type,
-                            body->type
-                        )
+                    auto const type_requirement_message = std::format(
+                        "Expected {}, but found {}",
+                        explicit_type,
+                        body->type
                     );
+
+                    auto const sections = std::to_array({
+                        bu::Highlighted_text_section {
+                            .source_view = (*definition->return_type)->source_view,
+                            .source      = context.source,
+                            .note        = "Return type explicitly specified here",
+                            .note_color  = bu::text_warning_color
+                        },
+                        bu::Highlighted_text_section {
+                            .source_view = definition->body.source_view,
+                            .source      = context.source,
+                            .note        = type_requirement_message,
+                            .note_color  = bu::text_error_color
+                        }
+                    });
+
+                    throw std::runtime_error {
+                        bu::textual_error({
+                            .sections = sections,
+                            .source   = context.source,
+                            .message  = "Mismatched types"
+                        })
+                    };
                 }
             }
 

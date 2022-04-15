@@ -88,6 +88,12 @@ namespace lexer {
             character,
             boolean,
 
+            string_type,
+            integer_type,
+            floating_type,
+            character_type,
+            boolean_type,
+
             end_of_input,
 
             _token_type_count

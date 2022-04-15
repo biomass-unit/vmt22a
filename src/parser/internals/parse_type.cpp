@@ -33,50 +33,21 @@ namespace {
     }
 
 
-    constexpr Extractor parse_typename = +[](Parse_context& context)
+    template <class T>
+    constexpr Extractor extract_primitive = +[](Parse_context&)
         -> ast::Type::Variant
     {
-        static constexpr std::hash<std::string_view> hasher;
-
-        static auto const
-            integer   = hasher("Int"),
-            floating  = hasher("Float"),
-            character = hasher("Char"),
-            boolean   = hasher("Bool"),
-            string    = hasher("String");
-
-        auto const id = context.previous().as_identifier();
-        auto const hash = id.hash();
-
-        if (hash == integer) {
-            return ast::type::Integer {};
-        }
-        else if (hash == floating) {
-            return ast::type::Floating {};
-        }
-        else if (hash == character) {
-            return ast::type::Character {};
-        }
-        else if (hash == boolean) {
-            return ast::type::Boolean {};
-        }
-        else if (hash == string) {
-            return ast::type::String {};
-        }
-        else {
-            context.retreat();
-            return extract_qualified_upper_name({ std::monostate {} }, context);
-        }
+        return ast::type::Primitive<T> {};
     };
 
-    constexpr Extractor parse_lower_qualified_typename = +[](Parse_context& context)
+    constexpr Extractor extract_typename = +[](Parse_context& context)
         -> ast::Type::Variant
     {
         context.retreat();
         return extract_qualified_upper_name({ std::monostate {} }, context);
     };
 
-    constexpr Extractor parse_global_typename = +[](Parse_context& context)
+    constexpr Extractor extract_global_typename = +[](Parse_context& context)
         -> ast::Type::Variant
     {
         return extract_qualified_upper_name({ ast::Root_qualifier::Global{} }, context);
@@ -181,6 +152,16 @@ namespace {
 
     auto parse_normal_type(Parse_context& context) -> std::optional<ast::Type> {
         switch (context.extract().type) {
+        case Token::Type::string_type:
+            return extract_primitive<lexer::String>(context);
+        case Token::Type::integer_type:
+            return extract_primitive<bu::Isize>(context);
+        case Token::Type::floating_type:
+            return extract_primitive<bu::Float>(context);
+        case Token::Type::character_type:
+            return extract_primitive<bu::Char>(context);
+        case Token::Type::boolean_type:
+            return extract_primitive<bool>(context);
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::bracket_open:
@@ -194,11 +175,10 @@ namespace {
         case Token::Type::asterisk:
             return extract_pointer(context);
         case Token::Type::upper_name:
-            return parse_typename(context);
         case Token::Type::lower_name:
-            return parse_lower_qualified_typename(context);
+            return extract_typename(context);
         case Token::Type::double_colon:
-            return parse_global_typename(context);
+            return extract_global_typename(context);
         default:
             context.retreat();
             return std::nullopt;
