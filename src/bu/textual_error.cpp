@@ -5,13 +5,13 @@
 namespace {
 
     auto remove_surrounding_whitespace(std::vector<std::string_view>& lines) -> void {
-        constexpr auto prefix_length = [](std::string_view string) {
+        constexpr auto prefix_length = [](std::string_view const string) {
             return string.find_first_not_of(' ');
         };
         static_assert(prefix_length("test") == 0);
         static_assert(prefix_length("  test") == 2);
 
-        constexpr auto suffix_length = [](std::string_view string) {
+        constexpr auto suffix_length = [](std::string_view const string) {
             return string.size() - string.find_last_not_of(' ') - 1;
         };
         static_assert(suffix_length("test") == 0);
@@ -71,6 +71,8 @@ namespace {
         auto const digit_count = bu::digit_count(section.source_view.line + lines.size());
         auto       line_number = section.source_view.line;
 
+        assert(!lines.empty());
+
         static constexpr auto line_info_color = bu::Color::dark_cyan;
 
         if (location_info) {
@@ -85,16 +87,72 @@ namespace {
             );
         }
 
-        for (auto line : lines) {
+        bu::Usize const longest_line_length =
+            std::ranges::max(lines | std::views::transform(&std::string_view::size));
+
+        for (auto& line : lines) {
             std::format_to(
                 out,
-                "\n {}{:<{}} |{} {}",
+                "\n {}{:<{}} |{} ",
                 line_info_color,
                 line_number++,
                 digit_count,
                 bu::Color::white,
                 line
             );
+
+            if (lines.size() > 1) {
+                if (&line == &lines.front()) {
+                    bu::Usize const source_view_offset =
+                        bu::unsigned_distance(line.data(), section.source_view.string.data());
+
+                    std::format_to(
+                        out,
+                        "{}{}{}{}",
+                        bu::Color::dark_grey,
+                        line.substr(0, source_view_offset),
+                        bu::Color::white,
+                        line.substr(source_view_offset)
+                    );
+                }
+                else if (&line == &lines.back()) {
+                    bu::Usize const source_view_offset =
+                        bu::unsigned_distance(
+                            line.data(),
+                            section.source_view.string.data() + section.source_view.string.size()
+                        );
+
+                    std::format_to(
+                        out,
+                        "{}{}{}{}",
+                        line.substr(0, source_view_offset),
+                        bu::Color::dark_grey,
+                        line.substr(source_view_offset),
+                        bu::Color::white
+                    );
+                }
+                else {
+                    std::format_to(out, "{}", line);
+                }
+            }
+            else {
+                std::format_to(out, "{}", line);
+            }
+
+            if (lines.size() > 1) {
+                std::format_to(
+                    out,
+                    "{} {}<",
+                    std::string(longest_line_length - line.size(), ' '),
+                    section.note_color
+                );
+
+                if (&line == &lines.back()) {
+                    std::format_to(out, " {}", section.note);
+                }
+
+                std::format_to(out, "{}", bu::Color::white);
+            }
         }
 
         if (lines.size() == 1) {
@@ -118,9 +176,6 @@ namespace {
                 section.note,
                 bu::Color::white
             );
-        }
-        else {
-            bu::abort("multiline errors not supported yet");
         }
     }
 

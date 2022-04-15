@@ -9,8 +9,13 @@ impl Maybe {
 }
 
 
+fn if'[T](c: Bool, a: T, b: T) = if c { a } else { b }
+
+
 fn main() {
-    let _i = 0;
-    ();
-    let _j = "";
+    let _: Float = if'[Int](
+        true,
+        10,
+        20
+    );
 }

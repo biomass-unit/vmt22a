@@ -8,21 +8,24 @@ namespace {
 
     auto color_string(bu::Color const color) noexcept -> std::string_view {
         static constexpr auto color_map = std::to_array<std::string_view>({
-            "\033[31m", // dark red
-            "\033[32m", // dark green
-            "\033[33m", // dark yellow
-            "\033[34m", // dark blue
-            "\033[35m", // dark purple
-            "\033[36m", // dark cyan
+            "\033[31m",       // dark red
+            "\033[32m",       // dark green
+            "\033[33m",       // dark yellow
+            "\033[34m",       // dark blue
+            "\033[35m",       // dark purple
+            "\033[36m",       // dark cyan
+            "\033[38;5;238m", // dark grey
+
             "\033[91m", // red
             "\033[92m", // green
             "\033[93m", // yellow
             "\033[94m", // blue
             "\033[95m", // purple
             "\033[96m", // cyan
+            "\033[90m", // grey
+
             "\033[30m", // black
             "\033[0m" , // white
-            "\033[90m", // grey
         });
         static_assert(color_map.size() == static_cast<bu::Usize>(bu::Color::_color_count));
 

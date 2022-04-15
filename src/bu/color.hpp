@@ -12,6 +12,7 @@ namespace bu {
         dark_blue,
         dark_purple,
         dark_cyan,
+        dark_grey,
 
         red,
         green,
@@ -19,10 +20,10 @@ namespace bu {
         blue,
         purple,
         cyan,
+        grey,
 
         black,
         white,
-        grey,
 
         _color_count
     };

@@ -625,9 +625,7 @@ namespace {
                             .sections  = sections,
                             .source    = context.source,
                             .message   = message,
-                            .help_note =
-                                "If you wish to intentionally ignore a "
-                                "variable, prefix it with an underscore"
+                            .help_note = "To intentionally ignore a variable, prefix it with an underscore"
                         })
                     };
                 }
