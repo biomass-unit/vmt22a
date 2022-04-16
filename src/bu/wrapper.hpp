@@ -7,27 +7,38 @@ namespace bu {
 
     template <class T>
     class [[nodiscard]] Wrapper {
-        static std::vector<T> vector;
+        static_assert(std::is_object_v<T>);
+
+        static std::vector<std::remove_const_t<T>> vector;
 
         Usize index;
     public:
         template <class... Args>
             requires ((sizeof...(Args) != 1) || (!similar_to<Wrapper, Args> && ...))
         constexpr Wrapper(Args&&... args)
-            noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
+            noexcept(std::is_nothrow_constructible_v<std::remove_const_t<T>, Args&&...>)
             : index { vector.size() }
         {
             vector.emplace_back(std::forward<Args>(args)...);
         }
 
-        constexpr explicit(false) operator T const&() const noexcept { return vector[index]; }
-        constexpr explicit(false) operator T      &()       noexcept { return vector[index]; }
+        constexpr auto operator*(this Wrapper const self) noexcept -> T& {
+            return vector[self.index];
+        }
 
-        constexpr auto operator*() const noexcept -> T const& { return *this; }
-        constexpr auto operator*()       noexcept -> T      & { return *this; }
+        constexpr auto operator->(this Wrapper const self) noexcept -> T* {
+            return &*self;
+        }
 
-        constexpr auto operator->() const noexcept -> T const* { return vector.data() + index; }
-        constexpr auto operator->()       noexcept -> T      * { return vector.data() + index; }
+        constexpr operator T&(this Wrapper const self) noexcept {
+            return *self;
+        }
+
+        auto hash(this Wrapper const self)
+            noexcept(noexcept(std::hash<T>{}(*self))) -> Usize
+        {
+            return std::hash<T>{}(*self);
+        }
 
         constexpr static auto release_wrapped_memory() noexcept {
             bu::release_vector_memory(vector);
@@ -36,7 +47,8 @@ namespace bu {
 
     // Initializer lifted out of the class due to apparent compiler bug
     template <class T>
-    std::vector<T> Wrapper<T>::vector = bu::vector_with_capacity<T>(256);
+    std::vector<std::remove_const_t<T>> Wrapper<T>::vector =
+        bu::vector_with_capacity<std::remove_const_t<T>>(256);
 
     template <class T>
     Wrapper(T) -> Wrapper<T>;
@@ -64,12 +76,5 @@ template <class T>
 struct std::formatter<bu::Wrapper<T>> : std::formatter<T> {
     auto format(bu::Wrapper<T> const wrapper, std::format_context& context) {
         return std::formatter<T>::format(*wrapper, context);
-    }
-};
-
-template <class T>
-struct std::hash<bu::Wrapper<T>> : std::hash<T> {
-    auto operator()(bu::Wrapper<T> const wrapper) -> bu::Usize {
-        return std::hash<T>::operator()(*wrapper);
     }
 };

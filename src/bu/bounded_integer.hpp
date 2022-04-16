@@ -48,15 +48,19 @@ namespace bu {
             }
         }
 
-        constexpr auto get() const noexcept -> T { return value; }
+        constexpr auto get(this Bounded_integer const self) noexcept -> T {
+            return self.value;
+        }
 
-        constexpr auto copy() const noexcept -> Bounded_integer { return *this; }
+        constexpr auto copy(this Bounded_integer const self) noexcept -> Bounded_integer {
+            return self;
+        }
 
         template <std::integral U>
-        constexpr auto safe_cast() const noexcept -> U {
+        constexpr auto safe_cast(this Bounded_integer const self) noexcept -> U {
             static_assert(std::cmp_greater_equal(min, std::numeric_limits<U>::min())
                        && std::cmp_less_equal   (max, std::numeric_limits<U>::max()));
-            return static_cast<U>(value);
+            return static_cast<U>(self.value);
         }
 
         constexpr auto safe_add(T const rhs) -> Bounded_integer& {

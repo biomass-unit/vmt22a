@@ -48,17 +48,19 @@ namespace bu {
             : Pooled_string(string, bu::make<std::string>, strategy) {}
 
         [[nodiscard]]
-        auto view() const noexcept -> std::string_view {
-            return vector[index].first;
-        }
-        [[nodiscard]]
-        auto hash() const noexcept -> bu::Usize {
-            return vector[index].second;
+        auto view(this Pooled_string const self) noexcept -> std::string_view {
+            return vector[self.index].first;
         }
 
         [[nodiscard]]
-        auto operator==(Pooled_string const& other) const noexcept -> bool {
-            return index == other.index; // could be defaulted but this explicitly shows how cheap the operation is
+        auto hash(this Pooled_string const self) noexcept -> Usize {
+            return vector[self.index].second;
+        }
+
+        [[nodiscard]]
+        auto operator==(this Pooled_string const self, Pooled_string const other) noexcept -> bool {
+            // Could be defaulted but this explicitly shows how cheap the operation is
+            return self.index == other.index;
         }
 
         static auto release() noexcept -> void {
