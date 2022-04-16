@@ -14,6 +14,7 @@
 #include <memory>
 #include <utility>
 #include <concepts>
+#include <exception>
 #include <functional>
 #include <type_traits>
 #include <source_location>
@@ -21,9 +22,6 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
-
-#include <exception>
-#include <stdexcept>
 
 #include <span>
 #include <list>
@@ -102,6 +100,18 @@ namespace bu {
     }
 
 
+    class Exception : public std::exception {
+        std::string message;
+    public:
+        Exception(std::string&& message) noexcept
+            : message { std::move(message) } {}
+
+        auto what() const -> char const* override {
+            return message.c_str();
+        }
+    };
+
+
     template <std::ostream& os = std::cout>
     auto print(std::string_view const fmt, auto const&... args) -> void {
         if constexpr (sizeof...(args) != 0) {
@@ -115,7 +125,7 @@ namespace bu {
 
     [[noreturn]]
     inline auto abort(std::string_view message, std::source_location caller = std::source_location::current()) -> void {
-        throw std::runtime_error {
+        throw Exception {
             std::format(
                 "bu::abort invoked in {}, in file {} on line {}, with message: {}",
                 caller.function_name(),

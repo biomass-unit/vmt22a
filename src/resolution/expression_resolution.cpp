@@ -11,21 +11,21 @@ namespace {
 
         [[nodiscard]]
         auto error(std::string_view const message, std::string_view const help, ast::Expression& expression)
-            -> std::runtime_error
+            -> resolution::Resolution_context::Error
         {
             return context.error(expression.source_view, message, help);
         }
 
         [[nodiscard]]
         auto error(std::string_view const message, std::optional<std::string_view> const help = std::nullopt)
-            -> std::runtime_error
+            -> resolution::Resolution_context::Error
         {
             return context.error(this_expression.source_view, message, help);
         }
 
         [[nodiscard]]
         auto error(std::string_view const message, ast::Expression& expression)
-            -> std::runtime_error
+            -> resolution::Resolution_context::Error
         {
             return context.error(expression.source_view, message, std::nullopt);
         }
@@ -272,7 +272,7 @@ namespace {
                         }
                     });
 
-                    throw std::runtime_error {
+                    throw resolution::Resolution_context::Error {
                         bu::textual_error({
                             .sections = sections,
                             .source   = context.source,
@@ -344,7 +344,7 @@ namespace {
                         }
                     });
 
-                    throw std::runtime_error {
+                    throw resolution::Resolution_context::Error {
                         bu::textual_error({
                             .sections  = sections,
                             .source    = context.source,
@@ -620,7 +620,7 @@ namespace {
                         message.push_back('s');
                     }
 
-                    throw std::runtime_error {
+                    throw resolution::Resolution_context::Error {
                         bu::textual_error({
                             .sections  = sections,
                             .source    = context.source,

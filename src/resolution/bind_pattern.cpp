@@ -15,7 +15,7 @@ namespace {
             std::string_view                const message,
             std::optional<std::string_view> const help = std::nullopt
         )
-            -> std::runtime_error
+            -> resolution::Resolution_context::Error
         {
             return context.error(
                 this_pattern.source_view,
@@ -70,7 +70,7 @@ namespace {
                     pattern.identifier
                 );
 
-                throw std::runtime_error {
+                throw resolution::Resolution_context::Error {
                     bu::textual_error({
                         .sections = sections,
                         .source   = context.source,

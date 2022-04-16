@@ -15,13 +15,13 @@ namespace tests {
     }
 
 
-    struct Failure : std::runtime_error {
+    struct Failure : bu::Exception {
         std::source_location thrower;
 
-        explicit Failure(std::string const&   message,
+        explicit Failure(std::string&&        message,
                          std::source_location thrower = std::source_location::current())
-            : runtime_error { message }
-            , thrower       { thrower }
+            : Exception { std::move(message) }
+            , thrower   { thrower }
         {
             dtl::tests_failed() = true;
         }

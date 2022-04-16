@@ -3,9 +3,7 @@
 
 
 auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
-    bu::unimplemented(); // MSVC ICE, fix later
-
-    /*std::vector<std::byte> buffer;
+    std::vector<std::byte> buffer;
 
     auto const write = [&](bu::trivial auto const... args) {
         bu::serialize_to(std::back_inserter(buffer), args...);
@@ -32,7 +30,7 @@ auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
         buffer.insert(buffer.end(), bytecode.bytes.begin(), bytecode.bytes.end());
     }
 
-    return buffer;*/
+    return buffer;
 }
 
 
@@ -55,14 +53,14 @@ namespace {
 
 auto vm::Virtual_machine::deserialize(Byte_span bytes) -> Virtual_machine {
     if (auto const extracted_version = extract<bu::Usize>(bytes); version != extracted_version) {
-        throw std::runtime_error(
+        throw bu::Exception {
             std::format(
                 "Attempted to deserialize a virtual machine with "
                 "version {}, but the current version is {}",
                 extracted_version,
                 version
             )
-        );
+        };
     }
 
     Virtual_machine machine {

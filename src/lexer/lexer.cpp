@@ -11,6 +11,8 @@ namespace {
     using lexer::Token;
 
     struct Lex_context {
+        using Error = bu::Exception;
+
         std::vector<Token> tokens;
         bu::Source*        source;
         char const*        start;
@@ -163,11 +165,11 @@ namespace {
             std::string_view                const message,
             std::optional<std::string_view> const help = std::nullopt
         )
-            const -> std::runtime_error
+            const -> Error
         {
             auto const [line, column] = get_location(view.data());
 
-            return std::runtime_error {
+            return Error {
                 bu::simple_textual_error({
                     .erroneous_view = bu::Source_view { view, line, column },
                     .source         = source,
@@ -182,7 +184,7 @@ namespace {
             std::string_view                const message,
             std::optional<std::string_view> const help = std::nullopt
         )
-            const -> std::runtime_error
+            const -> Error
         {
             return error({ location, location + 1 }, message, help);
         }

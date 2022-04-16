@@ -15,6 +15,8 @@ namespace parser {
 
 
     struct Parse_context {
+        using Error = bu::Exception;
+
         Token     * start;
         Token     * pointer;
         bu::Source* source;
@@ -69,9 +71,9 @@ namespace parser {
             std::string_view                const message,
             std::optional<std::string_view> const help = std::nullopt
         )
-            const -> std::runtime_error
+            const -> Error
         {
-            return std::runtime_error {
+            return Error {
                 bu::simple_textual_error({
                     .erroneous_view = source_view,
                     .source         = source,
@@ -86,7 +88,7 @@ namespace parser {
             std::string_view                const message,
             std::optional<std::string_view> const help = std::nullopt
         )
-            const -> std::runtime_error
+            const -> Error
         {
             return error(span.front().source_view + span.back().source_view, message, help);
         }
@@ -95,7 +97,7 @@ namespace parser {
             std::string_view                const message,
             std::optional<std::string_view> const help = std::nullopt
         )
-            const -> std::runtime_error
+            const -> Error
         {
             return error({ pointer, pointer + 1 }, message, help);
         }
@@ -105,7 +107,7 @@ namespace parser {
             std::string_view                const expectation,
             std::optional<std::string_view> const help = std::nullopt
         )
-            const -> std::runtime_error
+            const -> Error
         {
             return error(
                 span,
@@ -122,7 +124,7 @@ namespace parser {
             std::string_view                const expectation,
             std::optional<std::string_view> const help = std::nullopt
         )
-            const -> std::runtime_error
+            const -> Error
         {
             return expected({ pointer, pointer + 1 }, expectation, help);
         }

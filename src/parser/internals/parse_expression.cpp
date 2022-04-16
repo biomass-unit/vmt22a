@@ -339,26 +339,25 @@ namespace {
     constexpr Extractor extract_match = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
-        static constexpr auto parse_cases = braced<
-            parse_separated_one_or_more<
-                parse_match_case,
-                Token::Type::semicolon,
-                "a match case"
-            >,
-            "one or more match cases delimited by ';'"
-        >;
-
         auto expression = extract_expression(context);
 
-        if (auto cases = parse_cases(context)) {
-            return ast::expression::Match {
-                std::move(*cases),
-                std::move(expression)
-            };
+        context.consume_required(Token::Type::brace_open);
+
+        std::vector<ast::expression::Match::Case> cases;
+        while (auto match_case = parse_match_case(context)) {
+            cases.push_back(std::move(*match_case));
         }
-        else {
-            throw context.expected("a '{' followed by match cases");
+
+        if (cases.empty()) {
+            throw context.expected("one or more match cases");
         }
+
+        context.consume_required(Token::Type::brace_close);
+
+        return ast::expression::Match {
+            .cases      = std::move(cases),
+            .expression = std::move(expression)
+        };
     };
 
     constexpr Extractor extract_continue = +[](Parse_context&)

@@ -9,7 +9,7 @@ bu::Source::Source(std::string&& name)
         contents.assign(std::istreambuf_iterator<char> { file }, {});
     }
     else {
-        throw std::runtime_error { std::format("The file '{}' could not be opened", filename) };
+        throw Exception { std::format("The file '{}' could not be opened", filename) };
     }
 }
 

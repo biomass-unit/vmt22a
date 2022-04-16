@@ -179,6 +179,8 @@ namespace resolution {
 
 
     struct Resolution_context {
+        using Error = bu::Exception;
+
         Scope                                 scope;
         bu::Wrapper<Namespace>                current_namespace;
         bu::Wrapper<Namespace>                global_namespace;
@@ -224,7 +226,7 @@ namespace resolution {
         auto error(bu::Source_view                 source_view,
                    std::string_view                message,
                    std::optional<std::string_view> help = std::nullopt)
-            -> std::runtime_error;
+            -> Error;
 
     };
 

@@ -39,7 +39,7 @@ namespace {
         -> void
     {
         auto const error = [&](bu::Pair<std::string_view, bu::Source_view> description)
-            noexcept -> std::runtime_error
+            noexcept -> resolution::Resolution_context::Error
         {
             auto const sections = std::to_array({
                 bu::Highlighted_text_section {
@@ -62,7 +62,7 @@ namespace {
                 name
             );
 
-            return std::runtime_error {
+            return resolution::Resolution_context::Error {
                 bu::textual_error({
                     .sections = sections,
                     .source   = source,
@@ -258,7 +258,7 @@ namespace {
                         }
                     });
 
-                    throw std::runtime_error {
+                    throw resolution::Resolution_context::Error {
                         bu::textual_error({
                             .sections = sections,
                             .source   = context.source,

@@ -108,9 +108,9 @@ auto resolution::Resolution_context::error(
     std::string_view                const message,
     std::optional<std::string_view> const help
 )
-    -> std::runtime_error
+    -> Error
 {
-    return std::runtime_error {
+    return Error {
         bu::simple_textual_error({
             .erroneous_view = source_view,
             .source         = source,
@@ -307,7 +307,7 @@ auto resolution::Resolution_context::find_variable_or_function(
                         }
                     });
 
-                    throw std::runtime_error {
+                    throw Error {
                         bu::textual_error({
                             .sections = sections,
                             .source   = source,

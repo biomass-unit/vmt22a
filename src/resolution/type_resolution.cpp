@@ -10,7 +10,7 @@ namespace {
 
         [[nodiscard]]
         auto error(std::string_view const message, std::optional<std::string_view> const help)
-            -> std::runtime_error
+            -> resolution::Resolution_context::Error
         {
             return context.error(this_type.source_view, message, help);
         }

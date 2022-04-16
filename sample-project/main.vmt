@@ -1,16 +1,7 @@
 // import a.b as ab
 
 
-data Maybe = nothing | just(Int)
-
-
-alias Int' = Float
-
-
-
-impl Maybe {
-    fn just(): Int = 0
+fn main() {
+    let i = 0;
+    let j = &mut i;
 }
-
-
-fn main(): Int = { 0 }

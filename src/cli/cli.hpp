@@ -127,9 +127,9 @@ namespace cli {
     };
 
 
-    struct Unrecognized_option : std::runtime_error {
-        using runtime_error::runtime_error;
-        using runtime_error::operator=;
+    struct Unrecognized_option : bu::Exception {
+        using Exception::Exception;
+        using Exception::operator=;
     };
 
 

@@ -121,11 +121,11 @@ namespace {
             });
         }
 
-        auto error(std::string_view const message) const -> std::runtime_error {
-            return std::runtime_error { error_string(message) };
+        auto error(std::string_view const message) const -> bu::Exception {
+            return bu::Exception { error_string(message) };
         }
 
-        auto expected(std::string_view const expectation) const -> std::runtime_error {
+        auto expected(std::string_view const expectation) const -> bu::Exception {
             return error(std::format("Expected {}", expectation));
         }
     };
