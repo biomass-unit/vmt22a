@@ -2,6 +2,5 @@
 
 
 fn main() {
-    let i = 0;
-    let j = &mut i;
+    let (a, a) = (10, 20)
 }

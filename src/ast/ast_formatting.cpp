@@ -222,6 +222,9 @@ namespace {
         auto operator()(ast::expression::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);
         }
+        auto operator()(ast::expression::Conditional_let const& binding) {
+            return format("let {} = {}", binding.pattern, binding.initializer);
+        }
         auto operator()(ast::expression::Local_type_alias const& alias) {
             return format("alias {} = {}", alias.name, alias.type);
         }

@@ -31,7 +31,6 @@ namespace {
         }
 
 
-
         template <class T>
         auto operator()(ast::expression::Literal<T>& literal) -> ir::Expression {
             return {

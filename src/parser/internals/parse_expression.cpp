@@ -99,6 +99,25 @@ namespace {
     }
 
 
+    constexpr Extractor extract_condition = +[](Parse_context& context)
+        -> ast::Expression::Variant
+    {
+        if (context.try_consume(Token::Type::let)) {
+            auto pattern = extract_pattern(context);
+
+            context.consume_required(Token::Type::equals);
+
+            return ast::expression::Conditional_let {
+                .pattern     = std::move(pattern),
+                .initializer = extract_expression(context)
+            };
+        }
+        else {
+            return std::move(extract_expression(context).value);
+        }
+    };
+
+
     constexpr Extractor extract_identifier = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
@@ -204,34 +223,31 @@ namespace {
         static constexpr std::string_view help =
             "the branches of a conditional expression must be compound expressions";
 
-        if (auto condition = parse_expression(context)) {
-            if (auto true_branch = parse_compound_expression(context)) {
-                std::optional<bu::Wrapper<ast::Expression>> false_branch;
+        auto condition = extract_condition(context);
 
-                if (context.try_consume(Token::Type::else_)) {
-                    if (auto branch = parse_compound_expression(context)) {
-                        false_branch = std::move(*branch);
-                    }
-                    else {
-                        throw context.expected("the false branch", help);
-                    }
-                }
-                else if (context.try_consume(Token::Type::elif)) {
-                    false_branch = bu::wrap(extract_conditional(context));
-                }
+        if (auto true_branch = parse_compound_expression(context)) {
+            std::optional<bu::Wrapper<ast::Expression>> false_branch;
 
-                return ast::expression::Conditional {
-                    std::move(*condition),
-                    std::move(*true_branch),
-                    std::move(false_branch)
-                };
+            if (context.try_consume(Token::Type::else_)) {
+                if (auto branch = parse_compound_expression(context)) {
+                    false_branch = std::move(*branch);
+                }
+                else {
+                    throw context.expected("the false branch", help);
+                }
             }
-            else {
-                throw context.expected("the true branch", help);
+            else if (context.try_consume(Token::Type::elif)) {
+                false_branch = bu::wrap(extract_conditional(context));
             }
+
+            return ast::expression::Conditional {
+                std::move(condition),
+                std::move(*true_branch),
+                std::move(false_branch)
+            };
         }
         else {
-            throw context.expected("a condition");
+            throw context.expected("the true branch", help);
         }
     };
 
@@ -285,7 +301,7 @@ namespace {
     constexpr Extractor extract_while_loop = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
-        auto condition = extract_expression(context);
+        auto condition = extract_condition(context);
         return ast::expression::While_loop {
             std::move(condition),
             extract_loop_body(context)

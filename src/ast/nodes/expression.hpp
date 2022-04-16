@@ -106,6 +106,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Let_binding);
         };
 
+        struct Conditional_let {
+            bu::Wrapper<Pattern>    pattern;
+            bu::Wrapper<Expression> initializer;
+            DEFAULTED_EQUALITY(Conditional_let);
+        };
+
         struct Local_type_alias {
             lexer::Identifier name;
             bu::Wrapper<Type> type;
@@ -185,6 +191,7 @@ namespace ast {
             expression::Match,
             expression::Type_cast,
             expression::Let_binding,
+            expression::Conditional_let,
             expression::Local_type_alias,
             expression::Infinite_loop,
             expression::While_loop,
