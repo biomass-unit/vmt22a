@@ -365,8 +365,31 @@ auto run_parser_tests() -> void {
         );
     };
 
-    "data_constructor_pattern"_test_should_throw = [] {
+    "data_constructor_pattern"_failing_test = [] {
         assert_patt_eq("Maybe::Just", ast::pattern::Tuple { /* doesn't matter */ });
+    };
+
+    "as_pattern"_test = [] {
+        assert_patt_eq(
+            "(_, _) as mut x",
+            ast::pattern::As {
+                .name = ast::pattern::Name {
+                    .identifier = "x"_id,
+                    .mutability {
+                        .type        = ast::Mutability::Type::mut,
+                        .source_view = empty_view()
+                    }
+                },
+                .pattern = mk_patt(
+                    ast::pattern::Tuple {
+                        .patterns {
+                            mk_patt(ast::pattern::Wildcard {}),
+                            mk_patt(ast::pattern::Wildcard {})
+                        }
+                    }
+                )
+            }
+        );
     };
 
 }

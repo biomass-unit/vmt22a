@@ -6,31 +6,17 @@
 
 namespace tests {
 
-    namespace dtl {
-        auto red_text(auto const& x) -> std::string {
-            return std::format("{}{}{}", bu::Color::red, x, bu::Color::white);
-        }
-
-        auto tests_failed() noexcept -> bool&;
-    }
-
-
     struct Failure : bu::Exception {
         std::source_location thrower;
 
-        explicit Failure(std::string&&        message,
-                         std::source_location thrower = std::source_location::current())
-            : Exception { std::move(message) }
-            , thrower   { thrower }
-        {
-            dtl::tests_failed() = true;
-        }
+        explicit Failure(std::string&& message,
+                         std::source_location = std::source_location::current());
     };
     
 
     struct Test {
         std::string_view name;
-        bool             should_throw;
+        bool             should_fail;
 
         struct Invoke {
             std::function<void()> callable;
@@ -43,60 +29,24 @@ namespace tests {
                 , caller { caller } {}
         };
 
-        auto operator=(Invoke&& test) -> void {
-            try {
-                test.callable();
-            }
-            catch (Failure const& failure) {
-                if (!should_throw) {
-                    bu::print(
-                        "{} Test case failed in [{}.{}], on line {}: {}\n",
-                        dtl::red_text("NOTE:"),
-                        test.caller.function_name(),
-                        name,
-                        failure.thrower.line(),
-                        failure.what()
-                    );
-                }
-                return;
-            }
-            catch (...) {
-                if (!should_throw) {
-                    bu::print(
-                        "{} Exception thrown during test [{}.{}]\n",
-                        dtl::red_text("NOTE:"),
-                        test.caller.function_name(),
-                        name
-                    );
-                    throw;
-                }
-                return;
-            }
-
-            if (should_throw) {
-                bu::print(
-                    "{} Test [{}.{}] should have failed, but didn't\n",
-                    dtl::red_text("NOTE:"),
-                    test.caller.function_name(),
-                    name
-                );
-                dtl::tests_failed() = true;
-            }
-        }
+        auto operator=(Invoke&&) -> void;
     };
 
 
     auto assert_eq(auto const& a,
                    auto const& b,
                    std::source_location caller = std::source_location::current())
-        -> void
     {
         if (a != b) {
             throw Failure {
                 std::format(
-                    "{} != {}",
-                    dtl::red_text(a),
-                    dtl::red_text(b)
+                    "{}{}{} != {}{}{}",
+                    bu::Color::red,
+                    a,
+                    bu::Color::white,
+                    bu::Color::red,
+                    b,
+                    bu::Color::white
                 ),
                 caller
             };
@@ -105,11 +55,11 @@ namespace tests {
 
 
     inline auto operator"" _test(char const* const s, bu::Usize const n) noexcept -> Test {
-        return { .name { s, n }, .should_throw = false };
+        return { .name { s, n }, .should_fail = false };
     }
 
-    inline auto operator"" _test_should_throw(char const* const s, bu::Usize const n) noexcept -> Test {
-        return { .name { s, n }, .should_throw = true };
+    inline auto operator"" _failing_test(char const* const s, bu::Usize const n) noexcept -> Test {
+        return { .name { s, n }, .should_fail = true };
     }
 
 }
