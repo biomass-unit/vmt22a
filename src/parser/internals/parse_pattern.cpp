@@ -131,10 +131,10 @@ namespace {
     constexpr Extractor extract_constructor_shorthand = +[](Parse_context& context)
         -> ast::Pattern::Variant
     {
-        auto identifier = extract_lower_id(context, "a data constructor name");
+        auto name = extract_lower_name(context, "a data constructor name");
         return ast::pattern::Constructor_shorthand {
-            .identifier = std::move(identifier),
-            .pattern    = parse_constructor_pattern(context)
+            .name    = std::move(name),
+            .pattern = parse_constructor_pattern(context)
         };
     };
 
@@ -175,6 +175,21 @@ auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern
     auto pattern = parse_normal_pattern(context);
 
     if (pattern) {
+        if (context.try_consume(Token::Type::as)) {
+            auto mutability = extract_mutability(context);
+            auto alias      = extract_lower_id(context, "a pattern alias");
+            *pattern = ast::Pattern {
+                .value = ast::pattern::As {
+                    .name {
+                        .identifier = std::move(alias),
+                        .mutability = std::move(mutability)
+                    },
+                    .pattern = std::move(*pattern)
+                },
+                .source_view = pattern->source_view + context.pointer[-1].source_view
+            };
+        }
+
         if (context.try_consume(Token::Type::if_)) {
             if (auto guard = parse_expression(context)) {
                 *pattern = ast::Pattern {

@@ -22,7 +22,7 @@ namespace ast {
         };
 
         struct Constructor_shorthand {
-            lexer::Identifier                   identifier;
+            ::ast::Name                         name;
             std::optional<bu::Wrapper<Pattern>> pattern;
             DEFAULTED_EQUALITY(Constructor_shorthand);
         };
@@ -30,6 +30,12 @@ namespace ast {
         struct Tuple {
             std::vector<Pattern> patterns;
             DEFAULTED_EQUALITY(Tuple);
+        };
+
+        struct As {
+            Name                 name;
+            bu::Wrapper<Pattern> pattern;
+            DEFAULTED_EQUALITY(As);
         };
 
         struct Guarded {
@@ -56,6 +62,7 @@ namespace ast {
             pattern::Constructor,
             pattern::Constructor_shorthand,
             pattern::Tuple,
+            pattern::As,
             pattern::Guarded
         >;
 

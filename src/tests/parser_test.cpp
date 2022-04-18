@@ -24,17 +24,54 @@ namespace {
     }
 
 
-    auto assert_expr_eq(std::string_view text, auto&& expr, std::source_location caller = std::source_location::current()) -> void {
+    template <auto extract, class Node = std::invoke_result_t<decltype(extract), parser::Parse_context&>>
+    auto assert_node_eq(std::string_view     const text,
+                        typename Node::Variant&&   value,
+                        std::source_location const caller = std::source_location::current())
+    {
         tests::assert_eq(
             [&] {
                 auto ts = lexer::lex(bu::Source { bu::Source::Mock_tag {}, std::string(text) });
                 parser::Parse_context context { ts };
-                return parser::extract_expression(context);
+                auto value = extract(context);
+
+                if (!context.is_finished()) {
+                    throw tests::Failure {
+                        std::format(
+                            "Remaining input: '{}'",
+                            context.pointer->source_view.string.data()
+                        )
+                    };
+                }
+
+                return value;
             }(),
-            mk_expr(std::forward<decltype(expr)>(expr)),
+            Node { .value = std::move(value), .source_view = empty_view() },
             caller
         );
     };
+
+    auto assert_expr_eq(std::string_view     const text,
+                        ast::Expression::Variant&& value,
+                        std::source_location const caller = std::source_location::current())
+    {
+        assert_node_eq<parser::extract_expression>(text, std::move(value), caller);
+    }
+
+    auto assert_patt_eq(std::string_view     const text,
+                        ast::Pattern::Variant&&    value,
+                        std::source_location const caller = std::source_location::current())
+    {
+        assert_node_eq<parser::extract_pattern>(text, std::move(value), caller);
+    }
+
+    auto assert_type_eq(std::string_view     const text,
+                        ast::Type::Variant&&       value,
+                        std::source_location const caller = std::source_location::current())
+    {
+        assert_node_eq<parser::extract_type>(text, std::move(value), caller);
+    }
+
 
     auto unqualified(std::string_view const name) {
         return ast::Qualified_name {
@@ -246,6 +283,90 @@ auto run_parser_tests() -> void {
                 .type        = std::move(type), // Writing the type inline caused a MSVC ICE
             }
         );
+    };
+
+
+
+    "tuple_type"_test = [] {
+        assert_type_eq("()", ast::type::Tuple {});
+        assert_type_eq("(())", ast::type::Tuple {});
+        assert_type_eq(
+            "(type_of(5), T)",
+            ast::type::Tuple {
+                .types {
+                    mk_type(
+                        ast::type::Type_of {
+                            mk_expr(ast::expression::Literal<bu::Isize> { 5 })
+                        }
+                    ),
+                    mk_type(ast::type::Typename { unqualified("T") })
+                }
+            }
+        );
+    };
+
+
+
+    "tuple_pattern"_test = [] {
+        assert_patt_eq("()", ast::pattern::Tuple {});
+        assert_patt_eq("(())", ast::pattern::Tuple {});
+        assert_patt_eq(
+            "(x, _)",
+            ast::pattern::Tuple {
+                .patterns {
+                    mk_patt(
+                        ast::pattern::Name {
+                            .identifier = "x"_id,
+                            .mutability {
+                                .type        = ast::Mutability::Type::immut,
+                                .source_view = empty_view()
+                            }
+                        }
+                    ),
+                    mk_patt(ast::pattern::Wildcard {})
+                }
+            }
+        );
+    };
+
+    "data_constructor_pattern"_test = [] {
+        std::vector<ast::Qualifier> qualifiers {
+            ast::Qualifier {
+                .name {
+                    .identifier  = "Maybe"_id,
+                    .is_upper    = true,
+                    .source_view = empty_view()
+                },
+                .source_view = empty_view()
+            }
+        };
+
+        assert_patt_eq(
+            "Maybe::just(x)",
+            ast::pattern::Constructor {
+                .name = ast::Qualified_name {
+                    .middle_qualifiers = std::move(qualifiers),
+                    .primary_name {
+                        .identifier  = "just"_id,
+                        .is_upper    = false,
+                        .source_view = empty_view()
+                    }
+                },
+                .pattern = mk_patt(
+                    ast::pattern::Name {
+                        .identifier = "x"_id,
+                        .mutability {
+                            .type        = ast::Mutability::Type::immut,
+                            .source_view = empty_view()
+                        }
+                    }
+                )
+            }
+        );
+    };
+
+    "data_constructor_pattern"_test_should_throw = [] {
+        assert_patt_eq("Maybe::Just", ast::pattern::Tuple { /* doesn't matter */ });
     };
 
 }

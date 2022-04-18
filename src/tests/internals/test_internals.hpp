@@ -30,37 +30,58 @@ namespace tests {
 
     struct Test {
         std::string_view name;
+        bool             should_throw;
 
         struct Invoke {
             std::function<void()> callable;
             std::source_location  caller;
 
-            Invoke(auto&& callable, std::source_location caller = std::source_location::current())
+            Invoke(auto&&               callable,
+                   std::source_location caller = std::source_location::current()
+            )
                 : callable { std::forward<decltype(callable)>(callable) }
                 , caller { caller } {}
         };
 
-        auto operator=(Invoke&& test) -> void try {
-            test.callable();
-        }
-        catch (Failure const& failure) {
-            bu::print(
-                "{} Test case failed in [{}.{}], on line {}: {}\n",
-                dtl::red_text("NOTE:"),
-                test.caller.function_name(),
-                name,
-                failure.thrower.line(),
-                failure.what()
-            );
-        }
-        catch (...) {
-            bu::print(
-                "{} Exception thrown during test [{}.{}]\n",
-                dtl::red_text("NOTE:"),
-                test.caller.function_name(),
-                name
-            );
-            throw;
+        auto operator=(Invoke&& test) -> void {
+            try {
+                test.callable();
+            }
+            catch (Failure const& failure) {
+                if (!should_throw) {
+                    bu::print(
+                        "{} Test case failed in [{}.{}], on line {}: {}\n",
+                        dtl::red_text("NOTE:"),
+                        test.caller.function_name(),
+                        name,
+                        failure.thrower.line(),
+                        failure.what()
+                    );
+                }
+                return;
+            }
+            catch (...) {
+                if (!should_throw) {
+                    bu::print(
+                        "{} Exception thrown during test [{}.{}]\n",
+                        dtl::red_text("NOTE:"),
+                        test.caller.function_name(),
+                        name
+                    );
+                    throw;
+                }
+                return;
+            }
+
+            if (should_throw) {
+                bu::print(
+                    "{} Test [{}.{}] should have failed, but didn't\n",
+                    dtl::red_text("NOTE:"),
+                    test.caller.function_name(),
+                    name
+                );
+                dtl::tests_failed() = true;
+            }
         }
     };
 
@@ -84,7 +105,11 @@ namespace tests {
 
 
     inline auto operator"" _test(char const* const s, bu::Usize const n) noexcept -> Test {
-        return { .name { s, n } };
+        return { .name { s, n }, .should_throw = false };
+    }
+
+    inline auto operator"" _test_should_throw(char const* const s, bu::Usize const n) noexcept -> Test {
+        return { .name { s, n }, .should_throw = true };
     }
 
 }

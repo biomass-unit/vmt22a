@@ -146,10 +146,10 @@ namespace {
         auto operator()(ast::expression::Literal<T> const& literal) {
             return format("{}", literal.value);
         }
-        auto operator()(ast::expression::Literal<char> const literal) {
+        auto operator()(ast::expression::Literal<char> const& literal) {
             return format("'{}'", literal.value);
         }
-        auto operator()(ast::expression::Literal<lexer::String> const literal) {
+        auto operator()(ast::expression::Literal<lexer::String> const& literal) {
             return format("\"{}\"", literal.value);
         }
         auto operator()(ast::expression::Array_literal const& literal) {
@@ -273,10 +273,13 @@ namespace {
             return format(ctor.pattern ? "ctor {}({})" : "ctor {}", ctor.name, ctor.pattern);
         }
         auto operator()(ast::pattern::Constructor_shorthand const& ctor) {
-            return format(ctor.pattern ? ":{}({})" : ":{}", ctor.identifier, ctor.pattern);
+            return format(ctor.pattern ? ":{}({})" : ":{}", ctor.name, ctor.pattern);
         }
         auto operator()(ast::pattern::Tuple const& tuple) {
             return format("({})", tuple.patterns);
+        }
+        auto operator()(ast::pattern::As const& as) {
+            return format("{} as {}{}", as.pattern, as.name.mutability, as.name.identifier);
         }
         auto operator()(ast::pattern::Guarded const& guarded) {
             return format("{} if {}", guarded.pattern, guarded.guard);
