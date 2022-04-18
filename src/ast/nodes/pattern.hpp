@@ -15,6 +15,18 @@ namespace ast {
             DEFAULTED_EQUALITY(Name);
         };
 
+        struct Constructor {
+            Qualified_name                      name;
+            std::optional<bu::Wrapper<Pattern>> pattern;
+            DEFAULTED_EQUALITY(Constructor);
+        };
+
+        struct Constructor_shorthand {
+            lexer::Identifier                   identifier;
+            std::optional<bu::Wrapper<Pattern>> pattern;
+            DEFAULTED_EQUALITY(Constructor_shorthand);
+        };
+
         struct Tuple {
             std::vector<Pattern> patterns;
             DEFAULTED_EQUALITY(Tuple);
@@ -41,6 +53,8 @@ namespace ast {
             pattern::Literal<bool>,
             pattern::Literal<lexer::String>,
             pattern::Name,
+            pattern::Constructor,
+            pattern::Constructor_shorthand,
             pattern::Tuple,
             pattern::Guarded
         >;

@@ -269,6 +269,12 @@ namespace {
         auto operator()(ast::pattern::Name const& name) {
             return format("{}{}", name.mutability, name.identifier);
         }
+        auto operator()(ast::pattern::Constructor const& ctor) {
+            return format(ctor.pattern ? "ctor {}({})" : "ctor {}", ctor.name, ctor.pattern);
+        }
+        auto operator()(ast::pattern::Constructor_shorthand const& ctor) {
+            return format(ctor.pattern ? ":{}({})" : ":{}", ctor.identifier, ctor.pattern);
+        }
         auto operator()(ast::pattern::Tuple const& tuple) {
             return format("({})", tuple.patterns);
         }

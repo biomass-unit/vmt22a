@@ -25,8 +25,60 @@ namespace {
     {
         auto patterns = extract_comma_separated_zero_or_more<parse_pattern, "a pattern">(context);
         context.consume_required(Token::Type::paren_close);
-        return ast::pattern::Tuple { std::move(patterns) };
+
+        if (patterns.size() == 1) {
+            return std::move(patterns.front().value);
+        }
+        else {
+            return ast::pattern::Tuple { std::move(patterns) };
+        }
     };
+
+
+    auto parse_constructor_pattern(Parse_context& context)
+        -> std::optional<bu::Wrapper<ast::Pattern>>
+    {
+        if (context.try_consume(Token::Type::paren_open)) {
+            return extract_tuple(context);
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+    auto parse_constructor_name(Parse_context& context)
+        -> std::optional<ast::Qualified_name>
+    {
+        auto* const anchor = context.pointer;
+
+        auto name = [&]() -> std::optional<ast::Qualified_name> {
+            switch (context.pointer->type) {
+            case Token::Type::lower_name:
+            case Token::Type::upper_name:
+                return extract_qualified({}, context);
+            case Token::Type::double_colon:
+                ++context.pointer;
+                return extract_qualified({ ast::Root_qualifier::Global {} }, context);
+            default:
+                if (auto type = parse_type(context)) {
+                    return extract_qualified({ std::move(*type) }, context);
+                }
+                else {
+                    return std::nullopt;
+                }
+            }
+        }();
+
+        if (name && name->primary_name.is_upper) {
+            throw context.error(
+                { anchor, context.pointer },
+                "Expected a data constructor name, but found a capitalized identifier"
+            );
+        }
+
+        return name;
+    }
+
 
     constexpr Extractor extract_name = +[](Parse_context& context)
         -> ast::Pattern::Variant
@@ -34,9 +86,55 @@ namespace {
         context.retreat();
         auto mutability = extract_mutability(context);
 
+        std::optional<lexer::Identifier> identifier;
+
+        if (mutability.type == ast::Mutability::Type::immut) { // Mutability wasn't specified
+            if (auto name = parse_constructor_name(context)) {
+                if (!name->is_unqualified()) {
+                    return ast::pattern::Constructor {
+                        .name    = std::move(*name),
+                        .pattern = parse_constructor_pattern(context)
+                    };
+                }
+                else {
+                    identifier = name->primary_name.identifier;
+                }
+            }
+        }
+
+        if (!identifier) {
+            identifier = extract_lower_id(context, "a lowercase identifier");
+        }
+
         return ast::pattern::Name {
-            .identifier = extract_lower_id(context, "a lowercase identifier"),
+            .identifier = std::move(*identifier),
             .mutability = std::move(mutability)
+        };
+    };
+
+    constexpr Extractor extract_qualified_constructor = +[](Parse_context& context)
+        -> ast::Pattern::Variant
+    {
+        context.retreat();
+
+        if (auto name = parse_constructor_name(context)) {
+            return ast::pattern::Constructor {
+                .name    = std::move(*name),
+                .pattern = parse_constructor_pattern(context)
+            };
+        }
+        else {
+            bu::unimplemented(); // Unreachable?
+        }
+    };
+
+    constexpr Extractor extract_constructor_shorthand = +[](Parse_context& context)
+        -> ast::Pattern::Variant
+    {
+        auto identifier = extract_lower_id(context, "a data constructor name");
+        return ast::pattern::Constructor_shorthand {
+            .identifier = std::move(identifier),
+            .pattern    = parse_constructor_pattern(context)
         };
     };
 
@@ -60,6 +158,10 @@ namespace {
         case Token::Type::lower_name:
         case Token::Type::mut:
             return extract_name(context);
+        case Token::Type::upper_name:
+            return extract_qualified_constructor(context);
+        case Token::Type::colon:
+            return extract_constructor_shorthand(context);
         default:
             context.retreat();
             return std::nullopt;

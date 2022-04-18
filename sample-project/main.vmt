@@ -1,6 +1,4 @@
 // import a.b as ab
 
 
-fn main() {
-    let (a, a) = (10, 20)
-}
+fn main() = 0
