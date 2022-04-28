@@ -6,4 +6,4 @@
 // fn id(x) = x
 
 
-fn main(): Int = f("hello")
+fn main(): Int = size_of([Int])

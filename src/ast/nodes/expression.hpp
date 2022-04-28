@@ -16,11 +16,6 @@ namespace ast {
             DEFAULTED_EQUALITY(Array_literal);
         };
 
-        struct List_literal {
-            std::vector<Expression> elements;
-            DEFAULTED_EQUALITY(List_literal);
-        };
-
         struct Variable {
             Qualified_name name;
             DEFAULTED_EQUALITY(Variable);
@@ -177,7 +172,6 @@ namespace ast {
             expression::Literal<bool>,
             expression::Literal<lexer::String>,
             expression::Array_literal,
-            expression::List_literal,
             expression::Variable,
             expression::Template_instantiation,
             expression::Tuple,

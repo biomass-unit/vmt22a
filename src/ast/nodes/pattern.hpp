@@ -32,6 +32,11 @@ namespace ast {
             DEFAULTED_EQUALITY(Tuple);
         };
 
+        struct Slice {
+            std::vector<Pattern> patterns;
+            DEFAULTED_EQUALITY(Slice);
+        };
+
         struct As {
             Name                 name;
             bu::Wrapper<Pattern> pattern;
@@ -62,6 +67,7 @@ namespace ast {
             pattern::Constructor,
             pattern::Constructor_shorthand,
             pattern::Tuple,
+            pattern::Slice,
             pattern::As,
             pattern::Guarded
         >;

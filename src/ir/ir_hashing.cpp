@@ -104,7 +104,7 @@ namespace {
             return hash(array.element_type, array.length);
         }
 
-        auto operator()(ir::type::List const& list) -> bu::Usize {
+        auto operator()(ir::type::Slice const& list) -> bu::Usize {
             return operator()(
                 ir::type::Array {
                     .element_type = list.element_type,

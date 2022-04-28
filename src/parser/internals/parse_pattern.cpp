@@ -34,6 +34,25 @@ namespace {
         }
     };
 
+    constexpr Extractor extract_slice = +[](Parse_context& context)
+        -> ast::Pattern::Variant
+    {
+        static constexpr auto extract_elements =
+            extract_comma_separated_zero_or_more<parse_pattern, "an element pattern">;
+
+        auto patterns = extract_elements(context);
+
+        if (context.try_consume(Token::Type::bracket_close)) {
+            return ast::pattern::Slice { std::move(patterns) };
+        }
+        else if (patterns.empty()) {
+            throw context.expected("a slice element pattern or a ']'");
+        }
+        else {
+            throw context.expected("a ',' or a ']'");
+        }
+    };
+
 
     auto parse_constructor_pattern(Parse_context& context)
         -> std::optional<bu::Wrapper<ast::Pattern>>
@@ -155,6 +174,8 @@ namespace {
             return extract_literal<lexer::String>(context);
         case Token::Type::paren_open:
             return extract_tuple(context);
+        case Token::Type::bracket_open:
+            return extract_slice(context);
         case Token::Type::lower_name:
         case Token::Type::mut:
             return extract_name(context);

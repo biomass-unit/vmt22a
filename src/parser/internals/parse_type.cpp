@@ -66,7 +66,7 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_array_or_list = +[](Parse_context& context)
+    constexpr Extractor extract_array_or_slice = +[](Parse_context& context)
         -> ast::Type::Variant
     {
         auto element_type = extract_type(context);
@@ -75,16 +75,16 @@ namespace {
             if (context.try_consume(Token::Type::semicolon)) {
                 if (auto length = parse_expression(context)) {
                     return ast::type::Array {
-                        std::move(element_type),
-                        std::move(*length)
+                        .element_type = std::move(element_type),
+                        .length       = std::move(*length)
                     };
                 }
                 else {
-                    throw context.expected("the array length");
+                    throw context.expected("the array length", "Remove the ';' if a slice type was intended");
                 }
             }
             else {
-                return ast::type::List { std::move(element_type) };
+                return ast::type::Slice { std::move(element_type) };
             }
         }();
 
@@ -165,7 +165,7 @@ namespace {
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::bracket_open:
-            return extract_array_or_list(context);
+            return extract_array_or_slice(context);
         case Token::Type::fn:
             return extract_function(context);
         case Token::Type::type_of:

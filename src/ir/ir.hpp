@@ -111,9 +111,9 @@ namespace ir {
             DEFAULTED_EQUALITY(Array);
         };
 
-        struct List {
+        struct Slice {
             bu::Wrapper<Type> element_type;
-            DEFAULTED_EQUALITY(List);
+            DEFAULTED_EQUALITY(Slice);
         };
 
         struct Pointer {
@@ -155,7 +155,7 @@ namespace ir {
             type::Tuple,
             type::Function,
             type::Array,
-            type::List,
+            type::Slice,
             type::Reference,
             type::Pointer,
             type::User_defined_data,

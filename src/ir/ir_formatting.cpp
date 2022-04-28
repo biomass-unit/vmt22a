@@ -21,14 +21,7 @@ namespace {
         }
 
         auto operator()(ir::expression::Array_literal const& array) {
-            switch (array.elements.size()) {
-            case 0:
-                return format("[;]");
-            case 1:
-                return format("[{};]", array.elements.front());
-            default:
-                return format("[{}]", bu::fmt::delimited_range(array.elements, "; "));
-            }
+            return std::format_to(out, "[{}]", array.elements);
         }
 
         auto operator()(ir::expression::Tuple const& tuple) {
@@ -111,8 +104,8 @@ namespace {
             return format("[{}; {}]", array.element_type, array.length);
         }
 
-        auto operator()(ir::type::List const& list) {
-            return format("[{}]", list.element_type);
+        auto operator()(ir::type::Slice const& slice) {
+            return format("[{}]", slice.element_type);
         }
 
         auto operator()(ir::type::Reference const& reference) {

@@ -144,76 +144,22 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_list_or_array = +[](Parse_context& context)
+    constexpr Extractor extract_array = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
-        // []     -> empty list
-        // [;]    -> empty array
-        // [1]    -> one-element list
-        // [1;]   -> one-element array
-        // [1, 2] -> two-element list
-        // [1; 2] -> two-element array
+        static constexpr auto extract_elements =
+            extract_comma_separated_zero_or_more<parse_expression, "an array element">;
 
-        if (auto head = parse_expression(context)) {
-            Token::Type delimiter;
+        auto elements = extract_elements(context);
 
-            switch (auto& token = context.extract(); token.type) {
-            case Token::Type::semicolon:
-            case Token::Type::comma:
-                delimiter = token.type;
-                break;
-            case Token::Type::bracket_close:
-                return ast::expression::List_literal { { std::move(*head) } };
-            default:
-                context.retreat();
-                throw context.expected("a ',', a ';', or a closing ']'");
-            }
-
-            auto elements = bu::vector_with_capacity<ast::Expression>(8);
-            elements.push_back(std::move(*head));
-
-            context.retreat();
-            while (context.try_consume(delimiter)) {
-                if (auto element = parse_expression(context)) {
-                    elements.push_back(std::move(*element));
-                }
-                else if (delimiter == Token::Type::semicolon && elements.size() == 1) {
-                    return context.try_consume(Token::Type::bracket_close)
-                        ? ast::expression::Array_literal { std::move(elements) }
-                        : throw context.expected("an expression or a closing ']'");
-                }
-                else {
-                    throw context.expected("an expression");
-                }
-            }
-
-            if (context.try_consume(Token::Type::bracket_close)) {
-                if (delimiter == Token::Type::semicolon) {
-                    return ast::expression::Array_literal { std::move(elements) };
-                }
-                else {
-                    return ast::expression::List_literal { std::move(elements) };
-                }
-            }
-            else {
-                throw context.expected(std::format("a '{}' or a closing ']'", delimiter));
-            }
+        if (context.try_consume(Token::Type::bracket_close)) {
+            return ast::expression::Array_literal { std::move(elements) };
+        }
+        else if (elements.empty()) {
+            throw context.expected("an array element or a ']'");
         }
         else {
-            bool const is_array = context.try_consume(Token::Type::semicolon);
-            if (!context.try_consume(Token::Type::bracket_close)) {
-                throw context.expected(
-                    is_array
-                        ? "a closing ']'"
-                        : "an expression, a ';', or a closing ']'"
-                );
-            }
-            if (is_array) {
-                return ast::expression::Array_literal {};
-            }
-            else {
-                return ast::expression::List_literal {};
-            }
+            throw context.expected("a ',' or a ']'");
         }
     };
 
@@ -471,7 +417,7 @@ namespace {
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::bracket_open:
-            return extract_list_or_array(context);
+            return extract_array(context);
         case Token::Type::if_:
             return extract_conditional(context);
         case Token::Type::let:

@@ -32,9 +32,9 @@ namespace ast {
             DEFAULTED_EQUALITY(Array);
         };
 
-        struct List {
+        struct Slice {
             bu::Wrapper<Type> element_type;
-            DEFAULTED_EQUALITY(List);
+            DEFAULTED_EQUALITY(Slice);
         };
 
         struct Function {
@@ -79,7 +79,7 @@ namespace ast {
             type::Typename,
             type::Tuple,
             type::Array,
-            type::List,
+            type::Slice,
             type::Function,
             type::Type_of,
             type::Reference,

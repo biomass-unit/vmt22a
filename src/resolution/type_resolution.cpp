@@ -73,16 +73,27 @@ namespace {
                     .element_type = context.resolve_type(array.element_type),
                     .length       = static_cast<bu::Usize>(length->value)
                 };
+
                 auto const size = type.element_type->size.copy().safe_mul(type.length);
+                bool const is_trivial = type.element_type->is_trivial;
 
                 return ir::Type {
-                    .value = std::move(type),
-                    .size  = size
+                    .value      = std::move(type),
+                    .size       = size,
+                    .is_trivial = is_trivial
                 };
             }
             else {
                 bu::abort("non-literal array lengths are not supported yet");
             }
+        }
+
+        auto operator()(ast::type::Slice& slice) -> bu::Wrapper<ir::Type> {
+            return ir::Type {
+                .value      = ir::type::Slice { context.resolve_type(slice.element_type) },
+                .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) + sizeof(bu::Usize) },
+                .is_trivial = true
+            };
         }
 
         auto resolve_pointer(auto& pointer) -> ir::type::Pointer {

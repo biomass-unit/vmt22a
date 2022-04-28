@@ -160,20 +160,6 @@ namespace {
             return format("\"{}\"", literal.value);
         }
         auto operator()(ast::expression::Array_literal const& literal) {
-            switch (literal.elements.size()) {
-            case 0:
-                return format("[;]");
-            case 1:
-                return format("[{};]", literal.elements.front());
-            default:
-                format("[{}", literal.elements.front());
-                for (auto& element : literal.elements | std::views::drop(1)) {
-                    format("; {}", element);
-                }
-                return format("]");
-            }
-        }
-        auto operator()(ast::expression::List_literal const& literal) {
             return format("[{}]", literal.elements);
         }
         auto operator()(ast::expression::Variable const& variable) {
@@ -285,6 +271,9 @@ namespace {
         auto operator()(ast::pattern::Tuple const& tuple) {
             return format("({})", tuple.patterns);
         }
+        auto operator()(ast::pattern::Slice const& slice) {
+            return format("[{}]", slice.patterns);
+        }
         auto operator()(ast::pattern::As const& as) {
             return format("{} as {}{}", as.pattern, as.name.mutability, as.name.identifier);
         }
@@ -310,8 +299,8 @@ namespace {
         auto operator()(ast::type::Array const& array) {
             return format("[{}; {}]", array.element_type, array.length);
         }
-        auto operator()(ast::type::List const& list) {
-            return format("[{}]", list.element_type);
+        auto operator()(ast::type::Slice const& slice) {
+            return format("[{}]", slice.element_type);
         }
         auto operator()(ast::type::Function const& function) {
             return format("fn({}): {}", function.argument_types, function.return_type);
