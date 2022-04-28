@@ -8,6 +8,7 @@ namespace ast {
 
     struct Template_argument {
         std::variant<Type, Expression, Mutability> value;
+        std::optional<Name>                        name;
         DEFAULTED_EQUALITY(Template_argument);
     };
 
@@ -22,18 +23,18 @@ namespace ast {
     struct Template_parameter {
         struct Type_parameter {
             std::vector<Class_reference> classes;
-            lexer::Identifier            name;
             DEFAULTED_EQUALITY(Type_parameter);
         };
         struct Value_parameter {
-            lexer::Identifier name;
-            bu::Wrapper<Type> type;
+            std::optional<bu::Wrapper<Type>> type;
             DEFAULTED_EQUALITY(Value_parameter);
         };
         struct Mutability_parameter {
-            lexer::Identifier name;
             DEFAULTED_EQUALITY(Mutability_parameter);
         };
+
+        Name name;
+
         std::variant<
             Type_parameter,
             Value_parameter,
@@ -64,7 +65,7 @@ namespace ast {
         struct Function {
             struct Parameter {
                 bu::Wrapper<Pattern>                   pattern;
-                bu::Wrapper<Type>                      type;
+                std::optional<bu::Wrapper<Type>>       type;
                 std::optional<bu::Wrapper<Expression>> default_value;
                 DEFAULTED_EQUALITY(Parameter);
             };

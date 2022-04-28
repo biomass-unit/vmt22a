@@ -12,15 +12,14 @@ namespace bu {
 
     template <class /* tag */>
     class [[nodiscard]] Pooled_string {
-    public:
-        friend struct std::hash<Pooled_string>;
-    private:
         Usize index;
 
         inline static auto vector =
             vector_with_capacity<Pair<std::string, bu::Usize>>(256);
 
-        explicit Pooled_string(auto&& string, auto f, Pooled_string_strategy const strategy) noexcept {
+        explicit Pooled_string(auto&& string, auto f, Pooled_string_strategy const strategy)
+            noexcept(bu::compiling_in_release_mode)
+        {
             Usize const hash = std::hash<std::string_view>{}(string);
 
             if (strategy == Pooled_string_strategy::potential_new_string) {
@@ -28,6 +27,12 @@ namespace bu {
                 if (it != vector.end()) {
                     index = unsigned_distance(vector.begin(), it);
                     return;
+                }
+            }
+            else if constexpr (bu::compiling_in_debug_mode) {
+                auto const it = std::ranges::find(vector, hash, bu::second);
+                if (it != vector.end()) {
+                    bu::abort(std::format("A string with the value '{}' already exists", it->first));
                 }
             }
 
@@ -38,13 +43,13 @@ namespace bu {
         explicit Pooled_string(
             std::string&&                string,
             Pooled_string_strategy const strategy = Pooled_string_strategy::potential_new_string
-        ) noexcept
+        ) noexcept(bu::compiling_in_release_mode)
             : Pooled_string(std::move(string), bu::move, strategy) {}
 
         explicit Pooled_string(
             std::string_view       const string,
             Pooled_string_strategy const strategy = Pooled_string_strategy::potential_new_string
-        ) noexcept
+        ) noexcept(bu::compiling_in_release_mode)
             : Pooled_string(string, bu::make<std::string>, strategy) {}
 
         [[nodiscard]]

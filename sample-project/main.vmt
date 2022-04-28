@@ -1,4 +1,9 @@
 // import a.b as ab
 
 
-fn main() = 0
+// fn id[X](x: X): X = x
+// fn id(x: 'X): 'X = x
+// fn id(x) = x
+
+
+fn main(): Int = f("hello")

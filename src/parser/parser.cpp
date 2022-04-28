@@ -220,39 +220,42 @@ namespace {
                 return make_source_view(anchor, context.pointer - 1);
             };
 
-            if (auto name = parse_lower_id(context)) {
-                context.consume_required(Token::Type::colon);
+            if (auto name = parse_lower_name(context)) {
+                if (context.try_consume(Token::Type::colon)) {
+                    if (context.try_consume(Token::Type::mut)) {
+                        return ast::Template_parameter {
+                            .name        = std::move(*name),
+                            .value       = ast::Template_parameter::Mutability_parameter {},
+                            .source_view = get_source_view()
+                        };
+                    }
+                    else if (auto type = parse_type(context)) {
+                        return ast::Template_parameter {
+                            .name        = std::move(*name),
+                            .value       = ast::Template_parameter::Value_parameter { std::move(*type) },
+                            .source_view = get_source_view()
+                        };
+                    }
+                    else {
+                        throw context.expected("'mut' or a type");
+                    }
+                }
 
-                if (context.try_consume(Token::Type::mut)) {
-                    return ast::Template_parameter {
-                        .value       = ast::Template_parameter::Mutability_parameter { *name },
-                        .source_view = get_source_view()
-                    };
-                }
-                else if (auto type = parse_type(context)) {
-                    return ast::Template_parameter {
-                        .value = ast::Template_parameter::Value_parameter {
-                            *name,
-                            std::move(*type)
-                        },
-                        .source_view = get_source_view()
-                    };
-                }
-                else {
-                    throw context.expected("'mut' or a type");
-                }
+                return ast::Template_parameter {
+                    .name        = std::move(*name),
+                    .value       = ast::Template_parameter::Value_parameter { .type = std::nullopt },
+                    .source_view = get_source_view()
+                };
             }
-            else if (auto name = parse_upper_id(context)) {
+            else if (auto name = parse_upper_name(context)) {
                 std::vector<ast::Class_reference> classes;
                 if (context.try_consume(Token::Type::colon)) {
                     classes = extract_classes(context);
                 }
 
                 return ast::Template_parameter {
-                    .value = ast::Template_parameter::Type_parameter {
-                        std::move(classes),
-                        *name
-                    },
+                    .name        = std::move(*name),
+                    .value       = ast::Template_parameter::Type_parameter { std::move(classes) },
                     .source_view = get_source_view()
                 };
             }
@@ -280,17 +283,19 @@ namespace {
         -> std::optional<ast::definition::Function::Parameter>
     {
         if (auto pattern = parse_pattern(context)) {
-            context.consume_required(Token::Type::colon);
-            auto return_type = extract_type(context);
+            std::optional<bu::Wrapper<ast::Type>> type;
+            if (context.try_consume(Token::Type::colon)) {
+                type = extract_type(context);
+            }
 
             std::optional<bu::Wrapper<ast::Expression>> default_value;
             if (context.try_consume(Token::Type::equals)) {
-                default_value.emplace(extract_expression(context));
+                default_value = extract_expression(context);
             }
 
             return ast::definition::Function::Parameter {
                 std::move(*pattern),
-                std::move(return_type),
+                std::move(type),
                 std::move(default_value)
             };
         }

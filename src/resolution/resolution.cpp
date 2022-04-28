@@ -220,7 +220,11 @@ namespace {
             parameters.reserve(definition->parameters.size());
 
             for (auto& [pattern, type, default_value] : definition->parameters) {
-                bu::wrapper auto ir_type = context.resolve_type(type);
+                if (!type) {
+                    bu::unimplemented();
+                }
+
+                bu::wrapper auto ir_type = context.resolve_type(*type);
                 context.bind(pattern, ir_type);
 
                 parameters.emplace_back(

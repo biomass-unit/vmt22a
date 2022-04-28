@@ -169,7 +169,7 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (options.find("machine")) {
-        vm::Virtual_machine machine { .stack = bu::Bytestack { 1000 } };
+        vm::Virtual_machine machine { .stack = bu::Bytestack { 32 } };
 
         auto const string = machine.add_to_string_pool("Hello, world!\n");
 
@@ -180,7 +180,7 @@ auto main(int argc, char const** argv) -> int try {
             idup,
             spush, string,
             sprint,
-            local_jump_ineq_i, vm::Local_offset_type(-23), 500'000_iz,
+            local_jump_ineq_i, vm::Local_offset_type(-23), 10_iz,
             halt
         );
 

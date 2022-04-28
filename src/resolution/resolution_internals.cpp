@@ -86,7 +86,7 @@ auto resolution::Resolution_context::resolve_mutability(ast::Mutability const mu
             }
         }
     default:
-        bu::unreachable();
+        std::unreachable();
     }
 }
 
@@ -426,8 +426,12 @@ auto resolution::resolve_template_arguments(
         for (bu::Usize i = 0; i != arguments.size(); ++i) {
             using Parameter = ast::Template_parameter;
 
+            auto const parameter_name = [&] {
+                return parameters[i].name.identifier;
+            };
+
             std::visit(bu::Overload {
-                [&](Parameter::Type_parameter& parameter, ast::Type& type) {
+                [&](Parameter::Type_parameter& /*parameter*/, ast::Type& type) {
                     // Check constraints here
 
                     argument_set.arguments_in_order.emplace_back(
@@ -435,12 +439,14 @@ auto resolution::resolve_template_arguments(
                         argument_set.type_arguments.size()
                     );
                     argument_set.type_arguments.add(
-                        bu::copy(parameter.name),
+                        parameter_name(),
                         context.resolve_type(type)
                     );
                 },
-                [&](Parameter::Value_parameter& parameter, ast::Expression& expression) {
-                    auto given_argument = context.resolve_expression(expression);
+                [&](Parameter::Value_parameter& /*parameter*/, ast::Expression& /*expression*/) {
+                    bu::unimplemented();
+
+                    /*auto given_argument = context.resolve_expression(expression);
                     auto required_type  = context.resolve_type(parameter.type);
 
                     if (required_type == given_argument.type) {
@@ -449,7 +455,7 @@ auto resolution::resolve_template_arguments(
                             argument_set.expression_arguments.size()
                         );
                         argument_set.expression_arguments.add(
-                            bu::copy(parameter.name),
+                            parameter_name(),
                             std::move(given_argument)
                         );
                     }
@@ -464,15 +470,15 @@ auto resolution::resolve_template_arguments(
                                 given_argument.type
                             )
                         );
-                    }
+                    }*/
                 },
-                [&](Parameter::Mutability_parameter& parameter, ast::Mutability const mutability) {
+                [&](Parameter::Mutability_parameter&, ast::Mutability const mutability) {
                     argument_set.arguments_in_order.emplace_back(
                         ir::Template_argument_set::Argument_indicator::Kind::mutability,
                         argument_set.mutability_arguments.size()
                     );
                     argument_set.mutability_arguments.add(
-                        bu::copy(parameter.name),
+                        parameter_name(),
                         context.resolve_mutability(mutability)
                     );
                 },
@@ -566,7 +572,7 @@ auto ir::Template_argument_set::append_formatted_arguments_to(std::string& strin
             std::format_to(out, "{}, ", mutability_arguments.container().at(index).second ? "mut" : "immut");
             break;
         default:
-            bu::unreachable();
+            std::unreachable();
         }
     }
 

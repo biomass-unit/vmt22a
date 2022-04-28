@@ -150,11 +150,6 @@ namespace bu {
         );
     }
 
-    [[noreturn]]
-    inline auto unreachable() -> void { // Remove when std::unreachable is supported
-        std::terminate();
-    }
-
 
     template <class Fst, class Snd = Fst>
     struct [[nodiscard]] Pair {
@@ -387,6 +382,16 @@ namespace bu {
 
     template <class>
     constexpr bool always_false = false;
+
+
+    constexpr bool compiling_in_debug_mode =
+#ifdef NDEBUG
+        false;
+#else
+        true;
+#endif
+
+    constexpr bool compiling_in_release_mode = !compiling_in_debug_mode;
 
 
     auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto const... args)

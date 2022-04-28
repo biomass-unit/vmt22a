@@ -8,11 +8,9 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Match::Case) {
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
     if (value.name) {
-        return std::format_to(context.out(), "{} = {}", *value.name, value.expression);
+        std::format_to(context.out(), "{} = ", *value.name);
     }
-    else {
-        return std::format_to(context.out(), "{}", value.expression);
-    }
+    return std::format_to(context.out(), "{}", value.expression);
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
@@ -21,20 +19,23 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
         return std::format_to(context.out(), "mut ");
     case ast::Mutability::Type::immut:
         return context.out();
-    default:
+    case ast::Mutability::Type::parameterized:
         return std::format_to(context.out(), "mut?{} ", value.parameter_name);
+    default:
+        std::unreachable();
     }
 }
 
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
-    return std::format_to(
-        context.out(),
-        "{}: {} = {}",
-        value.pattern,
-        value.type,
-        value.default_value
-    );
+    std::format_to(context.out(), "{}", value.pattern);
+    if (value.type) {
+        std::format_to(context.out(), ": {}", *value.type);
+    }
+    if (value.default_value) {
+        std::format_to(context.out(), " = {}", *value.default_value);
+    }
+    return context.out();
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
@@ -59,11 +60,11 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Class_reference) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
+    std::format_to(context.out(), "{}", value.name);
+
     return std::visit(
         bu::Overload {
             [&](ast::Template_parameter::Type_parameter const& parameter) {
-                std::format_to(context.out(), "{}", parameter.name);
-
                 if (!parameter.classes.empty()) {
                     std::format_to(
                         context.out(),
@@ -71,14 +72,15 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
                         bu::fmt::delimited_range(parameter.classes, " + ")
                     );
                 }
-
                 return context.out();
             },
             [&](ast::Template_parameter::Value_parameter const& parameter) {
-                return std::format_to(context.out(), "{}: {}", parameter.name, parameter.type);
+                return parameter.type
+                    ? std::format_to(context.out(), ": {}", *parameter.type)
+                    : context.out();
             },
-            [&](ast::Template_parameter::Mutability_parameter const& parameter) {
-                return std::format_to(context.out(), "{}: mut", parameter.name);
+            [&](ast::Template_parameter::Mutability_parameter const&) {
+                return std::format_to(context.out(), ": mut");
             }
         },
         value.value
@@ -86,6 +88,9 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
+    if (value.name) {
+        std::format_to(context.out(), "{} = ", *value.name);
+    }
     return std::visit(bu::Overload {
         [&](ast::Mutability const& mutability) {
             switch (mutability.type) {
@@ -93,11 +98,13 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
                 return std::format_to(context.out(), "mut");
             case ast::Mutability::Type::immut:
                 return std::format_to(context.out(), "immut");
-            default:
+            case ast::Mutability::Type::parameterized:
                 return std::format_to(context.out(), "mut?{}", mutability.parameter_name);
+            default:
+                std::unreachable();
             }
         },
-        [&](auto const& argument) { // This catches type and expression arguments
+        [&]<bu::one_of<ast::Type, ast::Expression> T>(T const& argument) {
             return std::format_to(context.out(), "{}", argument);
         }
     }, value.value);

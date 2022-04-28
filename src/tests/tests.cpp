@@ -81,15 +81,20 @@ auto run_vm_tests     () -> void;
 
 
 auto tests::run_all_tests() -> void {
+    using namespace std::chrono;
+
+    auto const start_time = steady_clock::now();
+
     run_lexer_tests  ();
     run_parser_tests ();
     run_vm_tests     ();
 
     if (success_count == test_count) {
         bu::print(
-            "{}All {} tests passed!{}\n",
+            "{}All {} tests passed! ({}){}\n",
             bu::Color::green,
             test_count,
+            duration_cast<milliseconds>(steady_clock::now() - start_time),
             bu::Color::white
         );
     }
