@@ -329,6 +329,14 @@ namespace parser {
     constexpr auto extract_upper_name = extract_name<Token::Type::upper_name>;
 
 
+    inline auto make_source_view(Token* const first, Token* const last)
+        noexcept -> bu::Source_view
+    {
+        assert(first <= last);
+        return first->source_view + last->source_view;
+    }
+
+
     template <class T>
     class Extractor {
         typename T::Variant(*function)(Parse_context&);
@@ -336,12 +344,13 @@ namespace parser {
         constexpr Extractor(decltype(function) const function) noexcept
             : function { function } {}
 
-        constexpr auto operator()(Parse_context& context) const -> T {
+        auto operator()(Parse_context& context) const -> T {
             auto* const anchor = context.pointer - 1;
             auto        value  = function(context);
+
             return T {
-                .value = std::move(value),
-                .source_view = anchor->source_view + context.pointer[-1].source_view
+                .value       = std::move(value),
+                .source_view = make_source_view(anchor, context.pointer - 1)
             };
         }
     };
@@ -358,12 +367,5 @@ namespace parser {
 
     template <class Variant>
     Extractor(Variant(*)(Parse_context&)) -> Extractor<typename dtl::Variant_map<Variant>::type>;
-
-
-    constexpr auto make_source_view(Token* const first, Token* const last)
-        noexcept -> bu::Source_view
-    {
-        return first->source_view + last->source_view;
-    }
 
 }

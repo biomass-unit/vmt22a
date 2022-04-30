@@ -128,7 +128,9 @@ auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
     auto* const anchor = context.pointer;
 
     auto const get_source_view = [&] {
-        return make_source_view(anchor, context.pointer - 1);
+        return context.pointer == anchor
+            ? anchor->source_view
+            : make_source_view(anchor, context.pointer - 1);
     };
 
     if (context.try_consume(Token::Type::mut)) {

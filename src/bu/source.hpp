@@ -20,19 +20,34 @@ namespace bu {
         auto string() const noexcept -> std::string_view;
     };
 
+
+    struct Source_position {
+        Usize line   = 1;
+        Usize column = 1;
+
+        auto increment_with(char) noexcept -> void;
+
+        DEFAULTED_EQUALITY(Source_position);
+        auto operator<=>(Source_position const&) const noexcept = default;
+    };
+
+
     struct Source_view {
         std::string_view string;
-        Usize            line;
-        Usize            column;
+        Source_position  start_position;
+        Source_position  stop_position;
 
         explicit constexpr Source_view(
             std::string_view const string,
-            Usize            const line,
-            Usize            const column
+            Source_position  const start,
+            Source_position  const stop
         ) noexcept
-            : string { string }
-            , line   { line   }
-            , column { column } {}
+            : string         { string }
+            , start_position { start  }
+            , stop_position  { stop   }
+        {
+            assert(start_position <= stop_position);
+        }
 
         constexpr auto operator==(Source_view const&) const noexcept -> bool {
             // A bit questionable, but necessary for operator== to
@@ -40,16 +55,10 @@ namespace bu {
             return true;
         }
 
-        constexpr auto operator+(Source_view const& other) const noexcept -> Source_view {
-            return Source_view {
-                std::string_view {
-                    string.data(),
-                    other.string.data() + other.string.size()
-                },
-                line,
-                column
-            };
-        }
+        auto operator+(Source_view const&) const noexcept -> Source_view;
     };
 
 }
+
+
+DECLARE_FORMATTER_FOR(bu::Source_position);

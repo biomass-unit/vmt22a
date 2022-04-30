@@ -104,17 +104,15 @@ namespace {
             }
 
             bu::Source fake_source {
-                bu::Source::Mock_tag {
-                    .filename = "the command line"
-                },
+                bu::Source::Mock_tag { .filename = "command line" },
                 std::move(fake_file)
             };
 
             return bu::simple_textual_error({
                 .erroneous_view = bu::Source_view {
                     erroneous_view,
-                    1,
-                    1 + bu::unsigned_distance(fake_source.string().data(), erroneous_view.data())
+                    bu::Source_position {},
+                    bu::Source_position { 1, 1 + bu::unsigned_distance(fake_source.string().data(), erroneous_view.data()) }
                 },
                 .source  = &fake_source,
                 .message = message

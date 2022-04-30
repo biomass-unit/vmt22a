@@ -41,22 +41,22 @@ namespace {
         }
 
         [[nodiscard]]
-        auto get_location(char const* const p) const
-            noexcept -> bu::Pair<bu::Usize>
+        auto get_source_position(std::string_view const view) const
+            noexcept -> bu::Pair<bu::Source_position>
         {
-            bu::Usize line = 1, column = 1;
+            bu::Source_position start_pos;
 
-            for (char const* ptr = start; ptr != p; ++ptr) {
-                if (*ptr == '\n') {
-                    ++line;
-                    column = 1;
-                }
-                else {
-                    ++column;
-                }
+            for (char const* ptr = start; ptr != view.data(); ++ptr) {
+                start_pos.increment_with(*ptr);
             }
 
-            return { line, column };
+            bu::Source_position stop_pos = start_pos;
+
+            for (char const c : view) {
+                stop_pos.increment_with(c);
+            }
+
+            return { start_pos, stop_pos };
         }
 
     public:
@@ -151,9 +151,9 @@ namespace {
                 std::move(value),
                 type,
                 bu::Source_view {
-                    std::string_view { token_start.pointer, state.pointer },
-                    token_start.line,
-                    token_start.column
+                    std::string_view    { token_start.pointer, state      .pointer },
+                    bu::Source_position { token_start.line   , token_start.column },
+                    bu::Source_position { state      .line   ,       state.column }
                 }
             );
 
@@ -167,11 +167,11 @@ namespace {
         )
             const -> Error
         {
-            auto const [line, column] = get_location(view.data());
+            auto const [start_pos, stop_pos] = get_source_position(view);
 
             return Error {
                 bu::simple_textual_error({
-                    .erroneous_view = bu::Source_view { view, line, column },
+                    .erroneous_view = bu::Source_view { view, start_pos, stop_pos },
                     .source         = source,
                     .message        = message,
                     .help_note      = help
@@ -713,8 +713,8 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
                         .type        = Token::Type::end_of_input,
                         .source_view = bu::Source_view {
                             std::string_view { state.pointer, 1 },
-                            state.line,
-                            state.column
+                            { state.line, state.column },
+                            { state.line, state.column }
                         }
                     }
                 );

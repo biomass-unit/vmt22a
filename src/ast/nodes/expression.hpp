@@ -21,6 +21,11 @@ namespace ast {
             DEFAULTED_EQUALITY(Variable);
         };
 
+        struct Dereference {
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Dereference);
+        };
+
         struct Template_instantiation {
             std::vector<Template_argument> template_arguments;
             Qualified_name                 name;
@@ -173,6 +178,7 @@ namespace ast {
             expression::Literal<lexer::String>,
             expression::Array_literal,
             expression::Variable,
+            expression::Dereference,
             expression::Template_instantiation,
             expression::Tuple,
             expression::Compound,

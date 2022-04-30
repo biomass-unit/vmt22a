@@ -68,8 +68,8 @@ namespace {
         -> void
     {
         auto const lines       = lines_of_occurrence(section.source->string(), section.source_view.string);
-        auto const digit_count = bu::digit_count(section.source_view.line + lines.size());
-        auto       line_number = section.source_view.line;
+        auto const digit_count = bu::digit_count(section.source_view.stop_position.line);
+        auto       line_number = section.source_view.start_position.line;
 
         assert(!lines.empty());
 
@@ -204,10 +204,10 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
             current_source = section.source;
 
             location_info = std::format(
-                "{}:{}:{}",
+                "{}:{}-{}",
                 bu::dtl::filename_without_path(current_source->name()), // fix
-                section.source_view.line,
-                section.source_view.column
+                section.source_view.start_position,
+                section.source_view.stop_position
             );
         }
 

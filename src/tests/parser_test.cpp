@@ -8,7 +8,7 @@
 namespace {
 
     auto empty_view() {
-        return bu::Source_view { {}, 0, 0 };
+        return bu::Source_view { {}, {}, {} };
     }
 
     auto mk_expr(ast::Expression::Variant&& expr) -> ast::Expression {

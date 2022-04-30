@@ -131,6 +131,12 @@ namespace {
         return extract_qualified_lower_name_or_struct_initializer({ ast::Root_qualifier::Global {} }, context);
     };
 
+    constexpr Extractor extract_dereference = +[](Parse_context& context)
+        -> ast::Expression::Variant
+    {
+        return ast::expression::Dereference { extract_expression(context) };
+    };
+
     constexpr Extractor extract_tuple = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
@@ -414,6 +420,8 @@ namespace {
             return extract_identifier(context);
         case Token::Type::double_colon:
             return extract_global_identifier(context);
+        case Token::Type::asterisk:
+            return extract_dereference(context);
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::bracket_open:

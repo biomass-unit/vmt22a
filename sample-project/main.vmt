@@ -6,4 +6,11 @@
 // fn id(x) = x
 
 
-fn main(): Int = size_of([Int])
+fn f(a: Int, b: Int) = 0
+
+
+fn main(): Int = f(
+    10,
+    20,
+    30
+)

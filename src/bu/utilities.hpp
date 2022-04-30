@@ -321,7 +321,7 @@ namespace bu {
     }
 
 
-    inline consteval auto get_unique_seed(std::source_location caller = std::source_location::current())
+    inline consteval auto get_unique_seed(std::source_location const caller = std::source_location::current())
         noexcept -> bu::Usize
     {
         return (std::string_view { caller.file_name() }.size()
@@ -397,13 +397,9 @@ namespace bu {
     auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto const... args)
         noexcept -> void
     {
-        // The lambda member i is a workaround for a very strange
-        // compiler bug on MSVC 17.2.0 Preview 2.1, revert back
-        // to declaring i in the loop once MSVC fixes the bug.
-
-        ([=, i = 0]() mutable noexcept {
+        ([=]() mutable noexcept {
             auto const memory = reinterpret_cast<std::byte const*>(&args);
-            for (/*Usize i = 0*/; i != sizeof args; ++i) {
+            for (Usize i = 0; i != sizeof args; ++i) {
                 *out++ = memory[i];
             }
         }(), ...);
@@ -511,7 +507,7 @@ struct std::hash<X> {
 
 
 #define DEFAULTED_EQUALITY(name) \
-auto operator==(name const&) const noexcept -> bool = default
+[[nodiscard]] auto operator==(name const&) const noexcept -> bool = default
 
 
 #define DECLARE_FORMATTER_FOR_TEMPLATE(...)                             \

@@ -165,6 +165,9 @@ namespace {
         auto operator()(ast::expression::Variable const& variable) {
             return format("{}", variable.name);
         }
+        auto operator()(ast::expression::Dereference const& dereference) {
+            return format("*{}", dereference.expression);
+        }
         auto operator()(ast::expression::Template_instantiation const& instantiation) {
             return format("{}[{}]", instantiation.name, instantiation.template_arguments);
         }
