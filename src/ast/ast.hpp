@@ -28,6 +28,8 @@ namespace ast {
 
     struct Function_argument;
 
+    struct Function_parameter;
+
     struct Template_argument;
 
 
@@ -81,6 +83,19 @@ struct ast::Function_argument {
     Expression          expression;
     std::optional<Name> name;
     DEFAULTED_EQUALITY(Function_argument);
+};
+
+struct ast::Function_parameter {
+    bu::Wrapper<Pattern>                   pattern;
+    std::optional<bu::Wrapper<Type>>       type;
+    std::optional<bu::Wrapper<Expression>> default_value;
+    DEFAULTED_EQUALITY(Function_parameter);
+};
+
+struct ast::Template_argument {
+    std::variant<Type, Expression, Mutability> value;
+    std::optional<Name>                        name;
+    DEFAULTED_EQUALITY(Template_argument);
 };
 
 struct ast::Root_qualifier {

@@ -66,6 +66,38 @@ auto parser::parse_template_arguments(Parse_context& context)
     }
 }
 
+auto parser::extract_function_parameters(Parse_context& context)
+    -> std::vector<ast::Function_parameter>
+{
+    return extract_comma_separated_zero_or_more<
+        [](Parse_context& context)
+            -> std::optional<ast::Function_parameter>
+        {
+            if (auto pattern = parse_pattern(context)) {
+                std::optional<bu::Wrapper<ast::Type>> type;
+                if (context.try_consume(Token::Type::colon)) {
+                    type = extract_type(context);
+                }
+
+                std::optional<bu::Wrapper<ast::Expression>> default_value;
+                if (context.try_consume(Token::Type::equals)) {
+                    default_value = extract_expression(context);
+                }
+
+                return ast::Function_parameter {
+                    std::move(*pattern),
+                    std::move(type),
+                    std::move(default_value)
+                };
+            }
+            else {
+                return std::nullopt;
+            }
+        },
+        "a function parameter"
+    >(context);
+}
+
 auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& context)
     -> ast::Qualified_name
 {
@@ -281,31 +313,6 @@ namespace {
     }
 
 
-    auto parse_function_parameter(Parse_context& context)
-        -> std::optional<ast::definition::Function::Parameter>
-    {
-        if (auto pattern = parse_pattern(context)) {
-            std::optional<bu::Wrapper<ast::Type>> type;
-            if (context.try_consume(Token::Type::colon)) {
-                type = extract_type(context);
-            }
-
-            std::optional<bu::Wrapper<ast::Expression>> default_value;
-            if (context.try_consume(Token::Type::equals)) {
-                default_value = extract_expression(context);
-            }
-
-            return ast::definition::Function::Parameter {
-                std::move(*pattern),
-                std::move(type),
-                std::move(default_value)
-            };
-        }
-        else {
-            return std::nullopt;
-        }
-    }
-
     constexpr Extractor extract_function = +[](Parse_context& context)
         -> ast::Definition::Variant
     {
@@ -313,9 +320,7 @@ namespace {
         auto template_parameters = parse_template_parameters(context);
 
         if (context.try_consume(Token::Type::paren_open)) {
-            constexpr auto parse_parameters =
-                extract_comma_separated_zero_or_more<parse_function_parameter, "a function parameter">;
-            auto parameters = parse_parameters(context);
+            auto parameters = extract_function_parameters(context);
             context.consume_required(Token::Type::paren_close);
 
             std::optional<bu::Wrapper<ast::Type>> return_type;

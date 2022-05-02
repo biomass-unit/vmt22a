@@ -6,11 +6,4 @@
 // fn id(x) = x
 
 
-fn f(a: Int, b: Int) = 0
-
-
-fn main(): Int = f(
-    10,
-    20,
-    30
-)
+fn main(): Int = 0

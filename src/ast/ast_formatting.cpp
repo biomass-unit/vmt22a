@@ -27,7 +27,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
 }
 
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Function::Parameter) {
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_parameter) {
     std::format_to(context.out(), "{}", value.pattern);
     if (value.type) {
         std::format_to(context.out(), ": {}", *value.type);
@@ -223,6 +223,9 @@ namespace {
         }
         auto operator()(ast::expression::Local_type_alias const& alias) {
             return format("alias {} = {}", alias.name, alias.type);
+        }
+        auto operator()(ast::expression::Lambda const& lambda) {
+            return format("\\{} -> {}", lambda.parameters, lambda.body);
         }
         auto operator()(ast::expression::Infinite_loop const& loop) {
             return format("loop {}", loop.body);

@@ -14,6 +14,7 @@ auto lexer::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::question:      return "a '?'";
     case Token::Type::equals:        return "a '='";
     case Token::Type::pipe:          return "a '|'";
+    case Token::Type::lambda:        return "a '\\'";
     case Token::Type::right_arrow:   return "a '->'";
     case Token::Type::paren_open:    return "a '('";
     case Token::Type::paren_close:   return "a ')'";
@@ -79,7 +80,7 @@ auto lexer::token_description(Token::Type const type) -> std::string_view {
 
 DEFINE_FORMATTER_FOR(lexer::Token::Type) {
     constexpr auto strings = std::to_array<std::string_view>({
-        ".", ",", ":", ";", "::", "&", "*", "+", "?", "=", "|", "->", "(", ")", "{", "}", "[", "]",
+        ".", ",", ":", ";", "::", "&", "*", "+", "?", "=", "|", "\\", "->", "(", ")", "{", "}", "[", "]",
 
         "let", "mut", "immut", "if", "else", "elif", "for", "in", "while", "loop", "continue",
         "break", "match", "ret", "fn", "as", "data", "struct", "class", "inst", "impl", "alias",

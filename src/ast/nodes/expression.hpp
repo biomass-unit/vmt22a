@@ -118,6 +118,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Local_type_alias);
         };
 
+        struct Lambda {
+            bu::Wrapper<Expression>         body;
+            std::vector<Function_parameter> parameters;
+            DEFAULTED_EQUALITY(Lambda);
+        };
+
         struct Infinite_loop {
             bu::Wrapper<Expression> body;
             DEFAULTED_EQUALITY(Infinite_loop);
@@ -193,6 +199,7 @@ namespace ast {
             expression::Let_binding,
             expression::Conditional_let,
             expression::Local_type_alias,
+            expression::Lambda,
             expression::Infinite_loop,
             expression::While_loop,
             expression::For_loop,

@@ -395,6 +395,7 @@ namespace {
             { "*" , Token::Type::asterisk     },
             { "+" , Token::Type::plus         },
             { "?" , Token::Type::question     },
+            { "\\", Token::Type::lambda       },
             { "->", Token::Type::right_arrow  },
         });
 

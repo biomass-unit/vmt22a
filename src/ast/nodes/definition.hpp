@@ -6,12 +6,6 @@ namespace ast {
     struct Definition;
 
 
-    struct Template_argument {
-        std::variant<Type, Expression, Mutability> value;
-        std::optional<Name>                        name;
-        DEFAULTED_EQUALITY(Template_argument);
-    };
-
     struct Class_reference {
         std::optional<std::vector<Template_argument>> template_arguments;
         Qualified_name                                name;
@@ -63,14 +57,8 @@ namespace ast {
     namespace definition {
 
         struct Function {
-            struct Parameter {
-                bu::Wrapper<Pattern>                   pattern;
-                std::optional<bu::Wrapper<Type>>       type;
-                std::optional<bu::Wrapper<Expression>> default_value;
-                DEFAULTED_EQUALITY(Parameter);
-            };
             Expression                       body;
-            std::vector<Parameter>           parameters;
+            std::vector<Function_parameter>  parameters;
             Name                             name;
             std::optional<bu::Wrapper<Type>> return_type;
             DEFAULTED_EQUALITY(Function);

@@ -233,6 +233,19 @@ namespace {
         };
     };
 
+    constexpr Extractor extract_lambda = +[](Parse_context& context)
+        -> ast::Expression::Variant
+    {
+        auto parameters = extract_function_parameters(context);
+        context.consume_required(Token::Type::right_arrow);
+        auto body = extract_expression(context);
+
+        return ast::expression::Lambda {
+            .body       = std::move(body),
+            .parameters = std::move(parameters)
+        };
+    };
+
 
     auto extract_loop_body(Parse_context& context) -> ast::Expression {
         if (auto body = parse_compound_expression(context)) {
@@ -432,6 +445,8 @@ namespace {
             return extract_let_binding(context);
         case Token::Type::alias:
             return extract_local_type_alias(context);
+        case Token::Type::lambda:
+            return extract_lambda(context);
         case Token::Type::loop:
             return extract_infinite_loop(context);
         case Token::Type::while_:

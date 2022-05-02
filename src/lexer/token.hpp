@@ -35,6 +35,7 @@ namespace lexer {
             question,
             equals,
             pipe,
+            lambda,
             right_arrow,
 
             paren_open,
