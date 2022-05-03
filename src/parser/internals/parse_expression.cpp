@@ -233,16 +233,68 @@ namespace {
         };
     };
 
+
     constexpr Extractor extract_lambda = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
         auto parameters = extract_function_parameters(context);
+
+        using Capture = ast::expression::Lambda::Capture;
+
+        static constexpr auto parse_capture = +[](Parse_context& context)
+            -> std::optional<Capture>
+        {
+            auto* const anchor = context.pointer;
+
+            return [&]() -> std::optional<Capture::Variant> {
+                if (context.try_consume(Token::Type::ampersand)) {
+                    return Capture::By_reference {
+                        .variable = extract_lower_id(context, "a variable name")
+                    };
+                }
+                else if (auto pattern = parse_pattern(context)) {
+                    context.consume_required(Token::Type::equals);
+                    return Capture::By_pattern {
+                        .pattern    = std::move(*pattern),
+                        .expression = extract_expression(context)
+                    };
+                }
+                else {
+                    return std::nullopt;
+                }
+            }()
+                .transform([&](Capture::Variant&& value)
+            {
+                return Capture {
+                    .value       = std::move(value),
+                    .source_view = make_source_view(anchor, context.pointer - 1)
+                };
+            });
+        };
+
+        static constexpr auto extract_captures =
+            extract_comma_separated_zero_or_more<parse_capture, "a lambda capture">;
+
+        std::vector<ast::expression::Lambda::Capture> captures;
+        if (context.try_consume(Token::Type::dot)) {
+            captures = extract_captures(context);
+
+            if (captures.empty()) {
+                throw context.expected(
+                    "at least one lambda capture",
+                    "If the lambda isn't supposed to capture anything, "
+                    "or if it only captures by move, remove the '.'"
+                );
+            }
+        }
+
         context.consume_required(Token::Type::right_arrow);
         auto body = extract_expression(context);
 
         return ast::expression::Lambda {
-            .body       = std::move(body),
-            .parameters = std::move(parameters)
+            .body              = std::move(body),
+            .parameters        = std::move(parameters),
+            .explicit_captures = std::move(captures)
         };
     };
 

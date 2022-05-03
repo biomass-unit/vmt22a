@@ -98,10 +98,9 @@ namespace ast {
                 conversion,
                 ascription,
             };
-
             bu::Wrapper<Expression> expression;
             bu::Wrapper<Type>       target;
-            Kind                    kind;
+            Kind                    kind = Kind::conversion;
             DEFAULTED_EQUALITY(Type_cast);
         };
 
@@ -125,8 +124,25 @@ namespace ast {
         };
 
         struct Lambda {
+            struct Capture {
+                struct By_pattern {
+                    bu::Wrapper<Pattern>    pattern;
+                    bu::Wrapper<Expression> expression;
+                    DEFAULTED_EQUALITY(By_pattern);
+                };
+                struct By_reference {
+                    lexer::Identifier variable;
+                    DEFAULTED_EQUALITY(By_reference);
+                };
+                using Variant = std::variant<By_pattern, By_reference>;
+
+                Variant         value;
+                bu::Source_view source_view;
+                DEFAULTED_EQUALITY(Capture);
+            };
             bu::Wrapper<Expression>         body;
             std::vector<Function_parameter> parameters;
+            std::vector<Capture>            explicit_captures;
             DEFAULTED_EQUALITY(Lambda);
         };
 

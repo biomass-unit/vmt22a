@@ -6,6 +6,17 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Match::Case) {
     return std::format_to(context.out(), "{} -> {}", value.pattern, value.expression);
 }
 
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Lambda::Capture) {
+    return std::visit(bu::Overload {
+        [&](ast::expression::Lambda::Capture::By_pattern const& capture) {
+            return std::format_to(context.out(), "{} = {}", capture.pattern, capture.expression);
+        },
+        [&](ast::expression::Lambda::Capture::By_reference const& capture) {
+            return std::format_to(context.out(), "&{}", capture.variable);
+        }
+    }, value.value);
+}
+
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
     if (value.name) {
         std::format_to(context.out(), "{} = ", *value.name);
@@ -142,7 +153,7 @@ namespace {
     struct Visitor_base {
         std::format_context::iterator out;
 
-        auto format(std::string_view fmt, auto const&... args) {
+        auto format(std::string_view const fmt, auto const&... args) {
             return std::vformat_to(out, fmt, std::make_format_args(args...));
         }
     };
@@ -241,7 +252,13 @@ namespace {
             return format("alias {} = {}", alias.name, alias.type);
         }
         auto operator()(ast::expression::Lambda const& lambda) {
-            return format("\\{} -> {}", lambda.parameters, lambda.body);
+            return format(
+                "\\{}{}{} -> {}",
+                lambda.parameters,
+                lambda.explicit_captures.empty() ? "" : " . ",
+                lambda.explicit_captures,
+                lambda.body
+            );
         }
         auto operator()(ast::expression::Infinite_loop const& loop) {
             return format("loop {}", loop.body);
