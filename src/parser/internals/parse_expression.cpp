@@ -531,9 +531,10 @@ namespace {
     auto parse_potential_invocation(Parse_context& context)
         -> std::optional<ast::Expression>
     {
-        auto* const anchor = context.pointer;
+        auto* const anchor              = context.pointer;
+        auto        potential_invocable = parse_normal_expression(context);
 
-        if (auto potential_invocable = parse_normal_expression(context)) {
+        if (potential_invocable) {
             while (context.try_consume(Token::Type::paren_open)) {
                 auto arguments = extract_arguments(context);
 
@@ -545,11 +546,9 @@ namespace {
                     .source_view = make_source_view(anchor, context.pointer - 1)
                 };
             }
-            return potential_invocable;
         }
-        else {
-            return std::nullopt;
-        }
+
+        return potential_invocable;
     }
 
 
@@ -620,17 +619,36 @@ namespace {
         auto* const anchor = context.pointer;
 
         if (auto expression = parse_potential_member_access(context)) {
-            while (context.try_consume(Token::Type::as)) {
-                auto type = extract_type(context);
+            bool continue_looping = true;
 
-                *expression = ast::Expression {
-                    .value = ast::expression::Type_cast {
-                        std::move(*expression),
-                        std::move(type)
-                    },
-                    .source_view = make_source_view(anchor, context.pointer - 1)
-                };
+            while (continue_looping) {
+                using Kind = ast::expression::Type_cast::Kind;
+
+                Kind cast_kind = Kind::conversion;
+
+                switch (context.extract().type) {
+                case Token::Type::colon:
+                    cast_kind = Kind::ascription;
+                    [[fallthrough]];
+                case Token::Type::as:
+                {
+                    auto type = extract_type(context);
+                    *expression = ast::Expression {
+                        .value = ast::expression::Type_cast {
+                            .expression = std::move(*expression),
+                            .target     = std::move(type),
+                            .kind       = cast_kind
+                        },
+                        .source_view = make_source_view(anchor, context.pointer - 1)
+                    };
+                    break;
+                }
+                default:
+                    context.retreat();
+                    continue_looping = false;
+                }
             }
+
             return expression;
         }
         else {

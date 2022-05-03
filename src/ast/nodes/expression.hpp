@@ -94,8 +94,14 @@ namespace ast {
         };
 
         struct Type_cast {
+            enum class Kind {
+                conversion,
+                ascription,
+            };
+
             bu::Wrapper<Expression> expression;
             bu::Wrapper<Type>       target;
+            Kind                    kind;
             DEFAULTED_EQUALITY(Type_cast);
         };
 

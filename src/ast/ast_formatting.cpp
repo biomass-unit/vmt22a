@@ -213,7 +213,23 @@ namespace {
             return format("match {} {{ {} }}", match.expression, match.cases);
         }
         auto operator()(ast::expression::Type_cast const& cast) {
-            return format("{} as {}", cast.expression, cast.target);
+            return format(
+                "({} {} {})",
+                cast.expression,
+                [&] {
+                    using enum ast::expression::Type_cast::Kind;
+
+                    switch (cast.kind) {
+                    case conversion:
+                        return "as";
+                    case ascription:
+                        return ":";
+                    default:
+                        std::unreachable();
+                    }
+                }(),
+                cast.target
+            );
         }
         auto operator()(ast::expression::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);

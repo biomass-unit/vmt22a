@@ -11,6 +11,7 @@ auto lexer::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::double_colon:  return "a '::'";
     case Token::Type::ampersand:     return "a '&'";
     case Token::Type::asterisk:      return "a '*'";
+    case Token::Type::plus:          return "a '+'";
     case Token::Type::question:      return "a '?'";
     case Token::Type::equals:        return "a '='";
     case Token::Type::pipe:          return "a '|'";
