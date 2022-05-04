@@ -6,14 +6,6 @@ namespace ast {
     struct Definition;
 
 
-    struct Class_reference {
-        std::optional<std::vector<Template_argument>> template_arguments;
-        Qualified_name                                name;
-
-        bu::Source_view source_view;
-        DEFAULTED_EQUALITY(Class_reference);
-    };
-
     struct Template_parameter {
         struct Type_parameter {
             std::vector<Class_reference> classes;

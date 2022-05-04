@@ -264,6 +264,8 @@ namespace parser {
 
     auto extract_mutability(Parse_context&) -> ast::Mutability;
 
+    auto extract_class_references(Parse_context&) -> std::vector<ast::Class_reference>;
+
 
     template <Token::Type id_type>
     auto extract_id(Parse_context& context, std::string_view const description)

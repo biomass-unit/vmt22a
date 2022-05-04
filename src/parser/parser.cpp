@@ -190,6 +190,27 @@ auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
 
 
 namespace {
+    auto parse_class_reference(parser::Parse_context&) -> std::optional<ast::Class_reference>;
+}
+
+auto parser::extract_class_references(Parse_context& context)
+    -> std::vector<ast::Class_reference>
+{
+    static constexpr auto extract_classes =
+        extract_separated_zero_or_more<parse_class_reference, Token::Type::plus, "a class name">;
+
+    auto classes = extract_classes(context);
+
+    if (classes.empty()) {
+        throw context.expected("one or more class names");
+    }
+    else {
+        return classes;
+    }
+}
+
+
+namespace {
 
     using namespace parser;
 
@@ -230,19 +251,6 @@ namespace {
 
     auto parse_class_reference(Parse_context&) -> std::optional<ast::Class_reference>;
 
-    auto extract_classes(Parse_context& context) -> std::vector<ast::Class_reference> {
-        constexpr auto extract_classes =
-            extract_separated_zero_or_more<parse_class_reference, Token::Type::plus, "a class name">;
-
-        auto classes = extract_classes(context);
-
-        if (classes.empty()) {
-            throw context.expected("one or more class names");
-        }
-        else {
-            return classes;
-        }
-    }
 
     auto parse_template_parameters(Parse_context& context)
         -> std::optional<std::vector<ast::Template_parameter>>
@@ -284,7 +292,7 @@ namespace {
             else if (auto name = parse_upper_name(context)) {
                 std::vector<ast::Class_reference> classes;
                 if (context.try_consume(Token::Type::colon)) {
-                    classes = extract_classes(context);
+                    classes = extract_class_references(context);
                 }
 
                 return ast::Template_parameter {
@@ -655,7 +663,7 @@ namespace {
 
         std::vector<ast::Class_reference> classes;
         if (context.try_consume(Token::Type::colon)) {
-            classes = extract_classes(context);
+            classes = extract_class_references(context);
         }
 
         return ast::Type_signature {

@@ -329,7 +329,10 @@ namespace {
         auto operator()(ast::type::Boolean)   { return format("Bool");   }
         auto operator()(ast::type::String)    { return format("String"); }
 
-        auto operator()(ast::type::Typename name) {
+        auto operator()(ast::type::Wildcard const&) {
+            return format("_");
+        }
+        auto operator()(ast::type::Typename const& name) {
             return format("{}", name.identifier);
         }
         auto operator()(ast::type::Tuple const& tuple) {
@@ -346,6 +349,9 @@ namespace {
         }
         auto operator()(ast::type::Type_of const& type_of) {
             return format("type_of({})", type_of.expression);
+        }
+        auto operator()(ast::type::Instance_of const& instance_of) {
+            return format("inst {}", bu::fmt::delimited_range(instance_of.classes, " + "));
         }
         auto operator()(ast::type::Reference const& reference) {
             return format("&{}{}", reference.mutability, reference.type);

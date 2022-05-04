@@ -65,6 +65,15 @@ namespace ast {
     };
 
 
+    struct Class_reference {
+        std::optional<std::vector<Template_argument>> template_arguments;
+        Qualified_name                                name;
+
+        bu::Source_view source_view;
+        DEFAULTED_EQUALITY(Class_reference);
+    };
+
+
     template <bu::one_of<Expression, Pattern, Type, Definition> T>
     auto operator==(T const& lhs, T const& rhs) noexcept -> bool {
         return lhs.value == rhs.value;

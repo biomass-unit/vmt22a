@@ -40,6 +40,12 @@ namespace {
         return ast::type::Primitive<T> {};
     };
 
+    constexpr Extractor extract_wildcard = +[](Parse_context&)
+        -> ast::Type::Variant
+    {
+        return ast::type::Wildcard {};
+    };
+
     constexpr Extractor extract_typename = +[](Parse_context& context)
         -> ast::Type::Variant
     {
@@ -135,6 +141,12 @@ namespace {
         }
     };
 
+    constexpr Extractor extract_instance_of = +[](Parse_context& context)
+        -> ast::Type::Variant
+    {
+        return ast::type::Instance_of { extract_class_references(context) };
+    };
+
     constexpr Extractor extract_reference = +[](Parse_context& context)
         -> ast::Type::Variant
     {
@@ -162,6 +174,8 @@ namespace {
             return extract_primitive<bu::Char>(context);
         case Token::Type::boolean_type:
             return extract_primitive<bool>(context);
+        case Token::Type::underscore:
+            return extract_wildcard(context);
         case Token::Type::paren_open:
             return extract_tuple(context);
         case Token::Type::bracket_open:
@@ -170,6 +184,8 @@ namespace {
             return extract_function(context);
         case Token::Type::type_of:
             return extract_type_of(context);
+        case Token::Type::inst:
+            return extract_instance_of(context);
         case Token::Type::ampersand:
             return extract_reference(context);
         case Token::Type::asterisk:

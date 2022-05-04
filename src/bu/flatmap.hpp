@@ -79,10 +79,10 @@ namespace bu {
     public:
         using Parent::Parent;
         using Parent::operator=;
+        using Parent::operator==;
         using Parent::span;
         using Parent::size;
         using Parent::container;
-        using Parent::operator==;
 
         // The member functions aren't constexpr because
         // std::hash::operator() unfortunately isn't constexpr.
@@ -111,6 +111,6 @@ namespace bu {
 template <class K, class V, bu::Flatmap_strategy strategy, template <class...> class Container>
 struct std::hash<bu::Flatmap<K, V, strategy, Container>> {
     auto operator()(bu::Flatmap<K, V, strategy, Container> const& flatmap) const -> bu::Usize {
-        return bu::hash_combine_with_seed(static_cast<bu::Usize>(strategy) + 1, flatmap.container());
+        return bu::hash_combine_with_seed(bu::get_unique_seed(), flatmap.container());
     }
 };

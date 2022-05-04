@@ -257,7 +257,7 @@ namespace bu {
 
 
     template <class T>
-    /*constexpr*/ auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
+    constexpr auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
         std::vector<T> vector;
         vector.reserve(capacity);
         return vector;
@@ -269,7 +269,7 @@ namespace bu {
     }
 
     [[nodiscard]]
-    inline constexpr auto string_without_sso() noexcept -> std::string {
+    constexpr auto string_without_sso() noexcept -> std::string {
         std::string string;
         string.reserve(sizeof string);
         return string;
@@ -299,9 +299,12 @@ namespace bu {
 
 
     template <class Head, class... Tail>
-    auto hash_combine_with_seed(Usize          seed,
-                                Head const&    head,
-                                Tail const&... tail) -> Usize
+    auto hash_combine_with_seed(
+        Usize          seed,
+        Head const&    head,
+        Tail const&... tail
+    )
+        -> Usize
     {
         // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
 
@@ -321,7 +324,7 @@ namespace bu {
     }
 
 
-    inline consteval auto get_unique_seed(std::source_location const caller = std::source_location::current())
+    consteval auto get_unique_seed(std::source_location const caller = std::source_location::current())
         noexcept -> bu::Usize
     {
         return (std::string_view { caller.file_name() }.size()

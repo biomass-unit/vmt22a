@@ -257,7 +257,11 @@ namespace {
 }
 
 
-auto cli::parse_command_line(int argc, char const** argv, Options_description const& description)
+auto cli::parse_command_line(
+    int                 const  argc,
+    char const* const*  const  argv,
+    Options_description const& description
+)
     -> Options
 {
     std::vector<std::string_view> command_line(argv + 1, argv + argc);
@@ -371,7 +375,10 @@ template struct cli::Value<cli::types::Bool >;
 template struct cli::Value<cli::types::Str  >;
 
 
-cli::Parameter::Name::Name(char const* long_name, std::optional<char> short_name) noexcept
+cli::Parameter::Name::Name(
+    char const*         const long_name,
+    std::optional<char> const short_name
+) noexcept
     : long_form  { long_name  }
     , short_form { short_name } {}
 
@@ -412,8 +419,10 @@ auto cli::Options_description::Option_adder::map_short_to_long(Parameter::Name c
 }
 
 
-auto cli::Options_description::Option_adder::operator()(Parameter::Name&&               name,
-                                                        std::optional<std::string_view> description)
+auto cli::Options_description::Option_adder::operator()(
+    Parameter::Name&&               name,
+    std::optional<std::string_view> description
+)
     noexcept -> Option_adder
 {
     map_short_to_long(name);
@@ -425,9 +434,11 @@ auto cli::Options_description::Option_adder::operator()(Parameter::Name&&       
 }
 
 template <class T>
-auto cli::Options_description::Option_adder::operator()(Parameter::Name&&               name,
-                                                        Value<T>&&                      value,
-                                                        std::optional<std::string_view> description)
+auto cli::Options_description::Option_adder::operator()(
+    Parameter::Name&&               name,
+    Value<T>&&                      value,
+    std::optional<std::string_view> description
+)
     noexcept -> Option_adder
 {
     map_short_to_long(name);
@@ -442,9 +453,11 @@ auto cli::Options_description::Option_adder::operator()(Parameter::Name&&       
     return *this;
 }
 
-auto cli::Options_description::Option_adder::operator()(Parameter::Name&&                 name,
-                                                        std::vector<Parameter::Variant>&& values,
-                                                        std::optional<std::string_view>   description)
+auto cli::Options_description::Option_adder::operator()(
+    Parameter::Name&&                 name,
+    std::vector<Parameter::Variant>&& values,
+    std::optional<std::string_view>   description
+)
     noexcept -> Option_adder
 {
     map_short_to_long(name);
@@ -483,7 +496,9 @@ template auto cli::Options_description::Option_adder::operator()(Parameter::Name
 template auto cli::Options_description::Option_adder::operator()(Parameter::Name&&, Value<types::Str  >&&, std::optional<std::string_view>) -> Option_adder;
 
 
-auto cli::Options::find(std::string_view const name) noexcept -> Named_argument* {
+auto cli::Options::find(std::string_view const name)
+    noexcept -> Named_argument*
+{
     auto it = std::ranges::find(
         named_arguments,
         name,

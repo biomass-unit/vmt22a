@@ -16,6 +16,10 @@ namespace ast {
         using Boolean   = Primitive<bool>;
         using String    = Primitive<lexer::String>;
 
+        struct Wildcard {
+            DEFAULTED_EQUALITY(Wildcard);
+        };
+
         struct Typename {
             Qualified_name identifier;
             DEFAULTED_EQUALITY(Typename);
@@ -48,6 +52,11 @@ namespace ast {
             DEFAULTED_EQUALITY(Type_of);
         };
 
+        struct Instance_of {
+            std::vector<Class_reference> classes;
+            DEFAULTED_EQUALITY(Instance_of);
+        };
+
         struct Reference {
             bu::Wrapper<Type> type;
             Mutability        mutability;
@@ -76,12 +85,14 @@ namespace ast {
             type::Character,
             type::Boolean,
             type::String,
+            type::Wildcard,
             type::Typename,
             type::Tuple,
             type::Array,
             type::Slice,
             type::Function,
             type::Type_of,
+            type::Instance_of,
             type::Reference,
             type::Pointer,
             type::Template_instantiation
