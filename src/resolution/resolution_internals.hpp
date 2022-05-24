@@ -49,7 +49,7 @@ namespace resolution {
 
         template <> struct AST_to_IR_impl<ast::definition::Function > : std::type_identity<ir::definition::Function > {};
         template <> struct AST_to_IR_impl<ast::definition::Struct   > : std::type_identity<ir::definition::Struct   > {};
-        template <> struct AST_to_IR_impl<ast::definition::Data     > : std::type_identity<ir::definition::Data     > {};
+        template <> struct AST_to_IR_impl<ast::definition::Enum     > : std::type_identity<ir::definition::Enum     > {};
         template <> struct AST_to_IR_impl<ast::definition::Alias    > : std::type_identity<ir::definition::Alias    > {};
         template <> struct AST_to_IR_impl<ast::definition::Typeclass> : std::type_identity<ir::definition::Typeclass> {};
     }
@@ -105,8 +105,8 @@ namespace resolution {
     using Function_template_definition       = Definition<ast::definition::Function_template      >;
     using Struct_definition                  = Definition<ast::definition::Struct                 >;
     using Struct_template_definition         = Definition<ast::definition::Struct_template        >;
-    using Data_definition                    = Definition<ast::definition::Data                   >;
-    using Data_template_definition           = Definition<ast::definition::Data_template          >;
+    using Enum_definition                    = Definition<ast::definition::Enum                   >;
+    using Enum_template_definition           = Definition<ast::definition::Enum_template          >;
     using Alias_definition                   = Definition<ast::definition::Alias                  >;
     using Alias_template_definition          = Definition<ast::definition::Alias_template         >;
     using Typeclass_definition               = Definition<ast::definition::Typeclass              >;
@@ -120,8 +120,8 @@ namespace resolution {
         Function_template_definition,
         Struct_definition,
         Struct_template_definition,
-        Data_definition,
-        Data_template_definition,
+        Enum_definition,
+        Enum_template_definition,
         Alias_definition,
         Alias_template_definition,
         Typeclass_definition,
@@ -138,8 +138,8 @@ namespace resolution {
     using Upper_variant = std::variant<
         Struct_definition,
         Struct_template_definition,
-        Data_definition,
-        Data_template_definition,
+        Enum_definition,
+        Enum_template_definition,
         Alias_definition,
         Alias_template_definition,
         Typeclass_definition,
@@ -148,7 +148,7 @@ namespace resolution {
 
     using Lower_variant = std::variant<
         Binding*,
-        bu::Wrapper<ir::definition::Data_constructor>,
+        bu::Wrapper<ir::definition::Enum_constructor>,
         Function_definition,
         Function_template_definition
     >;

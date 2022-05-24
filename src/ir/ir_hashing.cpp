@@ -60,8 +60,8 @@ namespace {
             return hash(function.definition->name);
         }
 
-        auto operator()(ir::expression::Data_constructor_reference const& reference) -> bu::Usize {
-            return hash(reference.constructor->data_type, reference.constructor->tag);
+        auto operator()(ir::expression::Enum_constructor_reference const& reference) -> bu::Usize {
+            return hash(reference.constructor->enum_type, reference.constructor->tag);
         }
 
         auto operator()(ir::expression::Member_access const& member_access) -> bu::Usize {
@@ -130,8 +130,8 @@ namespace {
             return hash(tuple.types);
         }
 
-        auto operator()(ir::type::User_defined_data const& udd) -> bu::Usize {
-            return hash(udd.data->name);
+        auto operator()(ir::type::User_defined_enum const& ude) -> bu::Usize {
+            return hash(ude.enumeration->name);
         }
 
         auto operator()(ir::type::User_defined_struct const& uds) -> bu::Usize {

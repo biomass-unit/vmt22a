@@ -39,7 +39,7 @@ auto lexer::token_description(Token::Type const type) -> std::string_view {
     case Token::Type::ret:
     case Token::Type::fn:
     case Token::Type::as:
-    case Token::Type::data:
+    case Token::Type::enum_:
     case Token::Type::struct_:
     case Token::Type::class_:
     case Token::Type::inst:
@@ -84,7 +84,7 @@ DEFINE_FORMATTER_FOR(lexer::Token::Type) {
         ".", ",", ":", ";", "::", "&", "*", "+", "?", "=", "|", "\\", "->", "(", ")", "{", "}", "[", "]",
 
         "let", "mut", "immut", "if", "else", "elif", "for", "in", "while", "loop", "continue",
-        "break", "match", "ret", "fn", "as", "data", "struct", "class", "inst", "impl", "alias",
+        "break", "match", "ret", "fn", "as", "enum", "struct", "class", "inst", "impl", "alias",
         "namespace", "import", "export", "module", "size_of", "type_of", "meta", "where", "dyn", "pub",
 
         "underscore", "lower", "upper", "op",

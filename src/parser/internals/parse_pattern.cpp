@@ -91,7 +91,7 @@ namespace {
         if (name && name->primary_name.is_upper) {
             throw context.error(
                 { anchor, context.pointer },
-                "Expected a data constructor name, but found a capitalized identifier"
+                "Expected an enum constructor name, but found a capitalized identifier"
             );
         }
 
@@ -150,7 +150,7 @@ namespace {
     constexpr Extractor extract_constructor_shorthand = +[](Parse_context& context)
         -> ast::Pattern::Variant
     {
-        auto name = extract_lower_name(context, "a data constructor name");
+        auto name = extract_lower_name(context, "an enum constructor name");
         return ast::pattern::Constructor_shorthand {
             .name    = std::move(name),
             .pattern = parse_constructor_pattern(context)

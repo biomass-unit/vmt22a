@@ -10,7 +10,7 @@
 
 namespace resolution {
 
-    struct Namespace; // Forward declared because Struct and Data definitions need associated namespaces
+    struct Namespace; // Forward declared because Struct and Enum definitions need associated namespaces
 
 }
 
@@ -40,18 +40,18 @@ namespace ir {
             bu::Wrapper<Expression> body;
         };
 
-        struct Data_constructor {
+        struct Enum_constructor {
             std::optional<bu::Wrapper<Type>> payload_type;
             bu::Wrapper<Type>                function_type;
-            bu::Wrapper<Type>                data_type;
+            bu::Wrapper<Type>                enum_type;
             lexer::Identifier                name;
             bu::U8                           tag;
 
             bu::Source_view source_view;
-            DEFAULTED_EQUALITY(Data_constructor);
+            DEFAULTED_EQUALITY(Enum_constructor);
         };
 
-        struct Data {
+        struct Enum {
             std::string                        name;
             bu::Wrapper<resolution::Namespace> associated_namespace;
             Size_type                          size;
@@ -127,11 +127,11 @@ namespace ir {
             DEFAULTED_EQUALITY(Reference);
         };
 
-        struct User_defined_data {
-            bu::Wrapper<definition::Data> data;
+        struct User_defined_enum {
+            bu::Wrapper<definition::Enum> enumeration;
 
-            auto operator==(User_defined_data const& other) const noexcept -> bool {
-                return std::to_address(data) == std::to_address(other.data);
+            auto operator==(User_defined_enum const& other) const noexcept -> bool {
+                return std::to_address(enumeration) == std::to_address(other.enumeration);
             }
         };
 
@@ -158,7 +158,7 @@ namespace ir {
             type::Slice,
             type::Reference,
             type::Pointer,
-            type::User_defined_data,
+            type::User_defined_enum,
             type::User_defined_struct
         >;
 
@@ -243,9 +243,9 @@ namespace ir {
             DEFAULTED_EQUALITY(Function_reference);
         };
 
-        struct Data_constructor_reference {
-            bu::Wrapper<definition::Data_constructor> constructor;
-            DEFAULTED_EQUALITY(Data_constructor_reference);
+        struct Enum_constructor_reference {
+            bu::Wrapper<definition::Enum_constructor> constructor;
+            DEFAULTED_EQUALITY(Enum_constructor_reference);
         };
 
         struct Reference {
@@ -305,7 +305,7 @@ namespace ir {
             expression::Let_binding,
             expression::Local_variable,
             expression::Function_reference,
-            expression::Data_constructor_reference,
+            expression::Enum_constructor_reference,
             expression::Reference,
             expression::Member_access,
             expression::Conditional,

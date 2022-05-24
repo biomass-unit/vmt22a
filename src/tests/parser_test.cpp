@@ -7,7 +7,7 @@
 
 namespace {
 
-    auto empty_view() {
+    constexpr auto empty_view() {
         return bu::Source_view { {}, {}, {} };
     }
 
@@ -329,7 +329,7 @@ auto run_parser_tests() -> void {
         );
     };
 
-    "data_constructor_pattern"_test = [] {
+    "enum_constructor_pattern"_test = [] {
         std::vector<ast::Qualifier> qualifiers {
             ast::Qualifier {
                 .name {
@@ -365,7 +365,7 @@ auto run_parser_tests() -> void {
         );
     };
 
-    "data_constructor_pattern"_failing_test = [] {
+    "enum_constructor_pattern"_failing_test = [] {
         assert_patt_eq("Maybe::Just", ast::pattern::Tuple { /* doesn't matter */ });
     };
 

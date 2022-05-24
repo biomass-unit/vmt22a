@@ -48,8 +48,8 @@ namespace {
             return format("{}", function.definition->name);
         }
 
-        auto operator()(ir::expression::Data_constructor_reference const& reference) {
-            return format("{}::{}", reference.constructor->data_type, reference.constructor->name);
+        auto operator()(ir::expression::Enum_constructor_reference const& reference) {
+            return format("{}::{}", reference.constructor->enum_type, reference.constructor->name);
         }
 
         auto operator()(ir::expression::Reference const& reference) {
@@ -120,8 +120,8 @@ namespace {
             return format("{}", ud.structure->name);
         }
 
-        auto operator()(ir::type::User_defined_data const& ud) {
-            return format("{}", ud.data->name);
+        auto operator()(ir::type::User_defined_enum const& ud) {
+            return format("{}", ud.enumeration->name);
         }
     };
 

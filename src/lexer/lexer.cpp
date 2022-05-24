@@ -214,9 +214,13 @@ namespace {
         };
 
         template <bu::trivial T>
-        auto parse(auto const... args) noexcept -> Parse_result<T> {
-            static_assert(sizeof...(args) < 2); // The variadic parameter pack is used
-            T value;                            // for the optional base parameter
+        auto parse(std::same_as<int> auto const... args) noexcept -> Parse_result<T> {
+            static_assert(
+                sizeof...(args) <= 1,
+                "The variadic parameter pack is used for the optional base parameter only"
+            );
+
+            T value;
             auto const result = std::from_chars(state.pointer, stop, value, args...);
             return { result, state.pointer, value };
         }
@@ -331,7 +335,7 @@ namespace {
             { new_id("Float")     , Token::Type::floating_type  },
             { new_id("Char")      , Token::Type::character_type },
             { new_id("Bool")      , Token::Type::boolean_type   },
-            { new_id("data")      , Token::Type::data           },
+            { new_id("enum")      , Token::Type::enum_          },
             { new_id("struct")    , Token::Type::struct_        },
             { new_id("class")     , Token::Type::class_         },
             { new_id("inst")      , Token::Type::inst           },

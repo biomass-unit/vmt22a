@@ -61,7 +61,7 @@ namespace lexer {
             ret,
             fn,
             as,
-            data,
+            enum_,
             struct_,
             class_,
             inst,

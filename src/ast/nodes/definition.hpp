@@ -70,7 +70,7 @@ namespace ast {
             DEFAULTED_EQUALITY(Struct);
         };
 
-        struct Data {
+        struct Enum {
             struct Constructor {
                 lexer::Identifier                name;
                 std::optional<bu::Wrapper<Type>> type;
@@ -80,7 +80,7 @@ namespace ast {
             };
             std::vector<Constructor> constructors;
             Name                     name;
-            DEFAULTED_EQUALITY(Data);
+            DEFAULTED_EQUALITY(Enum);
         };
 
         struct Alias {
@@ -125,7 +125,7 @@ namespace ast {
 
         using Function_template       = Template_definition<Function      >;
         using Struct_template         = Template_definition<Struct        >;
-        using Data_template           = Template_definition<Data          >;
+        using Enum_template           = Template_definition<Enum          >;
         using Alias_template          = Template_definition<Alias         >;
         using Typeclass_template      = Template_definition<Typeclass     >;
         using Implementation_template = Template_definition<Implementation>;
@@ -139,8 +139,8 @@ namespace ast {
         using Variant = std::variant<
             definition::Function,
             definition::Function_template,
-            definition::Data,
-            definition::Data_template,
+            definition::Enum,
+            definition::Enum_template,
             definition::Struct,
             definition::Struct_template,
             definition::Alias,

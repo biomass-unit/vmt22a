@@ -445,8 +445,8 @@ namespace {
     };
 
 
-    auto parse_data_constructor(Parse_context& context)
-        -> std::optional<ast::definition::Data::Constructor>
+    auto parse_enum_constructor(Parse_context& context)
+        -> std::optional<ast::definition::Enum::Constructor>
     {
         auto* const anchor = context.pointer;
 
@@ -472,7 +472,7 @@ namespace {
                 context.consume_required(Token::Type::paren_close);
             }
 
-            return ast::definition::Data::Constructor {
+            return ast::definition::Enum::Constructor {
                 .name        = *name,
                 .type        = type,
                 .source_view = make_source_view(anchor, context.pointer - 1)
@@ -483,15 +483,15 @@ namespace {
         }
     }
 
-    constexpr Extractor extract_data = +[](Parse_context& context)
+    constexpr Extractor extract_enum = +[](Parse_context& context)
         -> ast::Definition::Variant
     {
         static constexpr auto parse_constructors =
-            parse_separated_one_or_more<parse_data_constructor, Token::Type::pipe, "a data constructor">;
+            parse_separated_one_or_more<parse_enum_constructor, Token::Type::pipe, "an enum constructor">;
 
         auto* anchor = context.pointer;
 
-        auto name                = extract_upper_name(context, "a data name");
+        auto name                = extract_upper_name(context, "an enum name");
         auto template_parameters = parse_template_parameters(context);
 
         context.consume_required(Token::Type::equals);
@@ -506,7 +506,7 @@ namespace {
                 throw context.error(
                     { anchor - 1, anchor + 1 },
                     std::format(
-                        "A data-definition must not define more "
+                        "An enum-definition must not define more "
                         "than {} constructors, but {} defines {}",
                         max,
                         name,
@@ -518,7 +518,7 @@ namespace {
             }
 
             return definition(
-                ast::definition::Data {
+                ast::definition::Enum {
                     std::move(*constructors),
                     std::move(name)
                 },
@@ -526,7 +526,7 @@ namespace {
             );
         }
         else {
-            throw context.expected("one or more data constructors");
+            throw context.expected("one or more enum constructors");
         }
     };
 
@@ -740,8 +740,8 @@ namespace {
             return extract_function(context);
         case Token::Type::struct_:
             return extract_struct(context);
-        case Token::Type::data:
-            return extract_data(context);
+        case Token::Type::enum_:
+            return extract_enum(context);
         case Token::Type::alias:
             return extract_alias(context);
         case Token::Type::class_:
@@ -795,7 +795,7 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     if (!context.is_finished()) {
         throw context.expected(
             "a definition",
-            "'fn', 'struct', 'data', 'alias', 'impl', 'inst', or 'class'"
+            "'fn', 'struct', 'enum', 'alias', 'impl', 'inst', or 'class'"
         );
     }
 

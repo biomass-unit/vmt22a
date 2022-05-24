@@ -59,7 +59,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
     );
 }
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Data::Constructor) {
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Enum::Constructor) {
     return std::format_to(context.out(), "{}({})", value.name, value.type);
 }
 
@@ -392,12 +392,12 @@ namespace {
             );
         }
 
-        auto operator()(ast::definition::Data const& data) {
+        auto operator()(ast::definition::Enum const& enumeration) {
             return format(
-                "data {}{} = {}",
-                data.name,
+                "enum {}{} = {}",
+                enumeration.name,
                 template_parameters(),
-                data.constructors
+                enumeration.constructors
             );
         }
 

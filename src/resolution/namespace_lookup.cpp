@@ -224,8 +224,8 @@ auto resolution::Resolution_context::get_associated_namespace_if(bu::Wrapper<ir:
     if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&type->value)) {
         return uds->structure->associated_namespace;
     }
-    else if (auto* const udd = std::get_if<ir::type::User_defined_data>(&type->value)) {
-        return udd->data->associated_namespace;
+    else if (auto* const ude = std::get_if<ir::type::User_defined_enum>(&type->value)) {
+        return ude->enumeration->associated_namespace;
     }
     else {
         return std::nullopt;

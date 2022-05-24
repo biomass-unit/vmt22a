@@ -6,4 +6,13 @@
 // fn id(x) = x
 
 
-fn main(): Int = 0
+namespace test {
+    
+    enum Maybe[T] = nothing | just(T)
+    
+    fn data(): Int = 0
+    
+}
+
+
+fn main(): Int = test::data()

@@ -228,7 +228,7 @@ namespace {
                     );
                 }
             },
-            []<bu::one_of<ast::definition::Struct, ast::definition::Data, ast::definition::Alias> T>(
+            []<bu::one_of<ast::definition::Struct, ast::definition::Enum, ast::definition::Alias> T>(
                 resolution::Definition<T> definition
             )
                 -> bu::Wrapper<ir::Type>
@@ -333,9 +333,9 @@ auto resolution::Resolution_context::find_variable_or_function(
         [](Binding*) -> ir::Expression {
             bu::unimplemented(); // Unreachable?
         },
-        [](bu::Wrapper<ir::definition::Data_constructor> constructor) -> ir::Expression {
+        [](bu::Wrapper<ir::definition::Enum_constructor> constructor) -> ir::Expression {
             return {
-                .value = ir::expression::Data_constructor_reference { constructor },
+                .value = ir::expression::Enum_constructor_reference { constructor },
                 .type  = constructor->function_type
             };
         },
@@ -509,7 +509,7 @@ auto resolution::definition_description(Lower_variant const variant)
 {
     static constexpr auto descriptions = std::to_array<std::string_view>({
         "a let-binding",
-        "a data constructor",
+        "an enum constructor",
         "a function definition",
         "a function template definition"
     });
@@ -521,7 +521,7 @@ auto resolution::definition_description(Lower_variant const variant)
             [](Binding* const) -> bu::Source_view {
                 bu::unimplemented(); // Should be unreachable?
             },
-            [](bu::Wrapper<ir::definition::Data_constructor> constructor) {
+            [](bu::Wrapper<ir::definition::Enum_constructor> constructor) {
                 return constructor->source_view;
             },
             [](auto const& definition) {
@@ -537,8 +537,8 @@ auto resolution::definition_description(Upper_variant const variant)
     static constexpr auto descriptions = std::to_array<std::string_view>({
         "a struct definition",
         "a struct template definition",
-        "a data definition",
-        "a data template definition",
+        "an enum definition",
+        "an enum template definition",
         "an alias definition",
         "an alias template definition",
         "a class definition",

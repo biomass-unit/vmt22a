@@ -124,7 +124,7 @@ namespace {
                     space->definitions_in_order.push_back(handle);
                     space->lower_table.add(bu::copy(function.name.identifier), bu::copy(handle));
                 },
-                [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(T& definition) -> void {
+                [&]<bu::one_of<Struct, Enum, Alias, Typeclass> T>(T& definition) -> void {
                     resolution::Definition<T> handle {
                         .syntactic_definition = &definition,
                         .home_namespace       = space
@@ -133,7 +133,7 @@ namespace {
                     space->definitions_in_order.push_back(handle);
                     space->upper_table.add(bu::copy(definition.name.identifier), bu::copy(handle));
                 },
-                [&]<bu::one_of<Struct, Data, Alias, Typeclass> T>(Template_definition<T>& template_definition) -> void {
+                [&]<bu::one_of<Struct, Enum, Alias, Typeclass> T>(Template_definition<T>& template_definition) -> void {
                     resolution::Definition<Template_definition<T>> handle {
                         .syntactic_definition = &template_definition.definition,
                         .home_namespace       = space,
@@ -345,12 +345,12 @@ namespace {
             };
         }
 
-        auto operator()(resolution::Data_definition data) -> void {
-            if (data.has_been_resolved()) {
+        auto operator()(resolution::Enum_definition enumeration) -> void {
+            if (enumeration.has_been_resolved()) {
                 return;
             }
 
-            auto* const definition = data.syntactic_definition;
+            auto* const definition = enumeration.syntactic_definition;
 
             bu::Flatmap<ast::Name, bu::Pair<std::optional<bu::Wrapper<ir::Type>>, bu::U8>> constructors;
             constructors.container().reserve(definition->constructors.size());
@@ -359,7 +359,7 @@ namespace {
             bool          is_trivial = true;
             bu::U8        tag        = 0;
             // The tag doesn't have to be a bu::bounded_u8 because the
-            // parser disallows data-definitions with too many constructors
+            // parser disallows enum-definitions with too many constructors
 
             for (auto& constructor : definition->constructors) {
                 auto type = constructor.type.transform(resolution::resolve_type_with(context));
@@ -382,7 +382,7 @@ namespace {
             }
 
 
-            bu::Wrapper resolved_data = ir::definition::Data {
+            bu::Wrapper resolved_enum = ir::definition::Enum {
                 .name                 = context.current_namespace->format_name_as_member(definition->name.identifier),
                 .associated_namespace = make_associated_namespace(definition->name),
                 .size                 = size,
@@ -390,7 +390,7 @@ namespace {
             };
 
             bu::Wrapper type_handle = ir::Type {
-                .value      = ir::type::User_defined_data { resolved_data },
+                .value      = ir::type::User_defined_enum { resolved_enum },
                 .size       = size,
                 .is_trivial = is_trivial
             };
@@ -429,12 +429,12 @@ namespace {
                     }
                 }();
 
-                resolved_data->associated_namespace->lower_table.add(
+                resolved_enum->associated_namespace->lower_table.add(
                     bu::copy(name.identifier),
-                    ir::definition::Data_constructor {
+                    ir::definition::Enum_constructor {
                         .payload_type  = type,
                         .function_type = function_type,
-                        .data_type     = type_handle,
+                        .enum_type     = type_handle,
                         .name          = name.identifier,
                         .tag           = tag,
                         .source_view   = name.source_view
@@ -443,8 +443,8 @@ namespace {
             }
 
 
-            *data.resolved_info = resolution::Data_definition::Resolved_info {
-                .resolved    = resolved_data,
+            *enumeration.resolved_info = resolution::Enum_definition::Resolved_info {
+                .resolved    = resolved_enum,
                 .type_handle = type_handle
             };
         }
