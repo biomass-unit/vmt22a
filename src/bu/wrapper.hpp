@@ -8,54 +8,59 @@ namespace bu {
     template <class T>
     class [[nodiscard]] Wrapper {
         static_assert(std::is_object_v<T>);
+        static_assert(!std::is_const_v<T>);
 
-        static std::vector<std::remove_const_t<T>> vector;
+        static auto vector() noexcept -> std::vector<T>&; // Avoids SIOF
 
         Usize index;
     public:
         template <class... Args>
             requires ((sizeof...(Args) != 1) || (!similar_to<Wrapper, Args> && ...))
-        constexpr Wrapper(Args&&... args)
-            noexcept(std::is_nothrow_constructible_v<std::remove_const_t<T>, Args&&...>)
-            : index { vector.size() }
+        Wrapper(Args&&... args)
+            noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
+            : index { vector().size() }
         {
-            vector.emplace_back(std::forward<Args>(args)...);
+            vector().emplace_back(std::forward<Args>(args)...);
         }
 
-        constexpr auto operator*(this Wrapper const self) noexcept -> T& {
-            return vector[self.index];
+        auto operator*(this Wrapper const self) noexcept -> T& {
+            return vector()[self.index];
         }
 
-        constexpr auto operator->(this Wrapper const self) noexcept -> T* {
-            return &*self;
+        auto operator->(this Wrapper const self) noexcept -> T* {
+            return std::addressof(*self);
         }
 
-        constexpr operator T&(this Wrapper const self) noexcept {
+        operator T&(this Wrapper const self) noexcept {
             return *self;
         }
 
         auto hash(this Wrapper const self)
-            noexcept(noexcept(std::hash<T>{}(*self))) -> Usize
+            noexcept(noexcept(::bu::hash(*self))) -> Usize
+            requires hashable<T>
         {
-            return std::hash<T>{}(*self);
+            return ::bu::hash(*self);
         }
 
-        constexpr static auto release_wrapped_memory() noexcept {
-            bu::release_vector_memory(vector);
+        static auto release_wrapped_memory() noexcept -> void {
+            bu::release_vector_memory(vector());
         }
     };
 
-    // Initializer lifted out of the class due to apparent compiler bug
+
     template <class T>
-    std::vector<std::remove_const_t<T>> Wrapper<T>::vector =
-        bu::vector_with_capacity<std::remove_const_t<T>>(256);
+    auto Wrapper<T>::vector() noexcept -> std::vector<T>& {
+        static auto vec = vector_with_capacity<T>(1024);
+        return vec;
+    }
+
 
     template <class T>
     Wrapper(T) -> Wrapper<T>;
 
 
     template <class T>
-    constexpr auto operator==(Wrapper<T> const a, Wrapper<T> const b)
+    auto operator==(Wrapper<T> const a, Wrapper<T> const b)
         noexcept(noexcept(*a == *b)) -> bool
     {
         return *a == *b;

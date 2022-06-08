@@ -65,6 +65,13 @@ namespace bu {
             return bu::forward_like<decltype(self)>(self.pairs);
         }
 
+        auto hash() const
+            noexcept(noexcept(::bu::hash(pairs))) -> Usize
+            requires hashable<K> && hashable<V>
+        {
+            return hash_combine_with_seed(get_unique_seed(), pairs);
+        }
+
         constexpr auto operator==(Flatmap const&) const noexcept -> bool = default;
     };
 
@@ -74,8 +81,6 @@ namespace bu {
         Flatmap<Usize, V, Flatmap_strategy::store_keys, Container>
     {
         using Parent = Flatmap<Usize, V, Flatmap_strategy::store_keys, Container>;
-
-        static constexpr std::hash<K> hash;
     public:
         using Parent::Parent;
         using Parent::operator=;
@@ -83,34 +88,27 @@ namespace bu {
         using Parent::span;
         using Parent::size;
         using Parent::container;
+        using Parent::hash;
 
-        // The member functions aren't constexpr because
-        // std::hash::operator() unfortunately isn't constexpr.
+        // The member functions aren't constexpr because the standard library
+        // unfortunately does not provide constexpr hashing support.
 
         auto add(K const& k, V&& v) &
-            noexcept(std::is_nothrow_move_constructible_v<V> && noexcept(hash(k))) -> V*
+            noexcept(std::is_nothrow_move_constructible_v<V> && noexcept(::bu::hash(k))) -> V*
         {
-            return Parent::add(hash(k), std::move(v));
+            return Parent::add(::bu::hash(k), std::move(v));
         }
 
         auto find(K const& k) const&
-            noexcept(noexcept(hash(k))) -> V const*
+            noexcept(noexcept(::bu::hash(k))) -> V const*
         {
-            return Parent::find(hash(k));
+            return Parent::find(::bu::hash(k));
         }
         auto find(K const& k) &
-            noexcept(noexcept(hash(k))) -> V*
+            noexcept(noexcept(::bu::hash(k))) -> V*
         {
-            return Parent::find(hash(k));
+            return Parent::find(::bu::hash(k));
         }
     };
 
 }
-
-
-template <class K, class V, bu::Flatmap_strategy strategy, template <class...> class Container>
-struct std::hash<bu::Flatmap<K, V, strategy, Container>> {
-    auto operator()(bu::Flatmap<K, V, strategy, Container> const& flatmap) const -> bu::Usize {
-        return bu::hash_combine_with_seed(bu::get_unique_seed(), flatmap.container());
-    }
-};

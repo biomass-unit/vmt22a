@@ -62,6 +62,70 @@ namespace bu {
     using Float = double;
 
 
+    namespace dtl {
+
+        template <class, template <class...> class>
+        struct Is_instance_of : std::false_type {};
+        template <class... Args, template <class...> class F>
+        struct Is_instance_of<F<Args...>, F> : std::true_type {};
+
+        template <class T, class U>
+        using Copy_reference = std::conditional_t<
+            std::is_rvalue_reference_v<T>,
+            std::remove_reference_t<U>&&,
+            U&
+        >;
+
+        template <class T, class U>
+        using Copy_const = std::conditional_t<
+            std::is_const_v<std::remove_reference_t<T>>,
+            U const,
+            U
+        >;
+
+    }
+
+
+    template <class T, class U>
+    using Like = dtl::Copy_reference<T&&, dtl::Copy_const<T, std::remove_reference_t<U>>>;
+
+    template <class T>
+    constexpr auto forward_like(auto&& x) noexcept -> Like<T, decltype(x)> {
+        return static_cast<Like<T, decltype(x)>>(x);
+    }
+
+    // ^^^ These are only necessary until the major compilers start supporting C++23
+
+
+    template <class T, template <class...> class F>
+    concept instance_of = dtl::Is_instance_of<T, F>::value;
+
+    template <class T, class U>
+    concept similar_to = std::same_as<std::decay_t<T>, std::decay_t<U>>;
+
+    template <class T, class... Ts>
+    concept one_of = std::disjunction_v<std::is_same<T, Ts>...>;
+
+    template <class T>
+    concept trivial = std::is_trivial_v<T>;
+
+    template <class T>
+    concept trivially_copyable = std::is_trivially_copyable_v<T>;
+
+    template <class>
+    constexpr bool always_false = false;
+
+
+    constexpr bool compiling_in_debug_mode =
+#ifdef NDEBUG
+        false;
+#else
+        true;
+#endif
+
+    constexpr bool compiling_in_release_mode = !compiling_in_debug_mode;
+
+
     inline namespace literals {
 
         using namespace std::literals;
@@ -257,19 +321,22 @@ namespace bu {
 
 
     template <class T>
-    constexpr auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
+    auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
         std::vector<T> vector;
         vector.reserve(capacity);
         return vector;
     }
 
     template <class T>
-    constexpr auto release_vector_memory(std::vector<T>& vector) noexcept -> void {
+    auto release_vector_memory(std::vector<T>& vector) noexcept -> void {
         std::vector<T> {}.swap(vector);
     }
 
     [[nodiscard]]
-    constexpr auto string_without_sso() noexcept -> std::string {
+    inline auto string_without_sso() noexcept -> std::string {
+        // Reserving sizeof(std::string) bytes will always force the string to
+        // use a dynamic buffer instead of a local one, regardless of implementation
+
         std::string string;
         string.reserve(sizeof string);
         return string;
@@ -298,7 +365,35 @@ namespace bu {
     static_assert(digit_count(12345) == 5);
 
 
-    template <class Head, class... Tail>
+    template <class X>
+    auto hash(X const& x)
+        noexcept(std::is_nothrow_invocable_v<std::hash<X>, X const&>) -> Usize
+        requires requires { { std::hash<X>{}(x) } -> std::same_as<Usize>; }
+    {
+        static_assert(std::is_empty_v<std::hash<X>>);
+        return std::hash<X>{}(x);
+    }
+
+    template <class X>
+    auto hash(X const& x)
+        noexcept(noexcept(x.hash())) -> Usize
+        requires requires { { x.hash() } -> std::same_as<Usize>; }
+    {
+        return x.hash();
+    }
+
+    template <class X>
+    auto hash(X const&) -> void {
+        static_assert(always_false<X>, "bu::hash: type not hashable");
+    }
+
+    template <class X>
+    concept hashable = requires (X const x) {
+        { ::bu::hash(x) } -> std::same_as<Usize>;
+    };
+
+
+    template <hashable Head, hashable... Tail>
     auto hash_combine_with_seed(
         Usize          seed,
         Head const&    head,
@@ -308,7 +403,7 @@ namespace bu {
     {
         // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
 
-        seed ^= (std::hash<Head>{}(head) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+        seed ^= (::bu::hash(head) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 
         if constexpr (sizeof...(Tail) != 0) {
             return hash_combine_with_seed<Tail...>(seed, tail...);
@@ -318,7 +413,7 @@ namespace bu {
         }
     }
 
-    template <class... Args>
+    template <hashable... Args>
     auto hash_combine(Args const&... args) -> Usize {
         return hash_combine_with_seed(0, args...);
     }
@@ -332,69 +427,6 @@ namespace bu {
               + static_cast<Usize>(caller.line())
               * static_cast<Usize>(caller.column()));
     }
-
-    namespace dtl {
-
-        template <class, template <class...> class>
-        struct Is_instance_of : std::false_type {};
-        template <class... Args, template <class...> class F>
-        struct Is_instance_of<F<Args...>, F> : std::true_type {};
-
-        template <class T, class U>
-        using Copy_reference = std::conditional_t<
-            std::is_rvalue_reference_v<T>,
-            std::remove_reference_t<U>&&,
-            U&
-        >;
-
-        template <class T, class U>
-        using Copy_const = std::conditional_t<
-            std::is_const_v<std::remove_reference_t<T>>,
-            U const,
-            U
-        >;
-
-    }
-
-
-    template <class T, class U>
-    using Like = dtl::Copy_reference<T&&, dtl::Copy_const<T, std::remove_reference_t<U>>>;
-
-    template <class T>
-    constexpr auto forward_like(auto&& x) noexcept -> Like<T, decltype(x)> {
-        return static_cast<Like<T, decltype(x)>>(x);
-    }
-
-    // ^^^ These are only necessary until the major compilers start supporting C++23
-
-
-    template <class T, template <class...> class F>
-    concept instance_of = dtl::Is_instance_of<T, F>::value;
-
-    template <class T, class U>
-    concept similar_to = std::same_as<std::decay_t<T>, std::decay_t<U>>;
-
-    template <class T, class... Ts>
-    concept one_of = std::disjunction_v<std::is_same<T, Ts>...>;
-
-    template <class T>
-    concept trivial = std::is_trivial_v<T>;
-
-    template <class T>
-    concept trivially_copyable = std::is_trivially_copyable_v<T>;
-
-    template <class>
-    constexpr bool always_false = false;
-
-
-    constexpr bool compiling_in_debug_mode =
-#ifdef NDEBUG
-        false;
-#else
-        true;
-#endif
-
-    constexpr bool compiling_in_release_mode = !compiling_in_debug_mode;
 
 
     auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto const... args)
@@ -471,7 +503,7 @@ namespace bu {
 using namespace bu::literals;
 
 
-template <class T>
+template <bu::hashable T>
 struct std::hash<std::vector<T>> {
     auto operator()(std::vector<T> const& vector) const -> bu::Usize {
         bu::Usize seed = bu::get_unique_seed();
@@ -484,7 +516,7 @@ struct std::hash<std::vector<T>> {
     }
 };
 
-template <class Fst, class Snd>
+template <bu::hashable Fst, bu::hashable Snd>
 struct std::hash<bu::Pair<Fst, Snd>> {
     auto operator()(bu::Pair<Fst, Snd> const& pair) const
         noexcept(
@@ -493,18 +525,6 @@ struct std::hash<bu::Pair<Fst, Snd>> {
         ) -> bu::Usize
     {
         return bu::hash_combine_with_seed(bu::get_unique_seed(), pair.first, pair.second);
-    }
-};
-
-template <class X>
-    requires requires (X const& x) {
-        { x.hash() } -> std::same_as<bu::Usize>;
-    }
-struct std::hash<X> {
-    auto operator()(X const& x) const
-        noexcept(noexcept(x.hash())) -> bu::Usize
-    {
-        return x.hash();
     }
 };
 
