@@ -92,7 +92,7 @@ namespace {
             );
 
             if (!context.is_unevaluated) {
-                context.scope.current_frame_offset.safe_add(this_type->size);
+                context.scope.current_frame_offset += this_type->size;
 
                 if (!this_type->is_trivial) {
                     context.scope.destroy_in_reverse_order.push_back(this_type);

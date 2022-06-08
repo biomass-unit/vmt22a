@@ -68,7 +68,7 @@ namespace {
             }
 
             auto const length = elements.size();
-            auto const size   = head.type->size.copy().safe_mul(length);
+            auto const size   = head.type->size * length;
 
             return {
                 .value = ir::expression::Array_literal {
@@ -99,7 +99,7 @@ namespace {
                 if (!ir_expr.type->is_trivial) {
                     is_trivial = false;
                 }
-                size.safe_add(ir_expr.type->size.get());
+                size += ir_expr.type->size;
 
                 types.push_back(ir_expr.type);
                 expressions.push_back(std::move(ir_expr));
@@ -366,7 +366,7 @@ namespace {
                                 .mut  = take_mutable_ref
                             }
                         },
-                        .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
+                        .size       = ir::Size_type { bu::unchecked, sizeof(std::byte*) },
                         .is_trivial = true
                     }
                 };
@@ -407,7 +407,7 @@ namespace {
                         if (auto* const tuple = std::get_if<ir::type::Tuple>(&most_recent_type->value)) {
                             if (index < tuple->types.size()) {
                                 for (auto& type : tuple->types | std::views::take(member_index)) {
-                                    offset.safe_add(type->size);
+                                    offset += type->size;
                                 }
                                 most_recent_type = tuple->types.at(index);
                             }
@@ -428,7 +428,7 @@ namespace {
                         if (auto* const uds = std::get_if<ir::type::User_defined_struct>(&most_recent_type->value)) {
                             if (auto* const member = uds->structure->members.find(member_name)) {
                                 most_recent_type = member->type;
-                                offset.safe_add(member->offset);
+                                offset += member->offset;
                             }
                             else {
                                 throw error(

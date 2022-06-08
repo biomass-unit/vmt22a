@@ -289,7 +289,7 @@ namespace {
                 },
                 .type_handle = ir::Type {
                     .value      = ir::type::Function { std::move(parameter_types), body->type },
-                    .size       = ir::Size_type { bu::unchecked_tag, 2 * sizeof(std::byte*) },
+                    .size       = ir::Size_type { bu::unchecked, 2 * sizeof(std::byte*) },
                     .is_trivial = true // for now
                 }
             };
@@ -315,7 +315,7 @@ namespace {
                 if (!type->is_trivial) {
                     is_trivial = false;
                 }
-                size.safe_add(type->size);
+                size += type->size;
 
                 members.add(
                     bu::copy(member.name),
@@ -419,7 +419,7 @@ namespace {
                                 .parameter_types = std::move(parameter_types),
                                 .return_type     = type_handle
                             },
-                            .size       = ir::Size_type { bu::unchecked_tag, 2 * sizeof(std::byte*) },
+                            .size       = ir::Size_type { bu::unchecked, 2 * sizeof(std::byte*) },
                             .is_trivial = true
                         };
 

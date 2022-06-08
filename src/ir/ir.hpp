@@ -17,11 +17,7 @@ namespace resolution {
 
 namespace ir {
 
-    using Size_type = bu::Bounded_integer<
-        bu::Usize,
-        std::numeric_limits<vm::Local_size_type>::min(),
-        std::numeric_limits<vm::Local_size_type>::max()
-    >;
+    using Size_type = bu::Bounded_integer<vm::Local_size_type>;
 
     struct [[nodiscard]] Type;
     struct [[nodiscard]] Expression;
@@ -181,7 +177,7 @@ namespace ir {
             template <class T>
             bu::Wrapper<Type> const make_primitive = Type {
                 .value      = type::Primitive<T> {},
-                .size       = Size_type { bu::unchecked_tag, sizeof(T) },
+                .size       = Size_type { bu::unchecked, sizeof(T) },
                 .is_trivial = true
             };
         }

@@ -5,13 +5,86 @@
 
 namespace bu {
 
-    constexpr struct Unchecked_tag {} unchecked_tag;
+    constexpr struct Unchecked {} unchecked;
 
     struct Bounded_integer_out_of_range : std::exception {
         auto what() const -> char const* override {
             return "bu::Bounded_integer out of range";
         }
     };
+
+    struct Bounded_integer_overflow : Bounded_integer_out_of_range {
+        auto what() const -> char const* override {
+            return "bu::Bounded_integer arithmetic operation overflowed";
+        }
+    };
+
+    struct Bounded_integer_underflow : Bounded_integer_out_of_range {
+        auto what() const -> char const* override {
+            return "bu::Bounded_integer arithmetic operation underflowed";
+        }
+    };
+
+
+    // Overflow & underflow detection logic for addition, subtraction, multiplication, and division
+    // taken from https://vladris.com/blog/2018/10/13/arithmetic-overflow-and-underflow.html
+
+
+    template <std::integral T>
+    constexpr auto would_addition_overflow(T const a, T const b) noexcept -> bool {
+        return (b >= 0) && (a > std::numeric_limits<T>::max() - b);
+    }
+
+    template <std::integral T>
+    constexpr auto would_addition_underflow(T const a, T const b) noexcept -> bool {
+        return (b < 0) && (a < std::numeric_limits<T>::min() - b);
+    }
+
+
+    template <std::integral T>
+    constexpr auto would_subtraction_overflow(T const a, T const b) noexcept -> bool {
+        return (b < 0) && (a > std::numeric_limits<T>::max() + b);
+    }
+
+    template <std::integral T>
+    constexpr auto would_subtraction_underflow(T const a, T const b) noexcept -> bool {
+        return (b >= 0) && (a < std::numeric_limits<T>::min() + b);
+    }
+
+
+    template <std::integral T>
+    constexpr auto would_multiplication_overflow(T const a, T const b) noexcept -> bool {
+        return b != 0
+            ? ((b > 0) && (a > 0) && (a > std::numeric_limits<T>::max() / b)) ||
+              ((b < 0) && (a < 0) && (a < std::numeric_limits<T>::max() / b))
+            : false;
+    }
+
+    template <std::integral T>
+    constexpr auto would_multiplication_underflow(T const a, T const b) noexcept -> bool {
+        return b != 0
+            ? ((b > 0) && (a < 0) && (a < std::numeric_limits<T>::min() / b)) ||
+              ((b < 0) && (a > 0) && (a > std::numeric_limits<T>::min() / b))
+            : false;
+    }
+
+
+    template <std::integral T>
+    constexpr auto would_division_overflow(T const a, T const b) noexcept -> bool {
+        return (a == std::numeric_limits<T>::min()) && (b == -1)
+            && (a != 0);
+    }
+
+
+    template <std::integral X>
+    constexpr auto would_increment_overflow(X const x) noexcept -> bool {
+        return x == std::numeric_limits<X>::max();
+    }
+
+    template <std::integral X>
+    constexpr auto would_decrement_underflow(X const x) noexcept -> bool {
+        return x == std::numeric_limits<X>::min();
+    }
 
 
     template <
@@ -23,25 +96,25 @@ namespace bu {
             : throw "please specify a default value"
     >
     class Bounded_integer {
-        static_assert(min < max);
+        static_assert((min <= default_value) && (default_value <= max));
 
         T value;
 
-        static constexpr auto is_in_range(T const x) noexcept -> bool {
+        static constexpr auto is_in_range(std::integral auto const x) noexcept -> bool {
             return std::cmp_less_equal(min, x) && std::cmp_less_equal(x, max);
         }
     public:
         constexpr Bounded_integer() noexcept
             : value { default_value } {}
 
-        constexpr explicit Bounded_integer(Unchecked_tag, T value) noexcept
-            : value { value }
+        constexpr explicit Bounded_integer(Unchecked, std::integral auto const value) noexcept
+            : value { static_cast<T>(value) }
         {
             assert(is_in_range(value));
         }
 
-        constexpr explicit Bounded_integer(T const value)
-            : value { value }
+        constexpr Bounded_integer(std::integral auto const value)
+            : value { static_cast<T>(value) }
         {
             if (!is_in_range(value)) [[unlikely]] {
                 throw Bounded_integer_out_of_range {};
@@ -52,10 +125,6 @@ namespace bu {
             return self.value;
         }
 
-        constexpr auto copy(this Bounded_integer const self) noexcept -> Bounded_integer {
-            return self;
-        }
-
         template <std::integral U>
         constexpr auto safe_cast(this Bounded_integer const self) noexcept -> U {
             static_assert(std::cmp_greater_equal(min, std::numeric_limits<U>::min())
@@ -63,49 +132,130 @@ namespace bu {
             return static_cast<U>(self.value);
         }
 
-        constexpr auto safe_add(T const rhs) -> Bounded_integer& {
-            // https://stackoverflow.com/questions/3944505/detecting-signed-overflow-in-c-c
 
-            if (value >= 0) {
-                if ((max - value) < rhs) {
-                    throw Bounded_integer_out_of_range {};
-                }
+        constexpr auto operator+=(Bounded_integer const other) -> Bounded_integer& {
+            if (would_addition_overflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_overflow {};
             }
-            else if (rhs < (min - value)) {
-                throw Bounded_integer_out_of_range {};
+            if (would_addition_underflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_underflow {};
             }
 
-            value += rhs;
+            value += other.value;
             return *this;
         }
 
-        template <class U, U rhs_min, U rhs_max, U rhs_def>
-            requires (std::cmp_less_equal(min, rhs_min) && std::cmp_less_equal(rhs_max, max))
-        constexpr auto safe_add(Bounded_integer<U, rhs_min, rhs_max, rhs_def> const rhs) -> Bounded_integer& {
-            return safe_add(static_cast<T>(rhs.get()));
+        constexpr auto operator+(this Bounded_integer self, Bounded_integer const other)
+            -> Bounded_integer
+        {
+            return self += other;
         }
 
-        constexpr auto safe_mul(T const rhs) -> Bounded_integer& {
-            if (!value || !rhs) [[unlikely]] {
-                value = 0;
-                return *this;
+
+        constexpr auto operator-=(Bounded_integer const other) -> Bounded_integer& {
+            if (would_subtraction_overflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_overflow {};
+            }
+            if (would_subtraction_underflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_underflow {};
             }
 
-            // https://www.cplusplus.com/articles/DE18T05o/
+            value -= other.value;
+            return *this;
+        }
 
-            static_assert(std::is_unsigned_v<T>, "signed multiplication is still a bit buggy");
+        constexpr auto operator-(this Bounded_integer self, Bounded_integer const other)
+            -> Bounded_integer
+        {
+            return self -= other;
+        }
 
-            static constexpr auto maximum = std::is_unsigned_v<T>
-                ? (max - min)
-                : (max - min) / 2;
 
-            if (value > (maximum / rhs)) {
-                throw Bounded_integer_out_of_range {};
+        constexpr auto operator*=(Bounded_integer const other) -> Bounded_integer& {
+            if (would_multiplication_overflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_overflow {};
             }
-            else {
-                value *= rhs;
-                return *this;
+            if (would_multiplication_underflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_underflow {};
             }
+
+            value *= other.value;
+            return *this;
+        }
+
+        constexpr auto operator*(this Bounded_integer self, Bounded_integer const other)
+            -> Bounded_integer
+        {
+            return self *= other;
+        }
+
+
+        constexpr auto operator/=(Bounded_integer const other) -> Bounded_integer& {
+            if (would_division_overflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_overflow {};
+            }
+
+            value /= other.value;
+            return *this;
+        }
+
+        constexpr auto operator/(this Bounded_integer self, Bounded_integer const other)
+            -> Bounded_integer
+        {
+            return self /= other;
+        }
+
+
+        constexpr auto operator%=(Bounded_integer const other) -> Bounded_integer& {
+            if (would_division_overflow(value, other.value)) [[unlikely]] {
+                throw Bounded_integer_overflow {};
+            }
+
+            value %= other.value;
+            return *this;
+        }
+
+        constexpr auto operator%(this Bounded_integer self, Bounded_integer const other)
+            -> Bounded_integer
+        {
+            return self %= other;
+        }
+
+
+        constexpr auto operator++() -> Bounded_integer& {
+            if (would_increment_overflow(value)) [[unlikely]] {
+                throw Bounded_integer_overflow {};
+            }
+
+            ++value;
+            return *this;
+        }
+
+        constexpr auto operator++(int) -> Bounded_integer {
+            auto copy = *this;
+            ++*this;
+            return copy;
+        }
+
+
+        constexpr auto operator--() -> Bounded_integer& {
+            if (would_decrement_underflow(value)) [[unlikely]] {
+                throw Bounded_integer_underflow {};
+            }
+
+            --value;
+            return *this;
+        }
+
+        constexpr auto operator--(int) -> Bounded_integer {
+            auto copy = *this;
+            ++*this;
+            return copy;
+        }
+
+
+        constexpr explicit operator bool(this Bounded_integer const self) noexcept {
+            return value != 0;
         }
 
 

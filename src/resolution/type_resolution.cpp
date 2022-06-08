@@ -47,7 +47,7 @@ namespace {
             for (auto& type : tuple.types) {
                 bu::wrapper auto ir_type = context.resolve_type(type);
 
-                size.safe_add(ir_type->size.get());
+                size += ir_type->size;
 
                 if (!ir_type->is_trivial) {
                     is_trivial = false;
@@ -74,7 +74,7 @@ namespace {
                     .length       = static_cast<bu::Usize>(length->value)
                 };
 
-                auto const size = type.element_type->size.copy().safe_mul(type.length);
+                auto const size = type.element_type->size * type.length;
                 bool const is_trivial = type.element_type->is_trivial;
 
                 return ir::Type {
@@ -91,7 +91,7 @@ namespace {
         auto operator()(ast::type::Slice& slice) -> bu::Wrapper<ir::Type> {
             return ir::Type {
                 .value      = ir::type::Slice { context.resolve_type(slice.element_type) },
-                .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) + sizeof(bu::Usize) },
+                .size       = ir::Size_type { bu::unchecked, sizeof(std::byte*) + sizeof(bu::Usize) },
                 .is_trivial = true
             };
         }
@@ -106,7 +106,7 @@ namespace {
         auto operator()(ast::type::Pointer& pointer) -> bu::Wrapper<ir::Type> {
             return ir::Type {
                 .value      = resolve_pointer(pointer),
-                .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
+                .size       = ir::Size_type { bu::unchecked, sizeof(std::byte*) },
                 .is_trivial = true
             };
         }
@@ -114,7 +114,7 @@ namespace {
         auto operator()(ast::type::Reference& reference) -> bu::Wrapper<ir::Type> {
             return ir::Type {
                 .value      = ir::type::Reference { resolve_pointer(reference) },
-                .size       = ir::Size_type { bu::unchecked_tag, sizeof(std::byte*) },
+                .size       = ir::Size_type { bu::unchecked, sizeof(std::byte*) },
                 .is_trivial = true
             };
         }

@@ -43,7 +43,7 @@ namespace bu {
         }
 
         static auto release_wrapped_memory() noexcept -> void {
-            bu::release_vector_memory(vector());
+            release_vector_memory(vector());
         }
     };
 
