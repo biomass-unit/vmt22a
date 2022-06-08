@@ -1,5 +1,7 @@
 #pragma once
 
+#if 0
+
 #include "bu/utilities.hpp"
 #include "bu/flatmap.hpp"
 #include "bu/color.hpp"
@@ -251,3 +253,5 @@ namespace resolution {
     auto definition_description(Upper_variant) -> bu::Pair<std::string_view, bu::Source_view>;
 
 }
+
+#endif

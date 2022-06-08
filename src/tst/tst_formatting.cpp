@@ -1,6 +1,5 @@
 #include "bu/utilities.hpp"
-#include "ast/ast_formatting.hpp"
-#include "ir_formatting.hpp"
+#include "tst_formatting.hpp"
 
 
 namespace {
@@ -16,67 +15,67 @@ namespace {
 
     struct Expression_format_visitor : Visitor_base {
         template <class T>
-        auto operator()(ir::expression::Literal<T> const& literal) {
+        auto operator()(tst::expression::Literal<T> const& literal) {
             return format("{}", literal.value);
         }
 
-        auto operator()(ir::expression::Array_literal const& array) {
+        auto operator()(tst::expression::Array_literal const& array) {
             return std::format_to(out, "[{}]", array.elements);
         }
 
-        auto operator()(ir::expression::Tuple const& tuple) {
+        auto operator()(tst::expression::Tuple const& tuple) {
             return format("({})", tuple.expressions);
         }
 
-        auto operator()(ir::expression::Invocation const& invocation) {
+        auto operator()(tst::expression::Invocation const& invocation) {
             return format("{}({})", invocation.invocable, invocation.arguments);
         }
 
-        auto operator()(ir::expression::Struct_initializer const& init) {
+        auto operator()(tst::expression::Struct_initializer const& init) {
             return format("{} {{ {} }}", init.type, init.member_initializers);
         }
 
-        auto operator()(ir::expression::Let_binding const& binding) {
+        auto operator()(tst::expression::Let_binding const& binding) {
             return format("bind {}", binding.initializer);
         }
 
-        auto operator()(ir::expression::Local_variable const& variable) {
+        auto operator()(tst::expression::Local_variable const& variable) {
             return format("(Move offset {})", variable.frame_offset);
         }
 
-        auto operator()(ir::expression::Function_reference const& function) {
+        auto operator()(tst::expression::Function_reference const& function) {
             return format("{}", function.definition->name);
         }
 
-        auto operator()(ir::expression::Enum_constructor_reference const& reference) {
-            return format("{}::{}", reference.constructor->enum_type, reference.constructor->name);
+        auto operator()(tst::expression::Enum_constructor_reference const& reference) {
+            return format("{}::{}", reference.enumeration->name, reference.constructor->name);
         }
 
-        auto operator()(ir::expression::Reference const& reference) {
+        auto operator()(tst::expression::Reference const& reference) {
             return format("(Ref offset {})", reference.frame_offset);
         }
 
-        auto operator()(ir::expression::Member_access const& access) {
+        auto operator()(tst::expression::Member_access const& access) {
             return format("({}, mem offset {})", access.expression, access.offset);
         }
 
-        auto operator()(ir::expression::Conditional const& conditional) {
+        auto operator()(tst::expression::Conditional const& conditional) {
             return format("if {} then {} else {}", conditional.condition, conditional.true_branch, conditional.false_branch);
         }
 
-        auto operator()(ir::expression::Type_cast const& cast) {
+        auto operator()(tst::expression::Type_cast const& cast) {
             return format("({} as {})", cast.expression, cast.type);
         }
 
-        auto operator()(ir::expression::Infinite_loop const& loop) {
+        auto operator()(tst::expression::Infinite_loop const& loop) {
             return format("loop {}", loop.body);
         }
 
-        auto operator()(ir::expression::While_loop const& loop) {
+        auto operator()(tst::expression::While_loop const& loop) {
             return format("while {} {}", loop.condition, loop.body);
         }
 
-        auto operator()(ir::expression::Compound const& compound) {
+        auto operator()(tst::expression::Compound const& compound) {
             format("{{ ");
             for (auto const& expression : compound.side_effects) {
                 format("{}; ", expression);
@@ -86,41 +85,41 @@ namespace {
     };
 
     struct Type_format_visitor : Visitor_base {
-        auto operator()(ir::type::Integer   const&) { return format("Int");    }
-        auto operator()(ir::type::Floating  const&) { return format("Float");  }
-        auto operator()(ir::type::Character const&) { return format("Char");   }
-        auto operator()(ir::type::Boolean   const&) { return format("Bool");   }
-        auto operator()(ir::type::String    const&) { return format("String"); }
+        auto operator()(tst::type::Integer   const&) { return format("Int");    }
+        auto operator()(tst::type::Floating  const&) { return format("Float");  }
+        auto operator()(tst::type::Character const&) { return format("Char");   }
+        auto operator()(tst::type::Boolean   const&) { return format("Bool");   }
+        auto operator()(tst::type::String    const&) { return format("String"); }
 
-        auto operator()(ir::type::Tuple const& tuple) {
+        auto operator()(tst::type::Tuple const& tuple) {
             return format("({})", tuple.types);
         }
 
-        auto operator()(ir::type::Function const& function) {
+        auto operator()(tst::type::Function const& function) {
             return format("fn({}): {}", function.parameter_types, function.return_type);
         }
 
-        auto operator()(ir::type::Array const& array) {
+        auto operator()(tst::type::Array const& array) {
             return format("[{}; {}]", array.element_type, array.length);
         }
 
-        auto operator()(ir::type::Slice const& slice) {
+        auto operator()(tst::type::Slice const& slice) {
             return format("[{}]", slice.element_type);
         }
 
-        auto operator()(ir::type::Reference const& reference) {
+        auto operator()(tst::type::Reference const& reference) {
             return format("&{}{}", reference.pointer.mut ? "mut " : "", reference.pointer.type);
         }
 
-        auto operator()(ir::type::Pointer const& pointer) {
+        auto operator()(tst::type::Pointer const& pointer) {
             return format("*{}{}", pointer.mut ? "mut " : "", pointer.type);
         }
 
-        auto operator()(ir::type::User_defined_struct const& ud) {
+        auto operator()(tst::type::User_defined_struct const& ud) {
             return format("{}", ud.structure->name);
         }
 
-        auto operator()(ir::type::User_defined_enum const& ud) {
+        auto operator()(tst::type::User_defined_enum const& ud) {
             return format("{}", ud.enumeration->name);
         }
     };
@@ -128,10 +127,10 @@ namespace {
 }
 
 
-DEFINE_FORMATTER_FOR(ir::Expression) {
+DEFINE_FORMATTER_FOR(tst::Expression) {
     return std::visit(Expression_format_visitor { { context.out() } }, value.value);
 }
 
-DEFINE_FORMATTER_FOR(ir::Type) {
+DEFINE_FORMATTER_FOR(tst::Type) {
     return std::visit(Type_format_visitor { { context.out() } }, value.value);
 }

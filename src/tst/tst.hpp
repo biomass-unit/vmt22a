@@ -4,18 +4,11 @@
 #include "bu/wrapper.hpp"
 #include "bu/flatmap.hpp"
 #include "bu/bounded_integer.hpp"
-#include "ast/ast.hpp" // fix?
 #include "vm/virtual_machine.hpp"
+#include "lexer/token.hpp"
 
 
-namespace resolution {
-
-    struct Namespace; // Forward declared because Struct and Enum definitions need associated namespaces
-
-}
-
-
-namespace ir {
+namespace tst {
 
     using Size_type = bu::Bounded_integer<vm::Local_size_type>;
 
@@ -25,55 +18,64 @@ namespace ir {
 
     namespace definition {
 
+        struct Namespace;
+
+
         struct Function {
             struct Parameter {
                 bu::Wrapper<Type>                      type;
                 std::optional<bu::Wrapper<Expression>> default_value;
             };
+
             std::string             name;
             std::vector<Parameter>  parameters;
             bu::Wrapper<Type>       return_type;
+            bu::Wrapper<Type>       function_type;
             bu::Wrapper<Expression> body;
+            bu::Wrapper<Namespace>  home_namespace;
         };
 
-        struct Enum_constructor {
-            std::optional<bu::Wrapper<Type>> payload_type;
-            bu::Wrapper<Type>                function_type;
-            bu::Wrapper<Type>                enum_type;
-            lexer::Identifier                name;
-            bu::U8                           tag;
-
-            bu::Source_view source_view;
-            DEFAULTED_EQUALITY(Enum_constructor);
-        };
 
         struct Enum {
-            std::string                        name;
-            bu::Wrapper<resolution::Namespace> associated_namespace;
-            Size_type                          size;
-            bool                               is_trivial = false;
+            struct Constructor {
+                std::optional<bu::Wrapper<Type>> payload_type;
+                bu::Wrapper<Type>                function_type;
+                lexer::Identifier                name;
+                bu::U8                           tag;
+
+                bu::Source_view source_view;
+            };
+
+            std::string                           name;
+            std::vector<bu::Wrapper<Constructor>> constructors;
+            bu::Wrapper<Type>                     enum_type;
+            bu::Wrapper<Namespace>                home_namespace;
         };
+
 
         struct Struct {
             struct Member {
                 bu::Wrapper<Type> type;
-                bu::U16           offset;
                 bool              is_public = false;
+
+                bu::Source_view source_view;
             };
-            bu::Flatmap<lexer::Identifier, Member> members;
+
             std::string                            name;
-            bu::Wrapper<resolution::Namespace>     associated_namespace;
-            Size_type                              size;
-            bool                                   is_trivial = false;
+            bu::Flatmap<lexer::Identifier, Member> members;
+            bu::Wrapper<Type>                      struct_type;
+            bu::Wrapper<Namespace>                 home_namespace;
         };
 
+
         struct Alias {
-            std::string       name; // Unnecessary?
             bu::Wrapper<Type> type;
         };
 
+
         struct Typeclass {
-            std::string name;
+            std::string            name;
+            bu::Wrapper<Namespace> home_namespace;
         };
 
     }
@@ -81,13 +83,15 @@ namespace ir {
 
     namespace type {
 
-        template <class T>
-        using Primitive = ast::type::Primitive<T>;
+        template <class>
+        struct Primitive {
+            DEFAULTED_EQUALITY(Primitive);
+        };
 
-        using Integer   = Primitive<bu::Isize    >;
-        using Floating  = Primitive<bu::Float    >;
-        using Character = Primitive<bu::Char     >;
-        using Boolean   = Primitive<bool         >;
+        using Integer   = Primitive<bu::Isize>;
+        using Floating  = Primitive<bu::Float>;
+        using Character = Primitive<bu::Char>;
+        using Boolean   = Primitive<bool>;
         using String    = Primitive<lexer::String>;
 
         struct Tuple {
@@ -97,7 +101,7 @@ namespace ir {
 
         struct Function {
             std::vector<bu::Wrapper<Type>> parameter_types;
-            bu::Wrapper<Type> return_type;
+            bu::Wrapper<Type>              return_type;
             DEFAULTED_EQUALITY(Function);
         };
 
@@ -158,11 +162,7 @@ namespace ir {
             type::User_defined_struct
         >;
 
-        Variant   value;
-        Size_type size;
-        bool      is_trivial = false;
-
-        //auto conforms_to(Typeclass) -> bool
+        Variant value;
 
         auto hash() const -> bu::Usize;
 
@@ -175,11 +175,7 @@ namespace ir {
 
         namespace dtl {
             template <class T>
-            bu::Wrapper<Type> const make_primitive = Type {
-                .value      = type::Primitive<T> {},
-                .size       = Size_type { bu::unchecked, sizeof(T) },
-                .is_trivial = true
-            };
+            bu::Wrapper<Type> const make_primitive = Type { type::Primitive<T> {} };
         }
 
         inline auto const
@@ -189,10 +185,7 @@ namespace ir {
             boolean   = dtl::make_primitive<bool         >,
             string    = dtl::make_primitive<lexer::String>;
 
-        inline bu::Wrapper<Type> const unit = Type {
-            .value      = type::Tuple {},
-            .is_trivial = true
-        };
+        inline bu::Wrapper<Type> const unit = Type { type::Tuple {} };
 
     }
 
@@ -200,7 +193,16 @@ namespace ir {
     namespace expression {
 
         template <class T>
-        using Literal = ast::expression::Literal<T>;
+        struct Literal {
+            T value;
+            DEFAULTED_EQUALITY(Literal);
+        };
+
+        using Integer   = Literal<bu::Isize>;
+        using Floating  = Literal<bu::Float>;
+        using Character = Literal<bu::Char>;
+        using Boolean   = Literal<bool>;
+        using String    = Literal<lexer::String>;
 
         struct Array_literal {
             std::vector<Expression> elements;
@@ -240,7 +242,8 @@ namespace ir {
         };
 
         struct Enum_constructor_reference {
-            bu::Wrapper<definition::Enum_constructor> constructor;
+            bu::Wrapper<definition::Enum::Constructor> constructor;
+            bu::Wrapper<definition::Enum>              enumeration;
             DEFAULTED_EQUALITY(Enum_constructor_reference);
         };
 
@@ -326,9 +329,9 @@ namespace ir {
         template <class T>
         using Table = bu::Flatmap<lexer::Identifier, T>;
 
-        Table<ir::Expression>        expression_arguments;
-        Table<bu::Wrapper<ir::Type>> type_arguments;
-        Table<bool>                  mutability_arguments;
+        Table<Expression>        expression_arguments;
+        Table<bu::Wrapper<Type>> type_arguments;
+        Table<bool>              mutability_arguments;
 
         struct Argument_indicator {
             enum class Kind { expression, type, mutability } kind;

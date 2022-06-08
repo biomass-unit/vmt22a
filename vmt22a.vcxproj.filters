@@ -69,9 +69,6 @@
     <ClCompile Include="src\tests\tests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\codegen\codegen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cli\cli.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -84,7 +81,7 @@
     <ClCompile Include="src\resolution\type_resolution.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ir\ir_formatting.cpp">
+    <ClCompile Include="src\tst\tst_formatting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resolution\expression_resolution.cpp">
@@ -93,13 +90,16 @@
     <ClCompile Include="src\resolution\bind_pattern.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ir\ir_hashing.cpp">
+    <ClCompile Include="src\tst\tst_hashing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resolution\resolution_internals.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resolution\namespace_lookup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\typechecker\typechecker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -182,19 +182,13 @@
     <ClInclude Include="src\bu\flatmap.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\codegen\codegen_internals.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\codegen\codegen.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\bu\timer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\cli\cli.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ir\ir.hpp">
+    <ClInclude Include="src\tst\tst.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resolution\resolution.hpp">
@@ -203,13 +197,16 @@
     <ClInclude Include="src\resolution\resolution_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ir\ir_formatting.hpp">
+    <ClInclude Include="src\tst\tst_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tests\internals\test_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bu\bounded_integer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\typechecker\typechecker.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

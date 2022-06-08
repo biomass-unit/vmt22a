@@ -1,4 +1,7 @@
 #include "bu/utilities.hpp"
+
+#if 0
+
 #include "resolution.hpp"
 #include "resolution_internals.hpp"
 
@@ -587,3 +590,5 @@ auto resolution::resolve(ast::Module&& module) -> ir::Program {
 
     return {};
 }
+
+#endif

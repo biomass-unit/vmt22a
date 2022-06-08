@@ -1,4 +1,5 @@
 #include "bu/utilities.hpp"
+#include "bu/bounded_integer.hpp"
 #include "bu/color.hpp"
 #include "bu/timer.hpp"
 
@@ -15,9 +16,9 @@
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
 
-#include "ir/ir_formatting.hpp"
-#include "resolution/resolution.hpp"
-#include "resolution/resolution_internals.hpp"
+#include "tst/tst.hpp"
+#include "tst/tst_formatting.hpp"
+#include "typechecker/typechecker.hpp"
 
 #include "tests/tests.hpp"
 
@@ -78,7 +79,7 @@ namespace {
         bu::print("{}\n", parser::parse(lexer::lex(std::move(source))));
     });
 
-    [[maybe_unused]]
+    /*[[maybe_unused]]
     auto const expression_resolution_repl = generic_repl([](bu::Source source) {
         auto tokenized_source = lexer::lex(std::move(source));
         parser::Parse_context parse_context { tokenized_source };
@@ -95,7 +96,7 @@ namespace {
         auto expression = resolution_context.resolve_expression(result);
 
         bu::print("ir: {}\n", expression);
-    });
+    });*/
 
 
     template <auto extract>
@@ -128,7 +129,7 @@ auto main(int argc, char const** argv) -> int try {
         ("version",                "Show the interpreter version")
         ("repl"   , cli::string(), "Run the given repl"          )
         ("machine",                "Debug the interpreter"       )
-        ("resolve",                "Debug resolution"            )
+        //("resolve",                "Debug resolution"            )
         ("nocolor",                "Disable colored output"      )
         ("time"   ,                "Print the execution time"    )
         ("test"   ,                "Run all tests"               );
@@ -160,13 +161,13 @@ auto main(int argc, char const** argv) -> int try {
         tests::run_all_tests();
     }
 
-    if (options.find("resolve")) {
+    /*if (options.find("resolve")) {
         auto pipeline = bu::compose(&resolution::resolve, &parser::parse, &lexer::lex);
         auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
         auto program  = pipeline(bu::Source { path.string() });
 
         std::ignore = program;
-    }
+    }*/
 
     if (options.find("machine")) {
         vm::Virtual_machine machine { .stack = bu::Bytestack { 32 } };
@@ -197,9 +198,9 @@ auto main(int argc, char const** argv) -> int try {
         else if (*name == "prog") {
             program_parser_repl();
         }
-        else if (*name == "res") {
+        /*else if (*name == "res") {
             expression_resolution_repl();
-        }
+        }*/
         else {
             bu::abort("Unrecognized repl name");
         }

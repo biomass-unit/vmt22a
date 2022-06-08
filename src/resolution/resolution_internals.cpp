@@ -1,4 +1,7 @@
 #include "bu/utilities.hpp"
+
+#if 0
+
 #include "resolution_internals.hpp"
 
 
@@ -596,3 +599,5 @@ auto ir::Type::is_unit() const noexcept -> bool {
         return false;
     }
 }
+
+#endif

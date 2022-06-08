@@ -96,7 +96,14 @@ namespace bu {
             : throw "please specify a default value"
     >
     class Bounded_integer {
-        static_assert((min <= default_value) && (default_value <= max));
+        static_assert(
+            (min <= default_value) && (default_value <= max),
+            "The default value is out of bounds"
+        );
+        static_assert(
+            min == std::numeric_limits<T>::min() && max == std::numeric_limits<T>::max(),
+            "Overflow & underflow detection does not yet take into account custom integer bounds"
+        );
 
         T value;
 

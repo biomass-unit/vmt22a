@@ -1,4 +1,7 @@
 #include "bu/utilities.hpp"
+
+#if 0
+
 #include "resolution_internals.hpp"
 
 
@@ -252,3 +255,5 @@ auto resolution::Resolution_context::get_associated_namespace(
         );
     }
 }
+
+#endif

@@ -1,4 +1,7 @@
 #include "bu/utilities.hpp"
+
+#if 0
+
 #include "resolution_internals.hpp"
 
 
@@ -136,3 +139,5 @@ namespace {
 auto resolution::Resolution_context::resolve_type(ast::Type& type) -> bu::Wrapper<ir::Type> {
     return std::visit(Type_resolution_visitor { *this, type }, type.value);
 }
+
+#endif

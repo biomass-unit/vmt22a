@@ -1,4 +1,7 @@
 #include "bu/utilities.hpp"
+
+#if 0
+
 #include "resolution_internals.hpp"
 
 
@@ -655,3 +658,5 @@ namespace {
 auto resolution::Resolution_context::resolve_expression(ast::Expression& expression) -> ir::Expression {
     return std::visit(Expression_resolution_visitor { *this, expression }, expression.value);
 }
+
+#endif

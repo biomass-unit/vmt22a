@@ -1,4 +1,7 @@
 #include "bu/utilities.hpp"
+
+#if 0
+
 #include "resolution_internals.hpp"
 
 
@@ -137,3 +140,5 @@ auto resolution::Resolution_context::bind(ast::Pattern& pattern, bu::Wrapper<ir:
         type->value
     );
 }
+
+#endif
