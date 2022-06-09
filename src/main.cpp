@@ -129,6 +129,7 @@ auto main(int argc, char const** argv) -> int try {
         ("version",                "Show the interpreter version")
         ("repl"   , cli::string(), "Run the given repl"          )
         ("machine",                "Debug the interpreter"       )
+        ("type"   ,                "Debug the typechecker"       )
         //("resolve",                "Debug resolution"            )
         ("nocolor",                "Disable colored output"      )
         ("time"   ,                "Print the execution time"    )
@@ -159,6 +160,16 @@ auto main(int argc, char const** argv) -> int try {
 
     if (options.find("test")) {
         tests::run_all_tests();
+    }
+
+    // compiler options, list of project files that are importable
+
+    if (options.find("type")) {
+        auto pipeline = bu::compose(&typechecker::typecheck, &parser::parse, &lexer::lex);
+        auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
+        auto program  = pipeline(bu::Source { path.string() });
+
+        std::ignore = program;
     }
 
     /*if (options.find("resolve")) {

@@ -3,14 +3,10 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "bu/flatmap.hpp"
-#include "bu/bounded_integer.hpp"
-#include "vm/virtual_machine.hpp"
 #include "lexer/token.hpp"
 
 
 namespace tst {
-
-    using Size_type = bu::Bounded_integer<vm::Local_size_type>;
 
     struct [[nodiscard]] Type;
     struct [[nodiscard]] Expression;
@@ -252,10 +248,16 @@ namespace tst {
             DEFAULTED_EQUALITY(Reference);
         };
 
-        struct Member_access {
+        struct Struct_member_access {
             bu::Wrapper<Expression> expression;
-            bu::Bounded_u16         offset;
-            DEFAULTED_EQUALITY(Member_access);
+            lexer::Identifier       member_name;
+            DEFAULTED_EQUALITY(Struct_member_access);
+        };
+
+        struct Tuple_member_access {
+            bu::Wrapper<Expression> expression;
+            bu::Usize               member_index;
+            DEFAULTED_EQUALITY(Tuple_member_access);
         };
 
         struct Conditional {
@@ -306,7 +308,8 @@ namespace tst {
             expression::Function_reference,
             expression::Enum_constructor_reference,
             expression::Reference,
-            expression::Member_access,
+            expression::Struct_member_access,
+            expression::Tuple_member_access,
             expression::Conditional,
             expression::Type_cast,
             expression::Infinite_loop,

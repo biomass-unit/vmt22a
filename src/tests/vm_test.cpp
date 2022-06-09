@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "internals/test_internals.hpp"
+#include "tests.hpp"
 
 #include "vm/opcode.hpp"
 #include "vm/virtual_machine.hpp"
@@ -57,3 +57,6 @@ auto run_vm_tests() -> void {
         );
     };
 }
+
+
+REGISTER_TEST(run_vm_tests);

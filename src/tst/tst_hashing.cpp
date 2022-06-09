@@ -65,8 +65,12 @@ namespace {
             return hash(reference.enumeration->enum_type, reference.constructor->tag);
         }
 
-        auto operator()(tst::expression::Member_access const& member_access) -> bu::Usize {
-            return hash(member_access.expression, member_access.offset.get());
+        auto operator()(tst::expression::Struct_member_access const& access) -> bu::Usize {
+            return hash(access.expression, access.member_name);
+        }
+
+        auto operator()(tst::expression::Tuple_member_access const& access) -> bu::Usize {
+            return hash(access.expression, access.member_index);
         }
 
         auto operator()(tst::expression::Let_binding const& let_binding) -> bu::Usize {

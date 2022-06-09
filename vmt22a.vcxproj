@@ -274,7 +274,6 @@
     <ClInclude Include="src\parser\internals\parser_internals.hpp" />
     <ClInclude Include="src\tst\tst.hpp" />
     <ClInclude Include="src\resolution\resolution.hpp" />
-    <ClInclude Include="src\tests\internals\test_internals.hpp" />
     <ClInclude Include="src\tests\tests.hpp" />
     <ClInclude Include="src\typechecker\typechecker.hpp" />
     <ClInclude Include="src\vm\bytecode.hpp" />

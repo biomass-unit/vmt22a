@@ -37,7 +37,7 @@ namespace bu {
             }
 
             index = vector.size();
-            vector.emplace_back(f(string), hash);
+            vector.emplace_back(f(string), hash).first.reserve(sizeof(std::string));
         }
     public:
         explicit Pooled_string(

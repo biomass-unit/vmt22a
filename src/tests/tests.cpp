@@ -1,7 +1,6 @@
 #include "bu/utilities.hpp"
 #include "bu/color.hpp"
 #include "tests.hpp"
-#include "internals/test_internals.hpp"
 
 
 namespace {
@@ -10,8 +9,13 @@ namespace {
     constinit bu::Usize test_count    = 0;
 
     auto red_note() -> std::string_view {
-        std::string const note = std::format("{}NOTE:{}", bu::Color::red, bu::Color::white);
+        static auto const note = std::format("{}NOTE:{}", bu::Color::red, bu::Color::white);
         return note;
+    }
+
+    auto test_vector() noexcept -> std::vector<void(*)()>& { // Avoids SIOF
+        static std::vector<void(*)()> vector;
+        return vector;
     }
 
 }
@@ -75,9 +79,9 @@ auto tests::Test::operator=(Invoke&& test) -> void {
 }
 
 
-auto run_lexer_tests  () -> void;
-auto run_parser_tests () -> void;
-auto run_vm_tests     () -> void;
+tests::dtl::Test_adder::Test_adder(void(* const test)()) {
+    test_vector().push_back(test);
+}
 
 
 auto tests::run_all_tests() -> void {
@@ -85,9 +89,9 @@ auto tests::run_all_tests() -> void {
 
     auto const start_time = steady_clock::now();
 
-    run_lexer_tests  ();
-    run_parser_tests ();
-    run_vm_tests     ();
+    for (auto const test : test_vector()) {
+        test();
+    }
 
     if (success_count == test_count) {
         bu::print(

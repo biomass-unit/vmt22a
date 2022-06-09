@@ -55,8 +55,12 @@ namespace {
             return format("(Ref offset {})", reference.frame_offset);
         }
 
-        auto operator()(tst::expression::Member_access const& access) {
-            return format("({}, mem offset {})", access.expression, access.offset);
+        auto operator()(tst::expression::Struct_member_access const& access) {
+            return format("({}.{})", access.expression, access.member_name);
+        }
+
+        auto operator()(tst::expression::Tuple_member_access const& access) {
+            return format("({}.{})", access.expression, access.member_index);
         }
 
         auto operator()(tst::expression::Conditional const& conditional) {

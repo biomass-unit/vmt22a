@@ -449,13 +449,13 @@ namespace bu {
             std::copy_n(pointer, length, string);
         }
 
-        constexpr auto view() const noexcept -> std::string_view {
-            return { string, length };
+        consteval auto view() const noexcept -> std::string_view {
+            return { string, length - 1 };
         }
     };
 
     template <Usize length>
-    Metastring(char const(&)[length]) -> Metastring<length - 1>;
+    Metastring(char const(&)[length]) -> Metastring<length>;
 
 
     namespace fmt {
