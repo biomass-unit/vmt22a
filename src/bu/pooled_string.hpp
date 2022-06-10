@@ -20,7 +20,7 @@ namespace bu {
         explicit Pooled_string(auto&& string, auto f, Pooled_string_strategy const strategy)
             noexcept(bu::compiling_in_release_mode)
         {
-            Usize const hash = std::hash<std::string_view>{}(string);
+            Usize const hash = ::bu::hash<std::string_view>(string);
 
             if (strategy == Pooled_string_strategy::potential_new_string) {
                 auto const it = std::ranges::find(vector, hash, bu::second);

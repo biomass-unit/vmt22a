@@ -31,7 +31,13 @@ namespace {
     {
         tests::assert_eq(
             [&] {
-                auto ts = lexer::lex(bu::Source { bu::Source::Mock_tag {}, std::string(text) });
+                auto ts = lexer::lex(
+                    bu::Source {
+                        bu::Source::Mock_tag { .filename = "parser test" },
+                        std::move(bu::string_without_sso().assign(text))
+                    }
+                );
+
                 parser::Parse_context context { ts };
                 auto value = extract(context);
 

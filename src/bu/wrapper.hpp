@@ -20,7 +20,7 @@ namespace bu {
         inline static Wrapper_context<T>* context_ptr = nullptr;
 
         static auto context(std::source_location const caller = std::source_location::current())
-            noexcept(compiling_in_release_mode) -> Wrapper_context<T>&
+            noexcept -> Wrapper_context<T>&
         {
             if constexpr (compiling_in_debug_mode) {
                 if (!context_ptr) {
@@ -100,6 +100,7 @@ namespace bu {
             , free_indices { std::move(other.free_indices) }
         {
             other.is_responsible = false;
+            Wrapper<T>::context_ptr = this;
         }
 
         Wrapper_context(Wrapper_context const&) = delete;
@@ -109,6 +110,12 @@ namespace bu {
 
         ~Wrapper_context() {
             if (is_responsible) {
+                if constexpr (compiling_in_debug_mode) {
+                    if (arena.empty() && free_indices.empty()) {
+                        bu::print("NOTE: bu::Wrapper<{}>: deallocated empty arena\n", typeid(T).name());
+                    }
+                }
+
                 Wrapper<T>::context_ptr = nullptr;
             }
         }

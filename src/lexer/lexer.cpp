@@ -152,8 +152,8 @@ namespace {
                 type,
                 bu::Source_view {
                     std::string_view    { token_start.pointer, state      .pointer },
-                    bu::Source_position { token_start.line   , token_start.column },
-                    bu::Source_position { state      .line   ,       state.column }
+                    bu::Source_position { token_start.line   , token_start.column  },
+                    bu::Source_position { state      .line   ,       state.column  }
                 }
             );
 
@@ -217,7 +217,7 @@ namespace {
         auto parse(std::same_as<int> auto const... args) noexcept -> Parse_result<T> {
             static_assert(
                 sizeof...(args) <= 1,
-                "The variadic parameter pack is used for the optional base parameter only"
+                "The parameter pack is used for the optional base parameter only"
             );
 
             T value;
@@ -717,7 +717,7 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
                         .value       = std::monostate {},
                         .type        = Token::Type::end_of_input,
                         .source_view = bu::Source_view {
-                            std::string_view { state.pointer, 1 },
+                            std::string_view {},
                             { state.line, state.column },
                             { state.line, state.column }
                         }

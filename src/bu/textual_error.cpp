@@ -197,6 +197,7 @@ auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
 
     for (auto& section : sections) {
         assert(section.source);
+        assert(section.source_view.string.empty() || section.source_view.string.front() != '\0');
 
         std::optional<std::string> location_info;
 

@@ -51,19 +51,27 @@ auto tests::Test::operator=(Invoke&& test) -> void {
         }
         return;
     }
-    catch (...) {
+    catch (std::exception const& exception) {
         if (!should_fail) {
             bu::print(
-                "{} Exception thrown during test {}\n",
+                "{} Exception thrown during test {}: {}\n",
                 red_note(),
-                test_name()
+                test_name(),
+                exception.what()
             );
-            throw;
         }
         else {
             ++success_count;
         }
         return;
+    }
+    catch (...) {
+        bu::print(
+            "{} Unknown exception thrown during test {}\n",
+            red_note(),
+            test_name()
+        );
+        throw;
     }
 
     if (should_fail) {

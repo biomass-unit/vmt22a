@@ -10,6 +10,7 @@ namespace tst {
 
     struct [[nodiscard]] Type;
     struct [[nodiscard]] Expression;
+    struct [[nodiscard]] Definition;
 
 
     namespace definition {
@@ -23,7 +24,7 @@ namespace tst {
                 std::optional<bu::Wrapper<Expression>> default_value;
             };
 
-            std::string             name;
+            lexer::Identifier       name;
             std::vector<Parameter>  parameters;
             bu::Wrapper<Type>       return_type;
             bu::Wrapper<Type>       function_type;
@@ -42,10 +43,10 @@ namespace tst {
                 bu::Source_view source_view;
             };
 
-            std::string                           name;
             std::vector<bu::Wrapper<Constructor>> constructors;
             bu::Wrapper<Type>                     enum_type;
             bu::Wrapper<Namespace>                home_namespace;
+            lexer::Identifier                     name;
         };
 
 
@@ -57,10 +58,10 @@ namespace tst {
                 bu::Source_view source_view;
             };
 
-            std::string                            name;
             bu::Flatmap<lexer::Identifier, Member> members;
             bu::Wrapper<Type>                      struct_type;
             bu::Wrapper<Namespace>                 home_namespace;
+            lexer::Identifier                      name;
         };
 
 
@@ -70,11 +71,35 @@ namespace tst {
 
 
         struct Typeclass {
-            std::string            name;
             bu::Wrapper<Namespace> home_namespace;
+            lexer::Identifier      name;
+        };
+
+
+        struct Namespace {
+            std::vector<Definition> definitions;
+            bu::Wrapper<Namespace>  home_namespace;
+            lexer::Identifier       name;
         };
 
     }
+
+    struct [[nodiscard]] Definition {
+        using Variant = std::variant<
+            definition::Function,
+            definition::Enum,
+            definition::Struct,
+            definition::Alias,
+            definition::Typeclass,
+            definition::Namespace
+        >;
+
+        Variant value;
+
+        bu::Source_view source_view;
+
+        DEFAULTED_EQUALITY(Definition);
+    };
 
 
     namespace type {
@@ -141,7 +166,7 @@ namespace tst {
 
     }
 
-    struct Type {
+    struct [[nodiscard]] Type {
         using Variant = std::variant<
             type::Integer,
             type::Floating,
@@ -160,30 +185,14 @@ namespace tst {
 
         Variant value;
 
+        bu::Source_view source_view;
+
         auto hash() const -> bu::Usize;
 
         auto is_unit() const noexcept -> bool;
 
         DEFAULTED_EQUALITY(Type);
     };
-
-    namespace type {
-
-        namespace dtl {
-            template <class T>
-            bu::Wrapper<Type> const make_primitive = Type { type::Primitive<T> {} };
-        }
-
-        inline auto const
-            integer   = dtl::make_primitive<bu::Isize    >,
-            floating  = dtl::make_primitive<bu::Float    >,
-            character = dtl::make_primitive<bu::Char     >,
-            boolean   = dtl::make_primitive<bool         >,
-            string    = dtl::make_primitive<lexer::String>;
-
-        inline bu::Wrapper<Type> const unit = Type { type::Tuple {} };
-
-    }
 
 
     namespace expression {
@@ -292,7 +301,7 @@ namespace tst {
 
     }
 
-    struct Expression {
+    struct [[nodiscard]] Expression {
         using Variant = std::variant<
             expression::Literal<bu::Isize>,
             expression::Literal<bu::Float>,
@@ -320,15 +329,15 @@ namespace tst {
         Variant           value;
         bu::Wrapper<Type> type;
 
+        bu::Source_view source_view;
+
         auto hash() const -> bu::Usize;
 
         DEFAULTED_EQUALITY(Expression);
     };
 
-    inline bu::Wrapper<Expression> const unit_value { expression::Tuple {}, type::unit };
 
-
-    struct Template_argument_set {
+    /*struct Template_argument_set {
         template <class T>
         using Table = bu::Flatmap<lexer::Identifier, T>;
 
@@ -345,7 +354,7 @@ namespace tst {
         auto append_formatted_arguments_to(std::string&) const -> void;
 
         auto hash() const -> bu::Usize;
-    };
+    };*/
 
 
     struct Program {};

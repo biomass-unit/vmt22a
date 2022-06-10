@@ -39,16 +39,24 @@ auto bu::Source_position::increment_with(char const c) noexcept -> void {
 
 
 auto bu::Source_view::operator+(Source_view const& other) const noexcept -> Source_view {
-    assert(string.empty() || other.string.empty() || &string.front() <= &other.string.back());
+    if (other.string.empty()) {
+        return Source_view { string, start_position, stop_position };
+    }
+    else if (string.empty()) {
+        return other + *this;
+    }
+    else {
+        assert(&string.front() <= &other.string.back());
 
-    return Source_view {
-        std::string_view {
-            string.data(),
-            other.string.data() + other.string.size()
-        },
-        start_position,
-        other.stop_position
-    };
+        return Source_view {
+            std::string_view {
+                string.data(),
+                other.string.data() + other.string.size()
+            },
+            start_position,
+            other.stop_position
+        };
+    }
 }
 
 

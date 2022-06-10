@@ -155,11 +155,11 @@ auto tst::Type::hash() const -> bu::Usize {
     return std::visit(Type_hash_visitor { { value.index() } }, value);
 }
 
-auto tst::Template_argument_set::hash() const -> bu::Usize {
+/*auto tst::Template_argument_set::hash() const -> bu::Usize {
     return bu::hash_combine_with_seed(
         bu::get_unique_seed(),
         expression_arguments,
         type_arguments,
         mutability_arguments
     );
-}
+}*/
