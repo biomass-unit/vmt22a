@@ -5,29 +5,28 @@
 
 namespace bu {
 
-    // Stack overflow & underflow detection only in debug mode
-
     class [[nodiscard]] Bytestack {
+
         std::unique_ptr<std::byte[]> buffer;
         Usize                        length;
 
-#ifndef NDEBUG
-        std::byte* top_pointer;
-#endif
     public:
         std::byte* pointer;
+    private:
+        std::byte* top_pointer;
+    public:
 
         explicit Bytestack(Usize const capacity) noexcept
             : buffer { std::make_unique_for_overwrite<std::byte[]>(capacity) }
             , length { capacity }
-#ifndef NDEBUG
-            , top_pointer { pointer + capacity }
-#endif
-            , pointer { buffer.get() } {}
+            , pointer { buffer.get() }
+            , top_pointer { pointer + capacity } {}
 
         template <trivial T>
         auto push(T const x) noexcept -> void {
-            assert("stack overflow" && pointer + sizeof x <= top_pointer);
+            if (pointer + sizeof x > top_pointer) [[unlikely]] {
+                bu::abort("stack overflow");
+            }
 
             std::memcpy(pointer, &x, sizeof x);
             pointer += sizeof x;
@@ -35,7 +34,9 @@ namespace bu {
 
         template <trivial T>
         auto pop() noexcept -> T {
-            assert("stack underflow" && buffer.get() + sizeof(T) <= pointer);
+            if (buffer.get() + sizeof(T) > pointer) [[unlikely]] {
+                bu::abort("stack underflow");
+            }
 
             T x;
             pointer -= sizeof x;
@@ -45,7 +46,9 @@ namespace bu {
 
         template <trivial T>
         auto top() const noexcept -> T {
-            assert("stack underflow" && buffer.get() + sizeof(T) <= pointer);
+            if (buffer.get() + sizeof(T) > pointer) [[unlikely]] {
+                bu::abort("stack underflow");
+            }
 
             T x;
             std::memcpy(&x, pointer - sizeof x, sizeof x);
@@ -56,6 +59,7 @@ namespace bu {
         auto base() const noexcept -> std::byte const* { return buffer.get(); }
 
         auto capacity() const noexcept -> Usize { return length; }
+
     };
 
 }
