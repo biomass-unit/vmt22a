@@ -133,7 +133,7 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
         [   ](std::monostate)              {},
         [out](ast::Root_qualifier::Global) { std::format_to(out, "::"        ); },
         [out](auto const& root)            { std::format_to(out, "{}::", root); }
-    }, value.root_qualifier->value);
+    }, value.root_qualifier.value);
 
     for (auto& qualifier : value.middle_qualifiers) {
         std::format_to(

@@ -13,6 +13,7 @@
 #include <limits>
 #include <memory>
 #include <utility>
+#include <typeinfo>
 #include <concepts>
 #include <exception>
 #include <functional>
@@ -189,15 +190,14 @@ namespace bu {
 
     [[noreturn]]
     inline auto abort(std::string_view message, std::source_location caller = std::source_location::current()) -> void {
-        throw Exception {
-            std::format(
-                "bu::abort invoked in {}, in file {} on line {}, with message: {}",
-                caller.function_name(),
-                dtl::filename_without_path(caller.file_name()),
-                caller.line(),
-                message
-            )
-        };
+        print(
+            "bu::abort invoked in {}, in file {} on line {}, with message: {}",
+            caller.function_name(),
+            dtl::filename_without_path(caller.file_name()),
+            caller.line(),
+            message
+        );
+        std::terminate();
     }
 
     [[noreturn]]

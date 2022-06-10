@@ -41,11 +41,19 @@ namespace ast {
         DEFAULTED_EQUALITY(Qualifier);
     };
 
-    struct Root_qualifier;
+    struct Root_qualifier {
+        struct Global { DEFAULTED_EQUALITY(Global); };
+        std::variant<
+            std::monostate,   // id, id::id
+            Global,           // ::id
+            bu::Wrapper<Type> // Type::id
+        > value;
+        DEFAULTED_EQUALITY(Root_qualifier);
+    };
 
     struct Qualified_name {
         std::vector<Qualifier>      middle_qualifiers;
-        bu::Wrapper<Root_qualifier> root_qualifier;
+        Root_qualifier              root_qualifier;
         Name                        primary_name;
 
         DEFAULTED_EQUALITY(Qualified_name);
@@ -107,23 +115,21 @@ struct ast::Template_argument {
     DEFAULTED_EQUALITY(Template_argument);
 };
 
-struct ast::Root_qualifier {
-    struct Global { DEFAULTED_EQUALITY(Global); };
-    std::variant<
-        std::monostate, // id, id::id
-        Global,         // ::id
-        Type            // Type::id
-    > value;
-    DEFAULTED_EQUALITY(Root_qualifier);
-};
-
 auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
     return middle_qualifiers.empty()
-        && std::holds_alternative<std::monostate>(root_qualifier->value);
+        && std::holds_alternative<std::monostate>(root_qualifier.value);
 }
 
 
 namespace ast {
+
+    using AST_context = bu::Wrapper_context_for<
+        ast::Expression,
+        ast::Type,
+        ast::Pattern,
+        ast::Definition
+    >;
+
 
     using Module_path = std::vector<lexer::Identifier>;
 
@@ -133,6 +139,8 @@ namespace ast {
     };
 
     struct [[nodiscard]] Module {
+        AST_context context;
+
         bu::Source              source;
         std::vector<Definition> definitions;
 

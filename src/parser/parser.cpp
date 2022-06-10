@@ -764,6 +764,7 @@ namespace {
 auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     Parse_context context { tokenized_source };
 
+    ast::AST_context                 module_context;
     std::vector<ast::Import>         module_imports;
     std::optional<lexer::Identifier> module_name;
 
@@ -800,9 +801,10 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     }
 
     return ast::Module {
-        std::move(tokenized_source.source),
-        std::move(definitions),
-        std::move(module_name),
-        std::move(module_imports)
+        .context     = std::move(module_context),
+        .source      = std::move(tokenized_source.source),
+        .definitions = std::move(definitions),
+        .name        = std::move(module_name),
+        .imports     = std::move(module_imports)
     };
 }

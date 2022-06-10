@@ -232,7 +232,7 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
         else {
             // Not a qualified type, retreat
             context.pointer = anchor;
-            type = std::move(std::get<ast::Type>(name.root_qualifier->value));
+            type = std::get<bu::Wrapper<ast::Type>>(name.root_qualifier.value).kill();
         }
     }
 

@@ -90,6 +90,9 @@ namespace {
         using namespace tests;
 
 
+        ast::AST_context test_context;
+
+
         "literal"_test = [] {
             assert_expr_eq(
                 "4.2e3",
