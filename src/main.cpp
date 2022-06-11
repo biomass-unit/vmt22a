@@ -197,34 +197,34 @@ auto main(int argc, char const** argv) -> int try {
 
     bu::Timer<> execution_timer {
         .scope_exit_logger = [&](bu::Timer<>::Duration const elapsed) {
-            if (options.find("time")) {
+            if (options["time"]) {
                 bu::print("Total execution time: {}\n", elapsed);
             }
         }
     };
 
-    if (options.find("help")) {
+    if (options["help"]) {
         bu::print("Valid options:\n\n{}", description);
         return 0;
     }
 
-    if (options.find("version")) {
+    if (options["version"]) {
         bu::print("Version {}, compiled on " __DATE__ ", " __TIME__ ".\n", vm::Virtual_machine::version);
     }
 
-    if (std::string_view const* const name = options.find_str("new")) {
+    if (std::string_view const* const name = options["new"]) {
         initialize_project(*name);
     }
 
-    if (options.find("nocolor")) {
+    if (options["nocolor"]) {
         bu::disable_color_formatting();
     }
 
-    if (options.find("test")) {
+    if (options["test"]) {
         tests::run_all_tests();
     }
 
-    if (options.find("type")) {
+    if (options["type"]) {
         auto pipeline = bu::compose(&typechecker::typecheck, &parser::parse, &lexer::lex);
         auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
         auto program  = pipeline(bu::Source { path.string() });
@@ -232,15 +232,7 @@ auto main(int argc, char const** argv) -> int try {
         std::ignore = program;
     }
 
-    /*if (options.find("resolve")) {
-        auto pipeline = bu::compose(&resolution::resolve, &parser::parse, &lexer::lex);
-        auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
-        auto program  = pipeline(bu::Source { path.string() });
-
-        std::ignore = program;
-    }*/
-
-    if (options.find("machine")) {
+    if (options["machine"]) {
         vm::Virtual_machine machine { .stack = bu::Bytestack { 32 } };
 
         auto const string = machine.add_to_string_pool("Hello, world!\n");
@@ -259,7 +251,7 @@ auto main(int argc, char const** argv) -> int try {
         return machine.run();
     }
 
-    if (std::string_view const* const name = options.find_str("repl")) {
+    if (std::string_view const* const name = options["repl"]) {
         ast::AST_context repl_context;
 
         if (*name == "lex") {
@@ -271,9 +263,6 @@ auto main(int argc, char const** argv) -> int try {
         else if (*name == "prog") {
             program_parser_repl();
         }
-        /*else if (*name == "res") {
-            expression_resolution_repl();
-        }*/
         else {
             bu::abort("Unrecognized repl name");
         }

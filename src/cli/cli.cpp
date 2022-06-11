@@ -30,9 +30,14 @@ namespace {
             static_assert(bu::always_false<T>);
     }
 
-    template <class... Ts>
+    template <bu::instance_of<cli::Value>... Ts>
     constexpr auto type_description(std::variant<Ts...> const& variant) noexcept -> std::string_view {
         return std::visit([]<class T>(cli::Value<T> const&) { return type_description<T>(); }, variant);
+    }
+
+    template <class... Ts>
+    constexpr auto type_description(std::variant<Ts...> const& variant) noexcept -> std::string_view {
+        return std::visit([]<class T>(T const&) { return type_description<T>(); }, variant);
     }
 
 
@@ -331,7 +336,7 @@ auto cli::parse_command_line(
 
     // Apply default arguments
     for (auto& parameter : description.parameters) {
-        if (parameter.defaulted && !options.find(parameter.name.long_form)) {
+        if (parameter.defaulted && !options[parameter.name.long_form]) {
             std::vector<Named_argument::Variant> arguments;
 
             for (auto& value : parameter.values) {
@@ -381,33 +386,6 @@ cli::Parameter::Name::Name(
 ) noexcept
     : long_form  { long_name  }
     , short_form { short_name } {}
-
-
-namespace {
-
-    template <bu::Usize n>
-    auto arg_as(auto const& values) {
-        assert(values.size() == 1);
-        return std::get<n>(values.at(0));
-        // .at(0) used because calling .front() on an empty vector is UB
-    }
-
-    template <bu::Usize n>
-    auto nth_arg_as(auto const& values, bu::Usize const index) {
-        return std::get<n>(values.at(index));
-    }
-
-}
-
-auto cli::Named_argument::as_int   () const -> types::Int   { return arg_as<0>(values); }
-auto cli::Named_argument::as_float () const -> types::Float { return arg_as<1>(values); }
-auto cli::Named_argument::as_bool  () const -> types::Bool  { return arg_as<2>(values); }
-auto cli::Named_argument::as_str   () const -> types::Str   { return arg_as<3>(values); }
-
-auto cli::Named_argument::nth_as_int   (bu::Usize const index) const -> types::Int   { return nth_arg_as<0>(values, index); }
-auto cli::Named_argument::nth_as_float (bu::Usize const index) const -> types::Float { return nth_arg_as<1>(values, index); }
-auto cli::Named_argument::nth_as_bool  (bu::Usize const index) const -> types::Bool  { return nth_arg_as<2>(values, index); }
-auto cli::Named_argument::nth_as_str   (bu::Usize const index) const -> types::Str   { return nth_arg_as<3>(values, index); }
 
 
 auto cli::Options_description::Option_adder::map_short_to_long(Parameter::Name const& name)
@@ -496,29 +474,26 @@ template auto cli::Options_description::Option_adder::operator()(Parameter::Name
 template auto cli::Options_description::Option_adder::operator()(Parameter::Name&&, Value<types::Str  >&&, std::optional<std::string_view>) -> Option_adder;
 
 
-auto cli::Options::find(std::string_view const name)
-    noexcept -> Named_argument*
-{
-    auto it = std::ranges::find(
-        named_arguments,
-        name,
-        &Named_argument::name
-    );
-
-    return it != named_arguments.end()
-        ? std::to_address(it)
-        : nullptr;
-}
-
-
 namespace {
 
     template <class T>
-    auto find_arg(cli::Options* options, std::string_view const name) noexcept -> T* {
-        if (auto* const arg = options->find(name)) {
-            assert(arg->values.size() == 1);
-            return std::addressof(std::get<T>(arg->values.front()));
-            // std::get used instead of std::get_if because invalid access should throw
+    auto get_arg(cli::Options::Argument_proxy& self) -> T* {
+        if (self.pointer) {
+            if (self.count != 1) {
+                bu::abort("non-single-argument cli option accessed without index");
+            }
+
+            if (T* const pointer = std::get_if<T>(self.pointer)) {
+                return pointer;
+            }
+            else {
+                throw bu::exception(
+                    "Attempted to access a parameter of cli option --{} as {}, but it is {}",
+                    self.name,
+                    type_description<T>(),
+                    type_description(*self.pointer)
+                );
+            }
         }
         else {
             return nullptr;
@@ -527,17 +502,67 @@ namespace {
 
 }
 
-auto cli::Options::find_int(std::string_view name) noexcept -> types::Int* {
-    return find_arg<types::Int>(this, name);
+
+cli::Options::Argument_proxy::operator cli::types::Int*() {
+    return get_arg<types::Int>(*this);
 }
-auto cli::Options::find_float(std::string_view name) noexcept -> types::Float* {
-    return find_arg<types::Float>(this, name);
+cli::Options::Argument_proxy::operator cli::types::Float*() {
+    return get_arg<types::Float>(*this);
 }
-auto cli::Options::find_bool(std::string_view name) noexcept -> types::Bool* {
-    return find_arg<types::Bool>(this, name);
+cli::Options::Argument_proxy::operator cli::types::Bool*() {
+    return get_arg<types::Bool>(*this);
 }
-auto cli::Options::find_str(std::string_view name) noexcept -> types::Str* {
-    return find_arg<types::Str>(this, name);
+cli::Options::Argument_proxy::operator cli::types::Str*() {
+    return get_arg<types::Str>(*this);
+}
+
+
+cli::Options::Argument_proxy::operator bool() noexcept {
+    return !empty;
+}
+
+
+auto cli::Options::Argument_proxy::operator[](bu::Usize const index) -> Argument_proxy {
+    if (indexed) {
+        bu::abort("Attempted to index into an already indexed argument proxy");
+    }
+
+    if (index < count) {
+        return {
+            .name    = name,
+            .pointer = pointer + index,
+            .count   = 1,
+            .indexed = true,
+            .empty   = false
+        };
+    }
+    else {
+        bu::abort(
+            std::format(
+                "The cli option --{} does not have a {} parameter",
+                name,
+                bu::fmt::integer_with_ordinal_indicator(index + 1)
+            )
+        );
+    }
+}
+
+
+auto cli::Options::operator[](std::string_view const name) noexcept -> Argument_proxy {
+    auto it = std::ranges::find(named_arguments, name, &Named_argument::name);
+
+    if (it != named_arguments.end()) {
+        return {
+            .name    = name,
+            .pointer = it->values.data(),
+            .count   = it->values.size(),
+            .indexed = false,
+            .empty   = false
+        };
+    }
+    else {
+        return { .empty = true };
+    }
 }
 
 

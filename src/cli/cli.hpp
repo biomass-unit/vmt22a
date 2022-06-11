@@ -62,16 +62,6 @@ namespace cli {
 
         std::string          name; // short-form names are automatically converted to long-form, which is also why the string must be an owning one
         std::vector<Variant> values;
-
-        auto as_int   () const -> types::Int;
-        auto as_float () const -> types::Float;
-        auto as_bool  () const -> types::Bool;
-        auto as_str   () const -> types::Str;
-
-        auto nth_as_int   (bu::Usize) const -> types::Int;
-        auto nth_as_float (bu::Usize) const -> types::Float;
-        auto nth_as_bool  (bu::Usize) const -> types::Bool;
-        auto nth_as_str   (bu::Usize) const -> types::Str;
     };
 
     using Positional_argument = std::string_view;
@@ -117,17 +107,29 @@ namespace cli {
         std::vector<Named_argument>      named_arguments;
         std::string_view                 program_name_as_invoked;
 
-        auto find(std::string_view) noexcept -> Named_argument*;
+        struct Argument_proxy {
+            std::string_view         name;
+            Named_argument::Variant* pointer = nullptr;
+            bu::Usize                count   = 0;
+            bool                     indexed = false;
+            bool                     empty   = true;
 
-        auto find_int   (std::string_view) noexcept -> types::Int   *;
-        auto find_float (std::string_view) noexcept -> types::Float *;
-        auto find_bool  (std::string_view) noexcept -> types::Bool  *;
-        auto find_str   (std::string_view) noexcept -> types::Str   *;
+            operator types::Int  *();
+            operator types::Float*();
+            operator types::Bool *();
+            operator types::Str  *();
+
+            explicit operator bool() noexcept;
+
+            auto operator[](bu::Usize) -> Argument_proxy;
+        };
+
+        auto operator[](std::string_view) noexcept -> Argument_proxy;
 
     };
 
 
-    struct Unrecognized_option : bu::Exception {
+    struct [[nodiscard]] Unrecognized_option : bu::Exception {
         using Exception::Exception;
         using Exception::operator=;
     };
