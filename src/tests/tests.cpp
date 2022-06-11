@@ -38,7 +38,7 @@ auto tests::Test::operator=(Invoke&& test) -> void {
         test.callable();
     }
     catch (Failure const& failure) {
-        if (!should_fail) {
+        if (type != Type::failing) {
             bu::print(
                 "{} Test case failed in {}, on line {}: {}\n",
                 red_note(),
@@ -53,7 +53,7 @@ auto tests::Test::operator=(Invoke&& test) -> void {
         return;
     }
     catch (std::exception const& exception) {
-        if (!should_fail) {
+        if (type != Type::throwing) {
             bu::print(
                 "{} Exception thrown during test {}: {}\n",
                 red_note(),
@@ -72,18 +72,35 @@ auto tests::Test::operator=(Invoke&& test) -> void {
             red_note(),
             test_name()
         );
-        throw;
+        throw; // Not the test's responsibility at this point
     }
 
-    if (should_fail) {
+    switch (type) {
+    case Type::normal:
+    {
+        ++success_count;
+        return;
+    }
+    case Type::failing:
+    {
         bu::print(
             "{} Test {} should have failed, but didn't\n",
             red_note(),
             test_name()
         );
+        return;
     }
-    else {
-        ++success_count;
+    case Type::throwing:
+    {
+        bu::print(
+            "{} Test {} should've thrown an exception, but didn't\n",
+            red_note(),
+            test_name()
+        );
+        return;
+    }
+    default:
+        std::unreachable();
     }
 }
 
@@ -94,7 +111,7 @@ tests::dtl::Test_adder::Test_adder(void(* const test)()) {
 
 
 auto tests::run_all_tests() -> void {
-    bu::Timer<> test_timer { .scope_exit_logger {} };
+    bu::Timer<> test_timer { .log_scope_exit = false };
 
     for (auto const test : test_vector()) {
         test();

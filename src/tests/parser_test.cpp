@@ -24,34 +24,43 @@ namespace {
     }
 
 
+    template <auto extract>
+    auto extract_node(std::string_view const text) {
+        auto ts = lexer::lex(
+            bu::Source {
+                bu::Source::Mock_tag { .filename = "test" },
+                std::string(text)
+            }
+        );
+
+        parser::Parse_context context { ts };
+        auto value = extract(context);
+
+        if (!context.is_finished()) {
+            throw tests::Failure {
+                std::format(
+                    "Remaining input: '{}'",
+                    context.pointer->source_view.string.data()
+                )
+            };
+        }
+
+        return value;
+    }
+
+    constexpr auto extract_expression = extract_node<parser::parse_expression>;
+    constexpr auto extract_pattern = extract_node<parser::parse_pattern>;
+    constexpr auto extract_type = extract_node<parser::parse_type>;
+
+
+
     template <auto extract, class Node = std::invoke_result_t<decltype(extract), parser::Parse_context&>>
     auto assert_node_eq(std::string_view     const text,
                         typename Node::Variant&&   value,
-                        std::source_location const caller = std::source_location::current())
+                        std::source_location const caller = std::source_location::current()) -> void
     {
         tests::assert_eq(
-            [&] {
-                auto ts = lexer::lex(
-                    bu::Source {
-                        bu::Source::Mock_tag { .filename = "parser test" },
-                        std::string(text)
-                    }
-                );
-
-                parser::Parse_context context { ts };
-                auto value = extract(context);
-
-                if (!context.is_finished()) {
-                    throw tests::Failure {
-                        std::format(
-                            "Remaining input: '{}'",
-                            context.pointer->source_view.string.data()
-                        )
-                    };
-                }
-
-                return value;
-            }(),
+            extract_node<extract>(text),
             Node { .value = std::move(value), .source_view = empty_view() },
             caller
         );
@@ -79,22 +88,23 @@ namespace {
     }
 
 
-    auto unqualified(std::string_view const name) {
+    auto operator"" _unqualified(char const* const s, bu::Usize const n)
+        -> ast::Qualified_name
+    {
         return ast::Qualified_name {
             .primary_name {
-                .identifier  = lexer::Identifier { name },
-                .is_upper    = std::isupper(name.front()) != 0,
+                .identifier  = lexer::Identifier { std::string_view { s, n } },
+                .is_upper    = std::isupper(*s) != 0,
                 .source_view = empty_view()
             }
         };
-    };
+    }
 
 
     auto run_parser_tests() -> void {
         using namespace lexer::literals;
         using namespace bu::literals;
         using namespace tests;
-
 
         ast::AST_context test_context;
 
@@ -230,7 +240,7 @@ namespace {
                     .arguments = {},
                     .expression = mk_expr(ast::expression::Member_access_chain {
                         .accessors { "y"_id },
-                        .expression = mk_expr(ast::expression::Variable { unqualified("x") })
+                        .expression = mk_expr(ast::expression::Variable { "x"_unqualified })
                     }),
                     .member_name = "f"_id
                 }
@@ -253,7 +263,7 @@ namespace {
                             ast::Qualifier {
                                 .template_arguments = std::vector<ast::Template_argument> {
                                     {
-                                        mk_type(ast::type::Typename { unqualified("Long") })
+                                        mk_type(ast::type::Typename { "Long"_unqualified })
                                     }
                                 },
                                 .name {
@@ -294,7 +304,7 @@ namespace {
                         mk_type(ast::type::Type_of {
                             mk_expr(ast::expression::Literal<bu::Isize> { 5 })
                         }),
-                        mk_type(ast::type::Typename { unqualified("T") })
+                        mk_type(ast::type::Typename { "T"_unqualified })
                     }
                 }
             );
@@ -355,7 +365,7 @@ namespace {
             );
         };
 
-        "enum_constructor_pattern"_failing_test = [] {
+        "enum_constructor_pattern"_throwing_test = [] {
             assert_patt_eq("Maybe::Just", ast::pattern::Tuple { /* doesn't matter */ });
         };
 
@@ -379,6 +389,13 @@ namespace {
                 }
             );
         };
+
+
+        "scope_access_1"_throwing_test = [] { std::ignore = extract_expression("::"); };
+
+        "scope_access_2"_throwing_test = [] { std::ignore = extract_expression("test::"); };
+
+        "scope_access_3"_test = [] { std::ignore = extract_expression("::test"); };
 
     }
 

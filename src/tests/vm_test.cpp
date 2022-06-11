@@ -13,49 +13,48 @@ namespace {
         return machine.run();
     }
 
-}
+    auto run_vm_tests() -> void {
+        using namespace bu::literals;
+        using namespace tests;
+        using enum vm::Opcode;
 
+        "arithmetic"_test = [] {
+            assert_eq(
+                10,
+                run_bytecode(
+                    ipush, 2_iz,
+                    ipush, 5_iz,
+                    imul,
+                    halt
+                )
+            );
 
-auto run_vm_tests() -> void {
-    using namespace bu::literals;
-    using namespace tests;
-    using enum vm::Opcode;
+            assert_eq(
+                100,
+                run_bytecode(
+                    ipush, 2_iz,
+                    ipush, 4_iz,
+                    imul,
 
-    "arithmetic"_test = [] {
-        assert_eq(
-            10,
-            run_bytecode(
-                ipush, 2_iz,
-                ipush, 5_iz,
-                imul,
-                halt
-            )
-        );
+                    ipush, 5_iz,
+                    ipush, 5_iz,
+                    iadd,
 
-        assert_eq(
-            100,
-            run_bytecode(
-                ipush, 2_iz,
-                ipush, 4_iz,
-                imul,
+                    imul,
 
-                ipush, 5_iz,
-                ipush, 5_iz,
-                iadd,
+                    ipush, 10_iz,
+                    ipush, 6_iz,
+                    isub,
+                    ipush, 5_iz,
+                    imul,
 
-                imul,
+                    iadd,
+                    halt
+                )
+            );
+        };
+    }
 
-                ipush, 10_iz,
-                ipush, 6_iz,
-                isub,
-                ipush, 5_iz,
-                imul,
-
-                iadd,
-                halt
-            )
-        );
-    };
 }
 
 

@@ -13,7 +13,6 @@ namespace bu {
         using Clock    = std::chrono::steady_clock;
         using Duration = Duration_;
 
-        Clock::time_point             start             = Clock::now();
         std::function<void(Duration)> scope_exit_logger = [](Duration const time) {
             print(
                 "[{}bu::Timer::~Timer{}]: Total elapsed time: {}\n",
@@ -23,9 +22,17 @@ namespace bu {
             );
         };
 
+        Clock::time_point start = Clock::now();
+        bool              log_scope_exit = true;
+
         ~Timer() {
-            if (scope_exit_logger) {
-                scope_exit_logger(elapsed());
+            if (log_scope_exit) {
+                if (scope_exit_logger) {
+                    scope_exit_logger(elapsed());
+                }
+                else {
+                    bu::abort("bu::Timer: log_scope_exit was true, but the scope_exit_logger was uninitialized");
+                }
             }
         }
 
