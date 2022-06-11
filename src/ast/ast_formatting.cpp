@@ -287,6 +287,9 @@ namespace {
         auto operator()(ast::expression::Meta const& meta) {
             return format("meta({})", meta.expression);
         }
+        auto operator()(ast::expression::Hole const&) {
+            return format("???");
+        }
     };
 
 

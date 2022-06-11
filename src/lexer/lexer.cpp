@@ -390,17 +390,18 @@ namespace {
         }
 
         static constexpr auto clashing = std::to_array<bu::Pair<std::string_view, Token::Type>>({
-            { "." , Token::Type::dot          },
-            { ":" , Token::Type::colon        },
-            { "::", Token::Type::double_colon },
-            { "|" , Token::Type::pipe         },
-            { "=" , Token::Type::equals       },
-            { "&" , Token::Type::ampersand    },
-            { "*" , Token::Type::asterisk     },
-            { "+" , Token::Type::plus         },
-            { "?" , Token::Type::question     },
-            { "\\", Token::Type::lambda       },
-            { "->", Token::Type::right_arrow  },
+            { "."  , Token::Type::dot          },
+            { ":"  , Token::Type::colon        },
+            { "::" , Token::Type::double_colon },
+            { "|"  , Token::Type::pipe         },
+            { "="  , Token::Type::equals       },
+            { "&"  , Token::Type::ampersand    },
+            { "*"  , Token::Type::asterisk     },
+            { "+"  , Token::Type::plus         },
+            { "?"  , Token::Type::question     },
+            { "\\" , Token::Type::lambda       },
+            { "->" , Token::Type::right_arrow  },
+            { "???", Token::Type::hole         },
         });
 
         for (auto [punctuation, punctuation_type] : clashing) {
@@ -686,6 +687,10 @@ namespace {
 auto lexer::lex(bu::Source&& source) -> Tokenized_source {
     Lex_context context { source };
 
+    if (source.string().empty()) {
+        return { .source = std::move(source) };
+    }
+
     static constexpr std::array extractors {
         extract_identifier,
         extract_numeric,
@@ -717,7 +722,7 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
                         .value       = std::monostate {},
                         .type        = Token::Type::end_of_input,
                         .source_view = bu::Source_view {
-                            std::string_view {},
+                            std::string_view { context.stop, context.stop },
                             { state.line, state.column },
                             { state.line, state.column }
                         }

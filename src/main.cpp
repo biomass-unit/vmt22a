@@ -70,8 +70,16 @@ namespace {
         auto tokenized_source = lexer::lex(std::move(source));
         parser::Parse_context context { tokenized_source };
 
-        auto result = parser::parse_expression(context);
-        bu::print("Result: {}\nRemaining input: '{}'\n", result, context.pointer->source_view.string.data());
+        if (auto result = parser::parse_expression(context)) {
+            bu::print("Result: {}\n", result);
+
+            if (!context.pointer->source_view.string.empty()) {
+                bu::print("Remaining input: '{}'\n", context.pointer->source_view.string.data());
+            }
+        }
+        else {
+            bu::print("No parse\n");
+        }
     });
 
     [[maybe_unused]]
@@ -138,7 +146,9 @@ namespace {
 
         {
             std::ofstream configuration_file { project_path / "vmt22a_config" };
-
+            if (!configuration_file) {
+                throw bu::exception("Could not create the configuration file");
+            }
             configuration_file << std::format(
                 "src-dir: src\n"
                 "created: {:%d-%m-%Y}\n"
@@ -153,11 +163,10 @@ namespace {
 
         {
             std::ofstream main_file { source_dir / "main.vmt" };
-
-            main_file << "import std\n\n"
-                         "fn main() {\n"
-                         "    print(\"Hello, world!\\n\")\n"
-                         "}";
+            if (!main_file) {
+                throw bu::exception("Could not create the main file");
+            }
+            main_file << "import std\n\nfn main() {\n    print(\"Hello, world!\\n\")\n}";
         }
 
         bu::print("Successfully created a new project at '{}'\n", project_path.string());
@@ -215,8 +224,6 @@ auto main(int argc, char const** argv) -> int try {
         tests::run_all_tests();
     }
 
-    // compiler options, list of project files that are importable
-
     if (options.find("type")) {
         auto pipeline = bu::compose(&typechecker::typecheck, &parser::parse, &lexer::lex);
         auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
@@ -253,6 +260,8 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (std::string_view const* const name = options.find_str("repl")) {
+        ast::AST_context repl_context;
+
         if (*name == "lex") {
             lexer_repl();
         }

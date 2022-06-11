@@ -299,6 +299,13 @@ namespace {
     };
 
 
+    constexpr Extractor extract_hole = +[](Parse_context&)
+        -> ast::Expression::Variant
+    {
+        return ast::expression::Hole {};
+    };
+
+
     auto extract_loop_body(Parse_context& context) -> ast::Expression {
         if (auto body = parse_compound_expression(context)) {
             return std::move(*body);
@@ -499,6 +506,8 @@ namespace {
             return extract_local_type_alias(context);
         case Token::Type::lambda:
             return extract_lambda(context);
+        case Token::Type::hole:
+            return extract_hole(context);
         case Token::Type::loop:
             return extract_infinite_loop(context);
         case Token::Type::while_:

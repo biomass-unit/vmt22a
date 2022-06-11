@@ -37,6 +37,7 @@ namespace lexer {
             pipe,
             lambda,
             right_arrow,
+            hole,
 
             paren_open,
             paren_close,

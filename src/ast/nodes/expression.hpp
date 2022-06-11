@@ -194,6 +194,10 @@ namespace ast {
             DEFAULTED_EQUALITY(Meta);
         };
 
+        struct Hole {
+            DEFAULTED_EQUALITY(Hole);
+        };
+
     }
 
 
@@ -230,7 +234,8 @@ namespace ast {
             expression::Ret,
             expression::Size_of,
             expression::Take_reference,
-            expression::Meta
+            expression::Meta,
+            expression::Hole
         >;
 
         Variant         value;
