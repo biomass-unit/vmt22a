@@ -165,7 +165,7 @@ namespace bu {
     }
 
 
-    class Exception : public std::exception {
+    class [[nodiscard]] Exception : public std::exception {
         std::string message;
     public:
         Exception(std::string&& message) noexcept
@@ -212,6 +212,11 @@ namespace bu {
             dtl::filename_without_path(caller.file_name()),
             caller.function_name()
         );
+    }
+
+
+    auto exception(std::string_view const fmt, auto const&... args) -> Exception {
+        return Exception { std::vformat(fmt, std::make_format_args(args...)) };
     }
 
 
@@ -330,16 +335,6 @@ namespace bu {
     template <class T>
     auto release_vector_memory(std::vector<T>& vector) noexcept -> void {
         std::vector<T> {}.swap(vector);
-    }
-
-    [[nodiscard]]
-    inline auto string_without_sso() noexcept -> std::string {
-        // Reserving sizeof(std::string) bytes will always force the string to
-        // use a dynamic buffer instead of a local one, regardless of implementation
-
-        std::string string;
-        string.reserve(sizeof string);
-        return string;
     }
 
     [[nodiscard]]

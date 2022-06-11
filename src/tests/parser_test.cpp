@@ -34,7 +34,7 @@ namespace {
                 auto ts = lexer::lex(
                     bu::Source {
                         bu::Source::Mock_tag { .filename = "parser test" },
-                        std::move(bu::string_without_sso().assign(text))
+                        std::string(text)
                     }
                 );
 

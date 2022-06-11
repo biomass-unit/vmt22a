@@ -1,5 +1,6 @@
 #include "bu/utilities.hpp"
 #include "bu/color.hpp"
+#include "bu/timer.hpp"
 #include "tests.hpp"
 
 
@@ -93,9 +94,7 @@ tests::dtl::Test_adder::Test_adder(void(* const test)()) {
 
 
 auto tests::run_all_tests() -> void {
-    using namespace std::chrono;
-
-    auto const start_time = steady_clock::now();
+    bu::Timer<> test_timer { .scope_exit_logger {} };
 
     for (auto const test : test_vector()) {
         test();
@@ -106,7 +105,7 @@ auto tests::run_all_tests() -> void {
             "{}All {} tests passed! ({}){}\n",
             bu::Color::green,
             test_count,
-            duration_cast<milliseconds>(steady_clock::now() - start_time),
+            test_timer.elapsed(),
             bu::Color::white
         );
     }

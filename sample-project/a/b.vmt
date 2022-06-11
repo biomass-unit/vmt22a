@@ -1,3 +1,0 @@
-module b
-
-fn test(): Int = 0

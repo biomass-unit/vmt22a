@@ -111,8 +111,8 @@ namespace bu {
         ~Wrapper_context() {
             if (is_responsible) {
                 if constexpr (compiling_in_debug_mode) {
-                    if (arena.empty() && free_indices.empty()) {
-                        bu::print("NOTE: bu::Wrapper<{}>: deallocated empty arena\n", typeid(T).name());
+                    if (arena.empty()) {
+                        bu::print("NOTE: bu::Wrapper<{}>: deallocating empty arena\n", typeid(T).name());
                     }
                 }
 
@@ -174,6 +174,21 @@ namespace bu {
     {
         return *a == *b;
     }
+
+    template <class A, class B>
+    auto operator==(Wrapper<A> const a, B const& b)
+        noexcept(noexcept(*a == b)) -> bool
+    {
+        return *a == b;
+    }
+
+    template <class A, class B>
+    auto operator==(A const& a, Wrapper<B> const b)
+        noexcept(noexcept(a == *b)) -> bool
+    {
+        return a == *b;
+    }
+
 
     constexpr auto wrap = []<class X>(X&& x) {
         return Wrapper<std::decay_t<X>> { std::forward<X>(x) };

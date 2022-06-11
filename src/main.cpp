@@ -37,7 +37,7 @@ namespace {
     auto generic_repl(std::invocable<bu::Source> auto f) {
         return [=] {
             for (;;) {
-                auto string = bu::string_without_sso();
+                std::string string;
 
                 bu::print(" >>> ");
                 std::getline(std::cin, string);
@@ -101,18 +101,66 @@ namespace {
 
     template <auto extract>
     auto debug_parse(std::string_view const string) {
-        auto input = bu::string_without_sso();
-        input = string;
-
         auto tokenized_source = lexer::lex(
             bu::Source {
                 bu::Source::Mock_tag { "debug" },
-                std::move(input)
+                std::string(string)
             }
         );
         parser::Parse_context context { tokenized_source };
 
         return extract(context);
+    }
+
+
+    auto initialize_project(std::string_view const project_name) -> void {
+        auto parent_path  = std::filesystem::current_path();
+        auto project_path = parent_path / project_name;
+        auto source_dir   = project_path / "src";
+
+        if (project_path.has_extension()) {
+            throw bu::exception("A directory name can not have a file extension");
+        }
+
+        if (is_directory(project_path)) {
+            throw bu::exception(
+                "A directory with the path '{}' already exists. Please use a new name",
+                project_path.string()
+            );
+        }
+
+        if (!create_directory(project_path)) {
+            throw bu::exception(
+                "Could not create a directory with the path '{}'",
+                project_path.string()
+            );
+        }
+
+        {
+            std::ofstream configuration_file { project_path / "vmt22a_config" };
+
+            configuration_file << std::format(
+                "src-dir: src\n"
+                "created: {:%d-%m-%Y}\n"
+                "authors: ",
+                std::chrono::current_zone()->to_local(std::chrono::system_clock::now())
+            );
+        }
+
+        if (!create_directory(source_dir)) {
+            throw bu::exception("Could not create the source directory");
+        }
+
+        {
+            std::ofstream main_file { source_dir / "main.vmt" };
+
+            main_file << "import std\n\n"
+                         "fn main() {\n"
+                         "    print(\"Hello, world!\\n\")\n"
+                         "}";
+        }
+
+        bu::print("Successfully created a new project at '{}'\n", project_path.string());
     }
 
 }
@@ -127,6 +175,7 @@ auto main(int argc, char const** argv) -> int try {
     description.add_options()
         ("help"   ,                "Show this text"              )
         ("version",                "Show the interpreter version")
+        ("new"    , cli::string(), "Create a new vmt22a project" )
         ("repl"   , cli::string(), "Run the given repl"          )
         ("machine",                "Debug the interpreter"       )
         ("type"   ,                "Debug the typechecker"       )
@@ -152,6 +201,10 @@ auto main(int argc, char const** argv) -> int try {
 
     if (options.find("version")) {
         bu::print("Version {}, compiled on " __DATE__ ", " __TIME__ ".\n", vm::Virtual_machine::version);
+    }
+
+    if (std::string_view const* const name = options.find_str("new")) {
+        initialize_project(*name);
     }
 
     if (options.find("nocolor")) {
@@ -199,7 +252,7 @@ auto main(int argc, char const** argv) -> int try {
         return machine.run();
     }
 
-    if (auto* const name = options.find_str("repl")) {
+    if (std::string_view const* const name = options.find_str("repl")) {
         if (*name == "lex") {
             lexer_repl();
         }

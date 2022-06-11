@@ -6,6 +6,7 @@ bu::Source::Source(std::string&& name)
     : filename { std::move(name) }
 {
     if (std::ifstream file { filename }) {
+        contents.reserve(sizeof contents);
         contents.assign(std::istreambuf_iterator<char> { file }, {});
     }
     else {
@@ -15,7 +16,10 @@ bu::Source::Source(std::string&& name)
 
 bu::Source::Source(Mock_tag const mock_tag, std::string&& contents)
     : filename { std::format("[{}]", mock_tag.filename) }
-    , contents { std::move(contents) } {}
+    , contents { std::move(contents) }
+{
+    this->contents.reserve(sizeof contents);
+}
 
 
 auto bu::Source::name() const noexcept -> std::string_view {
