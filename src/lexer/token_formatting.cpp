@@ -75,7 +75,7 @@ auto lexer::token_description(Token::Type const type) -> std::string_view {
         return "a primitive typename";
 
     default:
-        bu::abort(std::format("Unimplemented for {}", type));
+        bu::abort("Unimplemented for {}"_format(type));
     }
 }
 

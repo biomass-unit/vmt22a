@@ -32,7 +32,7 @@ namespace bu {
             else if constexpr (bu::compiling_in_debug_mode) {
                 auto const it = std::ranges::find(vector, hash, bu::second);
                 if (it != vector.end()) {
-                    bu::abort(std::format("A string with the value '{}' already exists", it->first));
+                    bu::abort("A string with the value '{}' already exists"_format(it->first));
                 }
             }
 

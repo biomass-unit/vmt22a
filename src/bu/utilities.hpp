@@ -67,8 +67,8 @@ namespace bu {
 
         template <class, template <class...> class>
         struct Is_instance_of : std::false_type {};
-        template <class... Args, template <class...> class F>
-        struct Is_instance_of<F<Args...>, F> : std::true_type {};
+        template <class... Ts, template <class...> class F>
+        struct Is_instance_of<F<Ts...>, F> : std::true_type {};
 
         template <class T, class U>
         using Copy_reference = std::conditional_t<
@@ -144,6 +144,12 @@ namespace bu {
         consteval auto operator"" _uz(Usize n) noexcept -> Usize { return static_cast<Usize>(n); }
         consteval auto operator"" _iz(Usize n) noexcept -> Isize { return static_cast<Isize>(n); }
 
+        consteval auto operator"" _format(char const* const s, Usize const n) noexcept {
+            return [fmt = std::string_view { s, n }](auto const&... args) -> std::string {
+                return std::vformat(fmt, std::make_format_args(args...));
+            };
+        }
+
     }
 
 
@@ -189,7 +195,10 @@ namespace bu {
     }
 
     [[noreturn]]
-    inline auto abort(std::string_view message, std::source_location caller = std::source_location::current()) -> void {
+    inline auto abort(
+        std::string_view     const message,
+        std::source_location const caller = std::source_location::current()) -> void
+    {
         print(
             "bu::abort invoked in {}, in file {} on line {}, with message: {}",
             caller.function_name(),
@@ -200,12 +209,21 @@ namespace bu {
         std::terminate();
     }
 
+    inline auto always_assert(
+        bool                 const assertion,
+        std::source_location const caller = std::source_location::current()) -> void
+    {
+        if (!assertion) [[unlikely]] {
+            abort("Assertion failed", caller);
+        }
+    }
+
     [[noreturn]]
-    inline auto unimplemented(std::source_location caller = std::source_location::current()) -> void {
+    inline auto unimplemented(std::source_location const caller = std::source_location::current()) -> void {
         abort("Unimplemented branch reached", caller);
     }
 
-    inline auto trace(std::source_location caller = std::source_location::current()) -> void {
+    inline auto trace(std::source_location const caller = std::source_location::current()) -> void {
         print(
             "bu::trace: Reached line {} in {}, in function {}\n",
             caller.line(),
@@ -392,9 +410,7 @@ namespace bu {
     auto hash_combine_with_seed(
         Usize          seed,
         Head const&    head,
-        Tail const&... tail
-    )
-        -> Usize
+        Tail const&... tail) -> Usize
     {
         // https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
 

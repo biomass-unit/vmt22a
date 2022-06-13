@@ -1,4 +1,8 @@
-// Only included by ast/ast.hpp
+#ifndef VMT22A_AST_NODES_DEFINITION
+#define VMT22A_AST_NODES_DEFINITION
+#else
+#error This isn't supposed to be included by anything other than ast/ast.hpp
+#endif
 
 
 namespace ast {

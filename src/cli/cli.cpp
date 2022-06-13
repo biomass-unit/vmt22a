@@ -30,8 +30,8 @@ namespace {
             static_assert(bu::always_false<T>);
     }
 
-    template <bu::instance_of<cli::Value>... Ts>
-    constexpr auto type_description(std::variant<Ts...> const& variant) noexcept -> std::string_view {
+    template <class... Ts>
+    constexpr auto type_description(std::variant<cli::Value<Ts>...> const& variant) noexcept -> std::string_view {
         return std::visit([]<class T>(cli::Value<T> const&) { return type_description<T>(); }, variant);
     }
 
@@ -226,17 +226,16 @@ namespace {
                 auto argument = extract_value<T>(context);
 
                 if (!argument) {
-                    throw context.error(std::format("Expected an argument [{}]", type_description<T>()));
+                    throw context.error(
+                        "Expected an argument [{}]"_format(type_description<T>())
+                    );
                 }
 
                 if (value.minimum_value) {
                     if (*argument < *value.minimum_value) {
                         context.retreat();
                         throw context.error(
-                            std::format(
-                                "The minimum allowed value is {}",
-                                *value.minimum_value
-                            )
+                            "The minimum allowed value is {}"_format(*value.minimum_value)
                         );
                     }
                 }
@@ -244,10 +243,7 @@ namespace {
                     if (*argument > *value.maximum_value) {
                         context.retreat();
                         throw context.error(
-                            std::format(
-                                "The maximum allowed value is {}",
-                                *value.maximum_value
-                            )
+                            "The maximum allowed value is {}"_format(*value.maximum_value)
                         );
                     }
                 }
@@ -265,9 +261,7 @@ namespace {
 auto cli::parse_command_line(
     int                 const  argc,
     char const* const*  const  argv,
-    Options_description const& description
-)
-    -> Options
+    Options_description const& description) -> Options
 {
     std::vector<std::string_view> command_line(argv + 1, argv + argc);
     Options options { .program_name_as_invoked = *argv };
@@ -452,10 +446,10 @@ auto cli::Options_description::Option_adder::operator()(
         auto rest = values | std::views::drop(1);
 
         if (is_defaulted) {
-            assert(std::ranges::all_of(rest, has_default));
+            bu::always_assert(std::ranges::all_of(rest, has_default));
         }
         else {
-            assert(std::ranges::none_of(rest, has_default));
+            bu::always_assert(std::ranges::none_of(rest, has_default));
         }
     }
 
@@ -479,19 +473,32 @@ namespace {
     template <class T>
     auto get_arg(cli::Options::Argument_proxy& self) -> T* {
         if (self.pointer) {
-            if (self.count != 1) {
-                bu::abort("non-single-argument cli option accessed without index");
+            switch (self.count) {
+            case 0:
+                bu::abort(
+                    "Attempted to access value of non-existent "
+                    "argument of nullary cli option --{}"_format(self.name)
+                );
+            case 1:
+                break;
+            default:
+                bu::abort(
+                    "Attempted to access value of multi-argument "
+                    "cli option --{} without indexing"_format(self.name)
+                );
             }
 
             if (T* const pointer = std::get_if<T>(self.pointer)) {
                 return pointer;
             }
             else {
-                throw bu::exception(
-                    "Attempted to access a parameter of cli option --{} as {}, but it is {}",
-                    self.name,
-                    type_description<T>(),
-                    type_description(*self.pointer)
+                bu::abort(
+                    "Attempted to access a parameter of cli "
+                    "option --{} as {}, but it is {}"_format(
+                        self.name,
+                        type_description<T>(),
+                        type_description(*self.pointer)
+                    )
                 );
             }
         }
@@ -538,8 +545,7 @@ auto cli::Options::Argument_proxy::operator[](bu::Usize const index) -> Argument
     }
     else {
         bu::abort(
-            std::format(
-                "The cli option --{} does not have a {} parameter",
+            "The cli option --{} does not have a {} parameter"_format(
                 name,
                 bu::fmt::integer_with_ordinal_indicator(index + 1)
             )

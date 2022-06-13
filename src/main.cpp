@@ -188,7 +188,6 @@ auto main(int argc, char const** argv) -> int try {
         ("repl"   , cli::string(), "Run the given repl"          )
         ("machine",                "Debug the interpreter"       )
         ("type"   ,                "Debug the typechecker"       )
-        //("resolve",                "Debug resolution"            )
         ("nocolor",                "Disable colored output"      )
         ("time"   ,                "Print the execution time"    )
         ("test"   ,                "Run all tests"               );
@@ -203,6 +202,10 @@ auto main(int argc, char const** argv) -> int try {
         }
     };
 
+    if (options["nocolor"]) {
+        bu::disable_color_formatting();
+    }
+
     if (options["help"]) {
         bu::print("Valid options:\n\n{}", description);
         return 0;
@@ -214,10 +217,6 @@ auto main(int argc, char const** argv) -> int try {
 
     if (std::string_view const* const name = options["new"]) {
         initialize_project(*name);
-    }
-
-    if (options["nocolor"]) {
-        bu::disable_color_formatting();
     }
 
     if (options["test"]) {

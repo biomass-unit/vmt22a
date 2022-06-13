@@ -25,10 +25,8 @@ namespace bu {
             if constexpr (compiling_in_debug_mode) {
                 if (!context_ptr) {
                     abort(
-                        std::format(
-                            "bu::Wrapper<{}>: the arena has not been initialized",
-                            typeid(T).name()
-                        ),
+                        "bu::Wrapper<{}>: the arena has not been "
+                        "initialized"_format(typeid(T).name()),
                         caller
                     );
                 }
@@ -158,7 +156,7 @@ namespace bu {
     };
 
     template <class... Ts>
-    struct Wrapper_context_for : Wrapper_context<Ts>... {
+    struct Wrapper_context_for : private Wrapper_context<Ts>... {
         Wrapper_context_for(std::source_location const caller = std::source_location::current())
             : Wrapper_context<Ts> { caller }... {}
     };
