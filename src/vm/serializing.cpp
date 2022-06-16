@@ -1,4 +1,5 @@
 #include "bu/utilities.hpp"
+#include "language/configuration.hpp"
 #include "virtual_machine.hpp"
 
 
@@ -9,7 +10,7 @@ auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
         bu::serialize_to(std::back_inserter(buffer), args...);
     };
 
-    write(version, stack.capacity());
+    write(language::version, stack.capacity());
 
     {
         write(string_buffer.size());
@@ -52,15 +53,13 @@ namespace {
 
 
 auto vm::Virtual_machine::deserialize(Byte_span bytes) -> Virtual_machine {
-    if (auto const extracted_version = extract<bu::Usize>(bytes); version != extracted_version) {
-        throw bu::Exception {
-            std::format(
-                "Attempted to deserialize a virtual machine with "
-                "version {}, but the current version is {}",
-                extracted_version,
-                version
-            )
-        };
+    if (auto const extracted_version = extract<bu::Usize>(bytes); language::version != extracted_version) {
+        throw bu::exception(
+            "Attempted to deserialize a virtual machine with "
+            "version {}, but the current version is {}",
+            extracted_version,
+            language::version
+        );
     }
 
     Virtual_machine machine {

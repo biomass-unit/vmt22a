@@ -155,7 +155,7 @@ namespace bu {
 
     namespace dtl {
 
-        inline auto filename_without_path(std::string_view path) noexcept -> std::string_view {
+        constexpr auto filename_without_path(std::string_view path) noexcept -> std::string_view {
             auto const trim_if = [&](char const c) {
                 if (auto const pos = path.find_last_of(c); pos != std::string_view::npos) {
                     path.remove_prefix(pos + 1);
@@ -167,6 +167,9 @@ namespace bu {
 
             return path;
         }
+
+        static_assert(filename_without_path("aaa/bbb/ccc")   == "ccc");
+        static_assert(filename_without_path("aaa\\bbb\\ccc") == "ccc");
 
     }
 
@@ -209,6 +212,13 @@ namespace bu {
         std::terminate();
     }
 
+    [[noreturn]]
+    inline auto abort(
+        std::source_location const caller = std::source_location::current()) -> void
+    {
+        abort("no message", caller);
+    }
+
     inline auto always_assert(
         bool                 const assertion,
         std::source_location const caller = std::source_location::current()) -> void
@@ -219,11 +229,15 @@ namespace bu {
     }
 
     [[noreturn]]
-    inline auto unimplemented(std::source_location const caller = std::source_location::current()) -> void {
+    inline auto unimplemented(
+        std::source_location const caller = std::source_location::current()) -> void
+    {
         abort("Unimplemented branch reached", caller);
     }
 
-    inline auto trace(std::source_location const caller = std::source_location::current()) -> void {
+    inline auto trace(
+        std::source_location const caller = std::source_location::current()) -> void
+    {
         print(
             "bu::trace: Reached line {} in {}, in function {}\n",
             caller.line(),
@@ -505,6 +519,31 @@ namespace bu {
             -> Range_formatter_closure<Range>
         {
             return { &range, delimiter };
+        }
+
+    }
+
+
+    namespace ranges {
+
+        // Makeshift std::ranges::to, remove when C++23 is supported
+
+        template <template <class...> class>
+        struct To_t {};
+
+        template <template <class...> class Container>
+        constexpr To_t<Container> to;
+
+        template <std::ranges::range R, template <class...> class Container>
+        constexpr auto operator|(R&& range, To_t<Container>) {
+            return Container<std::ranges::range_value_t<R>>(std::ranges::begin(range), std::ranges::end(range));
+        }
+
+
+        // Makeshift std::ranges::contains, remove when C++23 is supported
+
+        constexpr auto contains(std::ranges::range auto&& range, auto const& value) -> bool {
+            return std::ranges::find(range, value) != std::ranges::end(range);
         }
 
     }

@@ -31,8 +31,6 @@ namespace vm {
         Activation_record* activation_record   = nullptr;
         bool               keep_running        = true;
 
-        static constexpr bu::Usize version = 0;
-
 
         auto run() -> int;
 

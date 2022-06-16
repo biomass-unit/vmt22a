@@ -73,6 +73,9 @@ namespace bu {
     };
 
 
+    constexpr Usize default_wrapper_arena_capacity = 1024;
+
+
     template <class T>
     class Wrapper_context {
 
@@ -83,12 +86,15 @@ namespace bu {
 
     public:
 
-        Wrapper_context(std::source_location const caller = std::source_location::current()) {
+        Wrapper_context(
+            Usize                const default_capacity = default_wrapper_arena_capacity,
+            std::source_location const caller = std::source_location::current())
+        {
             if (Wrapper<T>::context_ptr) {
                 bu::abort("bu::Wrapper: Attempted to reinitialize the arena", caller);
             }
             else {
-                arena.reserve(1024);
+                arena.reserve(default_capacity);
                 Wrapper<T>::context_ptr = this;
             }
         }
@@ -157,8 +163,10 @@ namespace bu {
 
     template <class... Ts>
     struct Wrapper_context_for : private Wrapper_context<Ts>... {
-        Wrapper_context_for(std::source_location const caller = std::source_location::current())
-            : Wrapper_context<Ts> { caller }... {}
+        Wrapper_context_for(
+            Usize                const capacity = default_wrapper_arena_capacity,
+            std::source_location const caller = std::source_location::current())
+            : Wrapper_context<Ts> { capacity, caller }... {}
     };
 
 

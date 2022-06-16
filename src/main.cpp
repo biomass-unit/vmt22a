@@ -24,6 +24,8 @@
 
 #include "cli/cli.hpp"
 
+#include "language/configuration.hpp"
+
 
 namespace {
 
@@ -183,7 +185,7 @@ auto main(int argc, char const** argv) -> int try {
     cli::Options_description description;
     description.add_options()
         ("help"   ,                "Show this text"              )
-        ("version",                "Show the interpreter version")
+        ("version",                "Show vmt version"            )
         ("new"    , cli::string(), "Create a new vmt22a project" )
         ("repl"   , cli::string(), "Run the given repl"          )
         ("machine",                "Debug the interpreter"       )
@@ -193,6 +195,9 @@ auto main(int argc, char const** argv) -> int try {
         ("test"   ,                "Run all tests"               );
 
     auto options = cli::parse_command_line(argc, argv, description);
+
+    auto configuration = language::read_configuration();
+    (void)configuration;
 
     bu::Timer<> execution_timer {
         .scope_exit_logger = [&](bu::Timer<>::Duration const elapsed) {
@@ -212,7 +217,7 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (options["version"]) {
-        bu::print("Version {}, compiled on " __DATE__ ", " __TIME__ ".\n", vm::Virtual_machine::version);
+        bu::print("Version {}, compiled on " __DATE__ ", " __TIME__ ".\n", language::version);
     }
 
     if (std::string_view const* const name = options["new"]) {
@@ -251,7 +256,7 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (std::string_view const* const name = options["repl"]) {
-        ast::AST_context repl_context;
+        ast::Node_context repl_context;
 
         if (*name == "lex") {
             lexer_repl();
