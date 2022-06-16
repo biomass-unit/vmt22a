@@ -8,7 +8,19 @@ namespace language {
 
     constexpr bu::Usize version = 0;
 
-    using Configuration = bu::Flatmap<std::string, std::string, bu::Flatmap_strategy::store_keys>;
+    struct Configuration : bu::Flatmap
+                         < std::string
+                         , std::optional<std::string>
+                         , bu::Flatmap_strategy::store_keys
+                         >
+    {
+        using Flatmap::Flatmap;
+        using Flatmap::operator=;
+
+        auto string() const -> std::string;
+    };
+
+    auto default_configuration() -> Configuration;
 
     auto read_configuration() -> Configuration;
 

@@ -89,39 +89,6 @@ namespace {
         bu::print("{}\n", parser::parse(lexer::lex(std::move(source))));
     });
 
-    /*[[maybe_unused]]
-    auto const expression_resolution_repl = generic_repl([](bu::Source source) {
-        auto tokenized_source = lexer::lex(std::move(source));
-        parser::Parse_context parse_context { tokenized_source };
-        auto result = parser::extract_expression(parse_context);
-
-        bu::Wrapper<resolution::Namespace> space;
-        resolution::Resolution_context resolution_context {
-            .scope             = { .parent = nullptr },
-            .current_namespace = space,
-            .global_namespace  = space,
-            .source            = &tokenized_source.source,
-            .is_unevaluated    = false
-        };
-        auto expression = resolution_context.resolve_expression(result);
-
-        bu::print("ir: {}\n", expression);
-    });*/
-
-
-    template <auto extract>
-    auto debug_parse(std::string_view const string) {
-        auto tokenized_source = lexer::lex(
-            bu::Source {
-                bu::Source::Mock_tag { "debug" },
-                std::string(string)
-            }
-        );
-        parser::Parse_context context { tokenized_source };
-
-        return extract(context);
-    }
-
 
     auto initialize_project(std::string_view const project_name) -> void {
         auto parent_path  = std::filesystem::current_path();
@@ -151,12 +118,7 @@ namespace {
             if (!configuration_file) {
                 throw bu::exception("Could not create the configuration file");
             }
-            configuration_file << std::format(
-                "src-dir: src\n"
-                "created: {:%d-%m-%Y}\n"
-                "authors: ",
-                std::chrono::current_zone()->to_local(std::chrono::system_clock::now())
-            );
+            configuration_file << language::default_configuration().string();
         }
 
         if (!create_directory(source_dir)) {
@@ -217,7 +179,7 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (options["version"]) {
-        bu::print("Version {}, compiled on " __DATE__ ", " __TIME__ ".\n", language::version);
+        bu::print("vmt22a version {}, compiled on " __DATE__ ", " __TIME__ ".\n", language::version);
     }
 
     if (std::string_view const* const name = options["new"]) {
@@ -255,7 +217,7 @@ auto main(int argc, char const** argv) -> int try {
         return machine.run();
     }
 
-    if (std::string_view const* const name = options["repl"]) {
+    /*if (std::string_view const* const name = options["repl"]) {
         ast::Node_context repl_context;
 
         if (*name == "lex") {
@@ -270,7 +232,7 @@ auto main(int argc, char const** argv) -> int try {
         else {
             bu::abort("Unrecognized repl name");
         }
-    }
+    }*/
 }
 
 catch (cli::Unrecognized_option const& exception) {

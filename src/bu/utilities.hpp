@@ -444,6 +444,11 @@ namespace bu {
     }
 
 
+    inline auto local_time() -> std::chrono::local_time<std::chrono::system_clock::duration> {
+        return std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
+    }
+
+
     consteval auto get_unique_seed(std::source_location const caller = std::source_location::current())
         noexcept -> bu::Usize
     {

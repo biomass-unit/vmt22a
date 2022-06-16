@@ -23,11 +23,39 @@ namespace {
 
 
     constexpr auto allowed_keys = std::to_array<std::string_view>({
-        "src-dir",
+        "language version",
+        "source directory",
+        "name",
+        "version",
         "authors",
         "created"
     });
 
+}
+
+
+auto language::Configuration::string() const -> std::string {
+    std::string string;
+    string.reserve(256);
+    auto out = std::back_inserter(string);
+
+    for (auto const& [key, value] : container()) {
+        std::format_to(out, "{}: {}\n", key, value.value_or(""));
+    }
+
+    return string;
+}
+
+
+auto language::default_configuration() -> Configuration {
+    return Configuration::Pairs {
+        { "language version", std::to_string(version) },
+        { "source directory", "src" },
+        { "name", std::nullopt },
+        { "version", std::nullopt },
+        { "authors", std::nullopt },
+        { "created", "{:%d-%m-%Y}"_format(bu::local_time()) }
+    };
 }
 
 
@@ -73,12 +101,7 @@ auto language::read_configuration() -> Configuration {
                     bu::fmt::integer_with_ordinal_indicator(line_number)
                 );
             }
-            if (value.empty()) {
-                throw bu::exception(
-                    "vmt22a_config: empty value on the {} line",
-                    bu::fmt::integer_with_ordinal_indicator(line_number)
-                );
-            }
+
             if (!bu::ranges::contains(allowed_keys, key)) {
                 throw bu::exception(
                     "vmt22a_config: '{}' is not a recognized configuration key",
@@ -86,12 +109,17 @@ auto language::read_configuration() -> Configuration {
                 );
             }
 
-            configuration.add(std::string(key), std::string(value));
+            configuration.add(
+                std::string(key),
+                value.empty()
+                    ? std::optional(std::string(value))
+                    : std::nullopt
+            );
         }
 
         return configuration;
     }
     else {
-        bu::abort("no config"); // provide default settings
+        return default_configuration();
     }
 }

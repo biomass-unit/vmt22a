@@ -1,5 +1,5 @@
 import std
 
 fn main() {
-    print("Hello, world!\n")
+    std::print("Hello, world!\n")
 }

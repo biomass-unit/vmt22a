@@ -23,6 +23,8 @@ namespace bu {
     class [[nodiscard]] Flatmap<K, V, Flatmap_strategy::store_keys, Container> {
         Container<Pair<K, V>> pairs;
     public:
+        using Pairs = Container<Pair<K, V>>;
+
         using Key   = K;
         using Value = V;
 
