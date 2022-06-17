@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "internals/parser_internals.hpp"
+#include "parser_internals.hpp"
 #include "parser.hpp"
 
 

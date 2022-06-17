@@ -10,7 +10,7 @@
 #include "ast/ast_formatting.hpp"
 
 #include "parser/parser.hpp"
-#include "parser/internals/parser_internals.hpp" // for the repl only
+#include "parser/parser_internals.hpp"
 
 #include "vm/bytecode.hpp"
 #include "vm/virtual_machine.hpp"

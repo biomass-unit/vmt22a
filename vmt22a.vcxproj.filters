@@ -39,13 +39,13 @@
     <ClCompile Include="src\tests\parser_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\parser\internals\parse_expression.cpp">
+    <ClCompile Include="src\parser\parse_expression.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\parser\internals\parse_pattern.cpp">
+    <ClCompile Include="src\parser\parse_pattern.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\parser\internals\parse_type.cpp">
+    <ClCompile Include="src\parser\parse_type.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\bu\source.cpp">
@@ -149,7 +149,7 @@
     <ClInclude Include="src\parser\parser.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\parser\internals\parser_internals.hpp">
+    <ClInclude Include="src\parser\parser_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bu\source.hpp">

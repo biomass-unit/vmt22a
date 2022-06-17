@@ -2,7 +2,7 @@
 #include "tests.hpp"
 
 #include "ast/ast_formatting.hpp"
-#include "parser/internals/parser_internals.hpp"
+#include "parser/parser_internals.hpp"
 
 
 namespace {
