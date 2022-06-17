@@ -499,10 +499,10 @@ DEFINE_FORMATTER_FOR(ast::Module) {
         std::format_to(context.out(), "module {}\n", *value.name);
     }
 
-    for (auto& import_ : value.imports) {
-        std::format_to(context.out(), "import {}", bu::fmt::delimited_range(import_.path, "."));
-        if (import_.alias) {
-            std::format_to(context.out(), " as {}", *import_.alias);
+    for (auto& import : value.imports) {
+        std::format_to(context.out(), "import {}", bu::fmt::delimited_range(import.path.components, "."));
+        if (import.alias) {
+            std::format_to(context.out(), " as {}", *import.alias);
         }
         std::format_to(context.out(), "\n");
     }

@@ -123,7 +123,7 @@ auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
 
 namespace ast {
 
-    using AST_context = bu::Wrapper_context_for<
+    using Node_context = bu::Wrapper_context_for<
         ast::Expression,
         ast::Type,
         ast::Pattern,
@@ -131,15 +131,18 @@ namespace ast {
     >;
 
 
-    using Module_path = std::vector<lexer::Identifier>;
+    struct Module_path {
+        std::vector<lexer::Identifier> components;
+        lexer::Identifier              module_name;
+    };
 
-    struct Import {
+    struct [[nodiscard]] Import {
         Module_path                      path;
         std::optional<lexer::Identifier> alias;
     };
 
     struct [[nodiscard]] Module {
-        AST_context context;
+        Node_context node_context;
 
         bu::Source              source;
         std::vector<Definition> definitions;
@@ -147,6 +150,14 @@ namespace ast {
         std::optional<lexer::Identifier> name;
         std::vector<Import>              imports;
         std::vector<Module_path>         imported_by;
+    };
+
+
+    struct [[nodiscard]] Full_program {
+        Node_context                    node_context;
+        bu::Wrapper_context<bu::Source> source_context;
+
+        std::vector<bu::Pair<bu::Wrapper<bu::Source>, Definition>> definitions;
     };
 
 }

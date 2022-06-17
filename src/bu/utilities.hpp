@@ -458,6 +458,8 @@ namespace bu {
               * static_cast<Usize>(caller.column()));
     }
 
+    static_assert(get_unique_seed() != get_unique_seed());
+
 
     auto serialize_to(std::output_iterator<std::byte> auto out, trivial auto const... args)
         noexcept -> void
@@ -533,16 +535,29 @@ namespace bu {
 
         // Makeshift std::ranges::to, remove when C++23 is supported
 
-        template <template <class...> class>
-        struct To_t {};
+        namespace dtl {
+            template <class>
+            struct To_direct {};
 
-        template <template <class...> class Container>
-        constexpr To_t<Container> to;
+            template <template <class...> class>
+            struct To_deduced {};
 
-        template <std::ranges::range R, template <class...> class Container>
-        constexpr auto operator|(R&& range, To_t<Container>) {
-            return Container<std::ranges::range_value_t<R>>(std::ranges::begin(range), std::ranges::end(range));
+            template <std::ranges::range R, class Target>
+            constexpr auto operator|(R&& range, To_direct<Target>) {
+                return Target(std::ranges::begin(range), std::ranges::end(range));
+            }
+
+            template <std::ranges::range R, template <class...> class Target>
+            constexpr auto operator|(R&& range, To_deduced<Target>) {
+                return std::forward<R>(range) | to<Target<std::ranges::range_value_t<R>>>();
+            }
         }
+
+        template <class Target>
+        constexpr auto to() -> dtl::To_direct<Target> { return {}; }
+
+        template <template <class...> class Target>
+        constexpr auto to() -> dtl::To_deduced<Target> { return {}; }
 
 
         // Makeshift std::ranges::contains, remove when C++23 is supported

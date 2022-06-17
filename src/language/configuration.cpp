@@ -81,7 +81,7 @@ auto language::read_configuration() -> Configuration {
             auto components = line
                             | std::views::split(':')
                             | std::views::transform(trim)
-                            | bu::ranges::to<std::vector>;
+                            | bu::ranges::to<std::vector>();
 
             switch (components.size()) {
             case 1:
@@ -106,6 +106,14 @@ auto language::read_configuration() -> Configuration {
                 throw bu::exception(
                     "vmt22a_config: '{}' is not a recognized configuration key",
                     key
+                );
+            }
+
+            if (configuration.find(key)) {
+                throw bu::exception(
+                    "vmt22a_config: '{}' key redefinition on the {} line",
+                    key,
+                    bu::fmt::integer_with_ordinal_indicator(line_number)
                 );
             }
 

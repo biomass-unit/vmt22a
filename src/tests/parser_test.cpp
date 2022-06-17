@@ -106,7 +106,7 @@ namespace {
         using namespace bu::literals;
         using namespace tests;
 
-        ast::AST_context test_context;
+        ast::Node_context test_context;
 
 
         "literal"_test = [] {

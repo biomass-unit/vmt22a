@@ -764,7 +764,7 @@ namespace {
 auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     Parse_context context { tokenized_source };
 
-    ast::AST_context                 module_context;
+    ast::Node_context                module_context;
     std::vector<ast::Import>         module_imports;
     std::optional<lexer::Identifier> module_name;
 
@@ -777,8 +777,10 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
             parse_separated_one_or_more<parse_lower_id, Token::Type::dot, "a module qualifier">;
 
         if (auto path = parse_path(context)) {
-            ast::Import import_statement;
-            import_statement.path = std::move(*path);
+            lexer::Identifier module_name = path->back();
+            path->pop_back();
+
+            ast::Import import_statement { .path { std::move(*path), module_name } };
 
             if (context.try_consume(Token::Type::as)) {
                 import_statement.alias = extract_lower_id(context, "a module alias");
@@ -801,10 +803,10 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
     }
 
     return ast::Module {
-        .context     = std::move(module_context),
-        .source      = std::move(tokenized_source.source),
-        .definitions = std::move(definitions),
-        .name        = std::move(module_name),
-        .imports     = std::move(module_imports)
+        .node_context = std::move(module_context),
+        .source       = std::move(tokenized_source.source),
+        .definitions  = std::move(definitions),
+        .name         = std::move(module_name),
+        .imports      = std::move(module_imports)
     };
 }

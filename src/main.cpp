@@ -217,7 +217,7 @@ auto main(int argc, char const** argv) -> int try {
         return machine.run();
     }
 
-    /*if (std::string_view const* const name = options["repl"]) {
+    if (std::string_view const* const name = options["repl"]) {
         ast::Node_context repl_context;
 
         if (*name == "lex") {
@@ -232,7 +232,7 @@ auto main(int argc, char const** argv) -> int try {
         else {
             bu::abort("Unrecognized repl name");
         }
-    }*/
+    }
 }
 
 catch (cli::Unrecognized_option const& exception) {
