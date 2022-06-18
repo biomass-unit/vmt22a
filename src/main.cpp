@@ -148,15 +148,15 @@ using namespace lexer :: literals;
 auto main(int argc, char const** argv) -> int try {
     cli::Options_description description;
     description.add_options()
-        ("help"   ,                "Show this text"              )
-        ("version",                "Show vmt version"            )
-        ("new"    , cli::string(), "Create a new vmt22a project" )
-        ("repl"   , cli::string(), "Run the given repl"          )
-        ("machine",                "Debug the interpreter"       )
-        ("type"   ,                "Debug the typechecker"       )
-        ("nocolor",                "Disable colored output"      )
-        ("time"   ,                "Print the execution time"    )
-        ("test"   ,                "Run all tests"               );
+        ("help"   ,                      "Show this text"              )
+        ("version",                      "Show vmt version"            )
+        ("new"    , cli::string("name"), "Create a new vmt22a project" )
+        ("repl"   , cli::string("name"), "Run the given repl"          )
+        ("machine",                      "Debug the interpreter"       )
+        ("type"   ,                      "Debug the typechecker"       )
+        ("nocolor",                      "Disable colored output"      )
+        ("time"   ,                      "Print the execution time"    )
+        ("test"   ,                      "Run all tests"               );
 
     auto options = cli::parse_command_line(argc, argv, description);
 

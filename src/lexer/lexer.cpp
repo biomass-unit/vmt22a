@@ -532,7 +532,7 @@ namespace {
             else {
                 throw context.error(
                     { state.pointer, 2 }, // view of the base specifier
-                    std::format("Expected an integer literal after the base-{} specifier", base)
+                    "Expected an integer literal after the base-{} specifier"_format(base)
                 );
             }
         }

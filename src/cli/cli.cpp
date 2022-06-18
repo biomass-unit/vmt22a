@@ -17,7 +17,7 @@ namespace {
 
 
     template <class T>
-    consteval auto type_description() noexcept -> std::string_view {
+    constexpr auto type_description() noexcept -> std::string_view {
         if constexpr (std::same_as<T, cli::types::Int>)
             return "int";
         else if constexpr (std::same_as<T, cli::types::Float>)
@@ -28,11 +28,6 @@ namespace {
             return "str";
         else
             static_assert(bu::always_false<T>);
-    }
-
-    template <class... Ts>
-    constexpr auto type_description(std::variant<cli::Value<Ts>...> const& variant) noexcept -> std::string_view {
-        return std::visit([]<class T>(cli::Value<T> const&) { return type_description<T>(); }, variant);
     }
 
     template <class... Ts>
@@ -351,21 +346,24 @@ auto cli::parse_command_line(
 
 
 template <class T>
-auto cli::Value<T>::default_to(T&& value) && noexcept -> Value&& {
-    default_value = std::move(value);
-    return std::move(*this);
+auto cli::Value<T>::default_to(T&& value) noexcept -> Value {
+    auto copy = *this;
+    copy.default_value = std::move(value);
+    return copy;
 }
 
 template <class T>
-auto cli::Value<T>::min(T&& value) && noexcept -> Value&& {
-    minimum_value = std::move(value);
-    return std::move(*this);
+auto cli::Value<T>::min(T&& value) noexcept -> Value {
+    auto copy = *this;
+    copy.minimum_value = std::move(value);
+    return copy;
 }
 
 template <class T>
-auto cli::Value<T>::max(T&& value) && noexcept -> Value&& {
-    maximum_value = std::move(value);
-    return std::move(*this);
+auto cli::Value<T>::max(T&& value) noexcept -> Value {
+    auto copy = *this;
+    copy.maximum_value = std::move(value);
+    return copy;
 }
 
 template struct cli::Value<cli::types::Int  >;
@@ -589,7 +587,9 @@ DEFINE_FORMATTER_FOR(cli::Options_description) {
         );
 
         for (auto& argument : arguments) {
-            std::format_to(out, " [{}]", type_description(argument));
+            std::format_to(out, " [{}]", std::visit([]<class T>(cli::Value<T> const& value) {
+                return value.name.empty() ? type_description<T>() : value.name;
+            }, argument));
         }
 
         max_length = std::max(max_length, line.size());

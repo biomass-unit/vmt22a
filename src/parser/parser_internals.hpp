@@ -48,7 +48,7 @@ namespace parser {
                 ++pointer;
             }
             else {
-                throw expected(std::format("'{}'", type));
+                throw expected("'{}'"_format(type));
             }
         }
 
@@ -174,7 +174,7 @@ namespace parser {
                     return result;
                 }
                 else {
-                    throw context.expected(std::format("a closing '{}'", close));
+                    throw context.expected("a closing '{}'"_format(close));
                 }
             }
             else {
@@ -345,7 +345,7 @@ namespace parser {
     class Extractor {
         typename T::Variant(*function)(Parse_context&);
     public:
-        constexpr Extractor(decltype(function) const function) noexcept
+        consteval Extractor(decltype(function) const function) noexcept
             : function { function } {}
 
         auto operator()(Parse_context& context) const -> T {

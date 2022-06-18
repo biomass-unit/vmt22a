@@ -8,13 +8,17 @@ namespace cli {
 
     template <class T>
     struct [[nodiscard]] Value {
+        static_assert(std::is_trivially_copyable_v<T>);
+
+        std::string_view name;
+
         std::optional<T> default_value;
         std::optional<T> minimum_value;
         std::optional<T> maximum_value;
 
-        auto default_to(T&&) && noexcept -> Value&&;
-        auto min       (T&&) && noexcept -> Value&&;
-        auto max       (T&&) && noexcept -> Value&&;
+        auto default_to(T&&) noexcept -> Value;
+        auto min       (T&&) noexcept -> Value;
+        auto max       (T&&) noexcept -> Value;
     };
 
     namespace types {
@@ -24,10 +28,10 @@ namespace cli {
         using Str   = std::string_view;
     }
 
-    inline auto integer  () -> Value<types::Int  > { return {}; }
-    inline auto floating () -> Value<types::Float> { return {}; }
-    inline auto boolean  () -> Value<types::Bool > { return {}; }
-    inline auto string   () -> Value<types::Str  > { return {}; }
+    inline auto integer  (std::string_view const name = {}) -> Value<types::Int  > { return { name }; }
+    inline auto floating (std::string_view const name = {}) -> Value<types::Float> { return { name }; }
+    inline auto boolean  (std::string_view const name = {}) -> Value<types::Bool > { return { name }; }
+    inline auto string   (std::string_view const name = {}) -> Value<types::Str  > { return { name }; }
 
 
     struct [[nodiscard]] Parameter {
