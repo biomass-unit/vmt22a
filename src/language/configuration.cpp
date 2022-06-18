@@ -22,6 +22,21 @@ namespace {
     static_assert(trim(""              ) == ""    );
 
 
+    constexpr auto remove_comments(std::string_view string) -> std::string_view {
+        if (bu::Usize const offset = string.find("//"); offset != std::string_view::npos) {
+            string.remove_suffix(string.size() - offset);
+        }
+        return string;
+    }
+
+    static_assert(remove_comments("test//test") == "test");
+    static_assert(remove_comments("test/test") == "test/test");
+    static_assert(remove_comments("test") == "test");
+    static_assert(remove_comments("// test") == "");
+    static_assert(remove_comments("//") == "");
+    static_assert(remove_comments("") == "");
+
+
     constexpr auto allowed_keys = std::to_array<std::string_view>({
         "language version",
         "source directory",
@@ -82,7 +97,7 @@ auto language::read_configuration() -> Configuration {
 
             auto components = line
                             | std::views::split(':')
-                            | std::views::transform(trim)
+                            | std::views::transform(bu::compose(&trim, &remove_comments))
                             | bu::ranges::to<std::vector>();
 
             switch (components.size()) {
