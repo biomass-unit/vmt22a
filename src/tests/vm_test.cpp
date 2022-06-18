@@ -9,7 +9,7 @@ namespace {
 
     auto run_bytecode(bu::trivial auto const... program) -> int {
         vm::Virtual_machine machine { .stack = bu::Bytestack { 256 } };
-        machine.bytecode.write(program...);
+        machine.program.bytecode.write(program...);
         return machine.run();
     }
 

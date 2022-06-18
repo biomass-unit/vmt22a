@@ -25,6 +25,7 @@ namespace {
     constexpr auto allowed_keys = std::to_array<std::string_view>({
         "language version",
         "source directory",
+        "stack capacity",
         "name",
         "version",
         "authors",
@@ -51,6 +52,7 @@ auto language::default_configuration() -> Configuration {
     return Configuration::Pairs {
         { "language version", std::to_string(version) },
         { "source directory", "src" },
+        { "stack capacity", "1048576" }, // 2^20
         { "name", std::nullopt },
         { "version", std::nullopt },
         { "authors", std::nullopt },

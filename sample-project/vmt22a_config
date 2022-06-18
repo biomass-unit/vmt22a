@@ -1,5 +1,6 @@
 language version: 0
 source directory: src
+stack capacity: 1048576
 name: 
 version: 
 authors: 

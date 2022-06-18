@@ -150,7 +150,7 @@ auto main(int argc, char const** argv) -> int try {
     description.add_options()
         ("help"   ,                      "Show this text"              )
         ("version",                      "Show vmt version"            )
-        ("new"    , cli::string("name"), "Create a new vmt22a project" )
+        ("new"    , cli::string("name"), "Create a new vmt project"    )
         ("repl"   , cli::string("name"), "Run the given repl"          )
         ("machine",                      "Debug the interpreter"       )
         ("type"   ,                      "Debug the typechecker"       )
@@ -203,10 +203,10 @@ auto main(int argc, char const** argv) -> int try {
     if (options["machine"]) {
         vm::Virtual_machine machine { .stack = bu::Bytestack { 32 } };
 
-        auto const string = machine.add_to_string_pool("Hello, world!\n");
+        auto const string = machine.program.constants.add_to_string_pool("Hello, world!\n");
 
         using enum vm::Opcode;
-        machine.bytecode.write(
+        machine.program.bytecode.write(
             ipush, 0_iz,
             iinc_top,
             idup,

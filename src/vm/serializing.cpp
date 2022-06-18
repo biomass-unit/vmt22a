@@ -3,25 +3,25 @@
 #include "virtual_machine.hpp"
 
 
-auto vm::Virtual_machine::serialize() const -> std::vector<std::byte> {
+auto vm::Executable_program::serialize() const -> std::vector<std::byte> {
     std::vector<std::byte> buffer;
 
     auto const write = [&](bu::trivial auto const... args) {
         bu::serialize_to(std::back_inserter(buffer), args...);
     };
 
-    write(language::version, stack.capacity());
+    write(language::version, stack_capacity);
 
     {
-        write(string_buffer.size());
+        write(constants.string_buffer.size());
         buffer.insert(
             buffer.end(),
-            reinterpret_cast<std::byte const*>(string_buffer.data()),
-            reinterpret_cast<std::byte const*>(string_buffer.data() + string_buffer.size())
+            reinterpret_cast<std::byte const*>(constants.string_buffer.data()),
+            reinterpret_cast<std::byte const*>(constants.string_buffer.data() + constants.string_buffer.size())
         );
 
-        write(string_buffer_views.size());
-        for (auto const pair : string_buffer_views) {
+        write(constants.string_buffer_views.size());
+        for (auto const pair : constants.string_buffer_views) {
             write(pair);
         }
     }
@@ -52,25 +52,25 @@ namespace {
 }
 
 
-auto vm::Virtual_machine::deserialize(Byte_span bytes) -> Virtual_machine {
+auto vm::Executable_program::deserialize(Byte_span bytes) -> Executable_program {
     if (auto const extracted_version = extract<bu::Usize>(bytes); language::version != extracted_version) {
         throw bu::exception(
-            "Attempted to deserialize a virtual machine with "
-            "version {}, but the current version is {}",
+            "Attempted to deserialize a program compiled with "
+            "vmt22a version {}, but the current version is {}",
             extracted_version,
             language::version
         );
     }
 
-    Virtual_machine machine {
-        .stack = bu::Bytestack { extract<bu::Usize>(bytes) }
+    Executable_program program {
+        .stack_capacity = extract<bu::Usize>(bytes)
     };
 
     {
         auto const string_buffer_size = extract<bu::Usize>(bytes);
-        assert(string_buffer_size <= bytes.size());
+        bu::always_assert(string_buffer_size <= bytes.size());
 
-        machine.string_buffer.assign(
+        program.constants.string_buffer.assign(
             reinterpret_cast<char const*>(bytes.data()),
             string_buffer_size
         );
@@ -78,16 +78,16 @@ auto vm::Virtual_machine::deserialize(Byte_span bytes) -> Virtual_machine {
         bytes = bytes.subspan(string_buffer_size);
         
         for (auto i = extract<bu::Usize>(bytes); i != 0; --i) {
-            machine.string_buffer_views.push_back(extract<bu::Pair<bu::Usize>>(bytes));
+            program.constants.string_buffer_views.push_back(extract<bu::Pair<bu::Usize>>(bytes));
         }
     }
 
     {
         auto const bytecode_size = extract<bu::Usize>(bytes);
-        assert(bytecode_size == bytes.size());
+        bu::always_assert(bytecode_size == bytes.size());
 
-        machine.bytecode.bytes.assign(bytes.data(), bytes.data() + bytecode_size);
+        program.bytecode.bytes.assign(bytes.data(), bytes.data() + bytecode_size);
     }
 
-    return machine;
+    return program;
 }

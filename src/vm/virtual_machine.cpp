@@ -8,13 +8,13 @@ namespace {
 
     using VM = vm::Virtual_machine;
 
-    using String = vm::Virtual_machine::String;
+    using String = vm::Constants::String;
 
 
     template <bu::trivial T>
     auto push(VM& vm) -> void {
         if constexpr (std::same_as<T, String>) {
-            vm.stack.push(vm.string_pool[vm.extract_argument<bu::Usize>()]);
+            vm.stack.push(vm.program.constants.string_pool[vm.extract_argument<bu::Usize>()]);
         }
         else {
             vm.stack.push(vm.extract_argument<T>());
@@ -288,20 +288,22 @@ namespace {
 
 
 auto vm::Virtual_machine::run() -> int {
-    instruction_pointer = bytecode.bytes.data();
+    instruction_pointer = program.bytecode.bytes.data();
     instruction_anchor = instruction_pointer;
     keep_running = true;
 
     // The first activation record does not need to be initialized
 
-    if (string_pool.empty()) {
-        string_pool.reserve(string_buffer_views.size());
+    if (program.constants.string_pool.empty()) {
+        // move this somewhere else
 
-        for (auto const [offset, length] : string_buffer_views) {
-            string_pool.emplace_back(string_buffer.data() + offset, length);
+        program.constants.string_pool.reserve(program.constants.string_buffer_views.size());
+
+        for (auto const [offset, length] : program.constants.string_buffer_views) {
+            program.constants.string_pool.emplace_back(program.constants.string_buffer.data() + offset, length);
         }
 
-        bu::release_vector_memory(string_buffer_views);
+        bu::release_vector_memory(program.constants.string_buffer_views);
     }
 
     while (keep_running) {
