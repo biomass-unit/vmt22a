@@ -20,6 +20,8 @@
 #include "tst/tst_formatting.hpp"
 #include "typechecker/typechecker.hpp"
 
+#include "dependency/dependency.hpp"
+
 #include "tests/tests.hpp"
 
 #include "cli/cli.hpp"

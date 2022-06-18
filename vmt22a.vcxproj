@@ -212,6 +212,7 @@
     </ClCompile>
     <ClCompile Include="src\bu\source.cpp" />
     <ClCompile Include="src\cli\cli.cpp" />
+    <ClCompile Include="src\dependency\dependency.cpp" />
     <ClCompile Include="src\language\configuration.cpp" />
     <ClCompile Include="src\tst\tst_hashing.cpp" />
     <ClCompile Include="src\resolution\bind_pattern.cpp" />
@@ -267,6 +268,7 @@
     <ClInclude Include="src\bu\utilities.hpp" />
     <ClInclude Include="src\bu\wrapper.hpp" />
     <ClInclude Include="src\cli\cli.hpp" />
+    <ClInclude Include="src\dependency\dependency.hpp" />
     <ClInclude Include="src\language\configuration.hpp" />
     <ClInclude Include="src\tst\tst_formatting.hpp" />
     <ClInclude Include="src\resolution\resolution_internals.hpp" />

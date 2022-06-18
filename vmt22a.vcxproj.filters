@@ -105,6 +105,9 @@
     <ClCompile Include="src\language\configuration.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\dependency\dependency.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\utilities.hpp">
@@ -210,6 +213,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\language\configuration.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\dependency\dependency.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
