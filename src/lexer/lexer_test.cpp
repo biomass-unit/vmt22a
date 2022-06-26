@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "tests.hpp"
+#include "tests/tests.hpp"
 
 #include "lexer/lexer.hpp"
 #include "lexer/token_formatting.hpp"

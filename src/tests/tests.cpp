@@ -93,7 +93,7 @@ auto tests::Test::operator=(Invoke&& test) -> void {
     case Type::throwing:
     {
         bu::print(
-            "{} Test {} should've thrown an exception, but didn't\n",
+            "{} Test {} should have thrown an exception, but didn't\n",
             red_note(),
             test_name()
         );

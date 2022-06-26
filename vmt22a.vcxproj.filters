@@ -24,7 +24,7 @@
     <ClCompile Include="src\lexer\lexer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tests\lexer_test.cpp">
+    <ClCompile Include="src\lexer\lexer_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\lexer\token_formatting.cpp">
@@ -36,7 +36,7 @@
     <ClCompile Include="src\parser\parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tests\parser_test.cpp">
+    <ClCompile Include="src\parser\parser_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\parser\parse_expression.cpp">
@@ -63,7 +63,7 @@
     <ClCompile Include="src\vm\vm_formatting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tests\vm_test.cpp">
+    <ClCompile Include="src\vm\vm_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\tests\tests.cpp">
@@ -106,6 +106,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\dependency\dependency.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\bu\bu_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

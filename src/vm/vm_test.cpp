@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "tests.hpp"
+#include "tests/tests.hpp"
 
 #include "vm/opcode.hpp"
 #include "vm/virtual_machine.hpp"

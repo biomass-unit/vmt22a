@@ -204,6 +204,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ast\ast_formatting.cpp" />
+    <ClCompile Include="src\bu\bu_test.cpp" />
     <ClCompile Include="src\bu\color.cpp">
       <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DisableLanguageExtensions>
       <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DisableLanguageExtensions>
@@ -223,7 +224,7 @@
     <ClCompile Include="src\resolution\resolution_internals.cpp" />
     <ClCompile Include="src\resolution\type_resolution.cpp" />
     <ClCompile Include="src\lexer\lexer.cpp" />
-    <ClCompile Include="src\tests\lexer_test.cpp" />
+    <ClCompile Include="src\lexer\lexer_test.cpp" />
     <ClCompile Include="src\bu\textual_error.cpp" />
     <ClCompile Include="src\lexer\token_formatting.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -241,13 +242,13 @@
     <ClCompile Include="src\parser\parse_pattern.cpp" />
     <ClCompile Include="src\parser\parse_type.cpp" />
     <ClCompile Include="src\parser\parser.cpp" />
-    <ClCompile Include="src\tests\parser_test.cpp" />
+    <ClCompile Include="src\parser\parser_test.cpp" />
     <ClCompile Include="src\tests\tests.cpp" />
     <ClCompile Include="src\typechecker\typechecker.cpp" />
     <ClCompile Include="src\vm\serializing.cpp" />
     <ClCompile Include="src\vm\virtual_machine.cpp" />
     <ClCompile Include="src\vm\vm_formatting.cpp" />
-    <ClCompile Include="src\tests\vm_test.cpp" />
+    <ClCompile Include="src\vm\vm_test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ast\ast.hpp" />

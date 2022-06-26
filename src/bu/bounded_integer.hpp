@@ -198,6 +198,10 @@ namespace bu {
 
 
         constexpr auto operator/=(Bounded_integer const other) -> Bounded_integer& {
+            if (other.get() == 0) [[unlikely]] {
+                throw exception("bu::Bounded_integer division by zero");
+            }
+
             if (would_division_overflow(value, other.value)) [[unlikely]] {
                 throw Bounded_integer_overflow {};
             }
@@ -262,7 +266,7 @@ namespace bu {
 
 
         constexpr explicit operator bool(this Bounded_integer const self) noexcept {
-            return value != 0;
+            return self.value != 0;
         }
 
 
