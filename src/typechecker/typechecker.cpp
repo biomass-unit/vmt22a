@@ -20,5 +20,5 @@ namespace {
 
 
 auto typechecker::typecheck(ast::Module&&) -> Checked_program {
-    bu::unimplemented();
+    bu::todo();
 }

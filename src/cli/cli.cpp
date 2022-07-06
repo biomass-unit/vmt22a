@@ -176,7 +176,7 @@ namespace {
                 return std::nullopt;
             }
             default:
-                bu::unimplemented();
+                bu::todo();
             }
         }
 

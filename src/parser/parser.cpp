@@ -337,7 +337,7 @@ namespace {
             }
 
             if (context.try_consume(Token::Type::where)) {
-                bu::unimplemented(); // TODO: add support for where clauses
+                bu::todo(); // TODO: add support for where clauses
             }
 
             auto body = [&] {

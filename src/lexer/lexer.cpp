@@ -512,7 +512,7 @@ namespace {
                 );
             }
             else {
-                bu::unimplemented();
+                bu::todo();
             }
         }
     }
@@ -543,7 +543,7 @@ namespace {
             );
         }
         else if (!integer.did_parse()) {
-            bu::unimplemented();
+            bu::todo();
         }
 
         if (negative && integer.get() < 0) {
@@ -584,7 +584,7 @@ namespace {
                 }
             }
             else {
-                bu::unimplemented();
+                bu::todo();
             }
         }
 

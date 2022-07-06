@@ -143,7 +143,7 @@ namespace {
             };
         }
         else {
-            bu::unimplemented(); // Unreachable?
+            bu::todo(); // Unreachable?
         }
     };
 

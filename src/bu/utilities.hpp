@@ -229,7 +229,7 @@ namespace bu {
     }
 
     [[noreturn]]
-    inline auto unimplemented(
+    inline auto todo(
         std::source_location const caller = std::source_location::current()) -> void
     {
         abort("Unimplemented branch reached", caller);
