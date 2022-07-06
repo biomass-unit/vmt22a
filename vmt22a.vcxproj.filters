@@ -75,28 +75,10 @@
     <ClCompile Include="src\vm\serializing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\resolution\resolution.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\resolution\type_resolution.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\tst\tst_formatting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\resolution\expression_resolution.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\resolution\bind_pattern.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\tst\tst_hashing.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\resolution\resolution_internals.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\resolution\namespace_lookup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\typechecker\typechecker.cpp">
@@ -198,12 +180,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tst\tst.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\resolution\resolution.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\resolution\resolution_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tst\tst_formatting.hpp">

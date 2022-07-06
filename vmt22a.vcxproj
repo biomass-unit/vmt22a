@@ -216,13 +216,7 @@
     <ClCompile Include="src\dependency\dependency.cpp" />
     <ClCompile Include="src\language\configuration.cpp" />
     <ClCompile Include="src\tst\tst_hashing.cpp" />
-    <ClCompile Include="src\resolution\bind_pattern.cpp" />
-    <ClCompile Include="src\resolution\expression_resolution.cpp" />
     <ClCompile Include="src\tst\tst_formatting.cpp" />
-    <ClCompile Include="src\resolution\namespace_lookup.cpp" />
-    <ClCompile Include="src\resolution\resolution.cpp" />
-    <ClCompile Include="src\resolution\resolution_internals.cpp" />
-    <ClCompile Include="src\resolution\type_resolution.cpp" />
     <ClCompile Include="src\lexer\lexer.cpp" />
     <ClCompile Include="src\lexer\lexer_test.cpp" />
     <ClCompile Include="src\bu\textual_error.cpp" />
@@ -272,7 +266,6 @@
     <ClInclude Include="src\dependency\dependency.hpp" />
     <ClInclude Include="src\language\configuration.hpp" />
     <ClInclude Include="src\tst\tst_formatting.hpp" />
-    <ClInclude Include="src\resolution\resolution_internals.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\bu\textual_error.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
@@ -280,7 +273,6 @@
     <ClInclude Include="src\parser\parser.hpp" />
     <ClInclude Include="src\parser\parser_internals.hpp" />
     <ClInclude Include="src\tst\tst.hpp" />
-    <ClInclude Include="src\resolution\resolution.hpp" />
     <ClInclude Include="src\tests\tests.hpp" />
     <ClInclude Include="src\typechecker\typechecker.hpp" />
     <ClInclude Include="src\vm\bytecode.hpp" />
