@@ -41,9 +41,10 @@ namespace ast {
             DEFAULTED_EQUALITY(Tuple);
         };
 
-        struct Compound {
-            std::vector<Expression> expressions;
-            DEFAULTED_EQUALITY(Compound);
+        struct Block {
+            std::vector<Expression>                side_effects;
+            std::optional<bu::Wrapper<Expression>> result;
+            DEFAULTED_EQUALITY(Block);
         };
 
         struct Invocation {
@@ -217,7 +218,7 @@ namespace ast {
             expression::Dereference,
             expression::Template_instantiation,
             expression::Tuple,
-            expression::Compound,
+            expression::Block,
             expression::Invocation,
             expression::Struct_initializer,
             expression::Binary_operator_invocation,

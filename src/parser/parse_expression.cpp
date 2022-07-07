@@ -173,15 +173,15 @@ namespace {
         -> ast::Expression::Variant
     {
         static constexpr std::string_view help =
-            "the branches of a conditional expression must be compound expressions";
+            "the branches of a conditional expression must be block expressions";
 
         auto condition = extract_condition(context);
 
-        if (auto true_branch = parse_compound_expression(context)) {
+        if (auto true_branch = parse_block_expression(context)) {
             std::optional<bu::Wrapper<ast::Expression>> false_branch;
 
             if (context.try_consume(Token::Type::else_)) {
-                if (auto branch = parse_compound_expression(context)) {
+                if (auto branch = parse_block_expression(context)) {
                     false_branch = std::move(*branch);
                 }
                 else {
@@ -307,11 +307,11 @@ namespace {
 
 
     auto extract_loop_body(Parse_context& context) -> ast::Expression {
-        if (auto body = parse_compound_expression(context)) {
+        if (auto body = parse_block_expression(context)) {
             return std::move(*body);
         }
         else {
-            throw context.expected("the loop body", "the loop body must be a compound expression");
+            throw context.expected("the loop body", "the loop body must be a block expression");
         }
     }
 
@@ -445,7 +445,7 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_compound_expression = +[](Parse_context& context)
+    constexpr Extractor extract_block_expression = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
         std::vector<ast::Expression> expressions;
@@ -458,20 +458,25 @@ namespace {
                     expressions.push_back(std::move(*expression));
                 }
                 else {
-                    expressions.push_back(
-                        ast::Expression {
-                            .value       = ast::expression::Tuple {},
-                            .source_view = context.previous().source_view
-                        }
-                    );
-                    break;
+                    context.consume_required(Token::Type::brace_close);
+                    return ast::expression::Block { .side_effects = std::move(expressions) };
                 }
             }
         }
 
         context.consume_required(Token::Type::brace_close);
 
-        return ast::expression::Compound { std::move(expressions) };
+        std::optional<bu::Wrapper<ast::Expression>> result;
+
+        if (!expressions.empty()) {
+            result = std::move(expressions.back());
+            expressions.pop_back();
+        }
+
+        return ast::expression::Block {
+            .side_effects = std::move(expressions),
+            .result = std::move(result)
+        };
     };
 
 
@@ -529,7 +534,7 @@ namespace {
         case Token::Type::meta:
             return extract_meta(context);
         case Token::Type::brace_open:
-            return extract_compound_expression(context);
+            return extract_block_expression(context);
         default:
         {
             context.retreat();
@@ -813,9 +818,9 @@ auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expr
     return parse_binary_operator_invocation_with_precedence<lowest_precedence>(context);
 }
 
-auto parser::parse_compound_expression(Parse_context& context) -> std::optional<ast::Expression> {
+auto parser::parse_block_expression(Parse_context& context) -> std::optional<ast::Expression> {
     if (context.try_consume(Token::Type::brace_open)) {
-        return extract_compound_expression(context);
+        return extract_block_expression(context);
     }
     else {
         return std::nullopt;

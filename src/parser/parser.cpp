@@ -341,7 +341,7 @@ namespace {
             }
 
             auto body = [&] {
-                if (auto expression = parse_compound_expression(context)) {
+                if (auto expression = parse_block_expression(context)) {
                     return std::move(*expression);
                 }
                 else if (context.try_consume(Token::Type::equals)) {

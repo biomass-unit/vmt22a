@@ -254,7 +254,7 @@ namespace parser {
     constexpr auto extract_pattern    = extract_required<parse_pattern   , "a pattern"    >;
     constexpr auto extract_type       = extract_required<parse_type      , "a type"       >;
 
-    auto parse_compound_expression(Parse_context&) -> std::optional<ast::Expression>;
+    auto parse_block_expression(Parse_context&) -> std::optional<ast::Expression>;
 
     auto parse_template_arguments(Parse_context&) -> std::optional<std::vector<ast::Template_argument>>;
 

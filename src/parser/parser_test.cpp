@@ -121,21 +121,45 @@ namespace {
             );
         };
 
+        "block"_test = [] {
+            assert_expr_eq(
+                "{}",
+                ast::expression::Block {}
+            );
+
+            assert_expr_eq(
+                "{ {} }",
+                ast::expression::Block {
+                    .result = mk_expr(ast::expression::Block {})
+                }
+            );
+
+            assert_expr_eq(
+                "{ {}; }",
+                ast::expression::Block {
+                    .side_effects { mk_expr(ast::expression::Block {}) }
+                }
+            );
+
+            assert_expr_eq(
+                "{ {}; {} }",
+                ast::expression::Block {
+                    .side_effects { mk_expr(ast::expression::Block {}) },
+                    .result = mk_expr(ast::expression::Block {})
+                }
+            );
+        };
+
         "conditional"_test = [] {
             assert_expr_eq(
                 "if false { true; } else { 'a' }",
                 ast::expression::Conditional {
                     mk_expr(ast::expression::Literal { false }),
-                    mk_expr(ast::expression::Compound {
-                        {
-                            mk_expr(ast::expression::Literal { true }),
-                            mk_expr(ast::expression::Tuple {})
-                        }
+                    mk_expr(ast::expression::Block {
+                        .side_effects { mk_expr(ast::expression::Literal { true }) }
                     }),
-                mk_expr(ast::expression::Compound {
-                    {
-                        mk_expr(ast::expression::Literal { static_cast<bu::Char>('a') })
-                    }
+                mk_expr(ast::expression::Block {
+                    .result = mk_expr(ast::expression::Literal { static_cast<bu::Char>('a') })
                 })
             });
         };
@@ -145,22 +169,16 @@ namespace {
                 "if true { 50 } elif false { 75 } else { 100 }",
                 ast::expression::Conditional {
                     mk_expr(ast::expression::Literal { true }),
-                    mk_expr(ast::expression::Compound {
-                        {
-                            mk_expr(ast::expression::Literal { 50_iz })
-                        }
+                    mk_expr(ast::expression::Block {
+                        .result = mk_expr(ast::expression::Literal { 50_iz })
                     }),
                     mk_expr(ast::expression::Conditional {
                         mk_expr(ast::expression::Literal { false }),
-                        mk_expr(ast::expression::Compound {
-                            {
-                                mk_expr(ast::expression::Literal { 75_iz })
-                            }
+                        mk_expr(ast::expression::Block {
+                            .result = mk_expr(ast::expression::Literal { 75_iz })
                         }),
-                        mk_expr(ast::expression::Compound {
-                            {
-                                mk_expr(ast::expression::Literal { 100_iz })
-                            }
+                        mk_expr(ast::expression::Block {
+                            .result = mk_expr(ast::expression::Literal { 100_iz })
                         }),
                     })
                 }
@@ -179,7 +197,7 @@ namespace {
                         }
                     }),
                     mk_expr(ast::expression::Literal { lexer::String { "hello"sv } }),
-                    mk_expr(ast::expression::Compound {})
+                    mk_expr(ast::expression::Block {})
                 }
             );
         };

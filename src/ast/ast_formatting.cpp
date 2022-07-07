@@ -208,13 +208,9 @@ namespace {
         auto operator()(ast::expression::Member_function_invocation const& invocation) {
             return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
         }
-        auto operator()(ast::expression::Compound const& compound) {
-            if (compound.expressions.empty()) {
-                return format("{{}}");
-            }
-            else {
-                return format("{{ {} }}", bu::fmt::delimited_range(compound.expressions, "; "));
-            }
+        auto operator()(ast::expression::Block const& block) {
+            format("{{ {}", bu::fmt::delimited_range(block.side_effects, "; "));
+            return block.result ? format("; {} }}", *block.result) : format(" }}");
         }
         auto operator()(ast::expression::Conditional const& conditional) {
             auto& [condition, true_branch, false_branch] = conditional;
