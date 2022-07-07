@@ -37,7 +37,7 @@ namespace ast {
         };
 
         struct Tuple {
-            std::vector<Expression> expressions;
+            std::vector<Expression> elements;
             DEFAULTED_EQUALITY(Tuple);
         };
 

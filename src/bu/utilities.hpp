@@ -392,6 +392,27 @@ namespace bu {
     static_assert(digit_count(12345) == 5);
 
 
+    template <class T, std::invocable<T&&> F>
+    constexpr auto map(std::vector<T>&& vector, F const& f) {
+        std::vector<std::invoke_result_t<F const&, T&&>> output;
+        output.reserve(vector.size());
+        for (T& element : vector) {
+            output.push_back(f(std::move(element)));
+        }
+        return output;
+    }
+
+    template <class T, std::invocable<T const&> F>
+    constexpr auto map(std::vector<T> const& vector, F const& f) {
+        std::vector<std::invoke_result_t<F&&, T const&>> output;
+        output.reserve(vector.size());
+        for (T const& element : vector) {
+            output.push_back(f(element));
+        }
+        return output;
+    }
+
+
     template <class X>
     auto hash(X const& x)
         noexcept(std::is_nothrow_invocable_v<std::hash<X>, X const&>) -> Usize
@@ -544,20 +565,23 @@ namespace bu {
 
             template <std::ranges::range R, class Target>
             constexpr auto operator|(R&& range, To_direct<Target>) {
-                return Target(std::ranges::begin(range), std::ranges::end(range));
+                return Target(
+                    std::make_move_iterator(std::ranges::begin(range)),
+                    std::make_move_iterator(std::ranges::end(range))
+                );
             }
 
             template <std::ranges::range R, template <class...> class Target>
             constexpr auto operator|(R&& range, To_deduced<Target>) {
-                return std::forward<R>(range) | to<Target<std::ranges::range_value_t<R>>>();
+                return std::forward<R>(range) | move_to<Target<std::ranges::range_value_t<R>>>();
             }
         }
 
         template <class Target>
-        constexpr auto to() -> dtl::To_direct<Target> { return {}; }
+        constexpr auto move_to() -> dtl::To_direct<Target> { return {}; }
 
         template <template <class...> class Target>
-        constexpr auto to() -> dtl::To_deduced<Target> { return {}; }
+        constexpr auto move_to() -> dtl::To_deduced<Target> { return {}; }
 
 
         // Makeshift std::ranges::contains, remove when C++23 is supported

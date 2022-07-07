@@ -115,7 +115,7 @@ auto language::read_configuration() -> Configuration {
             auto components = line
                             | std::views::split(':')
                             | std::views::transform(bu::compose(&trim, &remove_comments))
-                            | bu::ranges::to<std::vector>();
+                            | bu::ranges::move_to<std::vector>();
 
             switch (components.size()) {
             case 1:

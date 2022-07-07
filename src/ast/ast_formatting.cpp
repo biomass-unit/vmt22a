@@ -183,7 +183,7 @@ namespace {
             return format("{}[{}]", instantiation.name, instantiation.template_arguments);
         }
         auto operator()(ast::expression::Tuple const& tuple) {
-            return format("({})", tuple.expressions);
+            return format("({})", tuple.elements);
         }
         auto operator()(ast::expression::Invocation const& invocation) {
             return format("{}({})", invocation.invocable, invocation.arguments);

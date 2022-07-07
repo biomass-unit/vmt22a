@@ -31,11 +31,9 @@
 
 namespace {
 
-    constexpr struct {
-        auto operator<<(auto const& arg) const -> std::ostream& {
-            return std::cerr << bu::Color::red << "Error: " << bu::Color::white << arg;
-        }
-    } error_stream;
+    auto error_stream() -> std::ostream& {
+        return std::cerr << bu::Color::red << "Error: " << bu::Color::white;
+    }
 
 
     auto generic_repl(std::invocable<bu::Source> auto f) {
@@ -58,7 +56,7 @@ namespace {
                     f(std::move(source));
                 }
                 catch (std::exception const& exception) {
-                    error_stream << exception.what() << "\n\n";
+                    error_stream() << exception.what() << "\n\n";
                 }
             }
         };
@@ -238,9 +236,9 @@ auto main(int argc, char const** argv) -> int try {
 }
 
 catch (cli::Unrecognized_option const& exception) {
-    error_stream << exception.what() << "; use --help to see a list of valid options\n";
+    error_stream() << exception.what() << "; use --help to see a list of valid options\n";
 }
 
 catch (std::exception const& exception) {
-    error_stream << exception.what() << '\n';
+    error_stream() << exception.what() << '\n';
 }
