@@ -4,30 +4,44 @@
 
 namespace {
 
-    struct Lowering_context {
+    class Lowering_context {
+        bu::Usize current_name_tag = 0;
+
+        auto fresh_name(char const first) {
+            // maybe use a dedicated string pool for compiler-inserted names?
+            return lexer::Identifier {
+                "{}#{}"_format(first, current_name_tag++),
+                bu::Pooled_string_strategy::guaranteed_new_string
+            };
+        }
+    public:
+        auto fresh_lower_name() -> lexer::Identifier { return fresh_name('x'); }
+        auto fresh_upper_name() -> lexer::Identifier { return fresh_name('X'); }
+
         auto lower(ast::Expression const&) -> hir::Expression;
     };
 
 
     struct Expression_lowering_visitor {
-        Lowering_context& context;
-        bu::Source_view   current_source_view;
-
-        auto expression(hir::Expression::Variant&& value) -> hir::Expression {
-            return { .value = std::move(value), .source_view = current_source_view };
-        }
-
-        static auto without_source_view(hir::Expression::Variant&& value) -> hir::Expression {
-            return { .value = std::move(value), .source_view { {}, {}, {} } };
-        }
+        Lowering_context     & context;
+        ast::Expression const& this_expression;
 
 
         template <class T>
         auto operator()(ast::expression::Literal<T> const& literal) -> hir::Expression {
-            return expression(hir::expression::Literal<T> { literal.value });
+            return {
+                .value = hir::expression::Literal<T> { literal.value },
+                .source_view = this_expression.source_view
+            };
         }
 
         auto operator()(ast::expression::While_loop const& loop) -> hir::Expression {
+            if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&loop.condition->value)) {
+                if (literal->value) {
+                    bu::abort("note: use 'loop' instead of 'while true'");
+                }
+            }
+
             /*
                 while x { y }
 
@@ -38,22 +52,26 @@ namespace {
                 }
             */
 
-            return expression(
-                hir::expression::Loop {
+            return {
+                .value = hir::expression::Loop {
                     .body = hir::Expression {
                         .value = hir::expression::Conditional {
                             .condition    = context.lower(loop.condition),
                             .true_branch  = context.lower(loop.body),
-                            .false_branch = without_source_view(hir::expression::Break {})
+                            .false_branch = hir::expression::Break {}
                         },
                         .source_view = loop.body->source_view
                     }
-                }
-            );
+                },
+                .source_view = this_expression.source_view
+            };
         }
 
         auto operator()(ast::expression::Infinite_loop const& loop) -> hir::Expression {
-            return expression(hir::expression::Loop { .body = context.lower(loop.body) });
+            return {
+                .value = hir::expression::Loop { .body = context.lower(loop.body) },
+                .source_view = this_expression.source_view
+            };
         }
 
         auto operator()(auto const&) -> hir::Expression {
@@ -66,7 +84,7 @@ namespace {
         return std::visit(
             Expression_lowering_visitor {
                 .context = *this,
-                .current_source_view = expression.source_view
+                .this_expression = expression
             },
             expression.value
         );

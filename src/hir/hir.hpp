@@ -47,8 +47,11 @@ namespace hir {
             expression::Break
         >;
 
-        Variant         value;
-        bu::Source_view source_view;
+        Variant                        value;
+        std::optional<bu::Source_view> source_view;
+
+        // Some HIR expressions are fabricated by the AST lowering
+        // process, which means that they have no source view.
     };
 
 
