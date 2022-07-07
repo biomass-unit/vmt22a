@@ -161,7 +161,7 @@ auto main(int argc, char const** argv) -> int try {
     auto options = cli::parse_command_line(argc, argv, description);
 
     auto configuration = language::read_configuration();
-    (void)configuration;
+    std::cout << configuration["created"].string << '\n';
 
     bu::Timer<> execution_timer {
         .scope_exit_logger = [&](bu::Timer<>::Duration const elapsed) {

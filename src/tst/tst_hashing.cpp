@@ -50,7 +50,7 @@ namespace {
         }
 
         auto operator()(tst::expression::Local_variable const& variable) -> bu::Usize {
-            return hash(variable.frame_offset);
+            return hash(variable.name);
         }
 
         auto operator()(tst::expression::Reference const& reference) -> bu::Usize {
@@ -62,7 +62,7 @@ namespace {
         }
 
         auto operator()(tst::expression::Enum_constructor_reference const& reference) -> bu::Usize {
-            return hash(reference.enumeration->enum_type, reference.constructor->tag);
+            return hash(reference.enumeration->enum_type, reference.constructor->name);
         }
 
         auto operator()(tst::expression::Struct_member_access const& access) -> bu::Usize {
@@ -141,6 +141,10 @@ namespace {
 
         auto operator()(tst::type::User_defined_struct const& uds) -> bu::Usize {
             return hash(uds.structure->name);
+        }
+
+        auto operator()(tst::type::Type_variable const& variable) -> bu::Usize {
+            return hash(variable.tag);
         }
     };
 

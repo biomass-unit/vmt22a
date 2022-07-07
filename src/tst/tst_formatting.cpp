@@ -40,7 +40,7 @@ namespace {
         }
 
         auto operator()(tst::expression::Local_variable const& variable) {
-            return format("(Move offset {})", variable.frame_offset);
+            return format("{}", variable.name);
         }
 
         auto operator()(tst::expression::Function_reference const& function) {
@@ -125,6 +125,10 @@ namespace {
 
         auto operator()(tst::type::User_defined_enum const& ud) {
             return format("{}", ud.enumeration->name);
+        }
+
+        auto operator()(tst::type::Type_variable const& variable) {
+            return format("${}", variable.tag);
         }
     };
 

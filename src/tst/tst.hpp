@@ -3,7 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "bu/flatmap.hpp"
-#include "lexer/token.hpp"
+#include "ast/ast.hpp"
 
 
 namespace tst {
@@ -11,6 +11,10 @@ namespace tst {
     struct [[nodiscard]] Type;
     struct [[nodiscard]] Expression;
     struct [[nodiscard]] Definition;
+
+    using Pattern = ast::Pattern;
+
+    struct [[nodiscard]] Template_argument;
 
 
     namespace definition {
@@ -38,7 +42,6 @@ namespace tst {
                 std::optional<bu::Wrapper<Type>> payload_type;
                 bu::Wrapper<Type>                function_type;
                 lexer::Identifier                name;
-                bu::U8                           tag;
 
                 bu::Source_view source_view;
             };
@@ -164,6 +167,11 @@ namespace tst {
             }
         };
 
+        struct Type_variable {
+            bu::Usize tag;
+            DEFAULTED_EQUALITY(Type_variable);
+        };
+
     }
 
     struct [[nodiscard]] Type {
@@ -180,7 +188,8 @@ namespace tst {
             type::Reference,
             type::Pointer,
             type::User_defined_enum,
-            type::User_defined_struct
+            type::User_defined_struct,
+            type::Type_variable
         >;
 
         Variant value;
@@ -232,12 +241,14 @@ namespace tst {
         };
 
         struct Let_binding {
+            bu::Wrapper<Pattern>    pattern;
+            bu::Wrapper<Type>       type;
             bu::Wrapper<Expression> initializer;
             DEFAULTED_EQUALITY(Let_binding);
         };
 
         struct Local_variable {
-            bu::U16 frame_offset;
+            lexer::Identifier name;
             DEFAULTED_EQUALITY(Local_variable);
         };
 
@@ -335,26 +346,6 @@ namespace tst {
 
         DEFAULTED_EQUALITY(Expression);
     };
-
-
-    /*struct Template_argument_set {
-        template <class T>
-        using Table = bu::Flatmap<lexer::Identifier, T>;
-
-        Table<Expression>        expression_arguments;
-        Table<bu::Wrapper<Type>> type_arguments;
-        Table<bool>              mutability_arguments;
-
-        struct Argument_indicator {
-            enum class Kind { expression, type, mutability } kind;
-            bu::Usize                                        index;
-        };
-        std::vector<Argument_indicator> arguments_in_order;
-
-        auto append_formatted_arguments_to(std::string&) const -> void;
-
-        auto hash() const -> bu::Usize;
-    };*/
 
 
     struct Program {};

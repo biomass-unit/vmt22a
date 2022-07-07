@@ -56,23 +56,40 @@ auto language::Configuration::string() const -> std::string {
     auto out = std::back_inserter(string);
 
     for (auto const& [key, value] : container()) {
-        std::format_to(out, "{}: {}\n", key, value.value_or(""));
+        std::format_to(
+            out,
+            "{}: {}\n",
+            key,
+            value.transform(bu::compose(bu::copy, &Configuration_key::string)).value_or(""s)
+        );
     }
 
     return string;
 }
 
 
+auto language::Configuration::operator[](std::string_view const name) -> Configuration_key& {
+    bu::always_assert(bu::ranges::contains(allowed_keys, name));
+
+    if (auto* const key = find(name); key && *key) {
+        return **key;
+    }
+    else {
+        bu::abort();
+    }
+}
+
+
 auto language::default_configuration() -> Configuration {
-    return Configuration::Pairs {
+    return Configuration { {
         { "language version", std::to_string(version) },
-        { "source directory", "src" },
-        { "stack capacity", "1048576" }, // 2^20
+        { "source directory", "src"s },
+        { "stack capacity", "1048576 // 2^20"s },
         { "name", std::nullopt },
         { "version", std::nullopt },
         { "authors", std::nullopt },
         { "created", "{:%d-%m-%Y}"_format(bu::local_time()) }
-    };
+    } };
 }
 
 
