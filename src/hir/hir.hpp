@@ -57,6 +57,17 @@ namespace hir {
             DEFAULTED_EQUALITY(Invocation);
         };
 
+        struct Match {
+            struct Case {
+                bu::Wrapper<ast::Pattern> pattern;
+                bu::Wrapper<Expression>   expression;
+                DEFAULTED_EQUALITY(Case);
+            };
+            std::vector<Case>       cases;
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Match);
+        };
+
     }
 
     struct Expression {
@@ -72,7 +83,8 @@ namespace hir {
             expression::Loop,
             expression::Break,
             expression::Block,
-            expression::Invocation
+            expression::Invocation,
+            expression::Match
         >;
 
         Variant                        value;
@@ -87,6 +99,20 @@ namespace hir {
         Expression               expression;
         std::optional<ast::Name> name;
         DEFAULTED_EQUALITY(Function_argument);
+    };
+
+
+    class Node_context {
+        bu::Wrapper_context_for<Expression, ast::Pattern> wrapper_context;
+
+        bu::Wrapper<Expression> unit_value = expression::Tuple {};
+    public:
+        explicit Node_context(bu::Wrapper_context<ast::Pattern>&& pattern_context)
+            : wrapper_context { bu::Wrapper_context<Expression> {}, std::move(pattern_context) } {}
+
+        auto get_unit_value() const noexcept -> bu::Wrapper<Expression> {
+            return unit_value;
+        }
     };
 
 

@@ -357,6 +357,27 @@ namespace bu {
         std::variant<Type<Ts>...> { Type<T> {} }.index();
 
 
+    class Hole {
+        std::source_location caller;
+
+        constexpr Hole(std::source_location const caller = std::source_location::current()) noexcept
+            : caller { caller } {}
+
+        friend constexpr auto hole(std::source_location) noexcept -> Hole;
+    public:
+        template <class T>
+        constexpr operator T() {
+            abort("Reached a hole of type {}"_format(typeid(T).name()), caller);
+        }
+    };
+
+    constexpr auto hole(std::source_location const caller = std::source_location::current())
+        noexcept -> Hole
+    {
+        return { caller };
+    }
+
+
     template <class T>
     auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
         std::vector<T> vector;

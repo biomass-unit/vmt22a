@@ -15,6 +15,8 @@ namespace {
             };
         }
     public:
+        hir::Node_context& node_context;
+
         auto fresh_lower_name() -> lexer::Identifier { return fresh_name('x'); }
         auto fresh_upper_name() -> lexer::Identifier { return fresh_name('X'); }
 
@@ -61,6 +63,60 @@ namespace {
             return {
                 .value = hir::expression::Tuple {
                     bu::map(tuple.elements, context.lower())
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Conditional const& conditional) -> hir::Expression {
+            auto false_branch = conditional.false_branch
+                              . transform(context.lower())
+                              . value_or(context.node_context.get_unit_value());
+
+            if (auto* const let = std::get_if<ast::expression::Conditional_let>(&conditional.condition->value)) {
+                return {
+                    .value = hir::expression::Match {
+                        .cases {
+                            hir::expression::Match::Case {
+                                .pattern = let->pattern,
+                                .expression = context.lower(conditional.true_branch)
+                            },
+                            hir::expression::Match::Case {
+                                .pattern = ast::Pattern {
+                                    .value = ast::pattern::Wildcard {},
+                                    .source_view = bu::hole()
+                                },
+                                .expression = std::move(false_branch)
+                            }
+                        },
+                        .expression = context.lower(let->initializer)
+                    },
+                    .source_view = this_expression.source_view
+                };
+            }
+            else {
+                return {
+                    .value = hir::expression::Conditional {
+                        .condition = context.lower(conditional.condition),
+                        .true_branch = context.lower(conditional.true_branch),
+                        .false_branch = std::move(false_branch)
+                    },
+                    .source_view = this_expression.source_view
+                };
+            }
+        }
+
+        auto operator()(ast::expression::Match const& match) -> hir::Expression {
+            auto const lower_match_case = [this](ast::expression::Match::Case const& match_case)
+                -> hir::expression::Match::Case
+            {
+                return { .pattern = match_case.pattern, .expression = context.lower(match_case.expression) };
+            };
+
+            return {
+                .value = hir::expression::Match {
+                    .cases = bu::map(match.cases, lower_match_case),
+                    .expression = context.lower(match.expression)
                 },
                 .source_view = this_expression.source_view
             };

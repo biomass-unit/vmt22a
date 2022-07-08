@@ -167,6 +167,9 @@ namespace bu {
             Usize                const capacity = default_wrapper_arena_capacity,
             std::source_location const caller = std::source_location::current())
             : Wrapper_context<Ts> { capacity, caller }... {}
+
+        Wrapper_context_for(Wrapper_context<Ts>&&... children)
+            : Wrapper_context<Ts> { std::move(children) }... {}
     };
 
 
