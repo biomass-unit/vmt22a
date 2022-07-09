@@ -111,7 +111,7 @@ tests::dtl::Test_adder::Test_adder(void(* const test)()) {
 
 
 auto tests::run_all_tests() -> void {
-    bu::Timer<> test_timer { .log_scope_exit = false };
+    bu::Timer test_timer;
 
     for (auto const test : test_vector()) {
         test();
