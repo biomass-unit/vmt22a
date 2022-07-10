@@ -1,7 +1,6 @@
 #include "bu/utilities.hpp"
 #include "tests/tests.hpp"
 
-#include "ast/ast_formatting.hpp"
 #include "parser/parser_internals.hpp"
 
 

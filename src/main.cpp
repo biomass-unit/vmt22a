@@ -7,7 +7,7 @@
 #include "lexer/token_formatting.hpp"
 
 #include "ast/ast.hpp"
-#include "ast/ast_formatting.hpp"
+#include "ast/lower/lower.hpp"
 
 #include "parser/parser.hpp"
 #include "parser/parser_internals.hpp"
@@ -15,10 +15,6 @@
 #include "vm/bytecode.hpp"
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
-
-#include "tst/tst.hpp"
-#include "tst/tst_formatting.hpp"
-#include "typechecker/typechecker.hpp"
 
 #include "dependency/dependency.hpp"
 
@@ -87,6 +83,12 @@ namespace {
     [[maybe_unused]]
     auto const program_parser_repl = generic_repl([](bu::Source source) {
         bu::print("{}\n", parser::parse(lexer::lex(std::move(source))));
+    });
+
+    [[maybe_unused]]
+    auto const lowering_repl = generic_repl([](bu::Source source) {
+        auto module = ast::lower(parser::parse(lexer::lex(std::move(source))));
+        (void)module;
     });
 
 
@@ -189,13 +191,13 @@ auto main(int argc, char const** argv) -> int try {
         tests::run_all_tests();
     }
 
-    if (options["type"]) {
+    /*if (options["type"]) {
         auto pipeline = bu::compose(&typechecker::typecheck, &parser::parse, &lexer::lex);
         auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
         auto program  = pipeline(bu::Source { path.string() });
 
         std::ignore = program;
-    }
+    }*/
 
     if (options["machine"]) {
         vm::Virtual_machine machine { .stack = bu::Bytestack { 32 } };
@@ -226,6 +228,9 @@ auto main(int argc, char const** argv) -> int try {
         }
         else if (*name == "prog") {
             program_parser_repl();
+        }
+        else if (*name == "lower") {
+            lowering_repl();
         }
         else {
             bu::abort("Unrecognized repl name");

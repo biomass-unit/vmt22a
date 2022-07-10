@@ -20,14 +20,14 @@ namespace ast {
             DEFAULTED_EQUALITY(Mutability_parameter);
         };
 
-        Name name;
-
-        std::variant<
+        using Variant = std::variant<
             Type_parameter,
             Value_parameter,
             Mutability_parameter
-        > value;
+        >;
 
+        Variant         value;
+        Name            name;
         bu::Source_view source_view;
         DEFAULTED_EQUALITY(Template_parameter);
     };

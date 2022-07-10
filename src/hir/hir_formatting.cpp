@@ -1,12 +1,53 @@
 #include "bu/utilities.hpp"
-#include "hir_formatting.hpp"
-#include "ast/ast_formatting.hpp"
+#include "hir.hpp"
 
+
+DIRECTLY_DEFINE_FORMATTER_FOR(hir::Function_parameter) {
+    return std::format_to(
+        context.out(),
+        "{}{}{}",
+        value.pattern,
+        value.type.transform(": {}"_format).value_or(""),
+        value.default_value.transform(" = {}"_format).value_or("")
+    );
+}
 
 DIRECTLY_DEFINE_FORMATTER_FOR(hir::Function_argument) {
     return value.name
         ? std::format_to(context.out(), "{} = {}", *value.name, value.expression)
         : std::format_to(context.out(), "{}", value.expression);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(hir::Template_parameter) {
+    return std::visit(bu::Overload {
+        [&](hir::Template_parameter::Value_parameter const& parameter) {
+            return std::format_to(
+                context.out(),
+                "{}{}",
+                value.name,
+                parameter.type.transform(": {}"_format).value_or("")
+            );
+        },
+        [&](hir::Template_parameter::Type_parameter const& parameter) {
+            return std::vformat_to(
+                context.out(),
+                parameter.classes.empty() ? "{}" : "{}: {}",
+                std::make_format_args(
+                    value.name,
+                    bu::fmt::delimited_range(parameter.classes, " + ")
+                )
+            );
+        },
+        [&](hir::Template_parameter::Mutability_parameter const&) {
+            return std::format_to(context.out(), "{}: mut", value.name);
+        }
+    }, value.value);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(hir::Template_parameters) {
+    return value.vector
+        ? std::format_to(context.out(), "[{}]", *value.vector)
+        : context.out();
 }
 
 
@@ -127,6 +168,23 @@ namespace {
         }
     };
 
+
+    struct Definition_format_visitor : bu::fmt::Visitor_base {
+        auto operator()(hir::definition::Function const& function) {
+            return format(
+                "fn {}{}({}){} {{ {} }}",
+                function.name,
+                function.explicit_template_parameters,
+                function.parameters,
+                function.return_type.transform(": {}"_format).value_or(""),
+                function.body
+            );
+        }
+        auto operator()(auto const&) -> std::format_context::iterator {
+            bu::todo();
+        }
+    };
+
 }
 
 
@@ -140,4 +198,8 @@ DEFINE_FORMATTER_FOR(hir::Type) {
 
 DEFINE_FORMATTER_FOR(hir::Pattern) {
     return std::visit(Pattern_format_visitor { { context.out() } }, value.value);
+}
+
+DEFINE_FORMATTER_FOR(hir::Definition) {
+    return std::visit(Definition_format_visitor { { context.out() } }, value.value);
 }

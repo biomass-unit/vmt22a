@@ -253,15 +253,15 @@ namespace {
                 if (context.try_consume(Token::Type::colon)) {
                     if (context.try_consume(Token::Type::mut)) {
                         return ast::Template_parameter {
-                            .name        = std::move(*name),
                             .value       = ast::Template_parameter::Mutability_parameter {},
+                            .name        = std::move(*name),
                             .source_view = get_source_view()
                         };
                     }
                     else if (auto type = parse_type(context)) {
                         return ast::Template_parameter {
-                            .name        = std::move(*name),
                             .value       = ast::Template_parameter::Value_parameter { std::move(*type) },
+                            .name        = std::move(*name),
                             .source_view = get_source_view()
                         };
                     }
@@ -271,8 +271,8 @@ namespace {
                 }
 
                 return ast::Template_parameter {
-                    .name        = std::move(*name),
                     .value       = ast::Template_parameter::Value_parameter { .type = std::nullopt },
+                    .name        = std::move(*name),
                     .source_view = get_source_view()
                 };
             }
@@ -283,8 +283,8 @@ namespace {
                 }
 
                 return ast::Template_parameter {
-                    .name        = std::move(*name),
                     .value       = ast::Template_parameter::Type_parameter { std::move(classes) },
+                    .name        = std::move(*name),
                     .source_view = get_source_view()
                 };
             }

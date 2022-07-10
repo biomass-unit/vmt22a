@@ -146,9 +146,6 @@
     <ClInclude Include="src\ast\nodes\definition.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast\ast_formatting.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\bu\pooled_string.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -200,9 +197,6 @@
     <ClInclude Include="src\tst\tst.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\tst\tst_formatting.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\bu\bounded_integer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -234,9 +228,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\lower\lowering_internals.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\hir\hir_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

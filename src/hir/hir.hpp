@@ -12,14 +12,13 @@ namespace hir {
     struct [[nodiscard]] Definition;
 
     struct [[nodiscard]] Function_argument;
+    struct [[nodiscard]] Function_parameter;
+    struct [[nodiscard]] Template_parameter;
 
-
-    struct Function_parameter {
-
-    };
-
-    struct Template_parameter {
-
+    struct [[nodiscard]] Template_parameters {
+        std::optional<std::vector<Template_parameter>> vector;
+        Template_parameters(decltype(vector)&& vector) noexcept
+            : vector { vector } {}
     };
 
 }
@@ -31,14 +30,45 @@ namespace hir {
 #include "nodes/definition.hpp"
 
 
-namespace hir {
+struct hir::Function_argument {
+    Expression               expression;
+    std::optional<ast::Name> name;
+    DEFAULTED_EQUALITY(Function_argument);
+};
 
-    struct Function_argument {
-        Expression               expression;
-        std::optional<ast::Name> name;
-        DEFAULTED_EQUALITY(Function_argument);
+struct hir::Function_parameter {
+    Pattern                   pattern;
+    std::optional<Type>       type;
+    std::optional<Expression> default_value;
+};
+
+struct hir::Template_parameter {
+    struct Type_parameter {
+        std::vector<ast::Class_reference> classes;
+        DEFAULTED_EQUALITY(Type_parameter);
+    };
+    struct Value_parameter {
+        std::optional<Type> type;
+        DEFAULTED_EQUALITY(Value_parameter);
+    };
+    struct Mutability_parameter {
+        DEFAULTED_EQUALITY(Mutability_parameter);
     };
 
+    using Variant = std::variant<
+        Type_parameter,
+        Value_parameter,
+        Mutability_parameter
+    >;
+
+    Variant                        value;
+    lexer::Identifier              name;
+    std::optional<bu::Source_view> source_view;
+    DEFAULTED_EQUALITY(Template_parameter);
+};
+
+
+namespace hir {
 
     struct Node_context {
         bu::Wrapper_context_for<
@@ -60,3 +90,9 @@ namespace hir {
     };
 
 }
+
+
+DECLARE_FORMATTER_FOR(hir::Expression);
+DECLARE_FORMATTER_FOR(hir::Type);
+DECLARE_FORMATTER_FOR(hir::Pattern);
+DECLARE_FORMATTER_FOR(hir::Definition);

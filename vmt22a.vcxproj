@@ -252,7 +252,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ast\ast.hpp" />
-    <ClInclude Include="src\ast\ast_formatting.hpp" />
     <ClInclude Include="src\ast\lower\lower.hpp" />
     <ClInclude Include="src\ast\lower\lowering_internals.hpp" />
     <ClInclude Include="src\ast\nodes\expression.hpp" />
@@ -273,13 +272,11 @@
     <ClInclude Include="src\cli\cli.hpp" />
     <ClInclude Include="src\dependency\dependency.hpp" />
     <ClInclude Include="src\hir\hir.hpp" />
-    <ClInclude Include="src\hir\hir_formatting.hpp" />
     <ClInclude Include="src\hir\nodes\definition.hpp" />
     <ClInclude Include="src\hir\nodes\expression.hpp" />
     <ClInclude Include="src\hir\nodes\pattern.hpp" />
     <ClInclude Include="src\hir\nodes\type.hpp" />
     <ClInclude Include="src\language\configuration.hpp" />
-    <ClInclude Include="src\tst\tst_formatting.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\bu\textual_error.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />

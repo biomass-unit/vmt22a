@@ -6,7 +6,6 @@
 #include "lexer/lexer.hpp"
 #include "lexer/token_formatting.hpp"
 #include "ast/ast.hpp"
-#include "ast/ast_formatting.hpp"
 
 
 namespace parser {

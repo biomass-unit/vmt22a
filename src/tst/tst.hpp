@@ -351,3 +351,7 @@ namespace tst {
     struct Program {};
 
 }
+
+
+DECLARE_FORMATTER_FOR(tst::Expression);
+DECLARE_FORMATTER_FOR(tst::Type);

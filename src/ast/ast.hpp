@@ -103,9 +103,9 @@ struct ast::Function_argument {
 };
 
 struct ast::Function_parameter {
-    bu::Wrapper<Pattern>                   pattern;
-    std::optional<bu::Wrapper<Type>>       type;
-    std::optional<bu::Wrapper<Expression>> default_value;
+    bu::Wrapper<Pattern>      pattern;
+    std::optional<Type>       type;
+    std::optional<Expression> default_value;
     DEFAULTED_EQUALITY(Function_parameter);
 };
 
@@ -161,3 +161,15 @@ namespace ast {
     };
 
 }
+
+
+DECLARE_FORMATTER_FOR(ast::Expression);
+DECLARE_FORMATTER_FOR(ast::Pattern);
+DECLARE_FORMATTER_FOR(ast::Type);
+DECLARE_FORMATTER_FOR(ast::Definition);
+
+DECLARE_FORMATTER_FOR(ast::Module);
+DECLARE_FORMATTER_FOR(ast::Name);
+DECLARE_FORMATTER_FOR(ast::Qualified_name);
+DECLARE_FORMATTER_FOR(ast::Class_reference);
+DECLARE_FORMATTER_FOR(ast::Mutability);

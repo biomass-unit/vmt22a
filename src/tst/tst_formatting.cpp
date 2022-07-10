@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "tst_formatting.hpp"
+#include "tst.hpp"
 
 
 namespace {

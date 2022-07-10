@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "ast_formatting.hpp"
+#include "ast.hpp"
 
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Match::Case) {
@@ -18,22 +18,22 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::expression::Lambda::Capture) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
-    if (value.name) {
-        std::format_to(context.out(), "{} = ", *value.name);
-    }
-    return std::format_to(context.out(), "{}", value.expression);
+    return std::format_to(
+        context.out(),
+        "{}{}",
+        value.name.transform("{} = "_format).value_or(""),
+        value.expression
+    );
 }
 
-
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_parameter) {
-    std::format_to(context.out(), "{}", value.pattern);
-    if (value.type) {
-        std::format_to(context.out(), ": {}", *value.type);
-    }
-    if (value.default_value) {
-        std::format_to(context.out(), " = {}", *value.default_value);
-    }
-    return context.out();
+    return std::format_to(
+        context.out(),
+        "{}{}{}",
+        value.pattern,
+        value.type.transform(": {}"_format).value_or(""),
+        value.default_value.transform(" = {}"_format).value_or("")
+    );
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
@@ -48,13 +48,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Enum::Constructor) {
     return std::format_to(context.out(), "{}({})", value.name, value.type);
-}
-
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Class_reference) {
-    return value.template_arguments
-        ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
-        : std::format_to(context.out(), "{}", value.name);
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
@@ -138,6 +131,12 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     }
 
     return std::format_to(out, "{}", value.primary_name.identifier);
+}
+
+DEFINE_FORMATTER_FOR(ast::Class_reference) {
+    return value.template_arguments
+        ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
+        : std::format_to(context.out(), "{}", value.name);
 }
 
 DEFINE_FORMATTER_FOR(ast::Mutability) {
