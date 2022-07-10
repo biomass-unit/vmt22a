@@ -24,19 +24,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_argument) {
     return std::format_to(context.out(), "{}", value.expression);
 }
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Mutability) {
-    switch (value.type) {
-    case ast::Mutability::Type::mut:
-        return std::format_to(context.out(), "mut ");
-    case ast::Mutability::Type::immut:
-        return context.out();
-    case ast::Mutability::Type::parameterized:
-        return std::format_to(context.out(), "mut?{} ", value.parameter_name);
-    default:
-        std::unreachable();
-    }
-}
-
 
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_parameter) {
     std::format_to(context.out(), "{}", value.pattern);
@@ -153,19 +140,23 @@ DEFINE_FORMATTER_FOR(ast::Qualified_name) {
     return std::format_to(out, "{}", value.primary_name.identifier);
 }
 
+DEFINE_FORMATTER_FOR(ast::Mutability) {
+    switch (value.type) {
+    case ast::Mutability::Type::mut:
+        return std::format_to(context.out(), "mut ");
+    case ast::Mutability::Type::immut:
+        return context.out();
+    case ast::Mutability::Type::parameterized:
+        return std::format_to(context.out(), "mut?{} ", value.parameter_name);
+    default:
+        std::unreachable();
+    }
+}
+
 
 namespace {
 
-    struct Visitor_base {
-        std::format_context::iterator out;
-
-        auto format(std::string_view const fmt, auto const&... args) {
-            return std::vformat_to(out, fmt, std::make_format_args(args...));
-        }
-    };
-
-
-    struct Expression_format_visitor : Visitor_base {
+    struct Expression_format_visitor : bu::fmt::Visitor_base {
         template <class T>
         auto operator()(ast::expression::Literal<T> const& literal) {
             return format("{}", literal.value);
@@ -215,8 +206,11 @@ namespace {
             return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
         }
         auto operator()(ast::expression::Block const& block) {
-            format("{{ {}", bu::fmt::delimited_range(block.side_effects, "; "));
-            return block.result ? format("; {} }}", *block.result) : format(" }}");
+            format("{{");
+            for (auto const& side_effect : block.side_effects) {
+                format("{}; ", side_effect);
+            }
+            return format("{} }}", block.result);
         }
         auto operator()(ast::expression::Conditional const& conditional) {
             auto& [condition, true_branch, false_branch] = conditional;
@@ -295,7 +289,7 @@ namespace {
     };
 
 
-    struct Pattern_format_visitor : Visitor_base {
+    struct Pattern_format_visitor : bu::fmt::Visitor_base {
         auto operator()(ast::pattern::Wildcard) {
             return format("_");
         }
@@ -327,7 +321,7 @@ namespace {
     };
 
 
-    struct Type_format_visitor : Visitor_base {
+    struct Type_format_visitor : bu::fmt::Visitor_base {
         auto operator()(ast::type::Integer)   { return format("Int");    }
         auto operator()(ast::type::Floating)  { return format("Float");  }
         auto operator()(ast::type::Character) { return format("Char");   }
@@ -370,7 +364,7 @@ namespace {
     };
 
 
-    struct Definition_format_visitor : Visitor_base {
+    struct Definition_format_visitor : bu::fmt::Visitor_base {
         std::vector<ast::Template_parameter> const* parameters;
 
         auto operator()(ast::definition::Function const& function) {

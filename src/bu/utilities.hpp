@@ -543,6 +543,14 @@ namespace bu {
             }
         };
 
+        struct Visitor_base {
+            std::format_context::iterator out;
+
+            auto format(std::string_view const fmt, auto const&... args) {
+                return std::vformat_to(out, fmt, std::make_format_args(args...));
+            }
+        };
+
 
         template <std::integral T>
         struct Integer_with_ordinal_indicator_formatter_closure {

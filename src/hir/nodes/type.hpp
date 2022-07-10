@@ -9,6 +9,7 @@ namespace hir {
 
     namespace type {
 
+        using ast::type::Primitive;
         using ast::type::Integer;
         using ast::type::Floating;
         using ast::type::Character;

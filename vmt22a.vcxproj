@@ -219,6 +219,7 @@
     <ClCompile Include="src\bu\source.cpp" />
     <ClCompile Include="src\cli\cli.cpp" />
     <ClCompile Include="src\dependency\dependency.cpp" />
+    <ClCompile Include="src\hir\hir_formatting.cpp" />
     <ClCompile Include="src\language\configuration.cpp" />
     <ClCompile Include="src\tst\tst_hashing.cpp" />
     <ClCompile Include="src\tst\tst_formatting.cpp" />
@@ -272,6 +273,7 @@
     <ClInclude Include="src\cli\cli.hpp" />
     <ClInclude Include="src\dependency\dependency.hpp" />
     <ClInclude Include="src\hir\hir.hpp" />
+    <ClInclude Include="src\hir\hir_formatting.hpp" />
     <ClInclude Include="src\hir\nodes\definition.hpp" />
     <ClInclude Include="src\hir\nodes\expression.hpp" />
     <ClInclude Include="src\hir\nodes\pattern.hpp" />

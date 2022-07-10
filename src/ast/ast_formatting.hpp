@@ -13,3 +13,4 @@ DECLARE_FORMATTER_FOR(ast::Module);
 
 DECLARE_FORMATTER_FOR(ast::Name);
 DECLARE_FORMATTER_FOR(ast::Qualified_name);
+DECLARE_FORMATTER_FOR(ast::Mutability);

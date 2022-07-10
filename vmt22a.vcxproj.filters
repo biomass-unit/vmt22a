@@ -108,6 +108,9 @@
     <ClCompile Include="src\ast\lower\lower_definition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\hir\hir_formatting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\utilities.hpp">
@@ -231,6 +234,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ast\lower\lowering_internals.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\hir\hir_formatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
