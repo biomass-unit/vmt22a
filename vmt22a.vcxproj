@@ -267,6 +267,10 @@
     <ClInclude Include="src\cli\cli.hpp" />
     <ClInclude Include="src\dependency\dependency.hpp" />
     <ClInclude Include="src\hir\hir.hpp" />
+    <ClInclude Include="src\hir\nodes\definition.hpp" />
+    <ClInclude Include="src\hir\nodes\expression.hpp" />
+    <ClInclude Include="src\hir\nodes\pattern.hpp" />
+    <ClInclude Include="src\hir\nodes\type.hpp" />
     <ClInclude Include="src\language\configuration.hpp" />
     <ClInclude Include="src\tst\tst_formatting.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />

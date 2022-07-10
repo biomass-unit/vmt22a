@@ -7,9 +7,6 @@
 
 namespace ast {
 
-    struct Definition;
-
-
     struct Template_parameter {
         struct Type_parameter {
             std::vector<Class_reference> classes;

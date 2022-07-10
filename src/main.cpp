@@ -161,7 +161,7 @@ auto main(int argc, char const** argv) -> int try {
     auto configuration = language::read_configuration();
     (void)configuration;
 
-    bu::Logging_timer execution_timer { [&](bu::Logging_timer::Duration const elapsed) {
+    bu::Logging_timer execution_timer { [&options](bu::Logging_timer::Duration const elapsed) {
             if (options["time"]) {
                 bu::print("Total execution time: {}\n", elapsed);
             }

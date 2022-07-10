@@ -23,8 +23,8 @@ namespace {
         auto lower(ast::Expression const&) -> hir::Expression;
 
         auto lower() {
-            return [this](ast::Expression const& expression) -> hir::Expression {
-                return lower(expression);
+            return [this](auto const& node) -> hir::Expression {
+                return lower(node);
             };
         }
     };
