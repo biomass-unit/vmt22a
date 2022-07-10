@@ -204,7 +204,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ast\ast_formatting.cpp" />
-    <ClCompile Include="src\ast\lower.cpp" />
+    <ClCompile Include="src\ast\lower\lower.cpp" />
+    <ClCompile Include="src\ast\lower\lower_definition.cpp" />
+    <ClCompile Include="src\ast\lower\lower_expression.cpp" />
+    <ClCompile Include="src\ast\lower\lower_pattern.cpp" />
+    <ClCompile Include="src\ast\lower\lower_type.cpp" />
     <ClCompile Include="src\bu\bu_test.cpp" />
     <ClCompile Include="src\bu\color.cpp">
       <DisableLanguageExtensions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DisableLanguageExtensions>
@@ -248,7 +252,8 @@
   <ItemGroup>
     <ClInclude Include="src\ast\ast.hpp" />
     <ClInclude Include="src\ast\ast_formatting.hpp" />
-    <ClInclude Include="src\ast\lower.hpp" />
+    <ClInclude Include="src\ast\lower\lower.hpp" />
+    <ClInclude Include="src\ast\lower\lowering_internals.hpp" />
     <ClInclude Include="src\ast\nodes\expression.hpp" />
     <ClInclude Include="src\ast\nodes\pattern.hpp" />
     <ClInclude Include="src\ast\nodes\definition.hpp" />

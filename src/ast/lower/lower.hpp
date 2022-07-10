@@ -1,7 +1,7 @@
 #pragma once
 
 #include "bu/utilities.hpp"
-#include "ast.hpp"
+#include "ast/ast.hpp"
 #include "hir/hir.hpp"
 
 

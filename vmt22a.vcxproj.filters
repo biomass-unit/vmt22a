@@ -93,7 +93,19 @@
     <ClCompile Include="src\bu\bu_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ast\lower.cpp">
+    <ClCompile Include="src\ast\lower\lower.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\lower\lower_expression.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\lower\lower_type.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\lower\lower_pattern.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ast\lower\lower_definition.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -203,7 +215,7 @@
     <ClInclude Include="src\hir\hir.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ast\lower.hpp">
+    <ClInclude Include="src\ast\lower\lower.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\hir\nodes\expression.hpp">
@@ -216,6 +228,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\hir\nodes\definition.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ast\lower\lowering_internals.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

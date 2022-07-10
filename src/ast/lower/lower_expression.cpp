@@ -1,34 +1,8 @@
 #include "bu/utilities.hpp"
-#include "lower.hpp"
+#include "lowering_internals.hpp"
 
 
 namespace {
-
-    class Lowering_context {
-        bu::Usize current_name_tag = 0;
-
-        auto fresh_name(char const first) {
-            // maybe use a dedicated string pool for compiler-inserted names?
-            return lexer::Identifier {
-                "{}#{}"_format(first, current_name_tag++),
-                bu::Pooled_string_strategy::guaranteed_new_string
-            };
-        }
-    public:
-        hir::Node_context& node_context;
-
-        auto fresh_lower_name() -> lexer::Identifier { return fresh_name('x'); }
-        auto fresh_upper_name() -> lexer::Identifier { return fresh_name('X'); }
-
-        auto lower(ast::Expression const&) -> hir::Expression;
-
-        auto lower() {
-            return [this](auto const& node) -> hir::Expression {
-                return lower(node);
-            };
-        }
-    };
-
 
     auto lower_function_argument(Lowering_context& context) {
         return [&context](ast::Function_argument const& argument) -> hir::Function_argument {
@@ -71,7 +45,7 @@ namespace {
         auto operator()(ast::expression::Conditional const& conditional) -> hir::Expression {
             auto false_branch = conditional.false_branch
                               . transform(context.lower())
-                              . value_or(context.node_context.get_unit_value());
+                              . value_or(context.node_context.unit_value);
 
             if (auto* const let = std::get_if<ast::expression::Conditional_let>(&conditional.condition->value)) {
                 return {
@@ -186,20 +160,15 @@ namespace {
         }
     };
 
-
-    auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expression {
-        return std::visit(
-            Expression_lowering_visitor {
-                .context = *this,
-                .this_expression = expression
-            },
-            expression.value
-        );
-    }
-
 }
 
 
-auto ast::lower(Module&&) -> hir::Module {
-    bu::todo();
+auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expression {
+    return std::visit(
+        Expression_lowering_visitor {
+            .context = *this,
+            .this_expression = expression
+        },
+        expression.value
+    );
 }

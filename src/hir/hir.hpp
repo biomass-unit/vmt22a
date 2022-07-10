@@ -40,22 +40,23 @@ namespace hir {
     };
 
 
-    class Node_context {
-        bu::Wrapper_context_for<Expression, ast::Pattern> wrapper_context;
+    struct Node_context {
+        bu::Wrapper_context_for<
+            Expression,
+            Type,
+            Pattern,
+            Definition
+        > wrapper_context;
 
         bu::Wrapper<Expression> unit_value = expression::Tuple {};
-    public:
-        explicit Node_context(bu::Wrapper_context<ast::Pattern>&& pattern_context)
-            : wrapper_context { bu::Wrapper_context<Expression> {}, std::move(pattern_context) } {}
-
-        auto get_unit_value() const noexcept -> bu::Wrapper<Expression> {
-            return unit_value;
-        }
+        bu::Wrapper<Type>       unit_type  = type      ::Tuple {};
     };
 
 
     struct Module {
-        // todo
+        Node_context            node_context;
+        bu::Source              source;
+        std::vector<Definition> definitions;
     };
 
 }

@@ -14,6 +14,7 @@ namespace hir {
             std::vector<Template_parameter>  implicit_template_parameters;
             std::vector<Function_parameter>  parameters;
             std::optional<bu::Wrapper<Type>> return_type;
+            bu::Wrapper<Expression>          body;
             DEFAULTED_EQUALITY(Function);
         };
 
