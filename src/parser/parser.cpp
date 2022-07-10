@@ -215,19 +215,6 @@ namespace {
     using namespace parser;
 
 
-    auto definition(auto&& value, std::optional<std::vector<ast::Template_parameter>>&& parameters)
-        -> ast::Definition::Variant
-        requires std::is_rvalue_reference_v<decltype(value)>
-    {
-        if (parameters) {
-            return ast::definition::Template_definition { std::move(value), std::move(*parameters) };
-        }
-        else {
-            return { std::move(value) };
-        }
-    }
-
-
     auto parse_definition(Parse_context&) -> std::optional<ast::Definition>;
 
     auto extract_definition_sequence(Parse_context& context) -> std::vector<ast::Definition> {
@@ -352,15 +339,13 @@ namespace {
                 }
             }();
 
-            return definition(
-                ast::definition::Function {
-                    std::move(body),
-                    std::move(parameters),
-                    std::move(name),
-                    return_type
-                },
+            return ast::definition::Function {
+                std::move(body),
+                std::move(parameters),
+                std::move(name),
+                return_type,
                 std::move(template_parameters)
-            );
+            };
         }
         else {
             throw context.expected("a parenthesized list of function parameters");
@@ -431,13 +416,11 @@ namespace {
         if (auto members = parse_members(context)) {
             ensure_no_duplicate_members(context, *members, "member");
 
-            return definition(
-                ast::definition::Struct {
-                    std::move(*members),
-                    std::move(name)
-                },
+            return ast::definition::Struct {
+                std::move(*members),
+                std::move(name),
                 std::move(template_parameters)
-            );
+            };
         }
         else {
             throw context.expected("one or more struct members");
@@ -517,13 +500,11 @@ namespace {
                 );
             }
 
-            return definition(
-                ast::definition::Enum {
-                    std::move(*constructors),
-                    std::move(name)
-                },
+            return ast::definition::Enum {
+                std::move(*constructors),
+                std::move(name),
                 std::move(template_parameters)
-            );
+            };
         }
         else {
             throw context.expected("one or more enum constructors");
@@ -539,13 +520,11 @@ namespace {
 
         context.consume_required(Token::Type::equals);
 
-        return definition(
-            ast::definition::Alias {
-                name,
-                extract_type(context)
-            },
+        return ast::definition::Alias {
+            name,
+            extract_type(context),
             std::move(template_parameters)
-        );
+        };
     };
 
 
@@ -603,13 +582,11 @@ namespace {
         auto type                = extract_type(context);
         auto definitions         = extract_braced_definition_sequence(context);
 
-        return definition(
-            ast::definition::Implementation {
-                std::move(type),
-                std::move(definitions)
-            },
+        return ast::definition::Implementation {
+            std::move(type),
+            std::move(definitions),
             std::move(template_parameters)
-        );
+        };
     };
 
 
@@ -622,14 +599,12 @@ namespace {
             auto type        = extract_type(context);
             auto definitions = extract_braced_definition_sequence(context);
 
-            return definition(
-                ast::definition::Instantiation {
-                    .typeclass   = std::move(*typeclass),
-                    .instance    = std::move(type),
-                    .definitions = std::move(definitions)
-                },
-                std::move(template_parameters)
-            );
+            return ast::definition::Instantiation {
+                .typeclass           = std::move(*typeclass),
+                .instance            = std::move(type),
+                .definitions         = std::move(definitions),
+                .template_parameters = std::move(template_parameters)
+            };
         }
         else {
             throw context.expected("a class name");
@@ -705,14 +680,12 @@ namespace {
                     context.consume_required(Token::Type::brace_close);
                 }
 
-                return definition(
-                    ast::definition::Typeclass {
-                        std::move(function_signatures),
-                        std::move(type_signatures),
-                        std::move(name)
-                    },
+                return ast::definition::Typeclass {
+                    std::move(function_signatures),
+                    std::move(type_signatures),
+                    std::move(name),
                     std::move(template_parameters)
-                );
+                };
             }
         }
     };
@@ -724,13 +697,11 @@ namespace {
         auto name                = extract_lower_name(context, "a namespace name");
         auto template_parameters = parse_template_parameters(context);
 
-        return definition(
-            ast::definition::Namespace {
-                extract_braced_definition_sequence(context),
-                std::move(name)
-            },
+        return ast::definition::Namespace {
+            extract_braced_definition_sequence(context),
+            std::move(name),
             std::move(template_parameters)
-        );
+        };
     };
 
 

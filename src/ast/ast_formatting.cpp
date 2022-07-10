@@ -98,6 +98,12 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
     );
 }
 
+DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameters) {
+    return value.vector
+        ? std::format_to(context.out(), "[{}]", *value.vector)
+        : context.out();
+}
+
 DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
     if (value.name) {
         std::format_to(context.out(), "{} = ", *value.name);
@@ -367,15 +373,11 @@ namespace {
     struct Definition_format_visitor : Visitor_base {
         std::vector<ast::Template_parameter> const* parameters;
 
-        auto template_parameters() noexcept -> std::string {
-            return parameters ? std::format("[{}]", *parameters) : "";
-        }
-
         auto operator()(ast::definition::Function const& function) {
             return format(
                 "fn {}{}({}){} = {}",
                 function.name,
-                template_parameters(),
+                function.template_parameters,
                 function.parameters,
                 function.return_type ? std::format(": {}", *function.return_type) : "",
                 function.body
@@ -386,7 +388,7 @@ namespace {
             return format(
                 "struct {}{} = {}",
                 structure.name,
-                template_parameters(),
+                structure.template_parameters,
                 structure.members
             );
         }
@@ -395,7 +397,7 @@ namespace {
             return format(
                 "enum {}{} = {}",
                 enumeration.name,
-                template_parameters(),
+                enumeration.template_parameters,
                 enumeration.constructors
             );
         }
@@ -404,7 +406,7 @@ namespace {
             return format(
                 "alias {}{} = {}",
                 alias.name,
-                template_parameters(),
+                alias.template_parameters,
                 alias.type
             );
         }
@@ -413,7 +415,7 @@ namespace {
             format(
                 "class {}{} {{",
                 typeclass.name,
-                template_parameters()
+                typeclass.template_parameters
             );
 
             for (auto& signature : typeclass.function_signatures) {
@@ -458,15 +460,9 @@ namespace {
             return format(
                 "namespace {}{} {{\n{}\n}}",
                 space.name,
-                template_parameters(),
+                space.template_parameters,
                 bu::fmt::delimited_range(space.definitions, "\n\n")
             );
-        }
-
-        template <class T>
-        auto operator()(ast::definition::Template_definition<T> const& template_definition) {
-            parameters = &template_definition.parameters;
-            return operator()(template_definition.definition);
         }
     };
 
@@ -486,7 +482,7 @@ DEFINE_FORMATTER_FOR(ast::Type) {
 }
 
 DEFINE_FORMATTER_FOR(ast::Definition) {
-    return std::visit(Definition_format_visitor { { context.out() }, nullptr }, value.value);
+    return std::visit(Definition_format_visitor { { context.out() } }, value.value);
 }
 
 

@@ -217,12 +217,11 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (std::string_view const* const name = options["repl"]) {
-        ast::Node_context repl_context;
-
         if (*name == "lex") {
             lexer_repl();
         }
         else if (*name == "expr") {
+            ast::Node_context repl_context;
             expression_parser_repl();
         }
         else if (*name == "prog") {

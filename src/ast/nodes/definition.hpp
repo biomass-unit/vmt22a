@@ -32,6 +32,14 @@ namespace ast {
         DEFAULTED_EQUALITY(Template_parameter);
     };
 
+
+    struct Template_parameters {
+        std::optional<std::vector<Template_parameter>> vector;
+        Template_parameters(decltype(vector)&& vector) noexcept
+            : vector { std::move(vector) } {}
+    };
+
+
     struct Function_signature {
         std::optional<std::vector<Template_parameter>> template_parameters;
         type::Function                                 type;
@@ -54,6 +62,7 @@ namespace ast {
             std::vector<Function_parameter>  parameters;
             Name                             name;
             std::optional<bu::Wrapper<Type>> return_type;
+            Template_parameters              template_parameters;
             DEFAULTED_EQUALITY(Function);
         };
 
@@ -68,6 +77,7 @@ namespace ast {
             };
             std::vector<Member> members;
             Name                name;
+            Template_parameters template_parameters;
             DEFAULTED_EQUALITY(Struct);
         };
 
@@ -81,12 +91,14 @@ namespace ast {
             };
             std::vector<Constructor> constructors;
             Name                     name;
+            Template_parameters      template_parameters;
             DEFAULTED_EQUALITY(Enum);
         };
 
         struct Alias {
-            Name              name;
-            bu::Wrapper<Type> type;
+            Name                name;
+            bu::Wrapper<Type>   type;
+            Template_parameters template_parameters;
             DEFAULTED_EQUALITY(Alias);
         };
 
@@ -94,12 +106,14 @@ namespace ast {
             std::vector<Function_signature> function_signatures;
             std::vector<Type_signature>     type_signatures;
             Name                            name;
+            Template_parameters             template_parameters;
             DEFAULTED_EQUALITY(Typeclass);
         };
 
         struct Implementation {
             bu::Wrapper<Type>       type;
             std::vector<Definition> definitions;
+            Template_parameters     template_parameters;
             DEFAULTED_EQUALITY(Implementation);
         };
 
@@ -107,31 +121,16 @@ namespace ast {
             Class_reference         typeclass;
             bu::Wrapper<Type>       instance;
             std::vector<Definition> definitions;
+            Template_parameters     template_parameters;
             DEFAULTED_EQUALITY(Instantiation);
         };
 
         struct Namespace {
             std::vector<Definition> definitions;
             Name                    name;
+            Template_parameters     template_parameters;
             DEFAULTED_EQUALITY(Namespace);
         };
-
-
-        template <class Definition>
-        struct Template_definition {
-            Definition                      definition;
-            std::vector<Template_parameter> parameters;
-            DEFAULTED_EQUALITY(Template_definition);
-        };
-
-        using Function_template       = Template_definition<Function      >;
-        using Struct_template         = Template_definition<Struct        >;
-        using Enum_template           = Template_definition<Enum          >;
-        using Alias_template          = Template_definition<Alias         >;
-        using Typeclass_template      = Template_definition<Typeclass     >;
-        using Implementation_template = Template_definition<Implementation>;
-        using Instantiation_template  = Template_definition<Instantiation >;
-        using Namespace_template      = Template_definition<Namespace     >;
 
     }
 
@@ -139,21 +138,13 @@ namespace ast {
     struct Definition {
         using Variant = std::variant<
             definition::Function,
-            definition::Function_template,
             definition::Enum,
-            definition::Enum_template,
             definition::Struct,
-            definition::Struct_template,
             definition::Alias,
-            definition::Alias_template,
             definition::Typeclass,
-            definition::Typeclass_template,
             definition::Instantiation,
-            definition::Instantiation_template,
             definition::Implementation,
-            definition::Implementation_template,
-            definition::Namespace,
-            definition::Namespace_template
+            definition::Namespace
         >;
 
         Variant         value;
