@@ -75,6 +75,8 @@ namespace bu {
 
     constexpr Usize default_wrapper_arena_capacity = 1024;
 
+    inline constinit bool do_empty_wrapper_arena_debug_messages = true;
+
 
     template <class T>
     class Wrapper_context {
@@ -115,7 +117,7 @@ namespace bu {
         ~Wrapper_context() {
             if (is_responsible) {
                 if constexpr (compiling_in_debug_mode) {
-                    if (arena.empty()) {
+                    if (do_empty_wrapper_arena_debug_messages && arena.empty()) {
                         bu::print("NOTE: bu::Wrapper<{}>: deallocating empty arena\n", typeid(T).name());
                     }
                 }

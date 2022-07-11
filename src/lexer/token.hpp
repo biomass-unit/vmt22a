@@ -113,7 +113,7 @@ namespace lexer {
 
         inline auto& as_integer    () noexcept { return value_as<bu::Isize >(); }
         inline auto& as_floating   () noexcept { return value_as<bu::Float >(); }
-        inline auto& as_character  () noexcept { return value_as<char      >(); }
+        inline auto& as_character  () noexcept { return value_as<bu::Char  >(); }
         inline auto& as_boolean    () noexcept { return value_as<bool      >(); }
         inline auto& as_string     () noexcept { return value_as<String    >(); }
         inline auto& as_identifier () noexcept { return value_as<Identifier>(); }

@@ -63,7 +63,7 @@ namespace ast {
         using Variant = std::variant<
             pattern::Literal<bu::Isize>,
             pattern::Literal<bu::Float>,
-            pattern::Literal<char>,
+            pattern::Literal<bu::Char>,
             pattern::Literal<bool>,
             pattern::Literal<lexer::String>,
             pattern::Wildcard,

@@ -88,7 +88,7 @@ namespace {
     [[maybe_unused]]
     auto const lowering_repl = generic_repl([](bu::Source source) {
         auto module = ast::lower(parser::parse(lexer::lex(std::move(source))));
-        (void)module;
+        bu::print("{}\n", bu::fmt::delimited_range(module.definitions, "\n\n"));
     });
 
 
@@ -146,6 +146,8 @@ using namespace lexer :: literals;
 
 
 auto main(int argc, char const** argv) -> int try {
+    bu::do_empty_wrapper_arena_debug_messages = false;
+
     cli::Options_description description;
     description.add_options()
         ("help"   ,                      "Show this text"              )

@@ -167,7 +167,7 @@ namespace {
         case Token::Type::floating:
             return extract_literal<bu::Float>(context);
         case Token::Type::character:
-            return extract_literal<char>(context);
+            return extract_literal<bu::Char>(context);
         case Token::Type::boolean:
             return extract_literal<bool>(context);
         case Token::Type::string:
