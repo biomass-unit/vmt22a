@@ -5,9 +5,9 @@
 DIRECTLY_DEFINE_FORMATTER_FOR(hir::Function_parameter) {
     return std::format_to(
         context.out(),
-        "{}{}{}",
+        "{}: {}{}",
         value.pattern,
-        value.type.transform(": {}"_format).value_or(""),
+        value.type,
         value.default_value.transform(" = {}"_format).value_or("")
     );
 }
@@ -79,7 +79,7 @@ namespace {
             return format("break");
         }
         auto operator()(hir::expression::Block const& block) {
-            format("{{");
+            format("{{ ");
             for (auto const& side_effect : block.side_effects) {
                 format("{}; ", side_effect);
             }
@@ -172,9 +172,10 @@ namespace {
     struct Definition_format_visitor : bu::fmt::Visitor_base {
         auto operator()(hir::definition::Function const& function) {
             return format(
-                "fn {}{}({}){} {{ {} }}",
+                "fn {}{}{}({}){} {{ {} }}",
                 function.name,
                 function.explicit_template_parameters,
+                function.implicit_template_parameters,
                 function.parameters,
                 function.return_type.transform(": {}"_format).value_or(""),
                 function.body

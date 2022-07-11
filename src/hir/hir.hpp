@@ -38,7 +38,7 @@ struct hir::Function_argument {
 
 struct hir::Function_parameter {
     Pattern                   pattern;
-    std::optional<Type>       type;
+    Type                      type;
     std::optional<Expression> default_value;
 };
 
