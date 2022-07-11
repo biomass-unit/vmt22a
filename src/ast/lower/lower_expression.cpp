@@ -33,6 +33,13 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Variable const& variable) -> hir::Expression {
+            return {
+                .value = variable,
+                .source_view = this_expression.source_view
+            };
+        }
+
         auto operator()(ast::expression::Tuple const& tuple) -> hir::Expression {
             return {
                 .value = hir::expression::Tuple {
@@ -155,8 +162,77 @@ namespace {
             };
         }
 
-        auto operator()(auto const&) -> hir::Expression {
-            bu::todo();
+        auto operator()(ast::expression::Struct_initializer const& initializer) -> hir::Expression {
+            decltype(hir::expression::Struct_initializer::member_initializers) initializers;
+            initializers.container().reserve(initializer.member_initializers.size());
+
+            for (auto& [name, init] : initializer.member_initializers.span()) {
+                initializers.add(bu::copy(name), context.lower(init));
+            }
+
+            return {
+                .value = hir::expression::Struct_initializer {
+                    .member_initializers = std::move(initializers),
+                    .type = context.lower(initializer.type)
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Binary_operator_invocation const& invocation) -> hir::Expression {
+            return {
+                .value = hir::expression::Binary_operator_invocation {
+                    .left  = context.lower(invocation.left),
+                    .right = context.lower(invocation.right),
+                    .op    = invocation.op
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Ret const& ret) -> hir::Expression {
+            return {
+                .value = hir::expression::Ret {
+                    .expression = ret.expression.transform(bu::compose(bu::wrap, context.lower()))
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Size_of const& size_of) -> hir::Expression {
+            return {
+                .value = hir::expression::Size_of { .type = context.lower(size_of.type) },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Take_reference const& take) -> hir::Expression {
+            return {
+                .value = hir::expression::Take_reference {
+                    .mutability = take.mutability,
+                    .name       = take.name
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Meta const& meta) -> hir::Expression {
+            return {
+                .value = hir::expression::Meta { .expression = context.lower(meta.expression) },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Hole const&) -> hir::Expression {
+            return {
+                .value = hir::expression::Hole {},
+                .source_view = this_expression.source_view
+            };
+        }
+
+        template <class Node>
+        auto operator()(Node const&) -> hir::Expression {
+            bu::abort(typeid(Node).name());
         }
     };
 

@@ -193,14 +193,6 @@ auto main(int argc, char const** argv) -> int try {
         tests::run_all_tests();
     }
 
-    /*if (options["type"]) {
-        auto pipeline = bu::compose(&typechecker::typecheck, &parser::parse, &lexer::lex);
-        auto path     = std::filesystem::current_path() / "sample-project\\main.vmt";
-        auto program  = pipeline(bu::Source { path.string() });
-
-        std::ignore = program;
-    }*/
-
     if (options["machine"]) {
         vm::Virtual_machine machine { .stack = bu::Bytestack { 32 } };
 

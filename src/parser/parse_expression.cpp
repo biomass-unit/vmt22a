@@ -23,11 +23,11 @@ namespace {
 
 
     auto parse_struct_member_initializer(Parse_context& context)
-        -> std::optional<bu::Pair<lexer::Identifier, bu::Wrapper<ast::Expression>>>
+        -> std::optional<bu::Pair<lexer::Identifier, ast::Expression>>
     {
         if (auto member = parse_lower_id(context)) {
             context.consume_required(Token::Type::equals);
-            return bu::Pair { *member, bu::wrap(extract_expression(context)) };
+            return bu::Pair { *member, extract_expression(context) };
         }
         else {
             return std::nullopt;

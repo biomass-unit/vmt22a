@@ -20,6 +20,8 @@ namespace hir {
             DEFAULTED_EQUALITY(Array_literal);
         };
 
+        using ast::expression::Variable;
+
         struct Tuple {
             std::vector<Expression> elements;
             DEFAULTED_EQUALITY(Tuple);
@@ -37,7 +39,12 @@ namespace hir {
             DEFAULTED_EQUALITY(Loop);
         };
 
+        struct Continue {
+            DEFAULTED_EQUALITY(Continue);
+        };
+
         struct Break {
+            std::optional<bu::Wrapper<Expression>> expression;
             DEFAULTED_EQUALITY(Break);
         };
 
@@ -53,6 +60,19 @@ namespace hir {
             DEFAULTED_EQUALITY(Invocation);
         };
 
+        struct Struct_initializer {
+            bu::Flatmap<lexer::Identifier, Expression> member_initializers;
+            bu::Wrapper<Type>                          type;
+            DEFAULTED_EQUALITY(Struct_initializer);
+        };
+
+        struct Binary_operator_invocation {
+            bu::Wrapper<Expression> left;
+            bu::Wrapper<Expression> right;
+            lexer::Identifier       op;
+            DEFAULTED_EQUALITY(Binary_operator_invocation);
+        };
+
         struct Match {
             struct Case {
                 bu::Wrapper<ast::Pattern> pattern;
@@ -62,6 +82,31 @@ namespace hir {
             std::vector<Case>       cases;
             bu::Wrapper<Expression> expression;
             DEFAULTED_EQUALITY(Match);
+        };
+
+        struct Ret {
+            std::optional<bu::Wrapper<Expression>> expression;
+            DEFAULTED_EQUALITY(Ret);
+        };
+
+        struct Size_of {
+            bu::Wrapper<Type> type;
+            DEFAULTED_EQUALITY(Size_of);
+        };
+
+        struct Take_reference {
+            ast::Mutability   mutability;
+            lexer::Identifier name;
+            DEFAULTED_EQUALITY(Take_reference);
+        };
+
+        struct Meta {
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Meta);
+        };
+
+        struct Hole {
+            DEFAULTED_EQUALITY(Hole);
         };
 
     }
@@ -74,13 +119,21 @@ namespace hir {
             expression::Literal<bool>,
             expression::Literal<lexer::String>,
             expression::Array_literal,
+            expression::Variable,
             expression::Tuple,
             expression::Conditional,
             expression::Loop,
             expression::Break,
             expression::Block,
             expression::Invocation,
-            expression::Match
+            expression::Struct_initializer,
+            expression::Binary_operator_invocation,
+            expression::Match,
+            expression::Ret,
+            expression::Size_of,
+            expression::Take_reference,
+            expression::Meta,
+            expression::Hole
         >;
 
         Variant                        value;

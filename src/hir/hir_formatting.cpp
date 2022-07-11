@@ -66,6 +66,9 @@ namespace {
         auto operator()(hir::expression::Array_literal const& literal) {
             return format("[{}]", literal.elements);
         }
+        auto operator()(hir::expression::Variable const& variable) {
+            return format("{}", variable.name);
+        }
         auto operator()(hir::expression::Tuple const& tuple) {
             return format("({})", tuple.elements);
         }
@@ -73,20 +76,33 @@ namespace {
             return format("if {} {} else {}", conditional.condition, conditional.true_branch, conditional.false_branch);
         }
         auto operator()(hir::expression::Loop const& loop) {
-            return format("loop { {} }", loop.body);
+            return format("loop {{ {} }}", loop.body);
         }
-        auto operator()(hir::expression::Break const&) {
-            return format("break");
+        auto operator()(hir::expression::Break const& break_) {
+            return format("break{}", break_.expression.transform(" {}"_format).value_or(""));
+        }
+        auto operator()(hir::expression::Continue const&) {
+            return format("continue");
         }
         auto operator()(hir::expression::Block const& block) {
             format("{{ ");
             for (auto const& side_effect : block.side_effects) {
                 format("{}; ", side_effect);
             }
-            return format("{} }}", block.result);
+            return format("{}}}", block.result.transform("{} "_format).value_or(""));
         }
         auto operator()(hir::expression::Invocation const& invocation) {
             return format("{}({})", invocation.invocable, invocation.arguments);
+        }
+        auto operator()(hir::expression::Struct_initializer const& initializer) {
+            return format(
+                "{} {{ {} }}",
+                initializer.type,
+                initializer.member_initializers.container()
+            );
+        }
+        auto operator()(hir::expression::Binary_operator_invocation const& invocation) {
+            return format("({} {} {})", invocation.left, invocation.op, invocation.right);
         }
         auto operator()(hir::expression::Match const& match) {
             format("match {} {{ ", match.expression);
@@ -94,6 +110,21 @@ namespace {
                 format("{} -> {}", match_case.pattern, match_case.expression);
             }
             return format(" }}");
+        }
+        auto operator()(hir::expression::Ret const& ret) {
+            return format("ret {}", ret.expression);
+        }
+        auto operator()(hir::expression::Size_of const& size_of) {
+            return format("size_of({})", size_of.type);
+        }
+        auto operator()(hir::expression::Take_reference const& take) {
+            return format("&{}{}", take.mutability, take.name);
+        }
+        auto operator()(hir::expression::Meta const& meta) {
+            return format("meta {}", meta.expression);
+        }
+        auto operator()(hir::expression::Hole const&) {
+            return format("???");
         }
     };
 
@@ -172,7 +203,7 @@ namespace {
     struct Definition_format_visitor : bu::fmt::Visitor_base {
         auto operator()(hir::definition::Function const& function) {
             return format(
-                "fn {}{}{}({}){} {{ {} }}",
+                "fn {}{}{}({}){} = {}",
                 function.name,
                 function.explicit_template_parameters,
                 function.implicit_template_parameters,

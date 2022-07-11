@@ -54,8 +54,8 @@ namespace ast {
         };
 
         struct Struct_initializer {
-            bu::Flatmap<lexer::Identifier, bu::Wrapper<Expression>> member_initializers;
-            bu::Wrapper<Type>                                       type;
+            bu::Flatmap<lexer::Identifier, Expression> member_initializers;
+            bu::Wrapper<Type>                          type;
             DEFAULTED_EQUALITY(Struct_initializer);
         };
 
