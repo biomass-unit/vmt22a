@@ -10,12 +10,6 @@
 
 namespace ast {
 
-    struct [[nodiscard]] Expression;
-    struct [[nodiscard]] Pattern;
-    struct [[nodiscard]] Type;
-    struct [[nodiscard]] Definition;
-
-
     struct Name {
         lexer::Identifier identifier;
         bool              is_upper;
@@ -25,48 +19,6 @@ namespace ast {
             return identifier == other.identifier;
         }
     };
-
-
-    struct Function_argument;
-
-    struct Function_parameter;
-
-    struct Template_argument;
-
-
-    struct Qualifier {
-        std::optional<std::vector<Template_argument>> template_arguments;
-        Name                                          name;
-
-        bu::Source_view source_view;
-        DEFAULTED_EQUALITY(Qualifier);
-    };
-
-    template <class Type>
-    struct Basic_root_qualifier {
-        struct Global { DEFAULTED_EQUALITY(Global); };
-        std::variant<
-            std::monostate,   // id, id::id
-            Global,           // ::id
-            bu::Wrapper<Type> // Type::id
-        > value;
-        DEFAULTED_EQUALITY(Basic_root_qualifier);
-    };
-
-    template <class Type>
-    struct Basic_qualified_name {
-        std::vector<Qualifier>      middle_qualifiers;
-        Basic_root_qualifier<Type>  root_qualifier;
-        Name                        primary_name;
-
-        DEFAULTED_EQUALITY(Basic_qualified_name);
-
-        inline auto is_unqualified() const noexcept -> bool;
-    };
-
-    using Root_qualifier = Basic_root_qualifier<Type>;
-    using Qualified_name = Basic_qualified_name<Type>;
-
 
     struct Mutability {
         enum class Type { mut, immut, parameterized };
@@ -79,16 +31,91 @@ namespace ast {
     };
 
 
-    template <class Type>
+    struct [[nodiscard]] Expression;
+    struct [[nodiscard]] Pattern;
+    struct [[nodiscard]] Type;
+    struct [[nodiscard]] Definition;
+
+
+    template <class T>
+    concept tree_configuration = requires {
+        typename T::Expression;
+        typename T::Pattern;
+        typename T::Type;
+        typename T::Definition;
+    };
+
+
+    struct Function_argument;
+
+    struct Function_parameter;
+
+
+    template <tree_configuration Configuration>
+    struct Basic_template_argument {
+        using Variant = std::variant<
+            bu::Wrapper<typename Configuration::Type>,
+            bu::Wrapper<typename Configuration::Expression>,
+            Mutability
+        >;
+        Variant             value;
+        std::optional<Name> name;
+        DEFAULTED_EQUALITY(Basic_template_argument);
+    };
+
+    template <tree_configuration Configuration>
+    struct Basic_qualifier {
+        std::optional<std::vector<Basic_template_argument<Configuration>>> template_arguments;
+        Name                                                               name;
+
+        bu::Source_view source_view;
+        DEFAULTED_EQUALITY(Basic_qualifier);
+    };
+
+    template <tree_configuration Configuration>
+    struct Basic_root_qualifier {
+        struct Global { DEFAULTED_EQUALITY(Global); };
+        std::variant<
+            std::monostate,                           // id, id::id
+            Global,                                   // ::id
+            bu::Wrapper<typename Configuration::Type> // Type::id
+        > value;
+        DEFAULTED_EQUALITY(Basic_root_qualifier);
+    };
+
+    template <tree_configuration Configuration>
+    struct Basic_qualified_name {
+        std::vector<Basic_qualifier<Configuration>> middle_qualifiers;
+        Basic_root_qualifier<Configuration>         root_qualifier;
+        Name                                        primary_name;
+
+        DEFAULTED_EQUALITY(Basic_qualified_name);
+
+        inline auto is_unqualified() const noexcept -> bool;
+    };
+
+    template <tree_configuration Configuration>
     struct Basic_class_reference {
-        std::optional<std::vector<Template_argument>> template_arguments;
-        Basic_qualified_name<Type>                    name;
+        std::optional<std::vector<Basic_template_argument<Configuration>>> template_arguments;
+        Basic_qualified_name<Configuration>                                name;
 
         bu::Source_view source_view;
         DEFAULTED_EQUALITY(Basic_class_reference);
     };
 
-    using Class_reference = Basic_class_reference<Type>;
+
+    struct AST_configuration {
+        using Expression = ::ast::Expression;
+        using Pattern    = ::ast::Pattern;
+        using Type       = ::ast::Type;
+        using Definition = ::ast::Definition;
+    };
+
+    using Template_argument = Basic_template_argument<AST_configuration>;
+    using Qualifier         = Basic_qualifier        <AST_configuration>;
+    using Root_qualifier    = Basic_root_qualifier   <AST_configuration>;
+    using Qualified_name    = Basic_qualified_name   <AST_configuration>;
+    using Class_reference   = Basic_class_reference  <AST_configuration>;
 
 
     template <bu::one_of<Expression, Pattern, Type, Definition> T>
@@ -112,20 +139,14 @@ struct ast::Function_argument {
 };
 
 struct ast::Function_parameter {
-    bu::Wrapper<Pattern>      pattern;
+    Pattern                   pattern;
     std::optional<Type>       type;
     std::optional<Expression> default_value;
     DEFAULTED_EQUALITY(Function_parameter);
 };
 
-struct ast::Template_argument {
-    std::variant<Type, Expression, Mutability> value;
-    std::optional<Name>                        name;
-    DEFAULTED_EQUALITY(Template_argument);
-};
-
-template <class Type>
-auto ast::Basic_qualified_name<Type>::is_unqualified() const noexcept -> bool {
+template <ast::tree_configuration Configuration>
+auto ast::Basic_qualified_name<Configuration>::is_unqualified() const noexcept -> bool {
     return middle_qualifiers.empty()
         && std::holds_alternative<std::monostate>(root_qualifier.value);
 }
@@ -181,11 +202,12 @@ DECLARE_FORMATTER_FOR(ast::Definition);
 DECLARE_FORMATTER_FOR(ast::Module);
 DECLARE_FORMATTER_FOR(ast::Name);
 DECLARE_FORMATTER_FOR(ast::Mutability);
-DECLARE_FORMATTER_FOR(ast::Template_argument);
 
 
-// These are explicitly instantiated in hir/hir_formatting.cpp
-template <class Type>
-DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_qualified_name<Type>);
-template <class Type>
-DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_class_reference<Type>);
+// These are explicitly instantiated in hir/hir_formatting.cpp to avoid repetition
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_template_argument<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_qualified_name<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_class_reference<Configuration>);

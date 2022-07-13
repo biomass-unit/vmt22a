@@ -332,7 +332,7 @@ namespace {
                 context.diagnostics.emit_simple_note({
                     .erroneous_view = condition.source_view,
                     .source = context.source,
-                    .message_format = "Use 'loop' instead of 'while true'",
+                    .message_format = "Consider using 'loop' instead of 'while true'",
                     .message_color = bu::diagnostics::note_color,
                 });
             }

@@ -280,7 +280,7 @@ namespace {
                             ast::Qualifier {
                                 .template_arguments = std::vector<ast::Template_argument> {
                                     {
-                                        mk_type(ast::type::Typename { "Long"_unqualified })
+                                        bu::wrap(mk_type(ast::type::Typename { "Long"_unqualified }))
                                     }
                                 },
                                 .name {

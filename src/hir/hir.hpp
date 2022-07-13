@@ -22,9 +22,18 @@ namespace hir {
     };
 
 
-    using Root_qualifier  = ast::Basic_root_qualifier<Type>;
-    using Qualified_name  = ast::Basic_qualified_name<Type>;
-    using Class_reference = ast::Basic_class_reference<Type>;
+    struct HIR_configuration {
+        using Expression = ::hir::Expression;
+        using Pattern    = ::hir::Pattern;
+        using Type       = ::hir::Type;
+        using Definition = ::hir::Definition;
+    };
+
+    using Template_argument = ast::Basic_template_argument<HIR_configuration>;
+    using Root_qualifier    = ast::Basic_root_qualifier   <HIR_configuration>;
+    using Qualifier         = ast::Basic_qualifier        <HIR_configuration>;
+    using Qualified_name    = ast::Basic_qualified_name   <HIR_configuration>;
+    using Class_reference   = ast::Basic_class_reference  <HIR_configuration>;
 
 }
 

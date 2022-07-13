@@ -10,10 +10,10 @@ auto parser::parse_template_arguments(Parse_context& context)
         -> std::optional<ast::Template_argument>
     {
         if (auto type = parse_type(context)) {
-            return ast::Template_argument { std::move(*type) };
+            return ast::Template_argument { bu::wrap(std::move(*type)) };
         }
         else if (auto expression = parse_expression(context)) {
-            return ast::Template_argument { std::move(*expression) };
+            return ast::Template_argument { bu::wrap(std::move(*expression)) };
         }
         else {
             std::optional<ast::Mutability> mutability;

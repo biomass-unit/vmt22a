@@ -59,6 +59,8 @@ namespace bu {
             return *self;
         }
 
+        operator T&(this Wrapper&&) noexcept = delete;
+
         auto hash(this Wrapper const self)
             noexcept(noexcept(::bu::hash(*self))) -> Usize
             requires hashable<T>

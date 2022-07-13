@@ -32,7 +32,7 @@ namespace {
     }
 
 
-    auto generic_repl(std::invocable<bu::Source> auto f) {
+    consteval auto generic_repl(std::invocable<bu::Source> auto f) {
         return [=] {
             for (;;) {
                 std::string string;
@@ -62,12 +62,12 @@ namespace {
     }
 
     [[maybe_unused]]
-    auto const lexer_repl = generic_repl([](bu::Source source) {
+    constexpr auto lexer_repl = generic_repl([](bu::Source source) {
         bu::print("Tokens: {}\n", lexer::lex(std::move(source)).tokens);
     });
 
     [[maybe_unused]]
-    auto const expression_parser_repl = generic_repl([](bu::Source source) {
+    constexpr auto expression_parser_repl = generic_repl([](bu::Source source) {
         auto tokenized_source = lexer::lex(std::move(source));
         parser::Parse_context context { tokenized_source };
 
@@ -84,12 +84,12 @@ namespace {
     });
 
     [[maybe_unused]]
-    auto const program_parser_repl = generic_repl([](bu::Source source) {
+    constexpr auto program_parser_repl = generic_repl([](bu::Source source) {
         bu::print("{}\n", parser::parse(lexer::lex(std::move(source))));
     });
 
     [[maybe_unused]]
-    auto const lowering_repl = generic_repl([](bu::Source source) {
+    constexpr auto lowering_repl = generic_repl([](bu::Source source) {
         auto module = ast::lower(parser::parse(lexer::lex(std::move(source))));
         bu::print("{}\n", bu::fmt::delimited_range(module.definitions, "\n\n"));
     });

@@ -238,14 +238,42 @@ DEFINE_FORMATTER_FOR(hir::Definition) {
 
 
 
-template <class Type>
-DEFINE_FORMATTER_FOR(ast::Basic_qualified_name<Type>) {
+template <ast::tree_configuration Configuration>
+DEFINE_FORMATTER_FOR(ast::Basic_template_argument<Configuration>) {
+    if (value.name) {
+        std::format_to(context.out(), "{} = ", *value.name);
+    }
+    return std::visit(bu::Overload {
+        [&](ast::Mutability const& mutability) {
+            switch (mutability.type) {
+            case ast::Mutability::Type::mut:
+                return std::format_to(context.out(), "mut");
+            case ast::Mutability::Type::immut:
+                return std::format_to(context.out(), "immut");
+            case ast::Mutability::Type::parameterized:
+                return std::format_to(context.out(), "mut?{}", mutability.parameter_name);
+            default:
+                std::unreachable();
+            }
+        },
+        [&](auto const& argument) {
+            return std::format_to(context.out(), "{}", argument);
+        }
+    }, value.value);
+}
+
+template struct std::formatter<ast::Template_argument>;
+template struct std::formatter<hir::Template_argument>;
+
+
+template <ast::tree_configuration Configuration>
+DEFINE_FORMATTER_FOR(ast::Basic_qualified_name<Configuration>) {
     auto out = context.out();
 
     std::visit(bu::Overload {
-        [   ](std::monostate)                          {},
-        [out](ast::Basic_root_qualifier<Type>::Global) { std::format_to(out, "::"        ); },
-        [out](auto const& root)                        { std::format_to(out, "{}::", root); }
+        [   ](std::monostate)                                   {},
+        [out](ast::Basic_root_qualifier<Configuration>::Global) { std::format_to(out, "::"        ); },
+        [out](auto const& root)                                { std::format_to(out, "{}::", root); }
         }, value.root_qualifier.value);
 
     for (auto& qualifier : value.middle_qualifiers) {
@@ -264,8 +292,8 @@ template struct std::formatter<ast::Qualified_name>;
 template struct std::formatter<hir::Qualified_name>;
 
 
-template <class Type>
-DEFINE_FORMATTER_FOR(ast::Basic_class_reference<Type>) {
+template <ast::tree_configuration Configuration>
+DEFINE_FORMATTER_FOR(ast::Basic_class_reference<Configuration>) {
     return value.template_arguments
         ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
         : std::format_to(context.out(), "{}", value.name);

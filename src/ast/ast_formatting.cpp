@@ -102,29 +102,6 @@ DEFINE_FORMATTER_FOR(ast::Mutability) {
     }
 }
 
-DEFINE_FORMATTER_FOR(ast::Template_argument) {
-    if (value.name) {
-        std::format_to(context.out(), "{} = ", *value.name);
-    }
-    return std::visit(bu::Overload {
-        [&](ast::Mutability const& mutability) {
-            switch (mutability.type) {
-            case ast::Mutability::Type::mut:
-                return std::format_to(context.out(), "mut");
-            case ast::Mutability::Type::immut:
-                return std::format_to(context.out(), "immut");
-            case ast::Mutability::Type::parameterized:
-                return std::format_to(context.out(), "mut?{}", mutability.parameter_name);
-            default:
-                std::unreachable();
-            }
-        },
-        [&]<bu::one_of<ast::Type, ast::Expression> T>(T const& argument) {
-            return std::format_to(context.out(), "{}", argument);
-        }
-    }, value.value);
-}
-
 
 namespace {
 

@@ -293,7 +293,7 @@ namespace bu {
     constexpr auto make = []<class... Args>(Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args&&...>) -> T
     {
-        return T { std::forward<Args>(args)... };
+        return T(std::forward<Args>(args)...);
     };
 
 
@@ -413,24 +413,36 @@ namespace bu {
     static_assert(digit_count(12345) == 5);
 
 
-    template <class T, std::invocable<T&&> F>
-    constexpr auto map(std::vector<T>&& vector, F const& f) {
-        std::vector<std::invoke_result_t<F const&, T&&>> output;
-        output.reserve(vector.size());
-        for (T& element : vector) {
-            output.push_back(f(std::move(element)));
-        }
-        return output;
+
+    namespace dtl {
+        template <class F>
+        struct Mapper {
+            F f;
+
+            template <class T>
+            auto operator()(this Mapper const self, std::vector<T>&& vector) {
+                std::vector<std::invoke_result_t<F const&, T&&>> output;
+                output.reserve(vector.size());
+                for (T& element : vector) {
+                    output.push_back(self.f(std::move(element)));
+                }
+                return output;
+            }
+            template <class T>
+            auto operator()(this Mapper const self, std::vector<T> const& vector) {
+                std::vector<std::invoke_result_t<F&&, T const&>> output;
+                output.reserve(vector.size());
+                for (T const& element : vector) {
+                    output.push_back(self.f(element));
+                }
+                return output;
+            }
+        };
     }
 
-    template <class T, std::invocable<T const&> F>
-    constexpr auto map(std::vector<T> const& vector, F const& f) {
-        std::vector<std::invoke_result_t<F&&, T const&>> output;
-        output.reserve(vector.size());
-        for (T const& element : vector) {
-            output.push_back(f(element));
-        }
-        return output;
+    template <class F>
+    auto map(F&& f) -> dtl::Mapper<std::decay_t<F>> {
+        return { .f = std::forward<F>(f) };
     }
 
 

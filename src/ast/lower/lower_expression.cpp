@@ -4,13 +4,6 @@
 
 namespace {
 
-    auto lower_function_argument(Lowering_context& context) {
-        return [&context](ast::Function_argument const& argument) -> hir::Function_argument {
-            return { .expression = context.lower(argument.expression), .name = argument.name };
-        };
-    }
-
-
     struct Expression_lowering_visitor {
         Lowering_context     & context;
         ast::Expression const& this_expression;
@@ -27,7 +20,7 @@ namespace {
         auto operator()(ast::expression::Array_literal const& literal) -> hir::Expression {
             return {
                 .value = hir::expression::Array_literal {
-                    bu::map(literal.elements, context.lower())
+                    bu::map(context.lower())(literal.elements)
                 },
                 .source_view = this_expression.source_view
             };
@@ -45,7 +38,7 @@ namespace {
         auto operator()(ast::expression::Tuple const& tuple) -> hir::Expression {
             return {
                 .value = hir::expression::Tuple {
-                    bu::map(tuple.elements, context.lower())
+                    bu::map(context.lower())(tuple.elements)
                 },
                 .source_view = this_expression.source_view
             };
@@ -98,7 +91,7 @@ namespace {
 
             return {
                 .value = hir::expression::Match {
-                    .cases = bu::map(match.cases, lower_match_case),
+                    .cases = bu::map(lower_match_case)(match.cases),
                     .expression = context.lower(match.expression)
                 },
                 .source_view = this_expression.source_view
@@ -108,7 +101,7 @@ namespace {
         auto operator()(ast::expression::Block const& block) -> hir::Expression {
             return {
                 .value = hir::expression::Block {
-                    .side_effects = bu::map(block.side_effects, context.lower()),
+                    .side_effects = bu::map(context.lower())(block.side_effects),
                     .result = block.result.transform(bu::compose(bu::wrap, context.lower()))
                 },
                 .source_view = this_expression.source_view
@@ -151,7 +144,7 @@ namespace {
         auto operator()(ast::expression::Invocation const& invocation) -> hir::Expression {
             return {
                 .value = hir::expression::Invocation {
-                    .arguments = bu::map(invocation.arguments, lower_function_argument(context)),
+                    .arguments = bu::map(context.lower())(invocation.arguments),
                     .invocable = context.lower(invocation.invocable)
                 },
                 .source_view = this_expression.source_view

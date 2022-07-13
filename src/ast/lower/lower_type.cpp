@@ -33,7 +33,7 @@ namespace {
         auto operator()(ast::type::Tuple const& tuple) -> hir::Type {
             return {
                 .value = hir::type::Tuple {
-                    .types = bu::map(tuple.types, context.lower())
+                    .types = bu::map(context.lower())(tuple.types)
                 },
                 .source_view = this_type.source_view
             };
@@ -61,7 +61,7 @@ namespace {
         auto operator()(ast::type::Function const& function) -> hir::Type {
             return {
                 .value = hir::type::Function {
-                    .argument_types = bu::map(function.argument_types, context.lower()),
+                    .argument_types = bu::map(context.lower())(function.argument_types),
                     .return_type = context.lower(function.return_type)
                 },
                 .source_view = this_type.source_view
@@ -101,7 +101,7 @@ namespace {
             if (context.current_function_implicit_template_parameters) {
                 hir::Template_parameter type_parameter {
                     .value = hir::Template_parameter::Type_parameter {
-                        .classes = bu::map(instance_of.classes, context.lower())
+                        .classes = bu::map(context.lower())(instance_of.classes)
                     },
                     .name = context.fresh_upper_name(),
                     .source_view = this_type.source_view

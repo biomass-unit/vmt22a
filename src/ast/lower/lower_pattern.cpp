@@ -36,7 +36,7 @@ namespace {
         auto operator()(ast::pattern::Tuple const& tuple) -> hir::Pattern {
             return {
                 .value = hir::pattern::Tuple {
-                    .patterns = bu::map(tuple.patterns, context.lower())
+                    .patterns = bu::map(context.lower())(tuple.patterns)
                 },
                 .source_view = this_pattern.source_view
             };
@@ -45,7 +45,7 @@ namespace {
         auto operator()(ast::pattern::Slice const& slice) -> hir::Pattern {
             return {
                 .value = hir::pattern::Slice {
-                    .patterns = bu::map(slice.patterns, context.lower())
+                    .patterns = bu::map(context.lower())(slice.patterns)
                 },
                 .source_view = this_pattern.source_view
             };
