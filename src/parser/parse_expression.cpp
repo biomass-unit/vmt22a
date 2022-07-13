@@ -329,10 +329,11 @@ namespace {
 
         if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&condition.value)) {
             if (literal->value) {
-                context.diagnostics->emit_simple_note({
+                context.diagnostics.emit_simple_note({
                     .erroneous_view = condition.source_view,
                     .source = context.source,
                     .message_format = "Use 'loop' instead of 'while true'",
+                    .message_color = bu::diagnostics::note_color,
                 });
             }
         }

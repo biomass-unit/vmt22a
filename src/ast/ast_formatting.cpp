@@ -84,7 +84,25 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameters) {
         : context.out();
 }
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
+
+DEFINE_FORMATTER_FOR(ast::Name) {
+    return std::format_to(context.out(), "{}", value.identifier);
+}
+
+DEFINE_FORMATTER_FOR(ast::Mutability) {
+    switch (value.type) {
+    case ast::Mutability::Type::mut:
+        return std::format_to(context.out(), "mut ");
+    case ast::Mutability::Type::immut:
+        return context.out();
+    case ast::Mutability::Type::parameterized:
+        return std::format_to(context.out(), "mut?{} ", value.parameter_name);
+    default:
+        std::unreachable();
+    }
+}
+
+DEFINE_FORMATTER_FOR(ast::Template_argument) {
     if (value.name) {
         std::format_to(context.out(), "{} = ", *value.name);
     }
@@ -105,51 +123,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_argument) {
             return std::format_to(context.out(), "{}", argument);
         }
     }, value.value);
-}
-
-
-DEFINE_FORMATTER_FOR(ast::Name) {
-    return std::format_to(context.out(), "{}", value.identifier);
-}
-
-DEFINE_FORMATTER_FOR(ast::Qualified_name) {
-    auto out = context.out();
-
-    std::visit(bu::Overload {
-        [   ](std::monostate)              {},
-        [out](ast::Root_qualifier::Global) { std::format_to(out, "::"        ); },
-        [out](auto const& root)            { std::format_to(out, "{}::", root); }
-    }, value.root_qualifier.value);
-
-    for (auto& qualifier : value.middle_qualifiers) {
-        std::format_to(
-            out,
-            "{}{}::",
-            qualifier.name,
-            qualifier.template_arguments ? std::format("[{}]", qualifier.template_arguments) : ""
-        );
-    }
-
-    return std::format_to(out, "{}", value.primary_name.identifier);
-}
-
-DEFINE_FORMATTER_FOR(ast::Class_reference) {
-    return value.template_arguments
-        ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
-        : std::format_to(context.out(), "{}", value.name);
-}
-
-DEFINE_FORMATTER_FOR(ast::Mutability) {
-    switch (value.type) {
-    case ast::Mutability::Type::mut:
-        return std::format_to(context.out(), "mut ");
-    case ast::Mutability::Type::immut:
-        return context.out();
-    case ast::Mutability::Type::parameterized:
-        return std::format_to(context.out(), "mut?{} ", value.parameter_name);
-    default:
-        std::unreachable();
-    }
 }
 
 

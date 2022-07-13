@@ -21,6 +21,9 @@ public:
     auto lower(ast::Pattern    const&) -> hir::Pattern;
     auto lower(ast::Definition const&) -> hir::Definition;
 
+    auto lower(ast::Qualified_name  const&) -> hir::Qualified_name;
+    auto lower(ast::Class_reference const&) -> hir::Class_reference;
+
     auto lower() noexcept {
         return [this](auto const& node) {
             return lower(node);

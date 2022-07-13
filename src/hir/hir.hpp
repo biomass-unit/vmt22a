@@ -21,6 +21,11 @@ namespace hir {
             : vector { vector } {}
     };
 
+
+    using Root_qualifier  = ast::Basic_root_qualifier<Type>;
+    using Qualified_name  = ast::Basic_qualified_name<Type>;
+    using Class_reference = ast::Basic_class_reference<Type>;
+
 }
 
 
@@ -44,7 +49,7 @@ struct hir::Function_parameter {
 
 struct hir::Template_parameter {
     struct Type_parameter {
-        std::vector<ast::Class_reference> classes;
+        std::vector<Class_reference> classes;
         DEFAULTED_EQUALITY(Type_parameter);
     };
     struct Value_parameter {

@@ -112,7 +112,7 @@ namespace {
             bu::diagnostics::Builder builder;
             builder.emit_simple_error(
                 arguments.add_source_info(
-                    &fake_source,
+                    fake_source,
                     bu::Source_view {
                         erroneous_view,
                         bu::Source_position {},

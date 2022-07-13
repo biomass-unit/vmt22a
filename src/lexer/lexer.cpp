@@ -13,10 +13,10 @@ namespace {
         using Error = bu::Exception;
 
         std::vector<Token>        tokens;
-        bu::Source              * source;
+        bu::Source              & source;
+        bu::diagnostics::Builder& diagnostics;
         char const              * start;
         char const              * stop;
-        bu::diagnostics::Builder* diagnostics;
 
 
         struct State {
@@ -63,10 +63,10 @@ namespace {
     public:
 
         explicit Lex_context(bu::Source& source, bu::diagnostics::Builder& diagnostics) noexcept
-            : source      { &source }
+            : source      { source }
+            , diagnostics { diagnostics }
             , start       { source.string().data() }
             , stop        { start + source.string().size() }
-            , diagnostics { &diagnostics }
             , token_start { .pointer = start }
             , state       { .pointer = start }
         {
@@ -168,7 +168,7 @@ namespace {
             bu::diagnostics::Message_arguments const arguments) const -> void
         {
             auto const [start_pos, stop_pos] = get_source_position(view);
-            diagnostics->emit_simple_error(
+            diagnostics.emit_simple_error(
                 arguments.add_source_info(source, bu::Source_view { view, start_pos, stop_pos  })
             );
         }

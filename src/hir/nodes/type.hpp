@@ -19,7 +19,7 @@ namespace hir {
         using ast::type::Wildcard;
 
         struct Typename {
-            ast::Qualified_name identifier;
+            Qualified_name identifier;
             DEFAULTED_EQUALITY(Typename);
         };
 

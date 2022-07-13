@@ -54,7 +54,7 @@ namespace {
         auto operator()(ast::pattern::Constructor const& ctor) -> hir::Pattern {
             return {
                 .value = hir::pattern::Constructor {
-                    .name    = ctor.name,
+                    .name    = context.lower(ctor.name),
                     .pattern = ctor.pattern.transform(bu::compose(bu::wrap, context.lower()))
                 },
                 .source_view = this_pattern.source_view

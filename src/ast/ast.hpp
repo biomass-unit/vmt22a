@@ -42,25 +42,30 @@ namespace ast {
         DEFAULTED_EQUALITY(Qualifier);
     };
 
-    struct Root_qualifier {
+    template <class Type>
+    struct Basic_root_qualifier {
         struct Global { DEFAULTED_EQUALITY(Global); };
         std::variant<
             std::monostate,   // id, id::id
             Global,           // ::id
             bu::Wrapper<Type> // Type::id
         > value;
-        DEFAULTED_EQUALITY(Root_qualifier);
+        DEFAULTED_EQUALITY(Basic_root_qualifier);
     };
 
-    struct Qualified_name {
+    template <class Type>
+    struct Basic_qualified_name {
         std::vector<Qualifier>      middle_qualifiers;
-        Root_qualifier              root_qualifier;
+        Basic_root_qualifier<Type>  root_qualifier;
         Name                        primary_name;
 
-        DEFAULTED_EQUALITY(Qualified_name);
+        DEFAULTED_EQUALITY(Basic_qualified_name);
 
         inline auto is_unqualified() const noexcept -> bool;
     };
+
+    using Root_qualifier = Basic_root_qualifier<Type>;
+    using Qualified_name = Basic_qualified_name<Type>;
 
 
     struct Mutability {
@@ -74,13 +79,16 @@ namespace ast {
     };
 
 
-    struct Class_reference {
+    template <class Type>
+    struct Basic_class_reference {
         std::optional<std::vector<Template_argument>> template_arguments;
-        Qualified_name                                name;
+        Basic_qualified_name<Type>                    name;
 
         bu::Source_view source_view;
-        DEFAULTED_EQUALITY(Class_reference);
+        DEFAULTED_EQUALITY(Basic_class_reference);
     };
+
+    using Class_reference = Basic_class_reference<Type>;
 
 
     template <bu::one_of<Expression, Pattern, Type, Definition> T>
@@ -116,7 +124,8 @@ struct ast::Template_argument {
     DEFAULTED_EQUALITY(Template_argument);
 };
 
-auto ast::Qualified_name::is_unqualified() const noexcept -> bool {
+template <class Type>
+auto ast::Basic_qualified_name<Type>::is_unqualified() const noexcept -> bool {
     return middle_qualifiers.empty()
         && std::holds_alternative<std::monostate>(root_qualifier.value);
 }
@@ -171,6 +180,12 @@ DECLARE_FORMATTER_FOR(ast::Definition);
 
 DECLARE_FORMATTER_FOR(ast::Module);
 DECLARE_FORMATTER_FOR(ast::Name);
-DECLARE_FORMATTER_FOR(ast::Qualified_name);
-DECLARE_FORMATTER_FOR(ast::Class_reference);
 DECLARE_FORMATTER_FOR(ast::Mutability);
+DECLARE_FORMATTER_FOR(ast::Template_argument);
+
+
+// These are explicitly instantiated in hir/hir_formatting.cpp
+template <class Type>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_qualified_name<Type>);
+template <class Type>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_class_reference<Type>);

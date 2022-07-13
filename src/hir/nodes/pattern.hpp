@@ -14,7 +14,7 @@ namespace hir {
         using ast::pattern::Name;
 
         struct Constructor {
-            ast::Qualified_name                 name;
+            Qualified_name                      name;
             std::optional<bu::Wrapper<Pattern>> pattern;
             DEFAULTED_EQUALITY(Constructor);
         };

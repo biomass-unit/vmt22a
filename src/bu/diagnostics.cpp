@@ -67,7 +67,7 @@ namespace {
     )
         -> void
     {
-        auto const lines       = lines_of_occurrence(section.source->string(), section.source_view.string);
+        auto const lines       = lines_of_occurrence(section.source.string(), section.source_view.string);
         auto const digit_count = bu::digit_count(section.source_view.stop_position.line);
         auto       line_number = section.source_view.start_position.line;
 
@@ -204,14 +204,13 @@ namespace {
         bu::Source const* current_source = nullptr;
 
         for (auto& section : sections) {
-            bu::always_assert(section.source != nullptr);
             bu::always_assert(section.source_view.string.empty()
                            || section.source_view.string.front() != '\0');
 
             std::optional<std::string> location_info;
 
-            if (section.source && current_source != section.source) {
-                current_source = section.source;
+            if (current_source != &section.source) {
+                current_source = &section.source;
 
                 location_info = std::format(
                     "{}:{}-{}",
@@ -233,7 +232,7 @@ namespace {
         }
 
         if (diagnostic_type == bu::diagnostics::Type::irrecoverable) {
-            throw bu::Exception { std::move(diagnostic_string) };
+            throw bu::diagnostics::Error { std::move(diagnostic_string) };
         }
     }
 
@@ -328,8 +327,8 @@ auto bu::diagnostics::Builder::Simple_emit_arguments::to_regular_args() const ->
 
 
 auto bu::diagnostics::Message_arguments::add_source_info(
-    bu::Source const* const source,
-    bu::Source_view   const erroneous_view) const -> Builder::Simple_emit_arguments
+    bu::Source      const& source,
+    bu::Source_view const  erroneous_view) const -> Builder::Simple_emit_arguments
 {
     return {
         .erroneous_view    = erroneous_view,

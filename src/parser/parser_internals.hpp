@@ -15,14 +15,14 @@ namespace parser {
     struct Parse_context {
         Token                   * start;
         Token                   * pointer;
-        bu::Source              * source;
-        bu::diagnostics::Builder* diagnostics;
+        bu::Source              & source;
+        bu::diagnostics::Builder& diagnostics;
 
         explicit Parse_context(lexer::Tokenized_source& ts) noexcept
             : start       { ts.tokens.data() }
             , pointer     { start }
-            , source      { &ts.source }
-            , diagnostics { &ts.diagnostics } {}
+            , source      { ts.source }
+            , diagnostics { ts.diagnostics } {}
 
         auto is_finished() const noexcept -> bool {
             return pointer->type == Token::Type::end_of_input;
@@ -69,12 +69,12 @@ namespace parser {
             bu::Source_view                    const erroneous_view,
             bu::diagnostics::Message_arguments const arguments) const -> void
         {
-            diagnostics->emit_simple_error({
+            diagnostics.emit_simple_error({
                 .erroneous_view    = erroneous_view,
                 .source            = source,
                 .message_format    = arguments.message_format,
                 .message_arguments = arguments.message_arguments,
-                .message_color     = bu::Color::red,
+                .message_color     = bu::diagnostics::error_color,
                 .help_note         = arguments.help_note
             });
         }

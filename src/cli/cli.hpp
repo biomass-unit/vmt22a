@@ -133,9 +133,9 @@ namespace cli {
     };
 
 
-    struct [[nodiscard]] Unrecognized_option : bu::Exception {
-        using Exception::Exception;
-        using Exception::operator=;
+    struct [[nodiscard]] Unrecognized_option : bu::diagnostics::Error {
+        using Error::Error;
+        using Error::operator=;
     };
 
 

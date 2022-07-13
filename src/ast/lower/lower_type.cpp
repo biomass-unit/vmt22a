@@ -25,7 +25,7 @@ namespace {
 
         auto operator()(ast::type::Typename const& name) -> hir::Type {
             return {
-                .value = hir::type::Typename { name.identifier },
+                .value = hir::type::Typename { context.lower(name.identifier) },
                 .source_view = this_type.source_view
             };
         }
@@ -101,7 +101,7 @@ namespace {
             if (context.current_function_implicit_template_parameters) {
                 hir::Template_parameter type_parameter {
                     .value = hir::Template_parameter::Type_parameter {
-                        .classes = instance_of.classes
+                        .classes = bu::map(instance_of.classes, context.lower())
                     },
                     .name = context.fresh_upper_name(),
                     .source_view = this_type.source_view

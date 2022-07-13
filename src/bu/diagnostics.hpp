@@ -7,7 +7,7 @@
 
 namespace bu::diagnostics {
 
-    constexpr Color note_color    = Color::dark_cyan;
+    constexpr Color note_color    = Color::cyan;
     constexpr Color warning_color = Color::dark_yellow;
     constexpr Color error_color   = Color::red;
 
@@ -18,7 +18,7 @@ namespace bu::diagnostics {
 
     struct Text_section {
         Source_view      source_view;
-        Source const*    source     = nullptr;
+        Source const&    source;
         std::string_view note       = "here";
         Color            note_color = error_color;
     };
@@ -34,7 +34,7 @@ namespace bu::diagnostics {
         };
         struct Simple_emit_arguments {
             bu::Source_view                 erroneous_view;
-            Source const*                   source = nullptr;
+            Source const&                   source;
             std::string_view                message_format;
             std::format_args                message_arguments;
             Color                           message_color = Color::red;
@@ -75,12 +75,19 @@ namespace bu::diagnostics {
     };
 
 
+    // This is thrown when a diagnostic error is emitted
+    struct Error : Exception {
+        using Exception::Exception;
+        using Exception::operator=;
+    };
+
+
     struct Message_arguments {
         std::string_view                message_format;
         std::format_args                message_arguments;
         std::optional<std::string_view> help_note;
 
-        auto add_source_info(bu::Source const*, bu::Source_view) const
+        auto add_source_info(bu::Source const&, bu::Source_view) const
             -> Builder::Simple_emit_arguments;
     };
 

@@ -51,6 +51,9 @@ namespace {
                     bu::Source source { bu::Source::Mock_tag { "repl" }, std::move(string) };
                     f(std::move(source));
                 }
+                catch (bu::diagnostics::Error const& error) {
+                    std::cerr << error.what() << "\n\n";
+                }
                 catch (std::exception const& exception) {
                     error_stream() << exception.what() << "\n\n";
                 }
@@ -233,7 +236,11 @@ auto main(int argc, char const** argv) -> int try {
 }
 
 catch (cli::Unrecognized_option const& exception) {
-    error_stream() << exception.what() << "; use --help to see a list of valid options\n";
+    std::cerr << exception.what() << "; use --help to see a list of valid options\n";
+}
+
+catch (bu::diagnostics::Error const& error) {
+    std::cerr << error.what() << '\n';
 }
 
 catch (std::exception const& exception) {

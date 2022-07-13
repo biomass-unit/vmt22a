@@ -35,7 +35,9 @@ namespace {
 
         auto operator()(ast::expression::Variable const& variable) -> hir::Expression {
             return {
-                .value = variable,
+                .value = hir::expression::Variable {
+                    .name = context.lower(variable.name)
+                },
                 .source_view = this_expression.source_view
             };
         }
@@ -59,14 +61,11 @@ namespace {
                     .value = hir::expression::Match {
                         .cases {
                             hir::expression::Match::Case {
-                                .pattern = let->pattern,
+                                .pattern = context.lower(let->pattern),
                                 .expression = context.lower(conditional.true_branch)
                             },
                             hir::expression::Match::Case {
-                                .pattern = ast::Pattern {
-                                    .value = ast::pattern::Wildcard {},
-                                    .source_view = bu::hole()
-                                },
+                                .pattern = hir::Pattern { .value = hir::pattern::Wildcard {} },
                                 .expression = std::move(false_branch)
                             }
                         },
@@ -91,7 +90,10 @@ namespace {
             auto const lower_match_case = [this](ast::expression::Match::Case const& match_case)
                 -> hir::expression::Match::Case
             {
-                return { .pattern = match_case.pattern, .expression = context.lower(match_case.expression) };
+                return {
+                    .pattern    = context.lower(match_case.pattern),
+                    .expression = context.lower(match_case.expression)
+                };
             };
 
             return {

@@ -3,6 +3,27 @@
 #include "lowering_internals.hpp"
 
 
+auto Lowering_context::lower(ast::Qualified_name const& name) -> hir::Qualified_name {
+    return {
+        .middle_qualifiers = name.middle_qualifiers,
+        .root_qualifier = std::visit(bu::Overload {
+            [](std::monostate)                -> hir::Root_qualifier { return {}; },
+            [](ast::Root_qualifier::Global)   -> hir::Root_qualifier { return { .value = hir::Root_qualifier::Global {} }; },
+            [this](ast::Type const& type)     -> hir::Root_qualifier { return { .value = lower(type) }; }
+        }, name.root_qualifier.value),
+        .primary_name = name.primary_name,
+    };
+}
+
+auto Lowering_context::lower(ast::Class_reference const& reference) -> hir::Class_reference {
+    return {
+        .template_arguments = bu::hole(),
+        .name = lower(reference.name),
+        .source_view = reference.source_view,
+    };
+}
+
+
 auto ast::lower(Module&& module) -> hir::Module {
     hir::Module hir_module {
         .node_context {

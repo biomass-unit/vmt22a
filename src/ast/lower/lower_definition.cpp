@@ -13,8 +13,10 @@ namespace {
         {
             return {
                 .value = std::visit<hir::Template_parameter::Variant>(bu::Overload {
-                    [](ast::Template_parameter::Type_parameter const& type_parameter) {
-                        return hir::Template_parameter::Type_parameter { type_parameter.classes };
+                    [&context](ast::Template_parameter::Type_parameter const& type_parameter) {
+                        return hir::Template_parameter::Type_parameter {
+                            .classes = bu::map(type_parameter.classes, context.lower())
+                        };
                     },
                     [&](ast::Template_parameter::Value_parameter const& value_parameter) {
                         return hir::Template_parameter::Value_parameter {

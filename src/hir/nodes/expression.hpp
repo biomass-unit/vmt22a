@@ -20,7 +20,10 @@ namespace hir {
             DEFAULTED_EQUALITY(Array_literal);
         };
 
-        using ast::expression::Variable;
+        struct Variable {
+            Qualified_name name;
+            DEFAULTED_EQUALITY(Variable);
+        };
 
         struct Tuple {
             std::vector<Expression> elements;
@@ -75,8 +78,8 @@ namespace hir {
 
         struct Match {
             struct Case {
-                bu::Wrapper<ast::Pattern> pattern;
-                bu::Wrapper<Expression>   expression;
+                bu::Wrapper<Pattern>    pattern;
+                bu::Wrapper<Expression> expression;
                 DEFAULTED_EQUALITY(Case);
             };
             std::vector<Case>       cases;

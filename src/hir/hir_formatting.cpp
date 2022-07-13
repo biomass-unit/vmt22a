@@ -235,3 +235,41 @@ DEFINE_FORMATTER_FOR(hir::Pattern) {
 DEFINE_FORMATTER_FOR(hir::Definition) {
     return std::visit(Definition_format_visitor { { context.out() } }, value.value);
 }
+
+
+
+template <class Type>
+DEFINE_FORMATTER_FOR(ast::Basic_qualified_name<Type>) {
+    auto out = context.out();
+
+    std::visit(bu::Overload {
+        [   ](std::monostate)                          {},
+        [out](ast::Basic_root_qualifier<Type>::Global) { std::format_to(out, "::"        ); },
+        [out](auto const& root)                        { std::format_to(out, "{}::", root); }
+        }, value.root_qualifier.value);
+
+    for (auto& qualifier : value.middle_qualifiers) {
+        std::format_to(
+            out,
+            "{}{}::",
+            qualifier.name,
+            qualifier.template_arguments ? std::format("[{}]", qualifier.template_arguments) : ""
+        );
+    }
+
+    return std::format_to(out, "{}", value.primary_name.identifier);
+}
+
+template struct std::formatter<ast::Qualified_name>;
+template struct std::formatter<hir::Qualified_name>;
+
+
+template <class Type>
+DEFINE_FORMATTER_FOR(ast::Basic_class_reference<Type>) {
+    return value.template_arguments
+        ? std::format_to(context.out(), "{}[{}]", value.name, value.template_arguments)
+        : std::format_to(context.out(), "{}", value.name);
+};
+
+template struct std::formatter<ast::Class_reference>;
+template struct std::formatter<hir::Class_reference>;
