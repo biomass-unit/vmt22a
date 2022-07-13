@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "bu/textual_error.hpp"
+#include "bu/diagnostics.hpp"
 #include "cli.hpp"
 
 #include <charconv>
@@ -66,7 +66,8 @@ namespace {
             --pointer;
         }
 
-        auto error_string(std::string_view const message) const -> std::string {
+        [[noreturn]]
+        auto error(bu::diagnostics::Message_arguments const arguments) const -> void {
             // We must recreate the command line as a single string which will
             // emulate the file that would normally be passed to bu::textual_error
 
@@ -108,23 +109,35 @@ namespace {
                 std::move(fake_file)
             };
 
-            return bu::simple_textual_error({
-                .erroneous_view = bu::Source_view {
-                    erroneous_view,
-                    bu::Source_position {},
-                    bu::Source_position { 1, 1 + bu::unsigned_distance(fake_source.string().data(), erroneous_view.data()) }
-                },
-                .source  = &fake_source,
-                .message = message
+            bu::diagnostics::Builder builder;
+            builder.emit_simple_error(
+                arguments.add_source_info(
+                    &fake_source,
+                    bu::Source_view {
+                        erroneous_view,
+                        bu::Source_position {},
+                        bu::Source_position { 1, 1 + bu::unsigned_distance(fake_source.string().data(), erroneous_view.data()) }
+                    }
+                )
+            );
+        }
+
+        [[noreturn]]
+        auto expected(std::string_view const expectation) const -> void {
+            error({
+                .message_format = "Expected {}",
+                .message_arguments = std::make_format_args(expectation)
             });
         }
 
-        auto error(std::string_view const message) const -> bu::Exception {
-            return bu::Exception { error_string(message) };
-        }
-
-        auto expected(std::string_view const expectation) const -> bu::Exception {
-            return error(std::format("Expected {}", expectation));
+        [[noreturn]]
+        auto error_unrecognized_option() const -> void {
+            try {
+                error({ .message_format = "Unrecognized option" });
+            }
+            catch (bu::Exception const& exception) {
+                throw cli::Unrecognized_option { exception.what() };
+            }
         }
     };
 
@@ -152,23 +165,19 @@ namespace {
                 }
                 else {
                     context.retreat();
-                    throw context.error(
-                        std::format(
-                            "Unexpected suffix: '{}'",
-                            std::string_view { ptr, stop }
-                        )
-                    );
+                    context.error({
+                        .message_format = "Unexpected suffix: '{}'",
+                        .message_arguments = std::make_format_args(std::string_view { ptr, stop })
+                    });
                 }
             }
             case std::errc::result_out_of_range:
             {
                 context.retreat();
-                throw context.error(
-                    std::format(
-                        "The given value is too large to be represented by a {}-bit value",
-                        sizeof(T) * CHAR_BIT
-                    )
-                );
+                context.error({
+                    .message_format = "The given value is too large to be represented by a {}-bit value",
+                    .message_arguments = std::make_format_args(sizeof(T) * CHAR_BIT)
+                });
             }
             case std::errc::invalid_argument:
             {
@@ -221,25 +230,28 @@ namespace {
                 auto argument = extract_value<T>(context);
 
                 if (!argument) {
-                    throw context.error(
-                        "Expected an argument [{}]"_format(type_description<T>())
-                    );
+                    context.error({
+                        .message_format = "Expected an argument [{}]",
+                        .message_arguments = std::make_format_args(type_description<T>())
+                    });
                 }
 
                 if (value.minimum_value) {
                     if (*argument < *value.minimum_value) {
                         context.retreat();
-                        throw context.error(
-                            "The minimum allowed value is {}"_format(*value.minimum_value)
-                        );
+                        context.error({
+                            .message_format = "The minimum allowed value is {}",
+                            .message_arguments = std::make_format_args(*value.minimum_value)
+                        });
                     }
                 }
                 if (value.maximum_value) {
                     if (*argument > *value.maximum_value) {
                         context.retreat();
-                        throw context.error(
-                            "The maximum allowed value is {}"_format(*value.maximum_value)
-                        );
+                        context.error({
+                            .message_format = "The maximum allowed value is {}",
+                            .message_arguments = std::make_format_args(*value.maximum_value)
+                        });
                     }
                 }
 
@@ -270,7 +282,7 @@ auto cli::parse_command_line(
             if (view.starts_with("--")) {
                 view.remove_prefix(2);
                 if (view.empty()) {
-                    throw context.expected("a flag name");
+                    context.expected("a flag name");
                 }
                 else {
                     return std::string { view };
@@ -280,18 +292,18 @@ auto cli::parse_command_line(
                 view.remove_prefix(1);
                 switch (view.size()) {
                 case 0:
-                    throw context.expected("a single-character flag name");
+                    context.expected("a single-character flag name");
                 case 1:
                     if (auto long_form = description.long_forms.find(view.front())) {
                         return bu::copy(*long_form);
                     }
                     else {
                         context.retreat();
-                        throw Unrecognized_option { context.error_string("Unrecognized option") };
+                        context.error_unrecognized_option();
                     }
                 default:
                     context.retreat();
-                    throw context.expected("a single-character flag name; use '--' instead of '-' if this was intended");
+                    context.expected("a single-character flag name; use '--' instead of '-' if this was intended");
                 }
             }
             else {
@@ -315,7 +327,7 @@ auto cli::parse_command_line(
             }
             else {
                 context.retreat();
-                throw Unrecognized_option { context.error_string("Unrecognized option") };
+                context.error_unrecognized_option();
             }
         }
         else {

@@ -134,7 +134,7 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
     if (extract_qualifier()) {
         while (context.try_consume(Token::Type::double_colon)) {
             if (!extract_qualifier()) {
-                throw context.expected("an identifier");
+                context.error_expected("an identifier");
             }
         }
 
@@ -152,7 +152,7 @@ auto parser::extract_qualified(ast::Root_qualifier&& root, Parse_context& contex
     }
     else {
         // root:: followed by no qualifiers
-        throw context.expected("an identifier");
+        context.error_expected("an identifier");
     }
 }
 
@@ -202,7 +202,7 @@ auto parser::extract_class_references(Parse_context& context)
     auto classes = extract_classes(context);
 
     if (classes.empty()) {
-        throw context.expected("one or more class names");
+        context.error_expected("one or more class names");
     }
     else {
         return classes;
@@ -266,7 +266,7 @@ namespace {
                         };
                     }
                     else {
-                        throw context.expected("'mut' or a type");
+                        context.error_expected("'mut' or a type");
                     }
                 }
 
@@ -299,7 +299,7 @@ namespace {
                 return parameters;
             }
             else {
-                throw context.expected("one or more template parameters");
+                context.error_expected("one or more template parameters");
             }
         }
         else {
@@ -335,7 +335,7 @@ namespace {
                     return extract_expression(context);
                 }
                 else {
-                    throw context.expected("the function body", "'=' or '{'");
+                    context.error_expected("the function body", "'=' or '{'");
                 }
             }();
 
@@ -348,7 +348,7 @@ namespace {
             };
         }
         else {
-            throw context.expected("a parenthesized list of function parameters");
+            context.error_expected("a parenthesized list of function parameters");
         }
     };
 
@@ -365,10 +365,10 @@ namespace {
             auto found = std::ranges::find(range.cbegin(), it, it->name, &Member::name);
 
             if (found != it) {
-                throw context.error(
-                    it->source_view,
-                    std::format("A {} with this name has already been defined", description)
-                );
+                context.error(it->source_view, {
+                    .message_format = "A {} with this name has already been defined",
+                    .message_arguments = std::make_format_args(description)
+                });
 
                 // TODO: add more info to the error message
             }
@@ -395,7 +395,7 @@ namespace {
             };
         }
         else if (is_public) {
-            throw context.expected("a struct member name");
+            context.error_expected("a struct member name");
         }
         else {
             return std::nullopt;
@@ -423,7 +423,7 @@ namespace {
             };
         }
         else {
-            throw context.expected("one or more struct members");
+            context.error_expected("one or more struct members");
         }
     };
 
@@ -486,17 +486,17 @@ namespace {
 
             if (constructors->size() > max) {
                 // This allows the tag to always be a single byte
-                throw context.error(
+                context.error(
                     { anchor - 1, anchor + 1 },
-                    std::format(
-                        "An enum-definition must not define more "
-                        "than {} constructors, but {} defines {}",
-                        max,
-                        name,
-                        constructors->size()
-                    ),
-                    "If this is truly necessary, consider categorizing "
-                    "the constructors under several simpler types"
+                    {
+                        .message_format =
+                            "An enum-definition must not define more "
+                            "than {} constructors, but {} defines {}",
+                        .message_arguments = std::make_format_args(max, name, constructors->size()),
+                        .help_note =
+                            "If this is truly necessary, consider categorizing "
+                            "the constructors under several simpler types"
+                    }
                 );
             }
 
@@ -507,7 +507,7 @@ namespace {
             };
         }
         else {
-            throw context.expected("one or more enum constructors");
+            context.error_expected("one or more enum constructors");
         }
     };
 
@@ -553,7 +553,7 @@ namespace {
                 return name;
             }
             else {
-                throw context.error(
+                context.error(
                     { anchor, context.pointer },
                     "Expected a class name, but found a lowercase identifier"
                 );
@@ -607,7 +607,7 @@ namespace {
             };
         }
         else {
-            throw context.expected("a class name");
+            context.error_expected("a class name");
         }
     };
 
@@ -674,7 +674,7 @@ namespace {
             default:
                 context.retreat();
                 if (function_signatures.empty() && type_signatures.empty()) {
-                    throw context.expected("one or more function or type signatures");
+                    context.error_expected("one or more function or type signatures");
                 }
                 if (is_braced) {
                     context.consume_required(Token::Type::brace_close);
@@ -760,14 +760,14 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
             module_imports.push_back(std::move(import_statement));
         }
         else {
-            throw context.expected("a module path");
+            context.error_expected("a module path");
         }
     }
 
     auto definitions = extract_definition_sequence(context);
 
     if (!context.is_finished()) {
-        throw context.expected(
+        context.error_expected(
             "a definition",
             "'fn', 'struct', 'enum', 'alias', 'impl', 'inst', or 'class'"
         );
@@ -775,6 +775,7 @@ auto parser::parse(lexer::Tokenized_source&& tokenized_source) -> ast::Module {
 
     return ast::Module {
         .node_context = std::move(module_context),
+        .diagnostics  = std::move(tokenized_source.diagnostics),
         .source       = std::move(tokenized_source.source),
         .definitions  = std::move(definitions),
         .name         = std::move(module_name),

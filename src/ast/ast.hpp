@@ -3,6 +3,7 @@
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
 #include "bu/source.hpp"
+#include "bu/diagnostics.hpp"
 #include "bu/flatmap.hpp"
 #include "lexer/token.hpp"
 
@@ -142,10 +143,10 @@ namespace ast {
     };
 
     struct [[nodiscard]] Module {
-        Node_context node_context;
-
-        bu::Source              source;
-        std::vector<Definition> definitions;
+        Node_context             node_context;
+        bu::diagnostics::Builder diagnostics;
+        bu::Source               source;
+        std::vector<Definition>  definitions;
 
         std::optional<lexer::Identifier> name;
         std::vector<Import>              imports;

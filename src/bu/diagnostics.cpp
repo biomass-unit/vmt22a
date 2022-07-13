@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "bu/textual_error.hpp"
+#include "diagnostics.hpp"
 
 
 namespace {
@@ -62,7 +62,7 @@ namespace {
 
     auto format_highlighted_section(
         std::back_insert_iterator<std::string> const  out,
-        bu::Highlighted_text_section           const& section,
+        bu::diagnostics::Text_section          const& section,
         std::optional<std::string>             const& location_info
     )
         -> void
@@ -179,68 +179,163 @@ namespace {
         }
     }
 
-}
 
+    auto do_emit(
+        std::string&                                   diagnostic_string,
+        bu::diagnostics::Builder::Emit_arguments const arguments,
+        std::string_view                         const title,
+        bu::Color                                const title_color,
+        bu::diagnostics::Type                    const diagnostic_type = bu::diagnostics::Type::recoverable) -> void
+    {
+        auto& [sections, message_format, message_format_arguments, help_note] = arguments;
 
-auto bu::textual_error(Textual_error_arguments const arguments) -> std::string {
-    auto const [sections, source, message, help] = arguments;
+        assert(!arguments.sections.empty());
+        auto out = std::back_inserter(diagnostic_string);
 
-    assert(!sections.empty());
-
-    std::string string;
-    string.reserve(256);
-    auto out = std::back_inserter(string);
-
-    std::format_to(out, "{}\n\n", message);
-
-    bu::Source* current_source = nullptr;
-
-    for (auto& section : sections) {
-        assert(section.source);
-        assert(section.source_view.string.empty() || section.source_view.string.front() != '\0');
-
-        std::optional<std::string> location_info;
-
-        if (section.source && current_source != section.source) {
-            current_source = section.source;
-
-            location_info = std::format(
-                "{}:{}-{}",
-                bu::dtl::filename_without_path(current_source->name()), // fix
-                section.source_view.start_position,
-                section.source_view.stop_position
-            );
+        if (!diagnostic_string.empty()) { // there are previous diagnostic messages
+            std::format_to(out, "\n\n\n");
         }
 
-        format_highlighted_section(out, section, location_info);
+        std::format_to(out, "{}{}{}: ", title_color, title, bu::Color::white);
 
-        if (&section != &sections.back()) {
-            std::format_to(out, "\n");
+        std::vformat_to(out, message_format, message_format_arguments);
+        std::format_to(out, "\n\n");
+
+        bu::Source const* current_source = nullptr;
+
+        for (auto& section : sections) {
+            bu::always_assert(section.source != nullptr);
+            bu::always_assert(section.source_view.string.empty()
+                           || section.source_view.string.front() != '\0');
+
+            std::optional<std::string> location_info;
+
+            if (section.source && current_source != section.source) {
+                current_source = section.source;
+
+                location_info = std::format(
+                    "{}:{}-{}",
+                    bu::dtl::filename_without_path(current_source->name()), // fix
+                    section.source_view.start_position,
+                    section.source_view.stop_position
+                );
+            }
+
+            format_highlighted_section(out, section, location_info);
+
+            if (&section != &sections.back()) {
+                std::format_to(out, "\n");
+            }
+        }
+
+        if (help_note) {
+            std::format_to(out, "\n\nHelpful note: {}", *help_note);
+        }
+
+        if (diagnostic_type == bu::diagnostics::Type::irrecoverable) {
+            throw bu::Exception { std::move(diagnostic_string) };
         }
     }
 
-    if (help) {
-        std::format_to(out, "\n\nHelpful note: {}", *help);
-    }
-
-    return string;
 }
 
 
-auto bu::simple_textual_error(Simple_textual_error_arguments const arguments)
-    -> std::string
+bu::diagnostics::Builder::Builder(Configuration const configuration) noexcept
+    : configuration { configuration } {}
+
+bu::diagnostics::Builder::Builder(Builder&& other) noexcept
+    : diagnostic_string { std::move(other.diagnostic_string) }
+    , configuration { other.configuration }
 {
-    Highlighted_text_section const section {
-        .source_view = arguments.erroneous_view,
-        .source      = arguments.source,
-        .note        = "here",
-        .note_color  = text_error_color
-    };
+    other.diagnostic_string.clear();
+    // A moved-from std::string is not guaranteed to be empty, so
+    // this move constructor has to be written by hand, because the
+    // destructor relies on moved-from diagnostic strings being empty.
+}
 
-    return textual_error({
-        .sections  { &section, 1 }, // Treat the section as a one-element span
-        .source    = arguments.source,
-        .message   = arguments.message,
-        .help_note = arguments.help_note
-    });
+bu::diagnostics::Builder::~Builder() {
+    if (!diagnostic_string.empty()) {
+        std::cout << diagnostic_string << "\n\n"; // TODO: improve
+    }
+}
+
+
+auto bu::diagnostics::Builder::emit_note(Emit_arguments const arguments) -> void {
+    switch (configuration.note_level) {
+    case Level::normal:
+        return do_emit(diagnostic_string, arguments, "Note", note_color);
+    case Level::error:
+        return do_emit(diagnostic_string, arguments, "The following note is treated as an error", error_color);
+    case Level::suppress:
+        return;
+    default:
+        std::unreachable();
+    }
+}
+
+auto bu::diagnostics::Builder::emit_warning(Emit_arguments const arguments) -> void {
+    switch (configuration.warning_level) {
+    case Level::normal:
+        return do_emit(diagnostic_string, arguments, "Warning", warning_color);
+    case Level::error:
+        return do_emit(diagnostic_string, arguments, "The following warning is treated as an error", error_color);
+    case Level::suppress:
+        return;
+    default:
+        std::unreachable();
+    }
+}
+
+auto bu::diagnostics::Builder::emit_error(
+    Emit_arguments const arguments,
+    Type           const error_type) -> void
+{
+    do_emit(diagnostic_string, arguments, "Error", error_color, error_type);
+}
+
+
+auto bu::diagnostics::Builder::emit_simple_note(Simple_emit_arguments const arguments) -> void {
+    return emit_note(arguments.to_regular_args());
+}
+
+auto bu::diagnostics::Builder::emit_simple_warning(Simple_emit_arguments const arguments) -> void {
+    return emit_warning(arguments.to_regular_args());
+}
+
+auto bu::diagnostics::Builder::emit_simple_error(
+    Simple_emit_arguments const arguments,
+    Type                  const error_type) -> void
+{
+    emit_error(arguments.to_regular_args(), error_type);
+}
+
+
+auto bu::diagnostics::Builder::Simple_emit_arguments::to_regular_args() const -> Emit_arguments {
+    return {
+        .sections {
+            Text_section {
+                .source_view = erroneous_view,
+                .source      = source,
+                .note        = "here",
+                .note_color  = message_color
+            }
+        },
+        .message_format    = message_format,
+        .message_arguments = message_arguments,
+        .help_note         = help_note
+    };
+}
+
+
+auto bu::diagnostics::Message_arguments::add_source_info(
+    bu::Source const* const source,
+    bu::Source_view   const erroneous_view) const -> Builder::Simple_emit_arguments
+{
+    return {
+        .erroneous_view    = erroneous_view,
+        .source            = source,
+        .message_format    = message_format,
+        .message_arguments = message_arguments,
+        .help_note         = help_note
+    };
 }

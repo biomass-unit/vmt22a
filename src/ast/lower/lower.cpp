@@ -13,10 +13,15 @@ auto ast::lower(Module&& module) -> hir::Module {
                 bu::Wrapper_context<hir::Definition> { module.node_context.arena_size<ast::Definition>() }
             }
         },
+        .diagnostics = std::move(module.diagnostics),
         .source = std::move(module.source)
     };
 
-    Lowering_context context { hir_module.node_context };
+    Lowering_context context {
+        hir_module.node_context,
+        hir_module.diagnostics,
+        hir_module.source
+    };
     hir_module.definitions = bu::map(module.definitions, context.lower());
 
     return hir_module;

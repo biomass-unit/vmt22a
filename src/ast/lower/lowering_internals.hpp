@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/bounded_integer.hpp"
+#include "bu/diagnostics.hpp"
 #include "ast/ast.hpp"
 #include "hir/hir.hpp"
 
@@ -9,12 +10,11 @@
 class Lowering_context {
     inline static bu::Bounded_usize current_name_tag = 0;
 public:
-    hir::Node_context& node_context;
+    hir::Node_context       & node_context;
+    bu::diagnostics::Builder& diagnostics;
+    bu::Source         const& source;
 
     std::vector<hir::Template_parameter>* current_function_implicit_template_parameters = nullptr;
-
-    explicit Lowering_context(hir::Node_context& node_context) noexcept
-        : node_context { node_context } {}
 
     auto lower(ast::Expression const&) -> hir::Expression;
     auto lower(ast::Type       const&) -> hir::Type;

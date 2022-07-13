@@ -46,10 +46,10 @@ namespace {
             return ast::pattern::Slice { std::move(patterns) };
         }
         else if (patterns.empty()) {
-            throw context.expected("a slice element pattern or a ']'");
+            context.error_expected("a slice element pattern or a ']'");
         }
         else {
-            throw context.expected("a ',' or a ']'");
+            context.error_expected("a ',' or a ']'");
         }
     };
 
@@ -89,7 +89,7 @@ namespace {
         }();
 
         if (name && name->primary_name.is_upper) {
-            throw context.error(
+            context.error(
                 { anchor, context.pointer },
                 "Expected an enum constructor name, but found a capitalized identifier"
             );
@@ -222,7 +222,7 @@ auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern
                 };
             }
             else {
-                throw context.expected("a guard expression");
+                context.error_expected("a guard expression");
             }
         }
     }

@@ -2,14 +2,16 @@
 
 #include "bu/utilities.hpp"
 #include "bu/source.hpp"
+#include "bu/diagnostics.hpp"
 #include "token.hpp"
 
 
 namespace lexer {
 
     struct Tokenized_source {
-        bu::Source source;
-        std::vector<Token> tokens;
+        bu::Source               source;
+        std::vector<Token>       tokens;
+        bu::diagnostics::Builder diagnostics;
     };
 
 

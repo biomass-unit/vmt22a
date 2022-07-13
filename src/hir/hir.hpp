@@ -84,9 +84,10 @@ namespace hir {
 
 
     struct Module {
-        Node_context            node_context;
-        bu::Source              source;
-        std::vector<Definition> definitions;
+        Node_context             node_context;
+        bu::diagnostics::Builder diagnostics;
+        bu::Source               source;
+        std::vector<Definition>  definitions;
     };
 
 }

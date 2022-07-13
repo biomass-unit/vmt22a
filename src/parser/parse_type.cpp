@@ -25,7 +25,7 @@ namespace {
             }
         }
         else {
-            throw context.error(
+            context.error(
                 { anchor, context.pointer },
                 "Expected a typename, but found a lowercase identifier"
             );
@@ -86,7 +86,7 @@ namespace {
                     };
                 }
                 else {
-                    throw context.expected("the array length", "Remove the ';' if a slice type was intended");
+                    context.error_expected("the array length", "Remove the ';' if a slice type was intended");
                 }
             }
             else {
@@ -116,15 +116,15 @@ namespace {
                     };
                 }
                 else {
-                    throw context.expected("the function return type");
+                    context.error_expected("the function return type");
                 }
             }
             else {
-                throw context.expected("a ':' followed by the function return type");
+                context.error_expected("a ':' followed by the function return type");
             }
         }
         else {
-            throw context.expected("a parenthesized list of argument types");
+            context.error_expected("a parenthesized list of argument types");
         }
     };
 
@@ -137,7 +137,7 @@ namespace {
             return ast::type::Type_of { std::move(expression) };
         }
         else {
-            throw context.expected("a parenthesized expression");
+            context.error_expected("a parenthesized expression");
         }
     };
 

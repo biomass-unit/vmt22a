@@ -1,8 +1,7 @@
 #pragma once
 
 #include "bu/utilities.hpp"
-#include "bu/source.hpp"
-#include "bu/textual_error.hpp"
+#include "bu/diagnostics.hpp"
 #include "lexer/lexer.hpp"
 #include "lexer/token_formatting.hpp"
 #include "ast/ast.hpp"
@@ -14,16 +13,16 @@ namespace parser {
 
 
     struct Parse_context {
-        using Error = bu::Exception;
-
-        Token     * start;
-        Token     * pointer;
-        bu::Source* source;
+        Token                   * start;
+        Token                   * pointer;
+        bu::Source              * source;
+        bu::diagnostics::Builder* diagnostics;
 
         explicit Parse_context(lexer::Tokenized_source& ts) noexcept
-            : start   { ts.tokens.data() }
-            , pointer { start }
-            , source  { &ts.source } {}
+            : start       { ts.tokens.data() }
+            , pointer     { start }
+            , source      { &ts.source }
+            , diagnostics { &ts.diagnostics } {}
 
         auto is_finished() const noexcept -> bool {
             return pointer->type == Token::Type::end_of_input;
@@ -47,7 +46,7 @@ namespace parser {
                 ++pointer;
             }
             else {
-                throw expected("'{}'"_format(type));
+                error_expected("'{}'"_format(type));
             }
         }
 
@@ -65,67 +64,63 @@ namespace parser {
             --pointer;
         }
 
+        [[noreturn]]
         auto error(
-            bu::Source_view                 const source_view,
-            std::string_view                const message,
-            std::optional<std::string_view> const help = std::nullopt
-        )
-            const -> Error
+            bu::Source_view                    const erroneous_view,
+            bu::diagnostics::Message_arguments const arguments) const -> void
         {
-            return Error {
-                bu::simple_textual_error({
-                    .erroneous_view = source_view,
-                    .source         = source,
-                    .message        = message,
-                    .help_note      = help
-                })
-            };
+            diagnostics->emit_simple_error({
+                .erroneous_view    = erroneous_view,
+                .source            = source,
+                .message_format    = arguments.message_format,
+                .message_arguments = arguments.message_arguments,
+                .message_color     = bu::Color::red,
+                .help_note         = arguments.help_note
+            });
         }
 
+        [[noreturn]]
         auto error(
-            std::span<Token const>          const span,
-            std::string_view                const message,
-            std::optional<std::string_view> const help = std::nullopt
-        )
-            const -> Error
+            std::span<Token const>             const span,
+            bu::diagnostics::Message_arguments const arguments) const -> void
         {
-            return error(span.front().source_view + span.back().source_view, message, help);
+            error(span.front().source_view + span.back().source_view, arguments);
         }
 
+        [[noreturn]]
         auto error(
-            std::string_view                const message,
-            std::optional<std::string_view> const help = std::nullopt
-        )
-            const -> Error
+            std::span<Token const> const span,
+            std::string_view       const message) -> void
         {
-            return error({ pointer, pointer + 1 }, message, help);
+            error(span, { .message_format = message });
         }
 
-        auto expected(
+        auto error(std::span<Token const>, std::string&&) const -> void = delete;
+
+        [[noreturn]]
+        auto error(bu::diagnostics::Message_arguments const arguments) const -> void {
+            error({ pointer, pointer + 1 }, arguments);
+        }
+
+        [[noreturn]]
+        auto error_expected(
             std::span<Token const>          const span,
             std::string_view                const expectation,
-            std::optional<std::string_view> const help = std::nullopt
-        )
-            const -> Error
+            std::optional<std::string_view> const help = std::nullopt) const -> void
         {
-            return error(
-                span,
-                std::format(
-                    "Expected {}, but found {}",
-                    expectation,
-                    lexer::token_description(pointer->type)
-                ),
-                help
-            );
+            error(span, {
+                .message_format    = "Expected {}, but found {}",
+                .message_arguments = std::make_format_args(expectation, lexer::token_description(pointer->type)),
+                .help_note         = help
+            });
         }
 
-        auto expected(
+        [[noreturn]]
+        auto error_expected(
             std::string_view                const expectation,
-            std::optional<std::string_view> const help = std::nullopt
-        )
-            const -> Error
+            std::optional<std::string_view> const help = std::nullopt) const -> void
         {
-            return expected({ pointer, pointer + 1 }, expectation, help);
+            error_expected({ pointer, pointer + 1 }, expectation, help);
         }
     };
 
@@ -145,7 +140,7 @@ namespace parser {
             return std::move(*result);
         }
         else {
-            throw context.expected(description.view());
+            context.error_expected(description.view());
         }
     }
 
@@ -173,11 +168,11 @@ namespace parser {
                     return result;
                 }
                 else {
-                    throw context.expected("a closing '{}'"_format(close));
+                    throw context.error_expected("a closing '{}'"_format(close));
                 }
             }
             else {
-                throw context.expected(description.view());
+                throw context.error_expected(description.view());
             }
         }
         else {
@@ -213,7 +208,7 @@ namespace parser {
                     vector.push_back(std::move(*element));
                 }
                 else {
-                    throw context.expected(description.view());
+                    context.error_expected(description.view());
                 }
             }
         }
@@ -274,7 +269,7 @@ namespace parser {
             return token->as_identifier();
         }
         else {
-            throw context.expected(description);
+            context.error_expected(description);
         }
     }
 
@@ -324,7 +319,7 @@ namespace parser {
             return std::move(*name);
         }
         else {
-            throw context.expected(description);
+            context.error_expected(description);
         }
     }
 

@@ -91,7 +91,7 @@ namespace {
             );
         }
         else {
-            throw context.error(
+            context.error(
                 { anchor, context.pointer },
                 "Expected an expression, but found a type"
             );
@@ -162,10 +162,10 @@ namespace {
             return ast::expression::Array_literal { std::move(elements) };
         }
         else if (elements.empty()) {
-            throw context.expected("an array element or a ']'");
+            context.error_expected("an array element or a ']'");
         }
         else {
-            throw context.expected("a ',' or a ']'");
+            context.error_expected("a ',' or a ']'");
         }
     };
 
@@ -185,7 +185,7 @@ namespace {
                     false_branch = std::move(*branch);
                 }
                 else {
-                    throw context.expected("the false branch", help);
+                    context.error_expected("the false branch", help);
                 }
             }
             else if (context.try_consume(Token::Type::elif)) {
@@ -199,7 +199,7 @@ namespace {
             };
         }
         else {
-            throw context.expected("the true branch", help);
+            context.error_expected("the true branch", help);
         }
     };
 
@@ -280,7 +280,7 @@ namespace {
             captures = extract_captures(context);
 
             if (captures.empty()) {
-                throw context.expected(
+                context.error_expected(
                     "at least one lambda capture",
                     "If the lambda isn't supposed to capture anything, "
                     "or if it only captures by move, remove the '.'"
@@ -311,7 +311,7 @@ namespace {
             return std::move(*body);
         }
         else {
-            throw context.expected("the loop body", "the loop body must be a block expression");
+            context.error_expected("the loop body", "the loop body must be a block expression");
         }
     }
 
@@ -326,6 +326,17 @@ namespace {
         -> ast::Expression::Variant
     {
         auto condition = extract_condition(context);
+
+        if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&condition.value)) {
+            if (literal->value) {
+                context.diagnostics->emit_simple_note({
+                    .erroneous_view = condition.source_view,
+                    .source = context.source,
+                    .message_format = "Use 'loop' instead of 'while true'",
+                });
+            }
+        }
+
         return ast::expression::While_loop {
             std::move(condition),
             extract_loop_body(context)
@@ -355,7 +366,7 @@ namespace {
             return ast::expression::Size_of { std::move(type) };
         }
         else {
-            throw context.expected("a parenthesized type");
+            context.error_expected("a parenthesized type");
         }
     };
 
@@ -389,7 +400,7 @@ namespace {
         }
 
         if (cases.empty()) {
-            throw context.expected("one or more match cases");
+            context.error_expected("one or more match cases");
         }
 
         context.consume_required(Token::Type::brace_close);
@@ -441,7 +452,7 @@ namespace {
             return ast::expression::Meta { std::move(expression) };
         }
         else {
-            throw context.expected("a parenthesized expression");
+            context.error_expected("a parenthesized expression");
         }
     };
 
@@ -549,7 +560,7 @@ namespace {
                         return extract_struct_initializer(std::move(*type), context);
                     }
                     else {
-                        throw context.error(
+                        context.error(
                             { anchor, context.pointer },
                             "Expected an expression, but found a type"
                         );
@@ -660,7 +671,7 @@ namespace {
                     accessors.emplace_back(member_index->as_integer());
                 }
                 else {
-                    throw context.expected("a member name or index");
+                    context.error_expected("a member name or index");
                 }
             }
 
@@ -794,7 +805,7 @@ namespace {
                     };
                 }
                 else {
-                    throw context.expected("an operand");
+                    context.error_expected("an operand");
                 }
             }
             return left;

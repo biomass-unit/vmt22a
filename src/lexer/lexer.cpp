@@ -1,5 +1,4 @@
 #include "bu/utilities.hpp"
-#include "bu/textual_error.hpp"
 #include "lexer.hpp"
 #include "token_formatting.hpp"
 
@@ -13,10 +12,12 @@ namespace {
     struct Lex_context {
         using Error = bu::Exception;
 
-        std::vector<Token> tokens;
-        bu::Source*        source;
-        char const*        start;
-        char const*        stop;
+        std::vector<Token>        tokens;
+        bu::Source              * source;
+        char const              * start;
+        char const              * stop;
+        bu::diagnostics::Builder* diagnostics;
+
 
         struct State {
             char const* pointer = nullptr;
@@ -61,10 +62,11 @@ namespace {
 
     public:
 
-        explicit Lex_context(bu::Source& source) noexcept
+        explicit Lex_context(bu::Source& source, bu::diagnostics::Builder& diagnostics) noexcept
             : source      { &source }
             , start       { source.string().data() }
             , stop        { start + source.string().size() }
+            , diagnostics { &diagnostics }
             , token_start { .pointer = start }
             , state       { .pointer = start }
         {
@@ -160,34 +162,44 @@ namespace {
             return {};
         }
 
+        [[noreturn]]
         auto error(
-            std::string_view                const view,
-            std::string_view                const message,
-            std::optional<std::string_view> const help = std::nullopt
-        )
-            const -> Error
+            std::string_view                   const view,
+            bu::diagnostics::Message_arguments const arguments) const -> void
         {
             auto const [start_pos, stop_pos] = get_source_position(view);
-
-            return Error {
-                bu::simple_textual_error({
-                    .erroneous_view = bu::Source_view { view, start_pos, stop_pos },
-                    .source         = source,
-                    .message        = message,
-                    .help_note      = help
-                })
-            };
+            diagnostics->emit_simple_error(
+                arguments.add_source_info(source, bu::Source_view { view, start_pos, stop_pos  })
+            );
         }
 
+        [[noreturn]]
+        auto error(
+            char const*                        const location,
+            bu::diagnostics::Message_arguments const arguments) const -> void
+        {
+            error({ location, location + 1 }, arguments);
+        }
+
+        [[noreturn]]
         auto error(
             char const*                     const location,
             std::string_view                const message,
-            std::optional<std::string_view> const help = std::nullopt
-        )
-            const -> Error
+            std::optional<std::string_view> const help_note = std::nullopt) -> void
         {
-            return error({ location, location + 1 }, message, help);
+            error(location, { .message_format = message, .help_note = help_note });
         }
+
+        [[noreturn]]
+        auto error(
+            std::string_view const&& view,
+            std::string_view const   message,
+            std::optional<std::string_view> const help_note = std::nullopt) -> void
+        {
+            error(view, { .message_format = message, .help_note = help_note });
+        }
+
+        auto error(char const* const&&, bu::diagnostics::Message_arguments) const -> void = delete;
 
         template <bu::trivial T>
         struct Parse_result {
@@ -273,7 +285,7 @@ namespace {
             case '*':
                 for (bu::Usize depth = 1; depth != 0; ) {
                     if (context.is_finished()) {
-                        throw context.error(
+                        context.error(
                             state.pointer,
                             "Unterminating comment",
                             "Comments starting with '/*' can be terminated with '*/'"
@@ -456,7 +468,7 @@ namespace {
             }
 
             if (context.try_consume('-')) {
-                throw context.error(
+                context.error(
                     state.pointer - 1,
                     "'-' must be applied before the base specifier"
                 );
@@ -472,20 +484,20 @@ namespace {
 
             if (exponent.did_parse()) {
                 if (exponent.is_too_large()) {
-                    throw context.error(
+                    context.error(
                         { exponent.start_position, exponent.result.ptr },
                         "Exponent is too large"
                     );
                 }
                 if (exponent.get() < 0) [[unlikely]] {
-                    throw context.error(
+                    context.error(
                         context.current_pointer(),
                         "Negative exponent",
                         "use a floating point literal if this was intended"
                     );
                 }
                 else if (bu::digit_count(integer) + exponent.get() >= std::numeric_limits<bu::Isize>::digits10) {
-                    throw context.error(
+                    context.error(
                         { anchor, exponent.result.ptr },
                         "Integer literal is too large after applying scientific coefficient"
                     );
@@ -506,7 +518,7 @@ namespace {
                 );
             }
             else if (exponent.was_non_numeric()) {
-                throw context.error(
+                context.error(
                     exponent.start_position,
                     "Expected an exponent"
                 );
@@ -530,14 +542,14 @@ namespace {
                 return false;
             }
             else {
-                throw context.error(
+                context.error(
                     { state.pointer, 2 }, // view of the base specifier
                     "Expected an integer literal after the base-{} specifier"_format(base)
                 );
             }
         }
         else if (integer.is_too_large()) {
-            throw context.error(
+            context.error(
                 { state.pointer, integer.result.ptr },
                 "Integer literal is too large"
             );
@@ -547,7 +559,7 @@ namespace {
         }
 
         if (negative && integer.get() < 0) {
-            throw context.error(state.pointer + 1, "Only one '-' may be applied");
+            context.error(state.pointer + 1, "Only one '-' may be applied");
         }
 
         auto const is_tuple_member_index = [&] {
@@ -560,7 +572,7 @@ namespace {
 
         if (*integer.result.ptr == '.' && !is_tuple_member_index()) {
             if (base != 10) {
-                throw context.error({ state.pointer, 2 }, "Float literals must be base-10");
+                context.error({ state.pointer, 2 }, "Float literals must be base-10");
             }
 
             context.restore(state);
@@ -568,7 +580,7 @@ namespace {
 
             if (floating.did_parse()) {
                 if (floating.is_too_large()) {
-                    throw context.error(
+                    context.error(
                         { state.pointer, floating.result.ptr },
                         "Floating-point literal is too large"
                     );
@@ -618,9 +630,9 @@ namespace {
         case '\"': return '\"';
         case '\\': return '\\';
         case '\0':
-            throw context.error(anchor, "Expected an escape sequence, but found the end of input");
+            context.error(anchor, "Expected an escape sequence, but found the end of input");
         default:
-            throw context.error(anchor, "Unrecognized escape sequence");
+            context.error(anchor, "Unrecognized escape sequence");
         }
     }
 
@@ -632,7 +644,7 @@ namespace {
             char c = context.extract_current();
 
             if (c == '\0') {
-                throw context.error(anchor, "Unterminating character literal");
+                context.error(anchor, "Unterminating character literal");
             }
             else if (c == '\\') {
                 c = handle_escape_sequence(context);
@@ -642,7 +654,7 @@ namespace {
                 return context.success(Token::Type::character, c);
             }
             else {
-                throw context.error(context.current_pointer(), "Expected a closing single-quote");
+                context.error(context.current_pointer(), "Expected a closing single-quote");
             }
         }
         else {
@@ -659,7 +671,7 @@ namespace {
             for (;;) {
                 switch (char c = context.extract_current()) {
                 case '\0':
-                    throw context.error(anchor, "Unterminating string literal");
+                    context.error(anchor, "Unterminating string literal");
                 case '"':
                     if (!context.tokens.empty() && context.tokens.back().type == Token::Type::string) {
                         // Concatenate adjacent string literals
@@ -685,7 +697,8 @@ namespace {
 
 
 auto lexer::lex(bu::Source&& source) -> Tokenized_source {
-    Lex_context context { source };
+    bu::diagnostics::Builder diagnostics;
+    Lex_context context { source, diagnostics };
 
     if (source.string().empty()) {
         return { .source = std::move(source) };
@@ -729,10 +742,14 @@ auto lexer::lex(bu::Source&& source) -> Tokenized_source {
                     }
                 );
 
-                return { std::move(source), std::move(context.tokens) };
+                return {
+                    .source      = std::move(source),
+                    .tokens      = std::move(context.tokens),
+                    .diagnostics = std::move(diagnostics)
+                };
             }
             else {
-                throw context.error(
+                context.error(
                     context.current_pointer(),
                     "Syntax error; unable to extract lexical token"
                 );

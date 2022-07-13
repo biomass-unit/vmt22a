@@ -2,7 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/pooled_string.hpp"
-#include "bu/textual_error.hpp"
+#include "bu/source.hpp"
 
 
 namespace lexer {

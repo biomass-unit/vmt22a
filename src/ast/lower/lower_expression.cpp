@@ -114,12 +114,6 @@ namespace {
         }
 
         auto operator()(ast::expression::While_loop const& loop) -> hir::Expression {
-            if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&loop.condition->value)) {
-                if (literal->value) {
-                    bu::abort("note: use 'loop' instead of 'while true'");
-                }
-            }
-
             /*
                 while x { y }
 
