@@ -102,6 +102,18 @@ DEFINE_FORMATTER_FOR(ast::Mutability) {
     }
 }
 
+DEFINE_FORMATTER_FOR(ast::expression::Type_cast::Kind) {
+    using enum ast::expression::Type_cast::Kind;
+    switch (value) {
+    case conversion:
+        return std::format_to(context.out(), "as");
+    case ascription:
+        return std::format_to(context.out(), ":");
+    default:
+        std::unreachable();
+    }
+}
+
 
 namespace {
 
@@ -125,8 +137,8 @@ namespace {
         auto operator()(ast::expression::Dereference const& dereference) {
             return format("*{}", dereference.expression);
         }
-        auto operator()(ast::expression::Template_instantiation const& instantiation) {
-            return format("{}[{}]", instantiation.name, instantiation.template_arguments);
+        auto operator()(ast::expression::Template_application const& application) {
+            return format("{}[{}]", application.name, application.template_arguments);
         }
         auto operator()(ast::expression::Tuple const& tuple) {
             return format("({})", tuple.elements);
@@ -169,23 +181,7 @@ namespace {
             return format("match {} {{ {} }}", match.expression, match.cases);
         }
         auto operator()(ast::expression::Type_cast const& cast) {
-            return format(
-                "({} {} {})",
-                cast.expression,
-                [&] {
-                    using enum ast::expression::Type_cast::Kind;
-
-                    switch (cast.kind) {
-                    case conversion:
-                        return "as";
-                    case ascription:
-                        return ":";
-                    default:
-                        std::unreachable();
-                    }
-                }(),
-                cast.target
-            );
+            return format("({} {} {})", cast.expression, cast.kind, cast.target);
         }
         auto operator()(ast::expression::Let_binding const& binding) {
             return format("let {}: {} = {}", binding.pattern, binding.type, binding.initializer);

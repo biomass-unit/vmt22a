@@ -30,10 +30,10 @@ namespace ast {
             DEFAULTED_EQUALITY(Dereference);
         };
 
-        struct Template_instantiation {
+        struct Template_application {
             std::vector<Template_argument> template_arguments;
             Qualified_name                 name;
-            DEFAULTED_EQUALITY(Template_instantiation);
+            DEFAULTED_EQUALITY(Template_application);
         };
 
         struct Tuple {
@@ -216,7 +216,7 @@ namespace ast {
             expression::Array_literal,
             expression::Variable,
             expression::Dereference,
-            expression::Template_instantiation,
+            expression::Template_application,
             expression::Tuple,
             expression::Block,
             expression::Invocation,

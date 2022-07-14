@@ -202,6 +202,7 @@ DECLARE_FORMATTER_FOR(ast::Definition);
 DECLARE_FORMATTER_FOR(ast::Module);
 DECLARE_FORMATTER_FOR(ast::Name);
 DECLARE_FORMATTER_FOR(ast::Mutability);
+DECLARE_FORMATTER_FOR(ast::expression::Type_cast::Kind);
 
 
 // These are explicitly instantiated in hir/hir_formatting.cpp to avoid repetition

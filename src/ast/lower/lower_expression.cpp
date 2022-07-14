@@ -256,11 +256,98 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Dereference const& deref) -> hir::Expression {
+            return {
+                .value = hir::expression::Dereference {
+                    .expression = context.lower(deref.expression)
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Template_application const& application) -> hir::Expression {
+            return {
+                .value = hir::expression::Template_application {
+                    .template_arguments = bu::map(context.lower())(application.template_arguments),
+                    .name = context.lower(application.name)
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Member_access_chain const& chain) -> hir::Expression {
+            return {
+                .value = hir::expression::Member_access_chain {
+                    .accessors = chain.accessors,
+                    .expression = context.lower(chain.expression)
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Member_function_invocation const& invocation) -> hir::Expression {
+            return {
+                .value = hir::expression::Member_function_invocation {
+                    .arguments = bu::map(context.lower())(invocation.arguments),
+                    .expression = context.lower(invocation.expression),
+                    .member_name = invocation.member_name
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Type_cast const& cast) -> hir::Expression {
+            return {
+                .value = hir::expression::Type_cast {
+                    .expression = context.lower(cast.expression),
+                    .target = context.lower(cast.target),
+                    .kind = cast.kind
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Let_binding const& let) -> hir::Expression {
+            return {
+                .value = hir::expression::Let_binding {
+                    .pattern = context.lower(let.pattern),
+                    .initializer = context.lower(let.initializer),
+                    .type = let.type.transform(bu::compose(bu::wrap, context.lower()))
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Local_type_alias const& alias) -> hir::Expression {
+            return {
+                .value = hir::expression::Local_type_alias {
+                    .name = alias.name,
+                    .type = context.lower(alias.type)
+                },
+                .source_view = this_expression.source_view
+            };
+        }
+
         auto operator()(ast::expression::Ret const& ret) -> hir::Expression {
             return {
                 .value = hir::expression::Ret {
                     .expression = ret.expression.transform(bu::compose(bu::wrap, context.lower()))
                 },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Break const& break_) -> hir::Expression {
+            bu::always_assert(!break_.expression.has_value()); // TODO: fix
+            return {
+                .value = hir::expression::Break {},
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(ast::expression::Continue const&) -> hir::Expression {
+            return {
+                .value = hir::expression::Continue {},
                 .source_view = this_expression.source_view
             };
         }
@@ -296,16 +383,22 @@ namespace {
             };
         }
 
+
+        auto operator()(ast::expression::Lambda const&) -> hir::Expression {
+            bu::todo();
+        }
+
+        auto operator()(ast::expression::For_loop const&) -> hir::Expression {
+            bu::todo();
+        }
+
+
         auto operator()(ast::expression::Conditional_let const&) -> hir::Expression {
             // Should be unreachable because a conditional let expression can
             // only occur as the condition of if-let or while-let expressions.
             bu::abort();
         }
 
-        template <class Node>
-        auto operator()(Node const&) -> hir::Expression {
-            bu::abort(typeid(Node).name());
-        }
     };
 
 }

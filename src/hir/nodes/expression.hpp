@@ -69,6 +69,19 @@ namespace hir {
             DEFAULTED_EQUALITY(Binary_operator_invocation);
         };
 
+        struct Member_access_chain {
+            std::vector<ast::expression::Member_access_chain::Accessor> accessors;
+            bu::Wrapper<Expression>                                     expression;
+            DEFAULTED_EQUALITY(Member_access_chain);
+        };
+
+        struct Member_function_invocation {
+            std::vector<Function_argument> arguments;
+            bu::Wrapper<Expression>        expression;
+            lexer::Identifier              member_name;
+            DEFAULTED_EQUALITY(Member_function_invocation);
+        };
+
         struct Match {
             struct Case {
                 bu::Wrapper<Pattern>    pattern;
@@ -78,6 +91,37 @@ namespace hir {
             std::vector<Case>       cases;
             bu::Wrapper<Expression> expression;
             DEFAULTED_EQUALITY(Match);
+        };
+
+        struct Dereference {
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Dereference);
+        };
+
+        struct Template_application {
+            std::vector<Template_argument> template_arguments;
+            Qualified_name                 name;
+            DEFAULTED_EQUALITY(Template_application);
+        };
+
+        struct Type_cast {
+            bu::Wrapper<Expression>          expression;
+            bu::Wrapper<Type>                target;
+            ast::expression::Type_cast::Kind kind;
+            DEFAULTED_EQUALITY(Type_cast);
+        };
+
+        struct Let_binding {
+            bu::Wrapper<Pattern>             pattern;
+            bu::Wrapper<Expression>          initializer;
+            std::optional<bu::Wrapper<Type>> type;
+            DEFAULTED_EQUALITY(Let_binding);
+        };
+
+        struct Local_type_alias {
+            lexer::Identifier name;
+            bu::Wrapper<Type> type;
+            DEFAULTED_EQUALITY(Local_type_alias);
         };
 
         struct Ret {
@@ -119,11 +163,19 @@ namespace hir {
             expression::Tuple,
             expression::Loop,
             expression::Break,
+            expression::Continue,
             expression::Block,
             expression::Invocation,
             expression::Struct_initializer,
             expression::Binary_operator_invocation,
+            expression::Member_access_chain,
+            expression::Member_function_invocation,
             expression::Match,
+            expression::Dereference,
+            expression::Template_application,
+            expression::Type_cast,
+            expression::Let_binding,
+            expression::Local_type_alias,
             expression::Ret,
             expression::Size_of,
             expression::Take_reference,

@@ -60,7 +60,7 @@ namespace {
 
         if (!name.primary_name.is_upper) {
             if (template_arguments) {
-                return ast::expression::Template_instantiation {
+                return ast::expression::Template_application {
                     std::move(*template_arguments),
                     std::move(name)
                 };

@@ -101,12 +101,38 @@ namespace {
         auto operator()(hir::expression::Binary_operator_invocation const& invocation) {
             return format("({} {} {})", invocation.left, invocation.op, invocation.right);
         }
+        auto operator()(hir::expression::Member_access_chain const& chain) {
+            return format("({}.{})", chain.expression, bu::fmt::delimited_range(chain.accessors, "."));
+        }
+        auto operator()(hir::expression::Member_function_invocation const& invocation) {
+            return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
+        }
         auto operator()(hir::expression::Match const& match) {
             format("match {} {{ ", match.expression);
             for (auto& match_case : match.cases) {
                 format("{} -> {}", match_case.pattern, match_case.expression);
             }
             return format(" }}");
+        }
+        auto operator()(hir::expression::Dereference const& deref) {
+            return format("(*{})", deref.expression);
+        }
+        auto operator()(hir::expression::Template_application const& application) {
+            return format("{}[{}]", application.name, application.template_arguments);
+        }
+        auto operator()(hir::expression::Type_cast const& cast) {
+            return format("({} {} {})", cast.expression, cast.kind, cast.target);
+        }
+        auto operator()(hir::expression::Let_binding const& let) {
+            return format(
+                "let {}{} = {}",
+                let.pattern,
+                let.type.transform(": {}"_format).value_or(""),
+                let.initializer
+            );
+        }
+        auto operator()(hir::expression::Local_type_alias const& alias) {
+            return format("alias {} = {}", alias.name, alias.type);
         }
         auto operator()(hir::expression::Ret const& ret) {
             return format("ret {}", ret.expression);
