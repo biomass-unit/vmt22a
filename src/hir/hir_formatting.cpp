@@ -72,9 +72,6 @@ namespace {
         auto operator()(hir::expression::Tuple const& tuple) {
             return format("({})", tuple.elements);
         }
-        auto operator()(hir::expression::Conditional const& conditional) {
-            return format("if {} {} else {}", conditional.condition, conditional.true_branch, conditional.false_branch);
-        }
         auto operator()(hir::expression::Loop const& loop) {
             return format("loop {{ {} }}", loop.body);
         }

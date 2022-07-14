@@ -94,6 +94,9 @@ namespace hir {
 
         bu::Wrapper<Expression> unit_value = expression::Tuple {};
         bu::Wrapper<Type>       unit_type  = type      ::Tuple {};
+
+        bu::Wrapper<Pattern> true_pattern  = pattern::Literal<bool> { true };
+        bu::Wrapper<Pattern> false_pattern = pattern::Literal<bool> { false };
     };
 
 

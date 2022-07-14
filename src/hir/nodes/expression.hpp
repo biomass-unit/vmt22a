@@ -30,13 +30,6 @@ namespace hir {
             DEFAULTED_EQUALITY(Tuple);
         };
 
-        struct Conditional {
-            bu::Wrapper<Expression> condition;
-            bu::Wrapper<Expression> true_branch;
-            bu::Wrapper<Expression> false_branch;
-            DEFAULTED_EQUALITY(Conditional);
-        };
-
         struct Loop {
             bu::Wrapper<Expression> body;
             DEFAULTED_EQUALITY(Loop);
@@ -124,7 +117,6 @@ namespace hir {
             expression::Array_literal,
             expression::Variable,
             expression::Tuple,
-            expression::Conditional,
             expression::Loop,
             expression::Break,
             expression::Block,

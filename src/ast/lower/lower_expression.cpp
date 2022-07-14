@@ -79,11 +79,30 @@ namespace {
                 };
             }
             else {
+                /*
+                    if a { b } else { c }
+
+                    is transformed into
+
+                    match a {
+                        true -> b
+                        false -> c
+                    }
+                */
+
                 return {
-                    .value = hir::expression::Conditional {
-                        .condition = context.lower(conditional.condition),
-                        .true_branch = context.lower(conditional.true_branch),
-                        .false_branch = std::move(false_branch)
+                    .value = hir::expression::Match {
+                        .cases = bu::vector_from<hir::expression::Match::Case>({
+                            {
+                                .pattern = context.node_context.true_pattern,
+                                .expression = context.lower(conditional.true_branch)
+                            },
+                            {
+                                .pattern = context.node_context.false_pattern,
+                                .expression = false_branch
+                            }
+                        }),
+                        .expression = context.lower(conditional.condition)
                     },
                     .source_view = this_expression.source_view
                 };
@@ -122,13 +141,13 @@ namespace {
         auto operator()(ast::expression::While_loop const& loop) -> hir::Expression {
             if (auto* const let = std::get_if<ast::expression::Conditional_let>(&loop.condition->value)) {
                 /*
-                    while let x = y { z }
+                    while let a = b { c }
 
                     is transformed into
 
                     loop {
-                        match y {
-                            x -> z
+                        match b {
+                            a -> c
                             _ -> break
                         }
                     }
@@ -157,22 +176,33 @@ namespace {
             }
 
             /*
-                while x { y }
+                while a { b }
 
                 is transformed into
 
                 loop {
-                    if x { y } else { break }
+                    match a {
+                        true -> b
+                        false -> break
+                    }
                 }
             */
 
             return {
                 .value = hir::expression::Loop {
                     .body = hir::Expression {
-                        .value = hir::expression::Conditional {
-                            .condition    = context.lower(loop.condition),
-                            .true_branch  = context.lower(loop.body),
-                            .false_branch = hir::expression::Break {}
+                        .value = hir::expression::Match {
+                            .cases = bu::vector_from<hir::expression::Match::Case>({
+                                {
+                                    .pattern = context.node_context.true_pattern,
+                                    .expression = context.lower(loop.body)
+                                },
+                                {
+                                    .pattern = context.node_context.false_pattern,
+                                    .expression = hir::expression::Break {}
+                                }
+                            }),
+                            .expression = context.lower(loop.condition)
                         },
                         .source_view = loop.body->source_view
                     }
