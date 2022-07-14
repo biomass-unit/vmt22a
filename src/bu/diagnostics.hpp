@@ -64,14 +64,10 @@ namespace bu::diagnostics {
         [[noreturn]] auto emit_error       (Emit_arguments,        Type = Type::irrecoverable) -> void;
         [[noreturn]] auto emit_simple_error(Simple_emit_arguments, Type = Type::irrecoverable) -> void;
 
-        auto messages() const noexcept -> std::optional<std::string_view> {
-            if (diagnostic_string.empty()) {
-                return std::nullopt;
-            }
-            else {
-                return diagnostic_string;
-            }
-        }
+        auto messages() const noexcept -> std::optional<std::string_view>;
+
+        auto note_level()    const noexcept -> Level;
+        auto warning_level() const noexcept -> Level;
     };
 
 

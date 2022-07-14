@@ -32,9 +32,11 @@
 #include <variant>
 #include <optional>
 
-#include <format>
 #include <string>
 #include <string_view>
+
+#include <format>
+#include <charconv>
 
 #include <ranges>
 #include <numeric>
@@ -388,6 +390,20 @@ namespace bu {
     template <class T>
     auto release_vector_memory(std::vector<T>& vector) noexcept -> void {
         std::vector<T> {}.swap(vector);
+    }
+
+    template <class T, Usize n>
+    auto vector_from(T(&&array)[n])
+        noexcept(std::is_nothrow_move_constructible_v<T>) -> std::vector<T>
+    {
+        std::vector<T> output;
+        output.reserve(n);
+        output.insert(
+            output.end(),
+            std::make_move_iterator(std::begin(array)),
+            std::make_move_iterator(std::end(array))
+        );
+        return output;
     }
 
     [[nodiscard]]

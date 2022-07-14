@@ -1,8 +1,8 @@
 #include "bu/utilities.hpp"
-#include "token_formatting.hpp"
+#include "token.hpp"
 
 
-auto lexer::token_description(Token::Type const type) -> std::string_view {
+auto lexer::token_description(Token::Type const type) noexcept -> std::string_view {
     switch (type) {
     case Token::Type::dot:           return "a '.'";
     case Token::Type::comma:         return "a ','";

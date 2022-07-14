@@ -6,7 +6,7 @@ namespace {
 
     struct Type_lowering_visitor {
         Lowering_context& context;
-        ast::Type const & this_type;
+        ast::Type  const& this_type;
 
         template <class T>
         auto operator()(ast::type::Primitive<T> const& primitive) -> hir::Type {
@@ -98,6 +98,9 @@ namespace {
         }
 
         auto operator()(ast::type::Instance_of const& instance_of) -> hir::Type {
+            // Within a function's parameter list or return type, inst types are converted into references to
+            // implicit template parameters, and in other contexts are simply used for constraint collection.
+
             if (context.current_function_implicit_template_parameters) {
                 hir::Template_parameter type_parameter {
                     .value = hir::Template_parameter::Type_parameter {
@@ -121,12 +124,23 @@ namespace {
                 return type;
             }
             else {
-                bu::abort("'inst' is only usable within a function's parameter list or return type");
+                return {
+                    .value = hir::type::Instance_of {
+                        .classes = bu::map(context.lower())(instance_of.classes)
+                    },
+                    .source_view = this_type.source_view
+                };
             }
         }
 
-        auto operator()(ast::type::Template_instantiation const&) -> hir::Type {
-            bu::todo();
+        auto operator()(ast::type::Template_application const& application) -> hir::Type {
+            return {
+                .value = hir::type::Template_application {
+                    .arguments = bu::map(context.lower())(application.arguments),
+                    .name      = context.lower(application.name)
+                },
+                .source_view = this_type.source_view
+            };
         }
     };
 

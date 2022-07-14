@@ -1,8 +1,6 @@
 #include "bu/utilities.hpp"
-#include "tests/tests.hpp"
-
 #include "lexer/lexer.hpp"
-#include "lexer/token_formatting.hpp"
+#include "tests/tests.hpp"
 
 
 namespace {

@@ -72,7 +72,7 @@ namespace {
         else if (context.try_consume(Token::Type::brace_open)) {
             auto value = [&]() -> ast::Type::Variant {
                 if (template_arguments) {
-                    return ast::type::Template_instantiation {
+                    return ast::type::Template_application {
                         std::move(*template_arguments),
                         std::move(name)
                     };

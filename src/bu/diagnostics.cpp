@@ -258,6 +258,22 @@ bu::diagnostics::Builder::~Builder() {
     }
 }
 
+auto bu::diagnostics::Builder::messages() const noexcept -> std::optional<std::string_view> {
+    if (diagnostic_string.empty()) {
+        return std::nullopt;
+    }
+    else {
+        return diagnostic_string;
+    }
+}
+
+auto bu::diagnostics::Builder::note_level() const noexcept -> Level {
+    return configuration.note_level;
+}
+auto bu::diagnostics::Builder::warning_level() const noexcept -> Level {
+    return configuration.warning_level;
+}
+
 
 auto bu::diagnostics::Builder::emit_note(Emit_arguments const arguments) -> void {
     switch (configuration.note_level) {

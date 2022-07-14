@@ -88,7 +88,7 @@ namespace tests {
 #define REGISTER_TEST_IMPL_IMPL(test_function, line) \
 static_assert(std::same_as<void(), decltype(test_function)>, \
     "The given test function (" #test_function ", registered on line " #line ") isn't of type `void()`"); \
-namespace test_impl { static tests::dtl::Test_adder test_adder_ ## line { &test_function }; }
+namespace { namespace test_impl { static tests::dtl::Test_adder test_adder_ ## line { &test_function }; } }
 
 #define REGISTER_TEST_IMPL(test_function, line) REGISTER_TEST_IMPL_IMPL(test_function, line)
 #define REGISTER_TEST(test_function) REGISTER_TEST_IMPL(test_function, __LINE__)

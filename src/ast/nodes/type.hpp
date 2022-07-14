@@ -56,11 +56,6 @@ namespace ast {
             DEFAULTED_EQUALITY(Type_of);
         };
 
-        struct Instance_of {
-            std::vector<Class_reference> classes;
-            DEFAULTED_EQUALITY(Instance_of);
-        };
-
         struct Reference {
             bu::Wrapper<Type> type;
             Mutability        mutability;
@@ -73,10 +68,15 @@ namespace ast {
             DEFAULTED_EQUALITY(Pointer);
         };
 
-        struct Template_instantiation {
-            std::vector<ast::Template_argument> arguments;
-            Qualified_name                      name;
-            DEFAULTED_EQUALITY(Template_instantiation);
+        struct Instance_of {
+            std::vector<Class_reference> classes;
+            DEFAULTED_EQUALITY(Instance_of);
+        };
+
+        struct Template_application {
+            std::vector<Template_argument> arguments;
+            Qualified_name                 name;
+            DEFAULTED_EQUALITY(Template_application);
         };
 
     }
@@ -99,7 +99,7 @@ namespace ast {
             type::Instance_of,
             type::Reference,
             type::Pointer,
-            type::Template_instantiation
+            type::Template_application
         >;
 
         Variant         value;

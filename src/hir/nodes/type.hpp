@@ -68,6 +68,17 @@ namespace hir {
             DEFAULTED_EQUALITY(Pointer);
         };
 
+        struct Instance_of {
+            std::vector<Class_reference> classes;
+            DEFAULTED_EQUALITY(Instance_of);
+        };
+
+        struct Template_application {
+            std::vector<Template_argument> arguments;
+            Qualified_name                 name;
+            DEFAULTED_EQUALITY(Template_application);
+        };
+
     }
 
     struct Type {
@@ -86,7 +97,9 @@ namespace hir {
             type::Function,
             type::Type_of,
             type::Reference,
-            type::Pointer
+            type::Pointer,
+            type::Instance_of,
+            type::Template_application
         >;
 
         Variant                        value;

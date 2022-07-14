@@ -3,7 +3,6 @@
 #include "bu/utilities.hpp"
 #include "bu/diagnostics.hpp"
 #include "lexer/lexer.hpp"
-#include "lexer/token_formatting.hpp"
 #include "ast/ast.hpp"
 
 

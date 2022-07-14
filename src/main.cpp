@@ -4,7 +4,6 @@
 #include "bu/timer.hpp"
 
 #include "lexer/lexer.hpp"
-#include "lexer/token_formatting.hpp"
 
 #include "ast/ast.hpp"
 #include "ast/lower/lower.hpp"

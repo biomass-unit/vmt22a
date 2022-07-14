@@ -307,8 +307,8 @@ namespace {
         auto operator()(ast::type::Pointer const& pointer) {
             return format("*{}{}", pointer.mutability, pointer.type);
         }
-        auto operator()(ast::type::Template_instantiation const& instantiation) {
-            return format("{}[{}]", instantiation.name, instantiation.arguments);
+        auto operator()(ast::type::Template_application const& application) {
+            return format("{}[{}]", application.name, application.arguments);
         }
     };
 

@@ -165,6 +165,12 @@ namespace {
         auto operator()(hir::type::Pointer const& pointer) {
             return format("*{}{}", pointer.mutability, pointer.type);
         }
+        auto operator()(hir::type::Instance_of const& instance_of) {
+            return format("inst {}", bu::fmt::delimited_range(instance_of.classes, " + "));
+        }
+        auto operator()(hir::type::Template_application const& application) {
+            return format("{}[{}]", application.name, application.arguments);
+        }
     };
 
 

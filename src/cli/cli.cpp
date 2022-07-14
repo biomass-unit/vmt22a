@@ -2,8 +2,6 @@
 #include "bu/diagnostics.hpp"
 #include "cli.hpp"
 
-#include <charconv>
-
 
 namespace {
 
@@ -132,6 +130,7 @@ namespace {
 
         [[noreturn]]
         auto error_unrecognized_option() const -> void {
+            // Not optimal, but this is a special case so it shouldn't matter.
             try {
                 error({ .message_format = "Unrecognized option" });
             }

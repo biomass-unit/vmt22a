@@ -50,18 +50,29 @@ namespace {
                               . value_or(context.node_context.unit_value);
 
             if (auto* const let = std::get_if<ast::expression::Conditional_let>(&conditional.condition->value)) {
+                /*
+                    if let a = b { c } else { d }
+
+                    is transformed into
+
+                    match b {
+                        a -> c
+                        _ -> d
+                    }
+                */
+
                 return {
                     .value = hir::expression::Match {
-                        .cases {
-                            hir::expression::Match::Case {
+                        .cases = bu::vector_from<hir::expression::Match::Case>({
+                            {
                                 .pattern = context.lower(let->pattern),
                                 .expression = context.lower(conditional.true_branch)
                             },
-                            hir::expression::Match::Case {
+                            {
                                 .pattern = hir::Pattern { .value = hir::pattern::Wildcard {} },
                                 .expression = std::move(false_branch)
                             }
-                        },
+                        }),
                         .expression = context.lower(let->initializer)
                     },
                     .source_view = this_expression.source_view
@@ -109,6 +120,42 @@ namespace {
         }
 
         auto operator()(ast::expression::While_loop const& loop) -> hir::Expression {
+            if (auto* const let = std::get_if<ast::expression::Conditional_let>(&loop.condition->value)) {
+                /*
+                    while let x = y { z }
+
+                    is transformed into
+
+                    loop {
+                        match y {
+                            x -> z
+                            _ -> break
+                        }
+                    }
+                */
+
+                return {
+                    .value = hir::expression::Loop {
+                        .body = hir::Expression {
+                            .value = hir::expression::Match {
+                                .cases = bu::vector_from<hir::expression::Match::Case>({
+                                    {
+                                        .pattern = context.lower(let->pattern),
+                                        .expression = context.lower(loop.body)
+                                    },
+                                    {
+                                        .pattern = hir::pattern::Wildcard {},
+                                        .expression = hir::expression::Break {}
+                                    }
+                                }),
+                                .expression = context.lower(let->initializer)
+                            },
+                        }
+                    },
+                    .source_view = this_expression.source_view
+                };
+            }
+
             /*
                 while x { y }
 
@@ -217,6 +264,12 @@ namespace {
                 .value = hir::expression::Hole {},
                 .source_view = this_expression.source_view
             };
+        }
+
+        auto operator()(ast::expression::Conditional_let const&) -> hir::Expression {
+            // Should be unreachable because a conditional let expression can
+            // only occur as the condition of if-let or while-let expressions.
+            bu::abort();
         }
 
         template <class Node>

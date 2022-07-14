@@ -15,7 +15,7 @@ namespace {
 
         if (name.primary_name.is_upper) {
             if (auto template_arguments = parse_template_arguments(context)) {
-                return ast::type::Template_instantiation {
+                return ast::type::Template_application {
                     std::move(*template_arguments),
                     std::move(name)
                 };
@@ -217,7 +217,7 @@ auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
             type = ast::Type {
                 [&]() -> ast::Type::Variant {
                     if (template_arguments) {
-                        return ast::type::Template_instantiation {
+                        return ast::type::Template_application {
                             std::move(*template_arguments),
                             std::move(name)
                         };

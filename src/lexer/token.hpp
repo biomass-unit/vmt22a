@@ -121,4 +121,11 @@ namespace lexer {
 
     static_assert(std::is_trivially_copyable_v<Token>);
 
+
+    auto token_description(Token::Type) noexcept -> std::string_view;
+
 }
+
+
+DECLARE_FORMATTER_FOR(lexer::Token::Type);
+DECLARE_FORMATTER_FOR(lexer::Token);
