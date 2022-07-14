@@ -14,6 +14,8 @@ public:
     bu::diagnostics::Builder& diagnostics;
     bu::Source         const& source;
 
+    bool is_within_function = false;
+
     std::vector<hir::Template_parameter>* current_function_implicit_template_parameters = nullptr;
 
     auto lower(ast::Expression const&) -> hir::Expression;
@@ -28,6 +30,9 @@ public:
     auto lower(ast::Qualifier          const&) -> hir::Qualifier;
     auto lower(ast::Qualified_name     const&) -> hir::Qualified_name;
     auto lower(ast::Class_reference    const&) -> hir::Class_reference;
+
+    // For convenience
+    static auto lower(ast::Name const&) -> hir::Name;
 
     auto lower() noexcept {
         return [this](auto const& node) {

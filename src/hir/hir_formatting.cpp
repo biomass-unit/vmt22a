@@ -50,6 +50,14 @@ DIRECTLY_DEFINE_FORMATTER_FOR(hir::Template_parameters) {
         : context.out();
 }
 
+DIRECTLY_DEFINE_FORMATTER_FOR(hir::definition::Struct::Member) {
+    return std::format_to(context.out(), "{}{}: {}", value.is_public ? "pub " : "", value.name, value.type);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(hir::definition::Enum::Constructor) {
+    return std::format_to(context.out(), "{}({})", value.name, value.type);
+}
+
 
 namespace {
 
@@ -241,6 +249,12 @@ namespace {
                 function.body
             );
         }
+        auto operator()(hir::definition::Struct const& structure) {
+            return format("struct {}{} = {}", structure.name, structure.template_parameters, structure.members);
+        }
+        auto operator()(hir::definition::Enum const& enumeration) {
+            return format("enum {}{} = {}", enumeration.name, enumeration.template_parameters, enumeration.constructors);
+        }
         auto operator()(auto const&) -> std::format_context::iterator {
             bu::todo();
         }
@@ -265,6 +279,15 @@ DEFINE_FORMATTER_FOR(hir::Definition) {
     return std::visit(Definition_format_visitor { { context.out() } }, value.value);
 }
 
+
+
+template <ast::tree_configuration Configuration>
+DEFINE_FORMATTER_FOR(ast::Basic_name<Configuration>) {
+    return std::format_to(context.out(), "{}", value.identifier.view());
+}
+
+template struct std::formatter<ast::Name>;
+template struct std::formatter<hir::Name>;
 
 
 template <ast::tree_configuration Configuration>
@@ -330,3 +353,43 @@ DEFINE_FORMATTER_FOR(ast::Basic_class_reference<Configuration>) {
 
 template struct std::formatter<ast::Class_reference>;
 template struct std::formatter<hir::Class_reference>;
+
+
+template <ast::tree_configuration Configuration>
+DEFINE_FORMATTER_FOR(ast::Basic_template_parameter<Configuration>) {
+    std::format_to(context.out(), "{}", value.name);
+
+    return std::visit(
+        bu::Overload {
+            [&](ast::Basic_template_parameter<Configuration>::Type_parameter const& parameter) {
+                if (!parameter.classes.empty()) {
+                    std::format_to(
+                        context.out(),
+                        ": {}",
+                        bu::fmt::delimited_range(parameter.classes, " + ")
+                    );
+                }
+                return context.out();
+            },
+            [&](ast::Basic_template_parameter<Configuration>::Value_parameter const& parameter) {
+                return std::format_to(context.out(), "{}", parameter.type.transform(": {}"_format).value_or(""));
+            },
+            [&](ast::Basic_template_parameter<Configuration>::Mutability_parameter const&) {
+                return std::format_to(context.out(), ": mut");
+            }
+        },
+        value.value
+    );
+}
+
+template struct std::formatter<ast::Template_parameter>;
+template struct std::formatter<hir::Template_parameter>;
+
+
+template <ast::tree_configuration Configuration>
+DEFINE_FORMATTER_FOR(ast::Basic_template_parameters<Configuration>) {
+    return std::format_to(context.out(), "{}", value.vector.transform("[{}]"_format).value_or(""));
+}
+
+template struct std::formatter<ast::Template_parameters>;
+template struct std::formatter<hir::Template_parameters>;

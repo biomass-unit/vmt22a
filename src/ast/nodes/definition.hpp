@@ -7,50 +7,17 @@
 
 namespace ast {
 
-    struct Template_parameter {
-        struct Type_parameter {
-            std::vector<Class_reference> classes;
-            DEFAULTED_EQUALITY(Type_parameter);
-        };
-        struct Value_parameter {
-            std::optional<bu::Wrapper<Type>> type;
-            DEFAULTED_EQUALITY(Value_parameter);
-        };
-        struct Mutability_parameter {
-            DEFAULTED_EQUALITY(Mutability_parameter);
-        };
-
-        using Variant = std::variant<
-            Type_parameter,
-            Value_parameter,
-            Mutability_parameter
-        >;
-
-        Variant         value;
-        Name            name;
-        bu::Source_view source_view;
-        DEFAULTED_EQUALITY(Template_parameter);
-    };
-
-
-    struct Template_parameters {
-        std::optional<std::vector<Template_parameter>> vector;
-        Template_parameters(decltype(vector)&& vector) noexcept
-            : vector { std::move(vector) } {}
-    };
-
-
     struct Function_signature {
-        std::optional<std::vector<Template_parameter>> template_parameters;
-        type::Function                                 type;
-        Name                                           name;
+        Template_parameters template_parameters;
+        type::Function      type;
+        Name                name;
         DEFAULTED_EQUALITY(Function_signature);
     };
 
     struct Type_signature {
-        std::optional<std::vector<Template_parameter>> template_parameters;
-        std::vector<Class_reference>                   classes;
-        Name                                           name;
+        Template_parameters          template_parameters;
+        std::vector<Class_reference> classes;
+        Name                         name;
         DEFAULTED_EQUALITY(Type_signature);
     };
 
@@ -58,11 +25,11 @@ namespace ast {
     namespace definition {
 
         struct Function {
-            Expression                       body;
-            std::vector<Function_parameter>  parameters;
-            Name                             name;
-            std::optional<bu::Wrapper<Type>> return_type;
-            Template_parameters              template_parameters;
+            Expression                      body;
+            std::vector<Function_parameter> parameters;
+            Name                            name;
+            std::optional<Type>             return_type;
+            Template_parameters             template_parameters;
             DEFAULTED_EQUALITY(Function);
         };
 

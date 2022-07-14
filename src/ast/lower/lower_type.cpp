@@ -98,10 +98,10 @@ namespace {
         }
 
         auto operator()(ast::type::Instance_of const& instance_of) -> hir::Type {
-            // Within a function's parameter list or return type, inst types are converted into references to
-            // implicit template parameters, and in other contexts are simply used for constraint collection.
-
             if (context.current_function_implicit_template_parameters) {
+                // Within a function's parameter list or return type, inst types
+                // are converted into references to implicit template parameters.
+
                 hir::Template_parameter type_parameter {
                     .value = hir::Template_parameter::Type_parameter {
                         .classes = bu::map(context.lower())(instance_of.classes)
@@ -123,13 +123,22 @@ namespace {
 
                 return type;
             }
-            else {
+            else if (context.is_within_function) {
+                // Within a function body, inst types are simply used for constraint collection.
+
                 return {
                     .value = hir::type::Instance_of {
                         .classes = bu::map(context.lower())(instance_of.classes)
                     },
                     .source_view = this_type.source_view
                 };
+            }
+            else {
+                context.diagnostics.emit_simple_error({
+                    .erroneous_view = this_type.source_view,
+                    .source = context.source,
+                    .message_format = "'inst' types are only usable within functions"
+                });
             }
         }
 

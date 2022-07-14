@@ -50,44 +50,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Enum::Constructor) {
     return std::format_to(context.out(), "{}({})", value.name, value.type);
 }
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameter) {
-    std::format_to(context.out(), "{}", value.name);
-
-    return std::visit(
-        bu::Overload {
-            [&](ast::Template_parameter::Type_parameter const& parameter) {
-                if (!parameter.classes.empty()) {
-                    std::format_to(
-                        context.out(),
-                        ": {}",
-                        bu::fmt::delimited_range(parameter.classes, " + ")
-                    );
-                }
-                return context.out();
-            },
-            [&](ast::Template_parameter::Value_parameter const& parameter) {
-                return parameter.type
-                    ? std::format_to(context.out(), ": {}", *parameter.type)
-                    : context.out();
-            },
-            [&](ast::Template_parameter::Mutability_parameter const&) {
-                return std::format_to(context.out(), ": mut");
-            }
-        },
-        value.value
-    );
-}
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::Template_parameters) {
-    return value.vector
-        ? std::format_to(context.out(), "[{}]", *value.vector)
-        : context.out();
-}
-
-
-DEFINE_FORMATTER_FOR(ast::Name) {
-    return std::format_to(context.out(), "{}", value.identifier);
-}
 
 DEFINE_FORMATTER_FOR(ast::Mutability) {
     switch (value.type) {

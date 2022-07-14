@@ -24,8 +24,8 @@ namespace hir {
         };
 
         struct Template_parameter_reference {
-            lexer::Identifier name;
-            bool              explicit_parameter;
+            Name name;
+            bool explicit_parameter;
             DEFAULTED_EQUALITY(Template_parameter_reference);
         };
 

@@ -4,7 +4,7 @@
 
 
 auto Lowering_context::lower(ast::Function_argument const& argument) -> hir::Function_argument {
-    return { .expression = lower(argument.expression), .name = argument.name };
+    return { .expression = lower(argument.expression), .name = argument.name.transform(lower()) };
 }
 
 auto Lowering_context::lower(ast::Function_parameter const& parameter) -> hir::Function_parameter {
@@ -50,7 +50,7 @@ auto Lowering_context::lower(ast::Template_argument const& argument) -> hir::Tem
                 return bu::wrap(lower(argument)); // Catches types and expressions
             }
         }, argument.value),
-        .name = argument.name,
+        .name = argument.name.transform(lower()),
     };
 }
 
@@ -62,16 +62,16 @@ auto Lowering_context::lower(ast::Template_parameter const& parameter) -> hir::T
                     .classes = bu::map(lower())(type_parameter.classes)
                 };
             },
-            [&](ast::Template_parameter::Value_parameter const& value_parameter) {
+            [this](ast::Template_parameter::Value_parameter const& value_parameter) {
                 return hir::Template_parameter::Value_parameter {
-                    .type = value_parameter.type.transform(lower())
+                    .type = value_parameter.type.transform(bu::compose(bu::wrap, lower()))
                 };
             },
             [](ast::Template_parameter::Mutability_parameter const&) {
                 return hir::Template_parameter::Mutability_parameter {};
             }
         }, parameter.value),
-        .name = parameter.name.identifier,
+        .name = lower(parameter.name),
         .source_view = parameter.source_view
     };
 }
@@ -79,7 +79,7 @@ auto Lowering_context::lower(ast::Template_parameter const& parameter) -> hir::T
 auto Lowering_context::lower(ast::Qualifier const& qualifier) -> hir::Qualifier {
     return {
         .template_arguments = qualifier.template_arguments.transform(bu::map(lower())),
-        .name               = qualifier.name,
+        .name               = lower(qualifier.name),
         .source_view        = qualifier.source_view
     };
 }
@@ -92,7 +92,7 @@ auto Lowering_context::lower(ast::Qualified_name const& name) -> hir::Qualified_
             [](ast::Root_qualifier::Global)   -> hir::Root_qualifier { return { .value = hir::Root_qualifier::Global {} }; },
             [this](ast::Type const& type)     -> hir::Root_qualifier { return { .value = lower(type) }; }
         }, name.root_qualifier.value),
-        .primary_name = name.primary_name,
+        .primary_name = lower(name.primary_name),
     };
 }
 
@@ -101,6 +101,14 @@ auto Lowering_context::lower(ast::Class_reference const& reference) -> hir::Clas
         .template_arguments = reference.template_arguments.transform(bu::map(lower())),
         .name = lower(reference.name),
         .source_view = reference.source_view,
+    };
+}
+
+auto Lowering_context::lower(ast::Name const& name) -> hir::Name {
+    return {
+        .identifier  = name.identifier,
+        .is_upper    = name.is_upper,
+        .source_view = name.source_view
     };
 }
 

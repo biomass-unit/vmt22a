@@ -20,7 +20,7 @@ namespace hir {
         };
 
         struct Constructor_shorthand {
-            ast::Name                           name;
+            ::hir::Name                         name;
             std::optional<bu::Wrapper<Pattern>> pattern;
             DEFAULTED_EQUALITY(Constructor_shorthand);
         };
