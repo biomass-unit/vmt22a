@@ -33,6 +33,13 @@ namespace hir {
     struct [[nodiscard]] Function_argument;
     struct [[nodiscard]] Function_parameter;
 
+    struct Implicit_template_parameter {
+        struct Tag { bu::Usize value; };
+
+        std::vector<Class_reference> classes;
+        Tag                          tag;
+    };
+
 }
 
 

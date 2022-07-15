@@ -3,6 +3,20 @@
 #include "lowering_internals.hpp"
 
 
+Lowering_context::Lowering_context(hir::Node_context& node_context, bu::diagnostics::Builder& diagnostics, bu::Source const& source) noexcept
+    : node_context { node_context }, diagnostics { diagnostics }, source { source } {}
+
+
+auto Lowering_context::is_within_function() const noexcept -> bool {
+    return current_definition_kind
+        == bu::alternative_index<ast::Definition::Variant, ast::definition::Function>;
+}
+
+auto Lowering_context::fresh_tag() -> bu::Usize {
+    return current_tag++.get();
+}
+
+
 auto Lowering_context::lower(ast::Function_argument const& argument) -> hir::Function_argument {
     return { .expression = lower(argument.expression), .name = argument.name.transform(lower()) };
 }
@@ -10,30 +24,15 @@ auto Lowering_context::lower(ast::Function_argument const& argument) -> hir::Fun
 auto Lowering_context::lower(ast::Function_parameter const& parameter) -> hir::Function_parameter {
     return hir::Function_parameter {
         .pattern = lower(parameter.pattern),
-        .type    = [this, &parameter] {
+        .type    = [this, &parameter]() -> hir::Type {
             if (parameter.type) {
                 return lower(*parameter.type);
             }
             else {
                 bu::always_assert(current_function_implicit_template_parameters != nullptr);
-
-                hir::Template_parameter type_parameter {
-                    .value = hir::Template_parameter::Type_parameter {},
-                    .name  = fresh_upper_name()
-                };
-
-                hir::Type type {
-                    .value = hir::type::Template_parameter_reference {
-                        .name = type_parameter.name,
-                        .explicit_parameter = false
-                    }
-                };
-
-                current_function_implicit_template_parameters->push_back(
-                    std::move(type_parameter)
-                );
-
-                return type;
+                auto const tag = fresh_tag();
+                current_function_implicit_template_parameters->push_back({ .tag = tag });
+                return { .value = hir::type::Implicit_parameter_reference { .tag = tag } };
             }
         }(),
         .default_value = parameter.default_value.transform(lower())

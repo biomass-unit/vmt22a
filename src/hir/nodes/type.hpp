@@ -23,10 +23,9 @@ namespace hir {
             DEFAULTED_EQUALITY(Typename);
         };
 
-        struct Template_parameter_reference {
-            Name name;
-            bool explicit_parameter;
-            DEFAULTED_EQUALITY(Template_parameter_reference);
+        struct Implicit_parameter_reference {
+            Implicit_template_parameter::Tag tag;
+            DEFAULTED_EQUALITY(Implicit_parameter_reference);
         };
 
         struct Tuple {
@@ -90,7 +89,7 @@ namespace hir {
             type::String,
             type::Wildcard,
             type::Typename,
-            type::Template_parameter_reference,
+            type::Implicit_parameter_reference,
             type::Tuple,
             type::Array,
             type::Slice,

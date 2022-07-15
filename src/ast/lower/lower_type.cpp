@@ -102,28 +102,19 @@ namespace {
                 // Within a function's parameter list or return type, inst types
                 // are converted into references to implicit template parameters.
 
-                hir::Template_parameter type_parameter {
-                    .value = hir::Template_parameter::Type_parameter {
-                        .classes = bu::map(context.lower())(instance_of.classes)
-                    },
-                    .name = context.fresh_upper_name(),
-                    .source_view = this_type.source_view
-                };
+                auto const tag = context.fresh_tag();
 
-                hir::Type type {
-                    .value = hir::type::Template_parameter_reference {
-                        .name = type_parameter.name,
-                        .explicit_parameter = false
-                    }
-                };
-
-                context.current_function_implicit_template_parameters->push_back(
-                    std::move(type_parameter)
+                context.current_function_implicit_template_parameters->emplace_back(
+                    bu::map(context.lower())(instance_of.classes),
+                    hir::Implicit_template_parameter::Tag { tag }
                 );
 
-                return type;
+                return {
+                    .value = hir::type::Implicit_parameter_reference { .tag = tag },
+                    .source_view = this_type.source_view
+                };
             }
-            else if (context.is_within_function) {
+            else if (context.is_within_function()) {
                 // Within a function body, inst types are simply used for constraint collection.
 
                 return {

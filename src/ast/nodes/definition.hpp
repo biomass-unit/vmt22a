@@ -105,8 +105,8 @@ namespace ast {
     struct Definition {
         using Variant = std::variant<
             definition::Function,
-            definition::Enum,
             definition::Struct,
+            definition::Enum,
             definition::Alias,
             definition::Typeclass,
             definition::Instantiation,

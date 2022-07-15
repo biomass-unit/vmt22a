@@ -50,6 +50,21 @@ DIRECTLY_DEFINE_FORMATTER_FOR(hir::Template_parameters) {
         : context.out();
 }
 
+DIRECTLY_DEFINE_FORMATTER_FOR(hir::Implicit_template_parameter::Tag) {
+    return std::format_to(context.out(), "X#{}", value.value);
+}
+
+DIRECTLY_DEFINE_FORMATTER_FOR(hir::Implicit_template_parameter) {
+    return std::vformat_to(
+        context.out(),
+        value.classes.empty() ? "{}" : "{}: {}",
+        std::make_format_args(
+            value.tag,
+            bu::fmt::delimited_range(value.classes, " + ")
+        )
+    );
+}
+
 DIRECTLY_DEFINE_FORMATTER_FOR(hir::definition::Struct::Member) {
     return std::format_to(context.out(), "{}{}: {}", value.is_public ? "pub " : "", value.name, value.type);
 }
@@ -172,8 +187,8 @@ namespace {
         auto operator()(hir::type::Typename const& type) {
             return format("{}", type.identifier);
         }
-        auto operator()(hir::type::Template_parameter_reference const& parameter) {
-            return format("{}", parameter.name);
+        auto operator()(hir::type::Implicit_parameter_reference const& parameter) {
+            return format("{}", parameter.tag);
         }
         auto operator()(hir::type::Tuple const& tuple) {
             return format("({})", tuple.types);
@@ -243,7 +258,9 @@ namespace {
                 "fn {}{}{}({}){} = {}",
                 function.name,
                 function.explicit_template_parameters,
-                function.implicit_template_parameters,
+                function.implicit_template_parameters.empty()
+                    ? ""
+                    : "[{}]"_format(function.implicit_template_parameters),
                 function.parameters,
                 function.return_type.transform(": {}"_format).value_or(""),
                 function.body

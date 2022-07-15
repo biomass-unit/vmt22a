@@ -10,12 +10,12 @@ namespace hir {
     namespace definition {
 
         struct Function {
-            Template_parameters              explicit_template_parameters;
-            Template_parameters              implicit_template_parameters;
-            std::vector<Function_parameter>  parameters;
-            std::optional<bu::Wrapper<Type>> return_type;
-            bu::Wrapper<Expression>          body;
-            Name                             name;
+            Template_parameters                      explicit_template_parameters;
+            std::vector<Implicit_template_parameter> implicit_template_parameters;
+            std::vector<Function_parameter>          parameters;
+            std::optional<bu::Wrapper<Type>>         return_type;
+            bu::Wrapper<Expression>                  body;
+            Name                                     name;
             DEFAULTED_EQUALITY(Function);
         };
 
