@@ -73,7 +73,6 @@ namespace parser {
                 .source            = source,
                 .message_format    = arguments.message_format,
                 .message_arguments = arguments.message_arguments,
-                .message_color     = bu::diagnostics::error_color,
                 .help_note         = arguments.help_note
             });
         }

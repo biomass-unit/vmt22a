@@ -37,10 +37,7 @@ namespace bu::diagnostics {
             Source const&                   source;
             std::string_view                message_format;
             std::format_args                message_arguments;
-            Color                           message_color = Color::red;
             std::optional<std::string_view> help_note;
-
-            auto to_regular_args() const -> Emit_arguments;
         };
         struct Configuration {
             Level note_level    = Level::normal;

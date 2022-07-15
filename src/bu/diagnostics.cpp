@@ -236,6 +236,28 @@ namespace {
         }
     }
 
+
+    auto to_regular_args(
+        bu::diagnostics::Builder::Simple_emit_arguments const arguments,
+        bu::Color                                       const note_color
+    )
+        -> bu::diagnostics::Builder::Emit_arguments
+    {
+        return {
+            .sections {
+                bu::diagnostics::Text_section {
+                    .source_view = arguments.erroneous_view,
+                    .source      = arguments.source,
+                    .note        = "here",
+                    .note_color  = note_color
+                }
+            },
+            .message_format    = arguments.message_format,
+            .message_arguments = arguments.message_arguments,
+            .help_note         = arguments.help_note
+        };
+    }
+
 }
 
 
@@ -310,35 +332,18 @@ auto bu::diagnostics::Builder::emit_error(
 
 
 auto bu::diagnostics::Builder::emit_simple_note(Simple_emit_arguments const arguments) -> void {
-    return emit_note(arguments.to_regular_args());
+    return emit_note(to_regular_args(arguments, note_color));
 }
 
 auto bu::diagnostics::Builder::emit_simple_warning(Simple_emit_arguments const arguments) -> void {
-    return emit_warning(arguments.to_regular_args());
+    return emit_warning(to_regular_args(arguments, warning_color));
 }
 
 auto bu::diagnostics::Builder::emit_simple_error(
     Simple_emit_arguments const arguments,
     Type                  const error_type) -> void
 {
-    emit_error(arguments.to_regular_args(), error_type);
-}
-
-
-auto bu::diagnostics::Builder::Simple_emit_arguments::to_regular_args() const -> Emit_arguments {
-    return {
-        .sections {
-            Text_section {
-                .source_view = erroneous_view,
-                .source      = source,
-                .note        = "here",
-                .note_color  = message_color
-            }
-        },
-        .message_format    = message_format,
-        .message_arguments = message_arguments,
-        .help_note         = help_note
-    };
+    emit_error(to_regular_args(arguments, error_color), error_type);
 }
 
 
