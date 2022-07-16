@@ -281,7 +281,8 @@ namespace {
 
 
 DEFINE_FORMATTER_FOR(hir::Expression) {
-    return std::visit(Expression_format_visitor { { context.out() } }, value.value);
+    std::visit(Expression_format_visitor { { context.out() } }, value.value);
+    return std::format_to(context.out(), ": {}", value.type);
 }
 
 DEFINE_FORMATTER_FOR(hir::Type) {

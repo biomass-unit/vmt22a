@@ -111,6 +111,9 @@
     <ClCompile Include="src\bu\diagnostics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\inference\inference.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\bu\utilities.hpp">
@@ -225,6 +228,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bu\diagnostics.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\inference\inference.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -184,7 +184,17 @@ namespace hir {
         >;
 
         Variant                        value;
+        inference::Type                type;
         std::optional<bu::Source_view> source_view;
+
+        Expression(
+            Variant                           && value,
+            inference::Type::Variant          && type,
+            std::optional<bu::Source_view> const source_view = std::nullopt
+        ) noexcept
+            : value       { std::move(value) }
+            , type        { std::move(type) }
+            , source_view { source_view } {}
 
         DEFAULTED_EQUALITY(Expression);
     };

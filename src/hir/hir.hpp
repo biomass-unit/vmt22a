@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "ast/ast.hpp"
+#include "inference/inference.hpp"
 
 
 namespace hir {
@@ -72,8 +73,7 @@ namespace hir {
             Definition
         > wrapper_context;
 
-        bu::Wrapper<Expression> unit_value = expression::Tuple {};
-        bu::Wrapper<Type>       unit_type  = type      ::Tuple {};
+        bu::Wrapper<Expression> unit_value { expression::Tuple {}, inference::unit_type() };
 
         bu::Wrapper<Pattern> true_pattern  = pattern::Literal<bool> { true };
         bu::Wrapper<Pattern> false_pattern = pattern::Literal<bool> { false };

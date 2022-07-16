@@ -3,8 +3,16 @@
 #include "lowering_internals.hpp"
 
 
-Lowering_context::Lowering_context(hir::Node_context& node_context, bu::diagnostics::Builder& diagnostics, bu::Source const& source) noexcept
-    : node_context { node_context }, diagnostics { diagnostics }, source { source } {}
+Lowering_context::Lowering_context(
+    hir::Node_context       & node_context,
+    inference::Context      & inference_context,
+    bu::diagnostics::Builder& diagnostics,
+    bu::Source         const& source
+) noexcept
+    : node_context      { node_context }
+    , inference_context { inference_context }
+    , diagnostics       { diagnostics }
+    , source            { source } {}
 
 
 auto Lowering_context::is_within_function() const noexcept -> bool {
@@ -126,8 +134,11 @@ auto ast::lower(Module&& module) -> hir::Module {
         .source = std::move(module.source)
     };
 
+    inference::Context inference_context;
+
     Lowering_context context {
         hir_module.node_context,
+        inference_context,
         hir_module.diagnostics,
         hir_module.source
     };
