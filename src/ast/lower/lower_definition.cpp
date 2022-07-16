@@ -6,9 +6,8 @@ namespace {
 
     struct Definition_lowering_visitor {
         Lowering_context     & context;
-        ast::Definition const& this_definition;
 
-        auto operator()(ast::definition::Function const& function) -> hir::Definition {
+        auto operator()(ast::definition::Function const& function) -> hir::Definition::Variant {
             bu::always_assert(context.current_function_implicit_template_parameters == nullptr);
             std::vector<hir::Implicit_template_parameter> implicit_template_parameters;
             context.current_function_implicit_template_parameters = &implicit_template_parameters;
@@ -18,7 +17,7 @@ namespace {
 
             context.current_function_implicit_template_parameters = nullptr;
 
-            hir::definition::Function hir_function {
+            return hir::definition::Function {
                 .explicit_template_parameters = function.template_parameters.vector.transform(bu::map(context.lower())),
                 .implicit_template_parameters = std::move(implicit_template_parameters),
                 .parameters  = std::move(parameters),
@@ -26,14 +25,9 @@ namespace {
                 .body        = context.lower(function.body),
                 .name        = context.lower(function.name)
             };
-
-            return {
-                .value = std::move(hir_function),
-                .source_view = this_definition.source_view
-            };
         }
 
-        auto operator()(ast::definition::Struct const& structure) -> hir::Definition {
+        auto operator()(ast::definition::Struct const& structure) -> hir::Definition::Variant {
             auto const lower_member = [this](ast::definition::Struct::Member const& member)
                 -> hir::definition::Struct::Member
             {
@@ -45,17 +39,14 @@ namespace {
                 };
             };
 
-            return {
-                .value = hir::definition::Struct {
-                    .template_parameters = structure.template_parameters.vector.transform(bu::map(context.lower())),
-                    .members = bu::map(lower_member)(structure.members),
-                    .name = context.lower(structure.name)
-                },
-                .source_view = this_definition.source_view
+            return hir::definition::Struct {
+                .template_parameters = structure.template_parameters.vector.transform(bu::map(context.lower())),
+                .members = bu::map(lower_member)(structure.members),
+                .name = context.lower(structure.name)
             };
         }
 
-        auto operator()(ast::definition::Enum const& enumeration) -> hir::Definition {
+        auto operator()(ast::definition::Enum const& enumeration) -> hir::Definition::Variant {
             auto const lower_constructor = [this](ast::definition::Enum::Constructor const& ctor)
                 -> hir::definition::Enum::Constructor
             {
@@ -66,33 +57,30 @@ namespace {
                 };
             };
 
-            return {
-                .value = hir::definition::Enum {
-                    .constructors = bu::map(lower_constructor)(enumeration.constructors),
-                    .name = context.lower(enumeration.name),
-                    .template_parameters = enumeration.template_parameters.vector.transform(bu::map(context.lower()))
-                },
-                .source_view = this_definition.source_view
+            return hir::definition::Enum {
+                .constructors = bu::map(lower_constructor)(enumeration.constructors),
+                .name = context.lower(enumeration.name),
+                .template_parameters = enumeration.template_parameters.vector.transform(bu::map(context.lower()))
             };
         }
 
-        auto operator()(ast::definition::Alias const&) -> hir::Definition {
+        auto operator()(ast::definition::Alias const&) -> hir::Definition::Variant {
             bu::todo();
         }
 
-        auto operator()(ast::definition::Namespace const&) -> hir::Definition {
+        auto operator()(ast::definition::Namespace const&) -> hir::Definition::Variant {
             bu::todo();
         }
 
-        auto operator()(ast::definition::Typeclass const&) -> hir::Definition {
+        auto operator()(ast::definition::Typeclass const&) -> hir::Definition::Variant {
             bu::todo();
         }
 
-        auto operator()(ast::definition::Implementation const&) -> hir::Definition {
+        auto operator()(ast::definition::Implementation const&) -> hir::Definition::Variant {
             bu::todo();
         }
 
-        auto operator()(ast::definition::Instantiation const&) -> hir::Definition {
+        auto operator()(ast::definition::Instantiation const&) -> hir::Definition::Variant {
             bu::todo();
         }
     };
@@ -102,16 +90,13 @@ namespace {
 
 auto Lowering_context::lower(ast::Definition const& definition) -> hir::Definition {
     bu::always_assert(!definition.value.valueless_by_exception());
+
     bu::Usize const old_kind = std::exchange(current_definition_kind, definition.value.index());
-
-    auto hir_definition = std::visit(
-        Definition_lowering_visitor {
-            .context = *this,
-            .this_definition = definition
-        },
-        definition.value
-    );
-
+    auto hir_definition = std::visit(Definition_lowering_visitor { .context = *this }, definition.value);
     current_definition_kind = old_kind;
-    return hir_definition;
+
+    return {
+        .value = std::move(hir_definition),
+        .source_view = definition.source_view
+    };
 }

@@ -5,89 +5,61 @@
 namespace {
 
     struct Pattern_lowering_visitor {
-        Lowering_context  & context;
-        ast::Pattern const& this_pattern;
+        Lowering_context& context;
 
         template <class T>
-        auto operator()(ast::pattern::Literal<T> const& literal) -> hir::Pattern {
-            return {
-                .value = literal,
-                .source_view = this_pattern.source_view
+        auto operator()(ast::pattern::Literal<T> const& literal) -> hir::Pattern::Variant {
+            return literal;
+        }
+
+        auto operator()(ast::pattern::Wildcard const&) -> hir::Pattern::Variant {
+            return hir::pattern::Wildcard {};
+        }
+
+        auto operator()(ast::pattern::Name const& name) -> hir::Pattern::Variant {
+            return hir::pattern::Name {
+                .identifier = name.identifier,
+                .mutability = name.mutability
             };
         }
 
-        auto operator()(ast::pattern::Wildcard const&) -> hir::Pattern {
-            return {
-                .value = hir::pattern::Wildcard {},
-                .source_view = this_pattern.source_view
+        auto operator()(ast::pattern::Tuple const& tuple) -> hir::Pattern::Variant {
+            return hir::pattern::Tuple {
+                .patterns = bu::map(context.lower())(tuple.patterns)
             };
         }
 
-        auto operator()(ast::pattern::Name const& name) -> hir::Pattern {
-            return {
-                .value = hir::pattern::Name {
-                    .identifier = name.identifier,
-                    .mutability = name.mutability
-                },
-                .source_view = this_pattern.source_view
+        auto operator()(ast::pattern::Slice const& slice) -> hir::Pattern::Variant {
+            return hir::pattern::Slice {
+                .patterns = bu::map(context.lower())(slice.patterns)
             };
         }
 
-        auto operator()(ast::pattern::Tuple const& tuple) -> hir::Pattern {
-            return {
-                .value = hir::pattern::Tuple {
-                    .patterns = bu::map(context.lower())(tuple.patterns)
-                },
-                .source_view = this_pattern.source_view
+        auto operator()(ast::pattern::Constructor const& ctor) -> hir::Pattern::Variant {
+            return hir::pattern::Constructor {
+                .name    = context.lower(ctor.name),
+                .pattern = ctor.pattern.transform(bu::compose(bu::wrap, context.lower()))
             };
         }
 
-        auto operator()(ast::pattern::Slice const& slice) -> hir::Pattern {
-            return {
-                .value = hir::pattern::Slice {
-                    .patterns = bu::map(context.lower())(slice.patterns)
-                },
-                .source_view = this_pattern.source_view
+        auto operator()(ast::pattern::Constructor_shorthand const& ctor) -> hir::Pattern::Variant {
+            return hir::pattern::Constructor_shorthand {
+                .name    = context.lower(ctor.name),
+                .pattern = ctor.pattern.transform(bu::compose(bu::wrap, context.lower()))
             };
         }
 
-        auto operator()(ast::pattern::Constructor const& ctor) -> hir::Pattern {
-            return {
-                .value = hir::pattern::Constructor {
-                    .name    = context.lower(ctor.name),
-                    .pattern = ctor.pattern.transform(bu::compose(bu::wrap, context.lower()))
-                },
-                .source_view = this_pattern.source_view
+        auto operator()(ast::pattern::As const& as) -> hir::Pattern::Variant {
+            return hir::pattern::As {
+                .name    = as.name,
+                .pattern = context.lower(as.pattern)
             };
         }
 
-        auto operator()(ast::pattern::Constructor_shorthand const& ctor) -> hir::Pattern {
-            return {
-                .value = hir::pattern::Constructor_shorthand {
-                    .name    = context.lower(ctor.name),
-                    .pattern = ctor.pattern.transform(bu::compose(bu::wrap, context.lower()))
-                },
-                .source_view = this_pattern.source_view
-            };
-        }
-
-        auto operator()(ast::pattern::As const& as) -> hir::Pattern {
-            return {
-                .value = hir::pattern::As {
-                    .name    = as.name,
-                    .pattern = context.lower(as.pattern)
-                },
-                .source_view = this_pattern.source_view
-            };
-        }
-
-        auto operator()(ast::pattern::Guarded const& guarded) -> hir::Pattern {
-            return {
-                .value = hir::pattern::Guarded {
-                    .pattern = context.lower(guarded.pattern),
-                    .guard   = context.lower(guarded.guard)
-                },
-                .source_view = this_pattern.source_view
+        auto operator()(ast::pattern::Guarded const& guarded) -> hir::Pattern::Variant {
+            return hir::pattern::Guarded {
+                .pattern = context.lower(guarded.pattern),
+                .guard   = context.lower(guarded.guard)
             };
         }
     };
@@ -96,11 +68,8 @@ namespace {
 
 
 auto Lowering_context::lower(ast::Pattern const& pattern) -> hir::Pattern {
-    return std::visit(
-        Pattern_lowering_visitor {
-            .context = *this,
-            .this_pattern = pattern
-        },
-        pattern.value
-    );
+    return {
+        .value = std::visit(Pattern_lowering_visitor { .context = *this }, pattern.value),
+        .source_view = pattern.source_view
+    };
 }
