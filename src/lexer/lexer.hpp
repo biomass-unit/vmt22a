@@ -16,7 +16,7 @@ namespace lexer {
 
 
     [[nodiscard]]
-    auto lex(bu::Source&&) -> Tokenized_source;
+    auto lex(bu::Source&&, bu::diagnostics::Builder&& = {}) -> Tokenized_source;
 
 
     inline namespace literals {

@@ -89,11 +89,7 @@ namespace {
                 };
             }
             else {
-                context.diagnostics.emit_simple_error({
-                    .erroneous_view = this_type.source_view,
-                    .source = context.source,
-                    .message_format = "'inst' types are only usable within functions"
-                });
+                context.error(this_type.source_view, { "'inst' types are only usable within functions" });
             }
         }
 

@@ -142,6 +142,14 @@ auto Lowering_context::lower(ast::Name const& name) -> hir::Name {
 }
 
 
+auto Lowering_context::error(
+    bu::Source_view                    const erroneous_view,
+    bu::diagnostics::Message_arguments const arguments) const -> void
+{
+    diagnostics.emit_simple_error(arguments.add_source_info(source, erroneous_view));
+}
+
+
 auto ast::lower(Module&& module) -> hir::Module {
     hir::Module hir_module {
         .node_context {

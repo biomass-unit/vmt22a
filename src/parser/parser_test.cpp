@@ -29,7 +29,11 @@ namespace {
             bu::Source {
                 bu::Source::Mock_tag { .filename = "test" },
                 std::string(text)
-            }
+            },
+            bu::diagnostics::Builder { {
+                bu::diagnostics::Level::suppress,
+                bu::diagnostics::Level::suppress,
+            } }
         );
 
         parser::Parse_context context { ts };

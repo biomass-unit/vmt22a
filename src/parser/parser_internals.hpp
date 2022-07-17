@@ -88,12 +88,10 @@ namespace parser {
         [[noreturn]]
         auto error(
             std::span<Token const> const span,
-            std::string_view       const message) -> void
+            std::string_view       const message) const -> void
         {
             error(span, { .message_format = message });
         }
-
-        auto error(std::span<Token const>, std::string&&) const -> void = delete;
 
         [[noreturn]]
         auto error(bu::diagnostics::Message_arguments const arguments) const -> void {

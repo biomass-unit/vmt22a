@@ -51,4 +51,7 @@ public:
             return lower(node);
         };
     }
+
+    [[noreturn]]
+    auto error(bu::Source_view, bu::diagnostics::Message_arguments) const -> void;
 };

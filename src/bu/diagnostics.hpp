@@ -17,10 +17,10 @@ namespace bu::diagnostics {
 
 
     struct Text_section {
-        Source_view      source_view;
-        Source const&    source;
-        std::string_view note       = "here";
-        Color            note_color = error_color;
+        Source_view          source_view;
+        Source const&        source;
+        std::string_view     note = "here";
+        std::optional<Color> note_color;
     };
 
 
@@ -46,6 +46,7 @@ namespace bu::diagnostics {
     private:
         std::string   diagnostic_string;
         Configuration configuration;
+        bool          has_emitted_error;
     public:
         Builder(Configuration = {}) noexcept;
         Builder(Builder&&) noexcept;
@@ -63,12 +64,14 @@ namespace bu::diagnostics {
 
         auto messages() const noexcept -> std::optional<std::string_view>;
 
+        auto error() const noexcept -> bool;
+
         auto note_level()    const noexcept -> Level;
         auto warning_level() const noexcept -> Level;
     };
 
 
-    // This is thrown when a diagnostic error is emitted
+    // Thrown when an irrecoverable diagnostic error is emitted
     struct Error : Exception {
         using Exception::Exception;
         using Exception::operator=;

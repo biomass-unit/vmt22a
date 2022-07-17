@@ -180,6 +180,8 @@ namespace {
         if (auto true_branch = parse_block_expression(context)) {
             std::optional<bu::Wrapper<ast::Expression>> false_branch;
 
+            Token const* const else_token = context.pointer;
+
             if (context.try_consume(Token::Type::else_)) {
                 if (auto branch = parse_block_expression(context)) {
                     false_branch = std::move(*branch);
@@ -190,6 +192,33 @@ namespace {
             }
             else if (context.try_consume(Token::Type::elif)) {
                 false_branch = bu::wrap(extract_conditional(context));
+            }
+
+            if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&condition.value)) {
+                static constexpr auto selected_if = [](bool const x) noexcept {
+                    return x ? "This branch will always be selected"
+                             : "This branch will never be selected";
+                };
+
+                std::vector<bu::diagnostics::Text_section> sections;
+                sections.push_back({
+                    .source_view = condition.source_view,
+                    .source      = context.source,
+                    .note        = selected_if(literal->value)
+                });
+
+                if (false_branch.has_value()) {
+                    sections.push_back({
+                        .source_view = else_token->source_view,
+                        .source      = context.source,
+                        .note        = selected_if(!literal->value)
+                    });
+                }
+
+                context.diagnostics.emit_warning({
+                    .sections = std::move(sections),
+                    .message_format = "Boolean literal condition"
+                });
             }
 
             return ast::expression::Conditional {
@@ -331,8 +360,15 @@ namespace {
             if (literal->value) {
                 context.diagnostics.emit_simple_note({
                     .erroneous_view = condition.source_view,
-                    .source = context.source,
+                    .source         = context.source,
                     .message_format = "Consider using 'loop' instead of 'while true'",
+                });
+            }
+            else {
+                context.diagnostics.emit_simple_warning({
+                    .erroneous_view = condition.source_view,
+                    .source         = context.source,
+                    .message_format = "Loop will never be run"
                 });
             }
         }

@@ -5,7 +5,8 @@
 namespace {
 
     struct Expression_lowering_visitor {
-        Lowering_context&                       context;
+        Lowering_context     &                  context;
+        ast::Expression const&                  this_expression;
         std::optional<inference::Type::Variant> non_general_type;
 
 
@@ -78,7 +79,7 @@ namespace {
                 return hir::expression::Match {
                     .cases = bu::vector_from<hir::expression::Match::Case>({
                         {
-                            .pattern = context.lower(let->pattern),
+                            .pattern = context.lower(*let->pattern),
                             .expression = context.lower(conditional.true_branch)
                         },
                         {
@@ -86,7 +87,7 @@ namespace {
                             .expression = std::move(false_branch)
                         }
                     }),
-                    .expression = context.lower(let->initializer)
+                    .expression = context.lower(*let->initializer)
                 };
             }
             else {
@@ -160,7 +161,7 @@ namespace {
                         hir::expression::Match {
                             .cases = bu::vector_from<hir::expression::Match::Case>({
                                 {
-                                    .pattern = context.lower(let->pattern),
+                                    .pattern = context.lower(*let->pattern),
                                     .expression = context.lower(loop.body)
                                 },
                                 {
@@ -171,7 +172,7 @@ namespace {
                                     }
                                 }
                             }),
-                            .expression = context.lower(let->initializer)
+                            .expression = context.lower(*let->initializer)
                         },
                         context.inference_context.fresh_type_variable()
                     }
@@ -336,12 +337,12 @@ namespace {
         }
 
 
-        auto operator()(ast::expression::Lambda const&) -> hir::Expression::Variant {
-            bu::todo();
+        auto operator()(ast::expression::For_loop const&) -> hir::Expression::Variant {
+            context.error(this_expression.source_view, { "For loops are not supported yet" });
         }
 
-        auto operator()(ast::expression::For_loop const&) -> hir::Expression::Variant {
-            bu::todo();
+        auto operator()(ast::expression::Lambda const&) -> hir::Expression::Variant {
+            context.error(this_expression.source_view, { "Lambda expressions are not supported yet" });
         }
 
 
@@ -357,8 +358,12 @@ namespace {
 
 
 auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expression {
-    Expression_lowering_visitor visitor { .context = *this };
+    Expression_lowering_visitor visitor {
+        .context         = *this,
+        .this_expression = expression
+    };
     auto value = std::visit(visitor, expression.value);
+
     return {
         std::move(value),
         visitor.non_general_type.has_value()

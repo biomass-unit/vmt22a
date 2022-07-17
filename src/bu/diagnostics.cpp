@@ -62,6 +62,7 @@ namespace {
 
     auto format_highlighted_section(
         std::back_insert_iterator<std::string> const  out,
+        bu::Color                              const  title_color,
         bu::diagnostics::Text_section          const& section,
         std::optional<std::string>             const& location_info
     )
@@ -144,7 +145,7 @@ namespace {
                     out,
                     "{} {}<",
                     std::string(longest_line_length - line.size(), ' '),
-                    section.note_color
+                    section.note_color.value_or(title_color)
                 );
 
                 if (&line == &lines.back()) {
@@ -170,7 +171,7 @@ namespace {
             std::format_to(
                 out,
                 "\n    {}{:>{}} {}{}",
-                section.note_color,
+                section.note_color.value_or(title_color),
                 std::string(std::max(section.source_view.string.size(), 1_uz), '^'),
                 whitespace_length,
                 section.note,
@@ -220,7 +221,7 @@ namespace {
                 );
             }
 
-            format_highlighted_section(out, section, location_info);
+            format_highlighted_section(out, title_color, section, location_info);
 
             if (&section != &sections.back()) {
                 std::format_to(out, "\n");
@@ -262,13 +263,16 @@ namespace {
 
 
 bu::diagnostics::Builder::Builder(Configuration const configuration) noexcept
-    : configuration { configuration } {}
+    : configuration { configuration }
+    , has_emitted_error { false } {}
 
 bu::diagnostics::Builder::Builder(Builder&& other) noexcept
     : diagnostic_string { std::move(other.diagnostic_string) }
-    , configuration { other.configuration }
+    , configuration     { other.configuration }
+    , has_emitted_error { other.has_emitted_error }
 {
     other.diagnostic_string.clear();
+    other.has_emitted_error = false;
     // A moved-from std::string is not guaranteed to be empty, so
     // this move constructor has to be written by hand, because the
     // destructor relies on moved-from diagnostic strings being empty.
@@ -287,6 +291,10 @@ auto bu::diagnostics::Builder::messages() const noexcept -> std::optional<std::s
     else {
         return diagnostic_string;
     }
+}
+
+auto bu::diagnostics::Builder::error() const noexcept -> bool {
+    return has_emitted_error;
 }
 
 auto bu::diagnostics::Builder::note_level() const noexcept -> Level {
@@ -327,6 +335,7 @@ auto bu::diagnostics::Builder::emit_error(
     Emit_arguments const arguments,
     Type           const error_type) -> void
 {
+    has_emitted_error = true;
     do_emit(diagnostic_string, arguments, "Error", error_color, error_type);
 }
 

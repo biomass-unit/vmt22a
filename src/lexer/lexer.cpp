@@ -693,8 +693,7 @@ namespace {
 }
 
 
-auto lexer::lex(bu::Source&& source) -> Tokenized_source {
-    bu::diagnostics::Builder diagnostics;
+auto lexer::lex(bu::Source&& source, bu::diagnostics::Builder&& diagnostics) -> Tokenized_source {
     Lex_context context { source, diagnostics };
 
     if (source.string().empty()) {
