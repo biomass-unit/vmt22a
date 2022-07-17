@@ -15,8 +15,6 @@
 #include "vm/virtual_machine.hpp"
 #include "vm/vm_formatting.hpp"
 
-#include "dependency/dependency.hpp"
-
 #include "tests/tests.hpp"
 
 #include "cli/cli.hpp"
