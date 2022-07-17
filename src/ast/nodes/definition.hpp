@@ -7,24 +7,33 @@
 
 namespace ast {
 
-    struct Function_signature {
-        Template_parameters template_parameters;
-        type::Function      type;
-        Name                name;
-        DEFAULTED_EQUALITY(Function_signature);
+    template <tree_configuration Configuration>
+    struct Basic_function_signature {
+        Basic_template_parameters<Configuration>  template_parameters;
+        std::vector<typename Configuration::Type> argument_types;
+        Configuration::Type                       return_type;
+        Basic_name<Configuration>                 name;
+        DEFAULTED_EQUALITY(Basic_function_signature);
     };
 
-    struct Type_signature {
-        Template_parameters          template_parameters;
-        std::vector<Class_reference> classes;
-        Name                         name;
-        DEFAULTED_EQUALITY(Type_signature);
+    template <tree_configuration Configuration>
+    struct Basic_type_signature {
+        Basic_template_parameters<Configuration>          template_parameters;
+        std::vector<Basic_class_reference<Configuration>> classes;
+        Basic_name<Configuration>                         name;
+        DEFAULTED_EQUALITY(Basic_type_signature);
     };
+
+    using Function_signature = Basic_function_signature <AST_configuration>;
+    using Type_signature     = Basic_type_signature     <AST_configuration>;
 
 
     namespace definition {
 
         struct Function {
+            // ast::Function and hir::Function are different enough that Basic_function would only complicate
+            // things, so ast::definition::Function and hir::definition::Function are entirely separate.
+
             Expression                      body;
             std::vector<Function_parameter> parameters;
             Name                            name;
@@ -33,71 +42,100 @@ namespace ast {
             DEFAULTED_EQUALITY(Function);
         };
 
-        struct Struct {
-            struct Member {
-                lexer::Identifier name;
-                bu::Wrapper<Type> type;
-                bool              is_public = false;
 
-                bu::Source_view source_view;
-                DEFAULTED_EQUALITY(Member);
-            };
-            std::vector<Member> members;
-            Name                name;
-            Template_parameters template_parameters;
-            DEFAULTED_EQUALITY(Struct);
+        template <tree_configuration Configuration>
+        struct Basic_struct_member {
+            Basic_name<Configuration> name;
+            Configuration::Type       type;
+            bool                      is_public = false;
+
+            Configuration::Source_view source_view;
+            DEFAULTED_EQUALITY(Basic_struct_member);
         };
 
-        struct Enum {
-            struct Constructor {
-                lexer::Identifier                name;
-                std::optional<bu::Wrapper<Type>> type;
-
-                bu::Source_view source_view;
-                DEFAULTED_EQUALITY(Constructor);
-            };
-            std::vector<Constructor> constructors;
-            Name                     name;
-            Template_parameters      template_parameters;
-            DEFAULTED_EQUALITY(Enum);
+        template <tree_configuration Configuration>
+        struct Basic_struct {
+            using Member = Basic_struct_member<Configuration>;
+            std::vector<Member>                       members;
+            Basic_name<Configuration>                 name;
+            Basic_template_parameters<Configuration>  template_parameters;
+            DEFAULTED_EQUALITY(Basic_struct);
         };
 
-        struct Alias {
-            Name                name;
-            bu::Wrapper<Type>   type;
-            Template_parameters template_parameters;
-            DEFAULTED_EQUALITY(Alias);
+
+        template <tree_configuration Configuration>
+        struct Basic_enum_constructor {
+            Basic_name<Configuration>                   name;
+            std::optional<typename Configuration::Type> type;
+
+            Configuration::Source_view source_view;
+            DEFAULTED_EQUALITY(Basic_enum_constructor);
         };
 
-        struct Typeclass {
-            std::vector<Function_signature> function_signatures;
-            std::vector<Type_signature>     type_signatures;
-            Name                            name;
-            Template_parameters             template_parameters;
-            DEFAULTED_EQUALITY(Typeclass);
+        template <tree_configuration Configuration>
+        struct Basic_enum {
+            using Constructor = Basic_enum_constructor<Configuration>;
+            std::vector<Constructor>                 constructors;
+            Basic_name<Configuration>                name;
+            Basic_template_parameters<Configuration> template_parameters;
+            DEFAULTED_EQUALITY(Basic_enum);
         };
 
-        struct Implementation {
-            bu::Wrapper<Type>       type;
-            std::vector<Definition> definitions;
-            Template_parameters     template_parameters;
-            DEFAULTED_EQUALITY(Implementation);
+
+        template <tree_configuration Configuration>
+        struct Basic_alias {
+            Basic_name<Configuration>                name;
+            Configuration::Type                      type;
+            Basic_template_parameters<Configuration> template_parameters;
+            DEFAULTED_EQUALITY(Basic_alias);
         };
 
-        struct Instantiation {
-            Class_reference         typeclass;
-            bu::Wrapper<Type>       instance;
-            std::vector<Definition> definitions;
-            Template_parameters     template_parameters;
-            DEFAULTED_EQUALITY(Instantiation);
+
+        template <tree_configuration Configuration>
+        struct Basic_typeclass {
+            std::vector<Basic_function_signature<Configuration>> function_signatures;
+            std::vector<Basic_type_signature<Configuration>>     type_signatures;
+            Basic_name<Configuration>                            name;
+            Basic_template_parameters<Configuration>             template_parameters;
+            DEFAULTED_EQUALITY(Basic_typeclass);
         };
 
-        struct Namespace {
-            std::vector<Definition> definitions;
-            Name                    name;
-            Template_parameters     template_parameters;
-            DEFAULTED_EQUALITY(Namespace);
+
+        template <tree_configuration Configuration>
+        struct Basic_implementation {
+            Configuration::Type                             type;
+            std::vector<typename Configuration::Definition> definitions;
+            Basic_template_parameters<Configuration>        template_parameters;
+            DEFAULTED_EQUALITY(Basic_implementation);
         };
+
+
+        template <tree_configuration Configuration>
+        struct Basic_instantiation {
+            Basic_class_reference<Configuration>            typeclass;
+            Configuration::Type                             instance;
+            std::vector<typename Configuration::Definition> definitions;
+            Basic_template_parameters<Configuration>        template_parameters;
+            DEFAULTED_EQUALITY(Basic_instantiation);
+        };
+
+
+        template <tree_configuration Configuration>
+        struct Basic_namespace {
+            std::vector<typename Configuration::Definition> definitions;
+            Basic_name<Configuration>                       name;
+            Basic_template_parameters<Configuration>        template_parameters;
+            DEFAULTED_EQUALITY(Basic_namespace);
+        };
+
+
+        using Struct         = Basic_struct         <AST_configuration>;
+        using Enum           = Basic_enum           <AST_configuration>;
+        using Alias          = Basic_alias          <AST_configuration>;
+        using Typeclass      = Basic_typeclass      <AST_configuration>;
+        using Implementation = Basic_implementation <AST_configuration>;
+        using Instantiation  = Basic_instantiation  <AST_configuration>;
+        using Namespace      = Basic_namespace      <AST_configuration>;
 
     }
 

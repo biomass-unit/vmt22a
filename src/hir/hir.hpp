@@ -82,6 +82,7 @@ namespace hir {
 
     struct Module {
         Node_context             node_context;
+        inference::Context       inference_context;
         bu::diagnostics::Builder diagnostics;
         bu::Source               source;
         std::vector<Definition>  definitions;

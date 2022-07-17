@@ -32,13 +32,16 @@ public:
     auto lower(ast::Pattern    const&) -> hir::Pattern;
     auto lower(ast::Definition const&) -> hir::Definition;
 
-    auto lower(ast::Function_argument  const&) -> hir::Function_argument;
-    auto lower(ast::Function_parameter const&) -> hir::Function_parameter;
-    auto lower(ast::Template_argument  const&) -> hir::Template_argument;
-    auto lower(ast::Template_parameter const&) -> hir::Template_parameter;
-    auto lower(ast::Qualifier          const&) -> hir::Qualifier;
-    auto lower(ast::Qualified_name     const&) -> hir::Qualified_name;
-    auto lower(ast::Class_reference    const&) -> hir::Class_reference;
+    auto lower(ast::Function_argument   const&) -> hir::Function_argument;
+    auto lower(ast::Function_parameter  const&) -> hir::Function_parameter;
+    auto lower(ast::Template_argument   const&) -> hir::Template_argument;
+    auto lower(ast::Template_parameter  const&) -> hir::Template_parameter;
+    auto lower(ast::Template_parameters const&) -> hir::Template_parameters;
+    auto lower(ast::Qualifier           const&) -> hir::Qualifier;
+    auto lower(ast::Qualified_name      const&) -> hir::Qualified_name;
+    auto lower(ast::Class_reference     const&) -> hir::Class_reference;
+    auto lower(ast::Function_signature  const&) -> hir::Function_signature;
+    auto lower(ast::Type_signature      const&) -> hir::Type_signature;
 
     // For convenience
     static auto lower(ast::Name const&) -> hir::Name;

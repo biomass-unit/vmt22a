@@ -223,6 +223,7 @@
     <ClCompile Include="src\cli\cli.cpp" />
     <ClCompile Include="src\dependency\dependency.cpp" />
     <ClCompile Include="src\hir\hir_formatting.cpp" />
+    <ClCompile Include="src\hir\shared_formatting.cpp" />
     <ClCompile Include="src\inference\inference.cpp" />
     <ClCompile Include="src\language\configuration.cpp" />
     <ClCompile Include="src\tst\tst_hashing.cpp" />
@@ -281,6 +282,7 @@
     <ClInclude Include="src\hir\nodes\pattern.hpp" />
     <ClInclude Include="src\hir\nodes\type.hpp" />
     <ClInclude Include="src\inference\inference.hpp" />
+    <ClInclude Include="src\inference\type.hpp" />
     <ClInclude Include="src\language\configuration.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />

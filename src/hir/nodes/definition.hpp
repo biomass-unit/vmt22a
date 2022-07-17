@@ -7,45 +7,30 @@
 
 namespace hir {
 
+    using Function_signature = ast::Basic_function_signature <HIR_configuration>;
+    using Type_signature     = ast::Basic_type_signature     <HIR_configuration>;
+
+
     namespace definition {
 
         struct Function {
             Template_parameters                      explicit_template_parameters;
             std::vector<Implicit_template_parameter> implicit_template_parameters;
             std::vector<Function_parameter>          parameters;
-            std::optional<bu::Wrapper<Type>>         return_type;
-            bu::Wrapper<Expression>                  body;
+            std::optional<Type>                      return_type;
+            Expression                               body;
             Name                                     name;
             DEFAULTED_EQUALITY(Function);
         };
 
-        struct Struct {
-            struct Member {
-                lexer::Identifier name;
-                bu::Wrapper<Type> type;
-                bool              is_public;
 
-                bu::Source_view source_view;
-                DEFAULTED_EQUALITY(Member);
-            };
-            Template_parameters template_parameters;
-            std::vector<Member> members;
-            Name                name;
-        };
-
-        struct Enum {
-            struct Constructor {
-                lexer::Identifier   name;
-                std::optional<Type> type;
-
-                bu::Source_view source_view;
-                DEFAULTED_EQUALITY(Constructor);
-            };
-            std::vector<Constructor> constructors;
-            Name                     name;
-            Template_parameters      template_parameters;
-            DEFAULTED_EQUALITY(Enum);
-        };
+        using Struct         = ast::definition::Basic_struct         <HIR_configuration>;
+        using Enum           = ast::definition::Basic_enum           <HIR_configuration>;
+        using Alias          = ast::definition::Basic_alias          <HIR_configuration>;
+        using Typeclass      = ast::definition::Basic_typeclass      <HIR_configuration>;
+        using Implementation = ast::definition::Basic_implementation <HIR_configuration>;
+        using Instantiation  = ast::definition::Basic_instantiation  <HIR_configuration>;
+        using Namespace      = ast::definition::Basic_namespace      <HIR_configuration>;
 
     }
 
@@ -53,11 +38,16 @@ namespace hir {
         using Variant = std::variant<
             definition::Function,
             definition::Struct,
-            definition::Enum
+            definition::Enum,
+            definition::Alias,
+            definition::Typeclass,
+            definition::Implementation,
+            definition::Instantiation,
+            definition::Namespace
         >;
 
-        Variant         value;
-        bu::Source_view source_view;
+        Variant                        value;
+        std::optional<bu::Source_view> source_view;
 
         DEFAULTED_EQUALITY(Definition);
     };

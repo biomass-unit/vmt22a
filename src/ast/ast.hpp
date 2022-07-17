@@ -37,9 +37,8 @@ namespace ast {
     };
 
 
-    struct Function_argument;
-
-    struct Function_parameter;
+    struct [[nodiscard]] Function_argument;
+    struct [[nodiscard]] Function_parameter;
 
 
     template <tree_configuration Configuration>
@@ -247,7 +246,8 @@ DECLARE_FORMATTER_FOR(ast::Mutability);
 DECLARE_FORMATTER_FOR(ast::expression::Type_cast::Kind);
 
 
-// These are explicitly instantiated in hir/hir_formatting.cpp to avoid repetition
+// vvv These are explicitly instantiated in hir/shared_formatting.cpp to avoid repetition vvv
+
 template <ast::tree_configuration Configuration>
 DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_name<Configuration>);
 template <ast::tree_configuration Configuration>
@@ -260,3 +260,18 @@ template <ast::tree_configuration Configuration>
 DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_template_parameter<Configuration>);
 template <ast::tree_configuration Configuration>
 DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_template_parameters<Configuration>);
+
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Basic_struct<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Basic_enum<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Basic_alias<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Basic_typeclass<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Basic_implementation<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Basic_instantiation<Configuration>);
+template <ast::tree_configuration Configuration>
+DECLARE_FORMATTER_FOR_TEMPLATE(ast::definition::Basic_namespace<Configuration>);

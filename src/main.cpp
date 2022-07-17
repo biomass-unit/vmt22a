@@ -90,7 +90,7 @@ namespace {
     [[maybe_unused]]
     constexpr auto lowering_repl = generic_repl([](bu::Source source) {
         auto module = ast::lower(parser::parse(lexer::lex(std::move(source))));
-        bu::print("{}\n", bu::fmt::delimited_range(module.definitions, "\n\n"));
+        bu::print("{}\n\n", bu::fmt::delimited_range(module.definitions, "\n\n"));
     });
 
 

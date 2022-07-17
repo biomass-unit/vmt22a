@@ -74,12 +74,12 @@ auto parser::extract_function_parameters(Parse_context& context)
             -> std::optional<ast::Function_parameter>
         {
             if (auto pattern = parse_pattern(context)) {
-                std::optional<bu::Wrapper<ast::Type>> type;
+                std::optional<ast::Type> type;
                 if (context.try_consume(Token::Type::colon)) {
                     type = extract_type(context);
                 }
 
-                std::optional<bu::Wrapper<ast::Expression>> default_value;
+                std::optional<ast::Expression> default_value;
                 if (context.try_consume(Token::Type::equals)) {
                     default_value = extract_expression(context);
                 }
@@ -318,7 +318,7 @@ namespace {
             auto parameters = extract_function_parameters(context);
             context.consume_required(Token::Type::paren_close);
 
-            std::optional<bu::Wrapper<ast::Type>> return_type;
+            std::optional<ast::Type> return_type;
             if (context.try_consume(Token::Type::colon)) {
                 return_type.emplace(extract_type(context));
             }
@@ -343,7 +343,7 @@ namespace {
                 std::move(body),
                 std::move(parameters),
                 std::move(name),
-                return_type,
+                std::move(return_type),
                 std::move(template_parameters)
             };
         }
@@ -382,7 +382,7 @@ namespace {
         auto* const anchor    = context.pointer;
         bool  const is_public = context.try_consume(Token::Type::pub);
 
-        if (auto name = parse_lower_id(context)) {
+        if (auto name = parse_lower_name(context)) {
             context.consume_required(Token::Type::colon);
 
             auto type = extract_type(context);
@@ -433,8 +433,8 @@ namespace {
     {
         auto* const anchor = context.pointer;
 
-        if (auto name = parse_lower_id(context)) {
-            std::optional<bu::Wrapper<ast::Type>> type;
+        if (auto name = parse_lower_name(context)) {
+            std::optional<ast::Type> type;
 
             if (context.try_consume(Token::Type::paren_open)) {
                 auto types = extract_comma_separated_zero_or_more<parse_type, "a type">(context);
@@ -457,7 +457,7 @@ namespace {
 
             return ast::definition::Enum::Constructor {
                 .name        = *name,
-                .type        = type,
+                .type        = std::move(type),
                 .source_view = make_source_view(anchor, context.pointer - 1)
             };
         }
@@ -622,12 +622,10 @@ namespace {
 
         context.consume_required(Token::Type::colon);
         return ast::Function_signature {
-            std::move(template_parameters),
-            {
-                .argument_types = std::move(parameters),
-                .return_type    = extract_type(context)
-            },
-            std::move(name)
+            .template_parameters = std::move(template_parameters),
+            .argument_types      = std::move(parameters),
+            .return_type         = extract_type(context),
+            .name                = std::move(name)
         };
     }
 

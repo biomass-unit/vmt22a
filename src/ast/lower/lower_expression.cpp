@@ -5,11 +5,28 @@
 namespace {
 
     struct Expression_lowering_visitor {
-        Lowering_context& context;
+        Lowering_context&                       context;
+        std::optional<inference::Type::Variant> non_general_type;
 
 
         template <class T>
         auto operator()(ast::expression::Literal<T> const& literal) -> hir::Expression::Variant {
+            if constexpr (std::same_as<T, bu::Isize>) {
+                auto const kind = literal.value < 0
+                    ? inference::type::Variable::Kind::signed_integer
+                    : inference::type::Variable::Kind::any_integer;
+                non_general_type = context.inference_context.fresh_type_variable(kind);
+            }
+            else if constexpr (std::same_as<T, bu::Float>) {
+                non_general_type = context.inference_context
+                                 . fresh_type_variable(inference::type::Variable::Kind::floating);
+            }
+            else if constexpr (std::same_as<T, bool>) {
+                non_general_type = inference::type::Boolean {};
+            }
+            else {
+                static_assert(std::same_as<T, lexer::String> || std::same_as<T, bu::Char>);
+            }
             return hir::expression::Literal<T> { literal.value };
         }
 
@@ -26,9 +43,19 @@ namespace {
         }
 
         auto operator()(ast::expression::Tuple const& tuple) -> hir::Expression::Variant {
-            return hir::expression::Tuple {
-                .elements = bu::map(context.lower())(tuple.elements)
-            };
+            hir::expression::Tuple hir_tuple;
+            inference::type::Tuple type_tuple;
+
+            hir_tuple.elements.reserve(tuple.elements.size());
+            type_tuple.types.reserve(tuple.elements.size());
+
+            for (ast::Expression const& element : tuple.elements) {
+                hir_tuple.elements.push_back(context.lower(element));
+                type_tuple.types.push_back(hir_tuple.elements.back().type);
+            }
+
+            non_general_type = std::move(type_tuple);
+            return std::move(hir_tuple);
         }
 
         auto operator()(ast::expression::Conditional const& conditional) -> hir::Expression::Variant {
@@ -330,22 +357,13 @@ namespace {
 
 
 auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expression {
-    auto value = std::visit(Expression_lowering_visitor { .context = *this }, expression.value);
-
-    auto const kind = [i = value.index()] {
-        switch (i) {
-        case bu::alternative_index<hir::Expression::Variant, hir::expression::Literal<bu::Isize>>:
-            return inference::type::Variable::Kind::integer;
-        case bu::alternative_index<hir::Expression::Variant, hir::expression::Literal<bu::Float>>:
-            return inference::type::Variable::Kind::floating;
-        default:
-            return inference::type::Variable::Kind::general;
-        }
-    }();
-
+    Expression_lowering_visitor visitor { .context = *this };
+    auto value = std::visit(visitor, expression.value);
     return {
         std::move(value),
-        inference_context.fresh_type_variable(kind),
+        visitor.non_general_type.has_value()
+            ? std::move(*visitor.non_general_type)
+            : inference_context.fresh_type_variable(),
         expression.source_view
     };
 }

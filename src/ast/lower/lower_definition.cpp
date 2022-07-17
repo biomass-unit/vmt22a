@@ -5,7 +5,7 @@
 namespace {
 
     struct Definition_lowering_visitor {
-        Lowering_context     & context;
+        Lowering_context& context;
 
         auto operator()(ast::definition::Function const& function) -> hir::Definition::Variant {
             bu::always_assert(context.current_function_implicit_template_parameters == nullptr);
@@ -18,12 +18,12 @@ namespace {
             context.current_function_implicit_template_parameters = nullptr;
 
             return hir::definition::Function {
-                .explicit_template_parameters = function.template_parameters.vector.transform(bu::map(context.lower())),
+                .explicit_template_parameters = context.lower(function.template_parameters),
                 .implicit_template_parameters = std::move(implicit_template_parameters),
-                .parameters  = std::move(parameters),
-                .return_type = function.return_type.transform(bu::compose(bu::wrap, context.lower())),
-                .body        = context.lower(function.body),
-                .name        = context.lower(function.name)
+                .parameters                   = std::move(parameters),
+                .return_type                  = function.return_type.transform(context.lower()),
+                .body                         = context.lower(function.body),
+                .name                         = context.lower(function.name)
             };
         }
 
@@ -32,7 +32,7 @@ namespace {
                 -> hir::definition::Struct::Member
             {
                 return {
-                    .name        = member.name,
+                    .name        = context.lower(member.name),
                     .type        = context.lower(member.type),
                     .is_public   = member.is_public,
                     .source_view = member.source_view
@@ -40,9 +40,9 @@ namespace {
             };
 
             return hir::definition::Struct {
-                .template_parameters = structure.template_parameters.vector.transform(bu::map(context.lower())),
-                .members = bu::map(lower_member)(structure.members),
-                .name = context.lower(structure.name)
+                .members             = bu::map(lower_member)(structure.members),
+                .name                = context.lower(structure.name),
+                .template_parameters = context.lower(structure.template_parameters),
             };
         }
 
@@ -51,37 +51,59 @@ namespace {
                 -> hir::definition::Enum::Constructor
             {
                 return {
-                    .name = ctor.name,
-                    .type = ctor.type.transform(context.lower()),
+                    .name        = context.lower(ctor.name),
+                    .type        = ctor.type.transform(context.lower()),
                     .source_view = ctor.source_view
                 };
             };
 
             return hir::definition::Enum {
-                .constructors = bu::map(lower_constructor)(enumeration.constructors),
-                .name = context.lower(enumeration.name),
-                .template_parameters = enumeration.template_parameters.vector.transform(bu::map(context.lower()))
+                .constructors        = bu::map(lower_constructor)(enumeration.constructors),
+                .name                = context.lower(enumeration.name),
+                .template_parameters = context.lower(enumeration.template_parameters)
             };
         }
 
-        auto operator()(ast::definition::Alias const&) -> hir::Definition::Variant {
-            bu::todo();
+        auto operator()(ast::definition::Alias const& alias) -> hir::Definition::Variant {
+            return hir::definition::Alias {
+                .name                = context.lower(alias.name),
+                .type                = context.lower(alias.type),
+                .template_parameters = context.lower(alias.template_parameters)
+            };
         }
 
-        auto operator()(ast::definition::Namespace const&) -> hir::Definition::Variant {
-            bu::todo();
+        auto operator()(ast::definition::Namespace const& space) -> hir::Definition::Variant {
+            return hir::definition::Namespace {
+                .definitions         = bu::map(context.lower())(space.definitions),
+                .name                = context.lower(space.name),
+                .template_parameters = context.lower(space.template_parameters)
+            };
         }
 
-        auto operator()(ast::definition::Typeclass const&) -> hir::Definition::Variant {
-            bu::todo();
+        auto operator()(ast::definition::Typeclass const& typeclass) -> hir::Definition::Variant {
+            return hir::definition::Typeclass {
+                .function_signatures = bu::map(context.lower())(typeclass.function_signatures),
+                .type_signatures     = bu::map(context.lower())(typeclass.type_signatures),
+                .name                = context.lower(typeclass.name),
+                .template_parameters = context.lower(typeclass.template_parameters),
+            };
         }
 
-        auto operator()(ast::definition::Implementation const&) -> hir::Definition::Variant {
-            bu::todo();
+        auto operator()(ast::definition::Implementation const& implementation) -> hir::Definition::Variant {
+            return hir::definition::Implementation {
+                .type                = context.lower(implementation.type),
+                .definitions         = bu::map(context.lower())(implementation.definitions),
+                .template_parameters = context.lower(implementation.template_parameters),
+            };
         }
 
-        auto operator()(ast::definition::Instantiation const&) -> hir::Definition::Variant {
-            bu::todo();
+        auto operator()(ast::definition::Instantiation const& instantiation) -> hir::Definition::Variant {
+            return hir::definition::Instantiation {
+                .typeclass           = context.lower(instantiation.typeclass),
+                .instance            = context.lower(instantiation.instance),
+                .definitions         = bu::map(context.lower())(instantiation.definitions),
+                .template_parameters = context.lower(instantiation.template_parameters),
+            };
         }
     };
 

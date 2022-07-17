@@ -36,20 +36,6 @@ DIRECTLY_DEFINE_FORMATTER_FOR(ast::Function_parameter) {
     );
 }
 
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Struct::Member) {
-    return std::format_to(
-        context.out(),
-        "{}{}: {}",
-        value.is_public ? "pub " : "",
-        value.name,
-        value.type
-    );
-}
-
-DIRECTLY_DEFINE_FORMATTER_FOR(ast::definition::Enum::Constructor) {
-    return std::format_to(context.out(), "{}({})", value.name, value.type);
-}
-
 
 DEFINE_FORMATTER_FOR(ast::Mutability) {
     switch (value.type) {
@@ -272,8 +258,6 @@ namespace {
 
 
     struct Definition_format_visitor : bu::fmt::Visitor_base {
-        std::vector<ast::Template_parameter> const* parameters;
-
         auto operator()(ast::definition::Function const& function) {
             return format(
                 "fn {}{}({}){} = {}",
@@ -285,85 +269,9 @@ namespace {
             );
         }
 
-        auto operator()(ast::definition::Struct const& structure) {
-            return format(
-                "struct {}{} = {}",
-                structure.name,
-                structure.template_parameters,
-                structure.members
-            );
-        }
-
-        auto operator()(ast::definition::Enum const& enumeration) {
-            return format(
-                "enum {}{} = {}",
-                enumeration.name,
-                enumeration.template_parameters,
-                enumeration.constructors
-            );
-        }
-
-        auto operator()(ast::definition::Alias const& alias) {
-            return format(
-                "alias {}{} = {}",
-                alias.name,
-                alias.template_parameters,
-                alias.type
-            );
-        }
-
-        auto operator()(ast::definition::Typeclass const& typeclass) {
-            format(
-                "class {}{} {{",
-                typeclass.name,
-                typeclass.template_parameters
-            );
-
-            for (auto& signature : typeclass.function_signatures) {
-                format(
-                    "fn {}[{}]({}): {}\n",
-                    signature.name,
-                    signature.template_parameters,
-                    signature.type.argument_types,
-                    signature.type.return_type
-                );
-            }
-            for (auto& signature : typeclass.type_signatures) {
-                format(
-                    "alias {}[{}]: {}\n",
-                    signature.name,
-                    signature.template_parameters,
-                    signature.classes
-                );
-            }
-
-            return format("}}");
-        }
-
-        auto operator()(ast::definition::Instantiation const& instantiation) {
-            return format(
-                "inst {} {} {{\n{}\n}}",
-                instantiation.typeclass,
-                instantiation.instance,
-                bu::fmt::delimited_range(instantiation.definitions, "\n\n")
-            );
-        }
-
-        auto operator()(ast::definition::Implementation const& implementation) {
-            return format(
-                "impl {} {{\n{}\n}}",
-                implementation.type,
-                bu::fmt::delimited_range(implementation.definitions, "\n\n")
-            );
-        }
-
-        auto operator()(ast::definition::Namespace const& space) {
-            return format(
-                "namespace {}{} {{\n{}\n}}",
-                space.name,
-                space.template_parameters,
-                bu::fmt::delimited_range(space.definitions, "\n\n")
-            );
+        auto operator()(auto const& definition) {
+            // Non-function definitions share formatters with HIR definitions
+            return format("{}", definition);
         }
     };
 

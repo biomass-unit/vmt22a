@@ -14,6 +14,9 @@ auto inference::Context::fresh_type_variable(type::Variable::Kind const kind) ->
 namespace {
 
     struct Type_formatting_visitor : bu::fmt::Visitor_base {
+        auto operator()(inference::type::Boolean) {
+            return format("Bool");
+        }
         auto operator()(inference::type::Integer const integer) {
             static constexpr auto strings = std::to_array<std::string_view>({
                 "i8", "i16", "i32", "i64",
@@ -23,11 +26,10 @@ namespace {
             return format(strings[static_cast<bu::Usize>(integer)]);
         }
         auto operator()(inference::type::Floating const floating) {
-            using enum inference::type::Floating;
             return format(
-                floating == f32
+                floating == inference::type::Floating::f32
                     ? "f32"
-                    : floating == f64
+                    : floating == inference::type::Floating::f64
                         ? "f64"
                         : bu::hole()
             );
@@ -35,15 +37,19 @@ namespace {
         auto operator()(inference::type::Tuple const& tuple) {
             return format("({})", tuple.types);
         }
+        auto operator()(inference::type::Function const& function) {
+            return format("fn({}): {}", function.arguments, function.return_type);
+        }
         auto operator()(inference::type::Variable const& variable) {
             return format(
                 "'{}{}",
                 [k = variable.kind] {
                     using enum inference::type::Variable::Kind;
                     switch (k) {
-                    case integer:  return 'I';
-                    case floating: return 'F';
-                    case general:  return 'T';
+                    case any_integer:    return 'I';
+                    case signed_integer: return 'S';
+                    case floating:       return 'F';
+                    case general:        return 'T';
                     default:
                         std::unreachable();
                     }

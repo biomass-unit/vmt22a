@@ -83,6 +83,10 @@ auto Lowering_context::lower(ast::Template_parameter const& parameter) -> hir::T
     };
 }
 
+auto Lowering_context::lower(ast::Template_parameters const& parameters) -> hir::Template_parameters {
+    return parameters.vector.transform(bu::map(lower()));
+}
+
 auto Lowering_context::lower(ast::Qualifier const& qualifier) -> hir::Qualifier {
     return {
         .template_arguments = qualifier.template_arguments.transform(bu::map(lower())),
@@ -111,6 +115,24 @@ auto Lowering_context::lower(ast::Class_reference const& reference) -> hir::Clas
     };
 }
 
+auto Lowering_context::lower(ast::Function_signature const& sig) -> hir::Function_signature {
+    return {
+        .template_parameters = lower(sig.template_parameters),
+        .argument_types      = bu::map(lower())(sig.argument_types),
+        .return_type         = lower(sig.return_type),
+        .name                = lower(sig.name),
+    };
+}
+
+auto Lowering_context::lower(ast::Type_signature const& sig) -> hir::Type_signature {
+    return {
+        .template_parameters = lower(sig.template_parameters),
+        .classes             = bu::map(lower())(sig.classes),
+        .name                = lower(sig.name),
+    };
+}
+
+
 auto Lowering_context::lower(ast::Name const& name) -> hir::Name {
     return {
         .identifier  = name.identifier,
@@ -134,11 +156,9 @@ auto ast::lower(Module&& module) -> hir::Module {
         .source = std::move(module.source)
     };
 
-    inference::Context inference_context;
-
     Lowering_context context {
         hir_module.node_context,
-        inference_context,
+        hir_module.inference_context,
         hir_module.diagnostics,
         hir_module.source
     };
