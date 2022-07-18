@@ -314,6 +314,101 @@ namespace {
             );
         };
 
+        "implicit_tuple_let_binding"_test = [] {
+            assert_expr_eq(
+                "let a, mut b: (Int, Float) = (10, 20.5)",
+                ast::expression::Let_binding {
+                    .pattern = mk_patt(ast::pattern::Tuple {
+                        .patterns = bu::vector_from({
+                            mk_patt(ast::pattern::Name {
+                                .identifier = "a"_id,
+                                .mutability { .type = ast::Mutability::Type::immut, .source_view = empty_view() }
+                            }),
+                            mk_patt(ast::pattern::Name {
+                                .identifier = "b"_id,
+                                .mutability { .type = ast::Mutability::Type::mut, .source_view = empty_view() }
+                            })
+                        })
+                    }),
+                    .initializer = mk_expr(ast::expression::Tuple {
+                        .elements = bu::vector_from({
+                            mk_expr(ast::expression::Literal<bu::Isize> { 10 }),
+                            mk_expr(ast::expression::Literal<bu::Float> { 20.5 })
+                        })
+                    }),
+                    .type = mk_type(ast::type::Tuple {
+                        .types = bu::vector_from({
+                            mk_type(ast::type::Integer {}),
+                            mk_type(ast::type::Floating {})
+                        })
+                    })
+                }
+            );
+        };
+
+        "caseless_match"_throwing_test = [] {
+            assert_expr_eq(
+                "match 0 {}",
+                ast::expression::Tuple {} // Doesn't matter
+            );
+        };
+
+        "match"_test = [] {
+            assert_expr_eq(
+                "match x { 0 -> \"zero\" _ -> \"other\" }",
+                ast::expression::Match {
+                    .cases = bu::vector_from<ast::expression::Match::Case>({
+                        {
+                            .pattern = mk_patt(ast::pattern::Literal<bu::Isize> { 0 }),
+                            .expression = mk_expr(ast::expression::Literal { lexer::String { "zero"sv } })
+                        },
+                        {
+                            .pattern = mk_patt(ast::pattern::Wildcard {}),
+                            .expression = mk_expr(ast::expression::Literal { lexer::String { "other"sv } })
+                        },
+                    }),
+                    .expression = mk_expr(ast::expression::Variable { .name = "x"_unqualified }),
+                }
+            );
+        };
+
+        "implicit_tuple_case_match"_test = [] {
+            assert_expr_eq(
+                "match 0 { _, mut b, (c, _), [_] -> 1 }",
+                ast::expression::Match {
+                    .cases = bu::vector_from<ast::expression::Match::Case>({
+                        {
+                            .pattern = mk_patt(ast::pattern::Tuple {
+                                .patterns = bu::vector_from({
+                                    mk_patt(ast::pattern::Wildcard {}),
+                                    mk_patt(ast::pattern::Name {
+                                        .identifier = "b"_id,
+                                        .mutability { .type = ast::Mutability::Type::mut, .source_view = empty_view() }
+                                    }),
+                                    mk_patt(ast::pattern::Tuple {
+                                        .patterns = bu::vector_from({
+                                            mk_patt(ast::pattern::Name {
+                                                .identifier = "c"_id,
+                                                .mutability { .type = ast::Mutability::Type::immut, .source_view = empty_view() }
+                                            }),
+                                            mk_patt(ast::pattern::Wildcard {})
+                                        })
+                                    }),
+                                    mk_patt(ast::pattern::Slice {
+                                        .patterns = bu::vector_from({
+                                            mk_patt(ast::pattern::Wildcard {})
+                                        })
+                                    })
+                                })
+                            }),
+                            .expression = mk_expr(ast::expression::Literal<bu::Isize> { 1 })
+                        }
+                    }),
+                    .expression = mk_expr(ast::expression::Literal<bu::Isize> { 0 })
+                }
+            );
+        };
+
 
         "tuple_type"_test = [] {
             assert_type_eq("()", ast::type::Tuple {});

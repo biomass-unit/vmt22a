@@ -307,10 +307,9 @@ namespace {
         }
 
         auto operator()(ast::expression::Break const& break_) -> hir::Expression::Variant {
-            if (break_.expression.has_value()) {
-                bu::todo();
-            }
-            return hir::expression::Break {};
+            return hir::expression::Break {
+                .expression = break_.expression.transform(bu::compose(bu::wrap, context.lower()))
+            };
         }
 
         auto operator()(ast::expression::Continue const&) -> hir::Expression::Variant {

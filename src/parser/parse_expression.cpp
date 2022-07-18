@@ -235,7 +235,7 @@ namespace {
     constexpr Extractor extract_let_binding = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
-        auto pattern = extract_pattern(context);
+        auto pattern = extract_required<parse_top_level_pattern, "a pattern">(context);
         
         std::optional<bu::Wrapper<ast::Type>> type;
         if (context.try_consume(Token::Type::colon)) {
@@ -410,7 +410,7 @@ namespace {
     auto parse_match_case(Parse_context& context)
         -> std::optional<ast::expression::Match::Case>
     {
-        if (auto pattern = parse_pattern(context)) {
+        if (auto pattern = parse_top_level_pattern(context)) {
             context.consume_required(Token::Type::right_arrow);
             return ast::expression::Match::Case {
                 std::move(*pattern),

@@ -3,6 +3,23 @@
 #include "parser.hpp"
 
 
+auto parser::parse_top_level_pattern(Parse_context& context) -> std::optional<ast::Pattern> {
+    return parse_comma_separated_one_or_more<parse_pattern, "a pattern">(context)
+        .transform([](std::vector<ast::Pattern>&& patterns) -> ast::Pattern
+    {
+        if (patterns.size() != 1) {
+            auto source_view = patterns.front().source_view + patterns.back().source_view;
+            return ast::Pattern {
+                .value = ast::pattern::Tuple { .patterns = std::move(patterns) },
+                .source_view = std::move(source_view)
+            };
+        }
+        else {
+            return std::move(patterns.front());
+        }
+    });
+}
+
 auto parser::parse_template_arguments(Parse_context& context)
     -> std::optional<std::vector<ast::Template_argument>>
 {

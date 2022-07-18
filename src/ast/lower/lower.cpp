@@ -53,8 +53,11 @@ auto Lowering_context::lower(ast::Template_argument const& argument) -> hir::Tem
             [](ast::Mutability const& mutability) -> hir::Template_argument::Variant {
                 return mutability;
             },
-            [this](auto const& argument) -> hir::Template_argument::Variant {
-                return bu::wrap(lower(argument)); // Catches types and expressions
+            [this](ast::Type const& type) -> hir::Template_argument::Variant {
+                return bu::wrap(lower(type));
+            },
+            [this](ast::Expression const& expression) -> hir::Template_argument::Variant {
+                error(expression.source_view, { "Constant evaluation is not supported yet" });
             }
         }, argument.value),
         .name = argument.name.transform(lower()),
