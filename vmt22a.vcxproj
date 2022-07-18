@@ -244,6 +244,9 @@
     <ClCompile Include="src\parser\parse_type.cpp" />
     <ClCompile Include="src\parser\parser.cpp" />
     <ClCompile Include="src\parser\parser_test.cpp" />
+    <ClCompile Include="src\resolution\codegen\codegen.cpp" />
+    <ClCompile Include="src\resolution\expression_resolution.cpp" />
+    <ClCompile Include="src\resolution\resolution.cpp" />
     <ClCompile Include="src\tests\tests.cpp" />
     <ClCompile Include="src\vm\serializing.cpp" />
     <ClCompile Include="src\vm\virtual_machine.cpp" />
@@ -282,8 +285,12 @@
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
     <ClInclude Include="src\lir\lir.hpp" />
+    <ClInclude Include="src\mir\mir.hpp" />
     <ClInclude Include="src\parser\parser.hpp" />
     <ClInclude Include="src\parser\parser_internals.hpp" />
+    <ClInclude Include="src\resolution\codegen\codegen.hpp" />
+    <ClInclude Include="src\resolution\resolution.hpp" />
+    <ClInclude Include="src\resolution\resolution_internals.hpp" />
     <ClInclude Include="src\tests\tests.hpp" />
     <ClInclude Include="src\vm\bytecode.hpp" />
     <ClInclude Include="src\vm\opcode.hpp" />

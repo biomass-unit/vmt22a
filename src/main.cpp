@@ -8,7 +8,7 @@
 #include "ast/ast.hpp"
 #include "ast/lower/lower.hpp"
 
-#include "lir/lir.hpp"
+#include "resolution/resolution.hpp"
 
 #include "parser/parser.hpp"
 #include "parser/parser_internals.hpp"

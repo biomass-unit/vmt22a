@@ -92,4 +92,7 @@ namespace lir {
         expression::Conditional_jump
     > {};
 
+
+    struct Module {};
+
 }
