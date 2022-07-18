@@ -2,6 +2,7 @@
 
 #include "bu/utilities.hpp"
 #include "bu/wrapper.hpp"
+#include "ast/ast.hpp"
 
 
 namespace inference {
@@ -33,6 +34,11 @@ namespace inference {
             bu::Wrapper<Type> return_type;
         };
 
+        struct Reference {
+            ast::Mutability   mutability;
+            bu::Wrapper<Type> referenced_type;
+        };
+
         struct Variable {
             struct Tag {
                 bu::Usize value;
@@ -58,6 +64,7 @@ namespace inference {
         type::Floating,
         type::Tuple,
         type::Function,
+        type::Reference,
         type::Variable
     > {};
 

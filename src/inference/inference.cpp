@@ -41,6 +41,9 @@ namespace {
         auto operator()(inference::type::Function const& function) {
             return format("fn({}): {}", function.arguments, function.return_type);
         }
+        auto operator()(inference::type::Reference const& reference) {
+            return format("&{}{}", reference.mutability, reference.referenced_type);
+        }
         auto operator()(inference::type::Variable const& variable) {
             return format(
                 "'{}{}",

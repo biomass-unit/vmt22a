@@ -40,6 +40,7 @@ namespace hir {
         };
 
         struct Break {
+            std::optional<Name>                    label;
             std::optional<bu::Wrapper<Expression>> expression;
             DEFAULTED_EQUALITY(Break);
         };

@@ -152,17 +152,20 @@ namespace ast {
         };
 
         struct Infinite_loop {
+            std::optional<Name>     label;
             bu::Wrapper<Expression> body;
             DEFAULTED_EQUALITY(Infinite_loop);
         };
 
         struct While_loop {
+            std::optional<Name>     label;
             bu::Wrapper<Expression> condition;
             bu::Wrapper<Expression> body;
             DEFAULTED_EQUALITY(While_loop);
         };
 
         struct For_loop {
+            std::optional<Name>     label;
             bu::Wrapper<Pattern>    iterator;
             bu::Wrapper<Expression> iterable;
             bu::Wrapper<Expression> body;
@@ -174,6 +177,7 @@ namespace ast {
         };
 
         struct Break {
+            std::optional<Name>                    label;
             std::optional<bu::Wrapper<Expression>> expression;
             DEFAULTED_EQUALITY(Break);
         };

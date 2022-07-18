@@ -118,11 +118,103 @@ namespace {
     };
 
 
-    constexpr Extractor extract_identifier = +[](Parse_context& context)
+    auto extract_loop_body(Parse_context& context) -> ast::Expression {
+        if (auto body = parse_block_expression(context)) {
+            return std::move(*body);
+        }
+        else {
+            context.error_expected("the loop body", "the loop body must be a block expression");
+        }
+    }
+
+    auto extract_any_loop(Parse_context& context, std::optional<ast::Name> const label = std::nullopt)
         -> ast::Expression::Variant
     {
         context.retreat();
-        return extract_qualified_lower_name_or_struct_initializer({ std::monostate {} }, context);
+
+        switch (context.extract().type) {
+        case Token::Type::loop:
+        {
+            return ast::expression::Infinite_loop {
+                .label = label,
+                .body  = extract_loop_body(context)
+            };
+        }
+        case Token::Type::while_:
+        {
+            auto condition = extract_condition(context);
+
+            if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&condition.value)) {
+                if (literal->value) {
+                    context.diagnostics.emit_simple_note({
+                        .erroneous_view = condition.source_view,
+                        .source         = context.source,
+                        .message_format = "Consider using 'loop' instead of 'while true'",
+                    });
+                }
+                else {
+                    context.diagnostics.emit_simple_warning({
+                        .erroneous_view = condition.source_view,
+                        .source         = context.source,
+                        .message_format = "Loop will never be run"
+                    });
+                }
+            }
+
+            return ast::expression::While_loop {
+                .label     = label,
+                .condition = std::move(condition),
+                .body      = extract_loop_body(context)
+            };
+        }
+        case Token::Type::for_:
+        {
+            auto iterator = extract_pattern(context);
+            context.consume_required(Token::Type::in);
+            auto iterable = extract_expression(context);
+
+            return ast::expression::For_loop {
+                .label    = label,
+                .iterator = std::move(iterator),
+                .iterable = std::move(iterable),
+                .body     = extract_loop_body(context)
+            };
+        }
+        default:
+            bu::abort(); // Should be unreachable
+        }
+    }
+
+    constexpr Extractor extract_loop = +[](Parse_context& context) -> ast::Expression::Variant {
+        return extract_any_loop(context);
+    };
+
+
+    constexpr Extractor extract_identifier = +[](Parse_context& context)
+        -> ast::Expression::Variant
+    {
+        switch (context.pointer->type) {
+        case Token::Type::loop:
+        case Token::Type::while_:
+        case Token::Type::for_:
+            if (Token* const name_token = &context.previous(); name_token->type == Token::Type::lower_name) {
+                ++context.pointer;
+                return extract_any_loop(
+                    context,
+                    ast::Name {
+                        .identifier  = name_token->as_identifier(),
+                        .is_upper    = name_token->type == Token::Type::upper_name,
+                        .source_view = name_token->source_view
+                    }
+                );
+            }
+            else {
+                context.error(name_token->source_view, { "Loop labels must be lowercase" });
+            }
+        default:
+            context.retreat();
+            return extract_qualified_lower_name_or_struct_initializer({ std::monostate {} }, context);
+        }
     };
 
     constexpr Extractor extract_global_identifier = +[](Parse_context& context)
@@ -335,64 +427,6 @@ namespace {
     };
 
 
-    auto extract_loop_body(Parse_context& context) -> ast::Expression {
-        if (auto body = parse_block_expression(context)) {
-            return std::move(*body);
-        }
-        else {
-            context.error_expected("the loop body", "the loop body must be a block expression");
-        }
-    }
-
-
-    constexpr Extractor extract_infinite_loop = +[](Parse_context& context)
-        -> ast::Expression::Variant
-    {
-        return ast::expression::Infinite_loop { extract_loop_body(context) };
-    };
-
-    constexpr Extractor extract_while_loop = +[](Parse_context& context)
-        -> ast::Expression::Variant
-    {
-        auto condition = extract_condition(context);
-
-        if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&condition.value)) {
-            if (literal->value) {
-                context.diagnostics.emit_simple_note({
-                    .erroneous_view = condition.source_view,
-                    .source         = context.source,
-                    .message_format = "Consider using 'loop' instead of 'while true'",
-                });
-            }
-            else {
-                context.diagnostics.emit_simple_warning({
-                    .erroneous_view = condition.source_view,
-                    .source         = context.source,
-                    .message_format = "Loop will never be run"
-                });
-            }
-        }
-
-        return ast::expression::While_loop {
-            std::move(condition),
-            extract_loop_body(context)
-        };
-    };
-
-    constexpr Extractor extract_for_loop = +[](Parse_context& context)
-        -> ast::Expression::Variant
-    {
-        auto iterator = extract_pattern(context);
-        context.consume_required(Token::Type::in);
-        auto iterable = extract_expression(context);
-
-        return ast::expression::For_loop {
-            std::move(iterator),
-            std::move(iterable),
-            extract_loop_body(context)
-        };
-    };
-
     constexpr Extractor extract_size_of = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
@@ -456,8 +490,21 @@ namespace {
     constexpr Extractor extract_break = +[](Parse_context& context)
         -> ast::Expression::Variant
     {
+        std::optional<ast::Name> label;
+
+        {
+            Token* const anchor = context.pointer;
+            if (auto name = parse_lower_name(context); name && context.try_consume(Token::Type::loop)) {
+                label = *name;
+            }
+            else {
+                context.pointer = anchor;
+            }
+        }
+
         return ast::expression::Break {
-            parse_expression(context).transform(bu::make<bu::Wrapper<ast::Expression>>)
+            .label = std::move(label),
+            .expression = parse_expression(context).transform(bu::wrap)
         };
     };
 
@@ -561,11 +608,9 @@ namespace {
         case Token::Type::hole:
             return extract_hole(context);
         case Token::Type::loop:
-            return extract_infinite_loop(context);
         case Token::Type::while_:
-            return extract_while_loop(context);
         case Token::Type::for_:
-            return extract_for_loop(context);
+            return extract_loop(context);
         case Token::Type::size_of:
             return extract_size_of(context);
         case Token::Type::match:

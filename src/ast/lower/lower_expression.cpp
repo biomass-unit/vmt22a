@@ -286,6 +286,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Let_binding const& let) -> hir::Expression::Variant {
+            non_general_type = inference::unit_type();
             return hir::expression::Let_binding {
                 .pattern     = context.lower(let.pattern),
                 .initializer = context.lower(let.initializer),
@@ -294,6 +295,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Local_type_alias const& alias) -> hir::Expression::Variant {
+            non_general_type = inference::unit_type();
             return hir::expression::Local_type_alias {
                 .name = alias.name,
                 .type = context.lower(alias.type)
@@ -301,26 +303,37 @@ namespace {
         }
 
         auto operator()(ast::expression::Ret const& ret) -> hir::Expression::Variant {
+            non_general_type = inference::unit_type();
             return hir::expression::Ret {
                 .expression = ret.expression.transform(bu::compose(bu::wrap, context.lower()))
             };
         }
 
         auto operator()(ast::expression::Break const& break_) -> hir::Expression::Variant {
+            non_general_type = inference::unit_type();
             return hir::expression::Break {
+                .label      = break_.label.transform(context.lower()),
                 .expression = break_.expression.transform(bu::compose(bu::wrap, context.lower()))
             };
         }
 
         auto operator()(ast::expression::Continue const&) -> hir::Expression::Variant {
+            non_general_type = inference::unit_type();
             return hir::expression::Continue {};
         }
 
         auto operator()(ast::expression::Size_of const& size_of) -> hir::Expression::Variant {
+            non_general_type = context.inference_context.fresh_type_variable(inference::type::Variable::Kind::any_integer);
             return hir::expression::Size_of { .type = context.lower(size_of.type) };
         }
 
         auto operator()(ast::expression::Take_reference const& take) -> hir::Expression::Variant {
+            non_general_type.emplace(
+                inference::type::Reference {
+                    .mutability      = take.mutability,
+                    .referenced_type = context.inference_context.fresh_type_variable()
+                }
+            );
             return hir::expression::Take_reference {
                 .mutability = take.mutability,
                 .name       = take.name

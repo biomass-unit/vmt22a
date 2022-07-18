@@ -59,7 +59,14 @@ namespace {
             return format("loop {{ {} }}", loop.body);
         }
         auto operator()(hir::expression::Break const& break_) {
-            return format("break{}", break_.expression.transform(" {}"_format).value_or(""));
+            format("break");
+            if (break_.label.has_value()) {
+                format(" {} loop", *break_.label);
+            }
+            if (break_.expression.has_value()) {
+                format(" {}", *break_.expression);
+            }
+            return out;
         }
         auto operator()(hir::expression::Continue const&) {
             return format("continue");

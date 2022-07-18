@@ -190,17 +190,22 @@ namespace {
 
         "for_loop"_test = [] {
             assert_expr_eq(
-                "for x in \"hello\" {}",
+                "outer for x in \"hello\" {}",
                 ast::expression::For_loop {
-                    mk_patt(ast::pattern::Name {
+                    .label = ast::Name {
+                        .identifier = "outer"_id,
+                        .is_upper = false,
+                        .source_view = empty_view()
+                    },
+                    .iterator = mk_patt(ast::pattern::Name {
                         "x"_id,
                         {
                             .type = ast::Mutability::Type::immut,
                             .source_view = empty_view()
                         }
                     }),
-                    mk_expr(ast::expression::Literal { lexer::String { "hello"sv } }),
-                    mk_expr(ast::expression::Block {})
+                    .iterable = mk_expr(ast::expression::Literal { lexer::String { "hello"sv } }),
+                    .body = mk_expr(ast::expression::Block {})
                 }
             );
         };

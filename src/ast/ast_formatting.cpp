@@ -115,11 +115,11 @@ namespace {
             return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);
         }
         auto operator()(ast::expression::Block const& block) {
-            format("{{");
+            format("{{ ");
             for (auto const& side_effect : block.side_effects) {
                 format("{}; ", side_effect);
             }
-            return format("{} }}", block.result);
+            return format(block.result ? "{} }}" : "}}", block.result);
         }
         auto operator()(ast::expression::Conditional const& conditional) {
             auto& [condition, true_branch, false_branch] = conditional;
@@ -150,19 +150,35 @@ namespace {
             );
         }
         auto operator()(ast::expression::Infinite_loop const& loop) {
+            if (loop.label) {
+                format("{} ", loop.label->identifier);
+            }
             return format("loop {}", loop.body);
         }
         auto operator()(ast::expression::While_loop const& loop) {
+            if (loop.label) {
+                format("{} ", loop.label->identifier);
+            }
             return format("while {} {}", loop.condition, loop.body);
         }
         auto operator()(ast::expression::For_loop const& loop) {
+            if (loop.label) {
+                format("{} ", loop.label->identifier);
+            }
             return format("for {} in {} {}", loop.iterator, loop.iterable, loop.body);
         }
         auto operator()(ast::expression::Continue) {
             return format("continue");
         }
         auto operator()(ast::expression::Break const& break_) {
-            return format("break {}", break_.expression);
+            format("break");
+            if (break_.label) {
+                format(" {} loop", *break_.label);
+            }
+            if (break_.expression) {
+                format(" {}", *break_.expression);
+            }
+            return out;
         }
         auto operator()(ast::expression::Ret const& ret) {
             return format("ret {}", ret.expression);
