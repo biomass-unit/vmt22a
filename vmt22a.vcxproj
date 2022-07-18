@@ -281,6 +281,7 @@
     <ClInclude Include="src\language\configuration.hpp" />
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
+    <ClInclude Include="src\lir\lir.hpp" />
     <ClInclude Include="src\parser\parser.hpp" />
     <ClInclude Include="src\parser\parser_internals.hpp" />
     <ClInclude Include="src\tests\tests.hpp" />

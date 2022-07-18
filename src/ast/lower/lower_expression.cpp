@@ -5,9 +5,9 @@
 namespace {
 
     struct Expression_lowering_visitor {
-        Lowering_context     &                  context;
-        ast::Expression const&                  this_expression;
-        std::optional<inference::Type::Variant> non_general_type;
+        Lowering_context     &         context;
+        ast::Expression const&         this_expression;
+        std::optional<inference::Type> non_general_type;
 
 
         template <class T>
@@ -23,7 +23,7 @@ namespace {
                                  . fresh_type_variable(inference::type::Variable::Kind::floating);
             }
             else if constexpr (std::same_as<T, bool>) {
-                non_general_type = inference::type::Boolean {};
+                non_general_type.emplace(inference::type::Boolean {});
             }
             else {
                 static_assert(std::same_as<T, lexer::String> || std::same_as<T, bu::Char>);
@@ -55,7 +55,7 @@ namespace {
                 type_tuple.types.push_back(hir_tuple.elements.back().type);
             }
 
-            non_general_type = std::move(type_tuple);
+            non_general_type.emplace(std::move(type_tuple));
             return std::move(hir_tuple);
         }
 
@@ -129,7 +129,7 @@ namespace {
             };
 
             return hir::expression::Match {
-                .cases = bu::map(lower_match_case)(match.cases),
+                .cases      = bu::map(lower_match_case)(match.cases),
                 .expression = context.lower(match.expression)
             };
         }
@@ -137,7 +137,7 @@ namespace {
         auto operator()(ast::expression::Block const& block) -> hir::Expression::Variant {
             return hir::expression::Block {
                 .side_effects = bu::map(context.lower())(block.side_effects),
-                .result = block.result.transform(bu::compose(bu::wrap, context.lower()))
+                .result       = block.result.transform(bu::compose(bu::wrap, context.lower()))
             };
         }
 
@@ -237,7 +237,7 @@ namespace {
 
             return hir::expression::Struct_initializer {
                 .member_initializers = std::move(initializers),
-                .type = context.lower(initializer.type)
+                .type                = context.lower(initializer.type)
             };
         }
 
@@ -258,21 +258,21 @@ namespace {
         auto operator()(ast::expression::Template_application const& application) -> hir::Expression::Variant {
             return hir::expression::Template_application {
                 .template_arguments = bu::map(context.lower())(application.template_arguments),
-                .name = context.lower(application.name)
+                .name               = context.lower(application.name)
             };
         }
 
         auto operator()(ast::expression::Member_access_chain const& chain) -> hir::Expression::Variant {
             return hir::expression::Member_access_chain {
-                .accessors = chain.accessors,
+                .accessors  = chain.accessors,
                 .expression = context.lower(chain.expression)
             };
         }
 
         auto operator()(ast::expression::Member_function_invocation const& invocation) -> hir::Expression::Variant {
             return hir::expression::Member_function_invocation {
-                .arguments = bu::map(context.lower())(invocation.arguments),
-                .expression = context.lower(invocation.expression),
+                .arguments   = bu::map(context.lower())(invocation.arguments),
+                .expression  = context.lower(invocation.expression),
                 .member_name = invocation.member_name
             };
         }
@@ -280,16 +280,16 @@ namespace {
         auto operator()(ast::expression::Type_cast const& cast) -> hir::Expression::Variant {
             return hir::expression::Type_cast {
                 .expression = context.lower(cast.expression),
-                .target = context.lower(cast.target),
-                .kind = cast.kind
+                .target     = context.lower(cast.target),
+                .kind       = cast.kind
             };
         }
 
         auto operator()(ast::expression::Let_binding const& let) -> hir::Expression::Variant {
             return hir::expression::Let_binding {
-                .pattern = context.lower(let.pattern),
+                .pattern     = context.lower(let.pattern),
                 .initializer = context.lower(let.initializer),
-                .type = let.type.transform(bu::compose(bu::wrap, context.lower()))
+                .type        = let.type.transform(bu::compose(bu::wrap, context.lower()))
             };
         }
 

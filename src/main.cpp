@@ -8,6 +8,8 @@
 #include "ast/ast.hpp"
 #include "ast/lower/lower.hpp"
 
+#include "lir/lir.hpp"
+
 #include "parser/parser.hpp"
 #include "parser/parser_internals.hpp"
 
@@ -212,7 +214,7 @@ auto main(int argc, char const** argv) -> int try {
         return machine.run();
     }
 
-    if (std::string_view const* const name = options["repl"]) {
+    if (cli::types::Str const* const name = options["repl"]) {
         if (*name == "lex") {
             lexer_repl();
         }

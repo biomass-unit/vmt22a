@@ -30,7 +30,7 @@ namespace {
         auto operator()(ast::type::Array const& array) -> hir::Type::Variant {
             return hir::type::Array {
                 .element_type = context.lower(array.element_type),
-                .length = context.lower(array.length)
+                .length       = context.lower(array.length)
             };
         }
 
@@ -43,7 +43,7 @@ namespace {
         auto operator()(ast::type::Function const& function) -> hir::Type::Variant {
             return hir::type::Function {
                 .argument_types = bu::map(context.lower())(function.argument_types),
-                .return_type = context.lower(function.return_type)
+                .return_type    = context.lower(function.return_type)
             };
         }
 
@@ -55,14 +55,14 @@ namespace {
 
         auto operator()(ast::type::Reference const& reference) -> hir::Type::Variant {
             return hir::type::Reference {
-                .type = context.lower(reference.type),
+                .type       = context.lower(reference.type),
                 .mutability = reference.mutability
             };
         }
 
         auto operator()(ast::type::Pointer const& pointer) -> hir::Type::Variant {
             return hir::type::Pointer {
-                .type = context.lower(pointer.type),
+                .type       = context.lower(pointer.type),
                 .mutability = pointer.mutability
             };
         }

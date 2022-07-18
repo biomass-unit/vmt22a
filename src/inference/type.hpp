@@ -52,21 +52,17 @@ namespace inference {
     }
 
 
-    struct Type {
-        using Variant = std::variant<
-            type::Boolean,
-            type::Integer,
-            type::Floating,
-            type::Tuple,
-            type::Function,
-            type::Variable
-        >;
-
-        Variant value;
-    };
+    struct Type : std::variant<
+        type::Boolean,
+        type::Integer,
+        type::Floating,
+        type::Tuple,
+        type::Function,
+        type::Variable
+    > {};
 
 
-    auto unit_type() noexcept -> Type::Variant;
+    auto unit_type() noexcept -> Type;
 
 }
 

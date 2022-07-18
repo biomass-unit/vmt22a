@@ -218,6 +218,9 @@
     <ClInclude Include="src\inference\type.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\lir\lir.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="vmt22a.natvis" />

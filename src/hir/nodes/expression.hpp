@@ -189,7 +189,7 @@ namespace hir {
 
         Expression(
             Variant                           && value,
-            inference::Type::Variant          && type,
+            inference::Type                   && type,
             std::optional<bu::Source_view> const source_view = std::nullopt
         ) noexcept
             : value       { std::move(value) }

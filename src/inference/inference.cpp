@@ -2,12 +2,12 @@
 #include "inference.hpp"
 
 
-auto inference::unit_type() noexcept -> Type::Variant {
-    return type::Tuple {};
+auto inference::unit_type() noexcept -> Type {
+    return { type::Tuple {} };
 }
 
-auto inference::Context::fresh_type_variable(type::Variable::Kind const kind) -> type::Variable {
-    return { .tag { .value = current_type_variable_tag++.get() }, .kind = kind };
+auto inference::Context::fresh_type_variable(type::Variable::Kind const kind) -> Type {
+    return { type::Variable { .tag { .value = current_type_variable_tag++.get() }, .kind = kind } };
 }
 
 
@@ -26,13 +26,14 @@ namespace {
             return format(strings[static_cast<bu::Usize>(integer)]);
         }
         auto operator()(inference::type::Floating const floating) {
-            return format(
-                floating == inference::type::Floating::f32
-                    ? "f32"
-                    : floating == inference::type::Floating::f64
-                        ? "f64"
-                        : bu::hole()
-            );
+            switch (floating) {
+            case inference::type::Floating::f32:
+                return format("f32");
+            case inference::type::Floating::f64:
+                return format("f64");
+            default:
+                std::unreachable();
+            }
         }
         auto operator()(inference::type::Tuple const& tuple) {
             return format("({})", tuple.types);
@@ -63,5 +64,5 @@ namespace {
 
 
 DEFINE_FORMATTER_FOR(inference::Type) {
-    return std::visit(Type_formatting_visitor { { context.out() } }, value.value);
+    return std::visit(Type_formatting_visitor { { context.out() } }, value);
 }

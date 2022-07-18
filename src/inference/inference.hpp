@@ -12,7 +12,7 @@ namespace inference {
         bu::Wrapper_context<Type> type_context;
         bu::Bounded_usize         current_type_variable_tag;
     public:
-        auto fresh_type_variable(type::Variable::Kind = type::Variable::Kind::general) -> type::Variable;
+        auto fresh_type_variable(type::Variable::Kind = type::Variable::Kind::general) -> Type;
     };
 
 }
