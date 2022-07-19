@@ -1,7 +1,7 @@
 #pragma once
 
 #include "bu/utilities.hpp"
-#include "bu/bounded_integer.hpp"
+#include "bu/safe_integer.hpp"
 #include "hir/hir.hpp"
 #include "mir/mir.hpp"
 
@@ -16,7 +16,7 @@ namespace resolution {
     
 
     class Context {
-        bu::Bounded_usize current_type_variable_tag;
+        bu::Safe_usize current_type_variable_tag;
     public:
         mir::Node_context& node_context;
 

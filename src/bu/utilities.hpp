@@ -705,8 +705,6 @@ DEFINE_FORMATTER_FOR(__VA_ARGS__)
 template <class... Ts>
 DECLARE_FORMATTER_FOR_TEMPLATE(std::variant<Ts...>);
 template <class T>
-DECLARE_FORMATTER_FOR_TEMPLATE(std::optional<T>);
-template <class T>
 DECLARE_FORMATTER_FOR_TEMPLATE(std::vector<T>);
 template <class F, class S>
 DECLARE_FORMATTER_FOR_TEMPLATE(bu::Pair<F, S>);
@@ -716,18 +714,21 @@ template <class T>
 DECLARE_FORMATTER_FOR_TEMPLATE(bu::fmt::Integer_with_ordinal_indicator_formatter_closure<T>);
 
 
+template <class T>
+struct std::formatter<std::optional<T>> : std::formatter<T> {
+    auto format(std::optional<T> const& optional, std::format_context& context) {
+        return optional
+            ? std::formatter<T>::format(*optional, context)
+            : context.out();
+    }
+};
+
+
 template <class... Ts>
 DEFINE_FORMATTER_FOR(std::variant<Ts...>) {
     return std::visit([&](auto const& alternative) {
         return std::format_to(context.out(), "{}", alternative);
     }, value);
-}
-
-template <class T>
-DEFINE_FORMATTER_FOR(std::optional<T>) {
-    return value
-        ? std::format_to(context.out(), "{}", *value)
-        : std::format_to(context.out(), "std::nullopt");
 }
 
 template <class T>

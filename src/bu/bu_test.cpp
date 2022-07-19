@@ -1,5 +1,5 @@
 #include "bu/utilities.hpp"
-#include "bu/bounded_integer.hpp"
+#include "bu/safe_integer.hpp"
 #include "bu/flatmap.hpp"
 
 #include "tests/tests.hpp"
@@ -24,10 +24,10 @@ namespace {
     }
 
 
-    auto run_bounded_integer_tests() -> void {
+    auto run_safe_integer_tests() -> void {
         using namespace tests;
         
-        bu::Bounded_integer<int> integer;
+        bu::Safe_integer<int> integer;
 
         "default_constructor"_test = [&] {
             assert_eq(integer, 0);
@@ -84,5 +84,5 @@ namespace {
 
 
 REGISTER_TEST(run_bu_tests);
-REGISTER_TEST(run_bounded_integer_tests);
+REGISTER_TEST(run_safe_integer_tests);
 REGISTER_TEST(run_flatmap_tests);

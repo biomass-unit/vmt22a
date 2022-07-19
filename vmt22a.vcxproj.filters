@@ -188,7 +188,7 @@
     <ClInclude Include="src\cli\cli.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\bu\bounded_integer.hpp">
+    <ClInclude Include="src\bu\safe_integer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\language\configuration.hpp">

@@ -1,5 +1,4 @@
 #include "bu/utilities.hpp"
-#include "bu/bounded_integer.hpp"
 #include "bu/color.hpp"
 #include "bu/timer.hpp"
 

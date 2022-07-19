@@ -1,15 +1,15 @@
 #pragma once
 
 #include "bu/utilities.hpp"
-#include "bu/bounded_integer.hpp"
+#include "bu/safe_integer.hpp"
 #include "bu/diagnostics.hpp"
 #include "ast/ast.hpp"
 #include "hir/hir.hpp"
 
 
 class Lowering_context {
-    bu::Bounded_usize current_tag;
-    bu::Usize         current_definition_kind = std::variant_size_v<ast::Definition::Variant>;
+    bu::Safe_usize current_tag;
+    bu::Usize      current_definition_kind = std::variant_size_v<ast::Definition::Variant>;
 public:
     hir::Node_context       & node_context;
     bu::diagnostics::Builder& diagnostics;
