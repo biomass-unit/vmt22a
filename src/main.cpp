@@ -156,8 +156,8 @@ auto main(int argc, char const** argv) -> int try {
         ("version",                      "Show vmt version"        )
         ("new"    , cli::string("name"), "Create a new vmt project")
         ("repl"   , cli::string("name"), "Run the given repl"      )
-        ("machine",                      "Debug the interpreter"   )
-        ("type"   ,                      "Debug the typechecker"   )
+        ("machine"                                                 )
+        ("resolve"                                                 )
         ("nocolor",                      "Disable colored output"  )
         ("time"   ,                      "Print the execution time")
         ("test"   ,                      "Run all tests"           );
@@ -212,6 +212,11 @@ auto main(int argc, char const** argv) -> int try {
         );
 
         return machine.run();
+    }
+
+    if (options["resolve"]) {
+        bu::Source source { (std::filesystem::current_path() / "sample-project" / "src" / "main.vmt").string()};
+        [[maybe_unused]] auto module = resolution::resolve(ast::lower(parser::parse(lexer::lex(std::move(source)))));
     }
 
     if (cli::types::Str const* const name = options["repl"]) {

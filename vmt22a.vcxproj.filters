@@ -99,9 +99,6 @@
     <ClCompile Include="src\bu\diagnostics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\inference\inference.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\hir\shared_formatting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -219,12 +216,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\bu\diagnostics.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inference\inference.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\inference\type.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\lir\lir.hpp">

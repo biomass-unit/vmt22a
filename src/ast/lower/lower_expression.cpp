@@ -5,29 +5,12 @@
 namespace {
 
     struct Expression_lowering_visitor {
-        Lowering_context     &         context;
-        ast::Expression const&         this_expression;
-        std::optional<inference::Type> non_general_type;
+        Lowering_context     & context;
+        ast::Expression const& this_expression;
 
 
         template <class T>
         auto operator()(ast::expression::Literal<T> const& literal) -> hir::Expression::Variant {
-            if constexpr (std::same_as<T, bu::Isize>) {
-                auto const kind = literal.value < 0
-                    ? inference::type::Variable::Kind::signed_integer
-                    : inference::type::Variable::Kind::any_integer;
-                non_general_type = context.inference_context.fresh_type_variable(kind);
-            }
-            else if constexpr (std::same_as<T, bu::Float>) {
-                non_general_type = context.inference_context
-                                 . fresh_type_variable(inference::type::Variable::Kind::floating);
-            }
-            else if constexpr (std::same_as<T, bool>) {
-                non_general_type.emplace(inference::type::Boolean {});
-            }
-            else {
-                static_assert(std::same_as<T, lexer::String> || std::same_as<T, bu::Char>);
-            }
             return hir::expression::Literal<T> { literal.value };
         }
 
@@ -44,19 +27,9 @@ namespace {
         }
 
         auto operator()(ast::expression::Tuple const& tuple) -> hir::Expression::Variant {
-            hir::expression::Tuple hir_tuple;
-            inference::type::Tuple type_tuple;
-
-            hir_tuple.elements.reserve(tuple.elements.size());
-            type_tuple.types.reserve(tuple.elements.size());
-
-            for (ast::Expression const& element : tuple.elements) {
-                hir_tuple.elements.push_back(context.lower(element));
-                type_tuple.types.push_back(hir_tuple.elements.back().type);
-            }
-
-            non_general_type.emplace(std::move(type_tuple));
-            return std::move(hir_tuple);
+            return hir::expression::Tuple {
+                .elements = bu::map(context.lower())(tuple.elements)
+            };
         }
 
         auto operator()(ast::expression::Conditional const& conditional) -> hir::Expression::Variant {
@@ -158,23 +131,19 @@ namespace {
 
                 return hir::expression::Loop {
                     .body = hir::Expression {
-                        hir::expression::Match {
+                        .value = hir::expression::Match {
                             .cases = bu::vector_from<hir::expression::Match::Case>({
                                 {
-                                    .pattern = context.lower(*let->pattern),
+                                    .pattern    = context.lower(*let->pattern),
                                     .expression = context.lower(loop.body)
                                 },
                                 {
-                                    .pattern = hir::pattern::Wildcard {},
-                                    .expression {
-                                        hir::expression::Break {},
-                                        inference::unit_type()
-                                    }
+                                    .pattern    = hir::pattern::Wildcard {},
+                                    .expression = hir::expression::Break {}
                                 }
                             }),
                             .expression = context.lower(*let->initializer)
-                        },
-                        context.inference_context.fresh_type_variable()
+                        }
                     }
                 };
             }
@@ -194,24 +163,20 @@ namespace {
 
             return hir::expression::Loop {
                 .body = hir::Expression {
-                    hir::expression::Match {
+                    .value = hir::expression::Match {
                         .cases = bu::vector_from<hir::expression::Match::Case>({
                             {
-                                .pattern = context.node_context.true_pattern,
+                                .pattern    = context.node_context.true_pattern,
                                 .expression = context.lower(loop.body)
                             },
                             {
-                                .pattern = context.node_context.false_pattern,
-                                .expression {
-                                    hir::expression::Break {},
-                                    inference::unit_type()
-                                }
+                                .pattern    = context.node_context.false_pattern,
+                                .expression = hir::expression::Break {}
                             }
                         }),
                         .expression = context.lower(loop.condition)
                     },
-                    context.inference_context.fresh_type_variable(),
-                    loop.body->source_view
+                    .source_view = loop.body->source_view
                 }
             };
         }
@@ -286,7 +251,6 @@ namespace {
         }
 
         auto operator()(ast::expression::Let_binding const& let) -> hir::Expression::Variant {
-            non_general_type = inference::unit_type();
             return hir::expression::Let_binding {
                 .pattern     = context.lower(let.pattern),
                 .initializer = context.lower(let.initializer),
@@ -295,7 +259,6 @@ namespace {
         }
 
         auto operator()(ast::expression::Local_type_alias const& alias) -> hir::Expression::Variant {
-            non_general_type = inference::unit_type();
             return hir::expression::Local_type_alias {
                 .name = alias.name,
                 .type = context.lower(alias.type)
@@ -303,14 +266,12 @@ namespace {
         }
 
         auto operator()(ast::expression::Ret const& ret) -> hir::Expression::Variant {
-            non_general_type = inference::unit_type();
             return hir::expression::Ret {
                 .expression = ret.expression.transform(bu::compose(bu::wrap, context.lower()))
             };
         }
 
         auto operator()(ast::expression::Break const& break_) -> hir::Expression::Variant {
-            non_general_type = inference::unit_type();
             return hir::expression::Break {
                 .label      = break_.label.transform(context.lower()),
                 .expression = break_.expression.transform(bu::compose(bu::wrap, context.lower()))
@@ -318,22 +279,14 @@ namespace {
         }
 
         auto operator()(ast::expression::Continue const&) -> hir::Expression::Variant {
-            non_general_type = inference::unit_type();
             return hir::expression::Continue {};
         }
 
         auto operator()(ast::expression::Size_of const& size_of) -> hir::Expression::Variant {
-            non_general_type = context.inference_context.fresh_type_variable(inference::type::Variable::Kind::any_integer);
             return hir::expression::Size_of { .type = context.lower(size_of.type) };
         }
 
         auto operator()(ast::expression::Take_reference const& take) -> hir::Expression::Variant {
-            non_general_type.emplace(
-                inference::type::Reference {
-                    .mutability      = take.mutability,
-                    .referenced_type = context.inference_context.fresh_type_variable()
-                }
-            );
             return hir::expression::Take_reference {
                 .mutability = take.mutability,
                 .name       = take.name
@@ -370,17 +323,14 @@ namespace {
 
 
 auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expression {
-    Expression_lowering_visitor visitor {
-        .context         = *this,
-        .this_expression = expression
-    };
-    auto value = std::visit(visitor, expression.value);
-
     return {
-        std::move(value),
-        visitor.non_general_type.has_value()
-            ? std::move(*visitor.non_general_type)
-            : inference_context.fresh_type_variable(),
-        expression.source_view
+        .value = std::visit(
+            Expression_lowering_visitor {
+                .context         = *this,
+                .this_expression = expression
+            },
+            expression.value
+        ),
+        .source_view = expression.source_view
     };
 }

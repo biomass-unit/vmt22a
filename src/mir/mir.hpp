@@ -11,6 +11,9 @@ namespace mir {
     struct [[nodiscard]] Type;
 
 
+    struct Template_parameter {};
+
+
     namespace type {
 
         enum class Integer {
@@ -22,14 +25,55 @@ namespace mir {
         struct Character {};
         struct Boolean   {};
 
+        struct Tuple {
+            std::vector<Type> types;
+        };
+
+        struct Function {
+            std::vector<Type> arguments;
+            bu::Wrapper<Type> return_type;
+        };
+
+        struct Reference {
+            ast::Mutability   mutability;
+            bu::Wrapper<Type> referenced_type;
+        };
+
+        struct Parameterized {
+            std::vector<Template_parameter> parameters;
+            bu::Wrapper<Type>               body;
+        };
+
+        struct Variable {
+            struct Tag {
+                bu::Usize value;
+            };
+
+            enum class Kind {
+                any_integer,    // Arises from an integer literal with no explicit sign. Can be unified with any sufficiently large integer type.
+                signed_integer, // Arises from a negative integer literal. Can be unified with any sufficiently large signed integer type.
+                floating,       // Arises from a floating point literal.
+                general,        // Arises from any other expression.
+            };
+
+            Tag  tag;
+            Kind kind;
+        };
+
     }
 
     struct Type {
         using Variant = std::variant<
             type::Integer,
             type::Floating,
-            type::Boolean
+            type::Boolean,
+            type::Tuple,
+            type::Function,
+            type::Reference,
+            type::Parameterized,
+            type::Variable
         >;
+        Variant                        value;
         std::optional<bu::Source_view> source_view;
     };
 
@@ -38,7 +82,7 @@ namespace mir {
 
         template <class T>
         struct Literal {
-
+            T value;
         };
 
     }
@@ -78,5 +122,8 @@ namespace mir {
         Variant                        value;
         std::optional<bu::Source_view> source_view;
     };
+
+
+    using Node_context = bu::Wrapper_context_for<Expression, Pattern, Type>;
 
 }

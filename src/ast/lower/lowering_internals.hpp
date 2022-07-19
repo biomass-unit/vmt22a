@@ -5,7 +5,6 @@
 #include "bu/diagnostics.hpp"
 #include "ast/ast.hpp"
 #include "hir/hir.hpp"
-#include "inference/inference.hpp"
 
 
 class Lowering_context {
@@ -13,14 +12,13 @@ class Lowering_context {
     bu::Usize         current_definition_kind = std::variant_size_v<ast::Definition::Variant>;
 public:
     hir::Node_context       & node_context;
-    inference::Context      & inference_context;
     bu::diagnostics::Builder& diagnostics;
     bu::Source         const& source;
 
     std::vector<hir::Implicit_template_parameter>* current_function_implicit_template_parameters = nullptr;
 
 
-    Lowering_context(hir::Node_context&, inference::Context&, bu::diagnostics::Builder&, bu::Source const&) noexcept;
+    Lowering_context(hir::Node_context&, bu::diagnostics::Builder&, bu::Source const&) noexcept;
 
 
     auto is_within_function() const noexcept -> bool;

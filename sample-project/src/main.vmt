@@ -1,5 +1,8 @@
-import std
+namespace test {
+    fn f(): Int = 0
+}
 
-fn main() {
-    std::print("Hello, world!\n")
+
+fn main(): Int {
+    f()
 }
