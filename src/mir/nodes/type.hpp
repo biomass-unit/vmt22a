@@ -17,14 +17,15 @@ namespace mir {
         struct Floating  {};
         struct Character {};
         struct Boolean   {};
+        struct String    {};
 
         struct Tuple {
-            std::vector<Type> types;
+            std::vector<bu::Wrapper<Type>> types;
         };
 
         struct Function {
-            std::vector<Type> arguments;
-            bu::Wrapper<Type> return_type;
+            std::vector<bu::Wrapper<Type>> arguments;
+            bu::Wrapper<Type>              return_type;
         };
 
         struct Reference {
@@ -45,7 +46,6 @@ namespace mir {
             enum class Kind {
                 any_integer,    // Arises from an integer literal with no explicit sign. Can be unified with any sufficiently large integer type.
                 signed_integer, // Arises from a negative integer literal. Can be unified with any sufficiently large signed integer type.
-                floating,       // Arises from a floating point literal.
                 general,        // Arises from any other expression.
             };
 

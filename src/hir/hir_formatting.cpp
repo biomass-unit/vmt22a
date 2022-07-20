@@ -37,7 +37,8 @@ DIRECTLY_DEFINE_FORMATTER_FOR(hir::Implicit_template_parameter) {
 namespace {
 
     struct Expression_format_visitor : bu::fmt::Visitor_base {
-        auto operator()(bu::instance_of<hir::expression::Literal> auto const& literal) {
+        template <class T>
+        auto operator()(hir::expression::Literal<T> const& literal) {
             return format("{}", literal.value);
         }
         auto operator()(hir::expression::Literal<char> const& literal) {

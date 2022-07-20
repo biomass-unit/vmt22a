@@ -11,7 +11,6 @@ namespace bu {
 
     template <class T>
     class [[nodiscard]] Wrapper {
-
         static_assert(std::is_object_v<T>);
         static_assert(!std::is_const_v<T>);
 
@@ -34,11 +33,8 @@ namespace bu {
             return *context_ptr;
         }
 
-
         Usize index;
-
     public:
-
         template <class... Args>
             requires ((sizeof...(Args) != 1) || (!similar_to<Wrapper, Args> && ...))
         Wrapper(Args&&... args)
@@ -71,7 +67,6 @@ namespace bu {
         auto kill(this Wrapper const self) noexcept -> T&& {
             return context().kill_wrapper(self.index);
         }
-
     };
 
 
@@ -82,93 +77,107 @@ namespace bu {
 
     template <class T>
     class Wrapper_context {
-
         std::vector<T>     arena;
         std::vector<Usize> free_indices;
-
-        bool is_responsible = true;
-
+        bool               is_responsible = true;
     public:
-
         Wrapper_context(
-            Usize                const default_capacity = default_wrapper_arena_capacity,
-            std::source_location const caller = std::source_location::current())
-        {
-            if (Wrapper<T>::context_ptr) {
-                bu::abort("bu::Wrapper: Attempted to reinitialize the arena", caller);
-            }
-            else {
-                arena.reserve(default_capacity);
-                Wrapper<T>::context_ptr = this;
-            }
-        }
+            Usize capacity = default_wrapper_arena_capacity,
+            std::source_location = std::source_location::current());
 
-        Wrapper_context(Wrapper_context&& other) noexcept
-            : arena        { std::move(other.arena)        }
-            , free_indices { std::move(other.free_indices) }
-        {
-            other.is_responsible = false;
-            Wrapper<T>::context_ptr = this;
-        }
+        Wrapper_context(Wrapper_context&&) noexcept;
 
         Wrapper_context(Wrapper_context const&) = delete;
 
         auto operator=(Wrapper_context const &) = delete;
         auto operator=(Wrapper_context      &&) = delete;
 
-        ~Wrapper_context() {
-            if (is_responsible) {
-                if constexpr (compiling_in_debug_mode) {
-                    if (do_empty_wrapper_arena_debug_messages && arena.empty()) {
-                        bu::print("NOTE: bu::Wrapper<{}>: deallocating empty arena\n", typeid(T).name());
-                    }
-                }
+        ~Wrapper_context();
 
-                Wrapper<T>::context_ptr = nullptr;
-            }
-        }
+        auto get_element(Usize) noexcept -> T&;
 
-
-        auto get_element(Usize const index) noexcept -> T& {
-            assert(is_responsible);
-            return arena[index];
-        }
-
-        template <class... Args>
-        auto make_wrapper(Args&&... args)
-            noexcept(std::is_nothrow_constructible_v<T, Args&&...>) -> Usize
-        {
-            // measure performance
-
-            static_assert(std::is_nothrow_move_assignable_v<T>);
-            assert(is_responsible);
-
-            if (free_indices.empty()) {
-                Usize const index = arena.size();
-                arena.emplace_back(std::forward<Args>(args)...);
-                return index;
-            }
-            else {
-                Usize const index = free_indices.back();
-                free_indices.pop_back();
-                arena[index] = T(std::forward<Args>(args)...);
-                return index;
-            }
-        }
+        template <class... Args> [[nodiscard]]
+        auto make_wrapper(Args&&...) noexcept -> Usize;
 
         [[nodiscard]]
-        auto kill_wrapper(Usize const index) noexcept -> T&& {
-            assert(is_responsible);
-            free_indices.push_back(index);
-            return std::move(arena[index]);
-        }
+        auto kill_wrapper(Usize) noexcept -> T&&;
 
         [[nodiscard]]
-        auto arena_size() const noexcept -> bu::Usize {
-            return arena.size();
-        }
-
+        auto arena_size() const noexcept -> Usize;
     };
+
+    template <class T>
+    Wrapper_context<T>::Wrapper_context(Usize const capacity, std::source_location const caller) {
+        if (Wrapper<T>::context_ptr) {
+            bu::abort("bu::Wrapper: Attempted to reinitialize the arena", caller);
+        }
+        else {
+            arena.reserve(capacity);
+            Wrapper<T>::context_ptr = this;
+        }
+    }
+
+    template <class T>
+    Wrapper_context<T>::Wrapper_context(Wrapper_context&& other) noexcept
+        : arena        { std::move(other.arena)        }
+        , free_indices { std::move(other.free_indices) }
+    {
+        other.is_responsible = false;
+        Wrapper<T>::context_ptr = this;
+    }
+
+    template <class T>
+    Wrapper_context<T>::~Wrapper_context() {
+        if (is_responsible) {
+            if constexpr (compiling_in_debug_mode) {
+                if (do_empty_wrapper_arena_debug_messages && arena.empty()) {
+                    bu::print("NOTE: bu::Wrapper<{}>: deallocating empty arena\n", typeid(T).name());
+                }
+            }
+
+            Wrapper<T>::context_ptr = nullptr;
+        }
+    }
+
+    template <class T>
+    auto Wrapper_context<T>::get_element(Usize const index) noexcept -> T& {
+        assert(is_responsible);
+        return arena[index];
+    }
+
+    template <class T>
+    template <class... Args>
+    auto Wrapper_context<T>::make_wrapper(Args&&... args) noexcept -> Usize {
+        // measure performance
+
+        static_assert(std::is_nothrow_move_assignable_v<T>);
+        assert(is_responsible);
+
+        if (free_indices.empty()) {
+            Usize const index = arena.size();
+            arena.emplace_back(std::forward<Args>(args)...);
+            return index;
+        }
+        else {
+            Usize const index = free_indices.back();
+            free_indices.pop_back();
+            arena[index] = T(std::forward<Args>(args)...);
+            return index;
+        }
+    }
+
+    template <class T>
+    auto Wrapper_context<T>::kill_wrapper(Usize const index) noexcept -> T&& {
+        assert(is_responsible);
+        free_indices.push_back(index);
+        return std::move(arena[index]);
+    }
+
+    template <class T>
+    auto Wrapper_context<T>::arena_size() const noexcept -> bu::Usize {
+        return arena.size();
+    }
+
 
     template <class... Ts>
     struct Wrapper_context_for : private Wrapper_context<Ts>... {

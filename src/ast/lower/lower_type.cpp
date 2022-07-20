@@ -72,7 +72,7 @@ namespace {
                 // Within a function's parameter list or return type, inst types
                 // are converted into references to implicit template parameters.
 
-                auto const tag = context.fresh_tag();
+                auto const tag = context.fresh_name_tag();
 
                 context.current_function_implicit_template_parameters->emplace_back(
                     bu::map(context.lower())(instance_of.classes),

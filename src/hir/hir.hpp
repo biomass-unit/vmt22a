@@ -43,6 +43,11 @@ namespace hir {
 }
 
 
+namespace mir {
+    struct [[nodiscard]] Type; // For hir::Expression::type
+}
+
+
 #include "nodes/expression.hpp"
 #include "nodes/pattern.hpp"
 #include "nodes/type.hpp"
@@ -62,22 +67,19 @@ struct hir::Function_parameter {
 };
 
 
+#include "mir/mir.hpp" // Has to be included here to make hir::Module::type_context work
+
+
 namespace hir {
 
-    struct Node_context : bu::Wrapper_context_for<Expression, Type, Pattern> {
-        using Wrapper_context_for::Wrapper_context_for;
-
-        bu::Wrapper<Expression> unit_value = expression::Tuple {};
-        bu::Wrapper<Pattern>    true_pattern  = pattern::Literal<bool> { true };
-        bu::Wrapper<Pattern>    false_pattern = pattern::Literal<bool> { false };
-    };
-
+    using Node_context = bu::Wrapper_context_for<Expression, Type, Pattern>;
 
     struct Module {
-        Node_context             node_context;
-        bu::diagnostics::Builder diagnostics;
-        bu::Source               source;
-        std::vector<Definition>  definitions;
+        Node_context                   node_context;
+        bu::Wrapper_context<mir::Type> type_context;
+        bu::diagnostics::Builder       diagnostics;
+        bu::Source                     source;
+        std::vector<Definition>        definitions;
     };
 
 }

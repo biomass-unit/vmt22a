@@ -5,13 +5,38 @@
 namespace {
 
     struct Expression_lowering_visitor {
-        Lowering_context     & context;
-        ast::Expression const& this_expression;
+        Lowering_context                    & context;
+        ast::Expression                const& this_expression;
+        std::optional<bu::Wrapper<mir::Type>> non_general_type;
 
 
-        template <class T>
-        auto operator()(ast::expression::Literal<T> const& literal) -> hir::Expression::Variant {
-            return hir::expression::Literal<T> { literal.value };
+        auto operator()(ast::expression::Literal<bu::Isize> const& literal) -> hir::Expression::Variant {
+            non_general_type = context.fresh_type_variable(
+                literal.value < 0
+                    ? mir::type::Variable::Kind::signed_integer
+                    : mir::type::Variable::Kind::any_integer
+            );
+            return literal;
+        }
+
+        auto operator()(ast::expression::Literal<bu::Float> const& literal) -> hir::Expression::Variant {
+            non_general_type = context.floating_type;
+            return literal;
+        }
+
+        auto operator()(ast::expression::Literal<bu::Char> const& literal) -> hir::Expression::Variant {
+            non_general_type = context.character_type;
+            return literal;
+        }
+
+        auto operator()(ast::expression::Literal<bool> const& literal) -> hir::Expression::Variant {
+            non_general_type = context.boolean_type;
+            return literal;
+        }
+
+        auto operator()(ast::expression::Literal<lexer::String> const& literal) -> hir::Expression::Variant {
+            non_general_type = context.string_type;
+            return literal;
         }
 
         auto operator()(ast::expression::Array_literal const& literal) -> hir::Expression::Variant {
@@ -27,15 +52,19 @@ namespace {
         }
 
         auto operator()(ast::expression::Tuple const& tuple) -> hir::Expression::Variant {
+            auto elements = bu::map(context.lower())(tuple.elements);
+            non_general_type = mir::type::Tuple {
+                .types = bu::map(&hir::Expression::type)(elements)
+            };
             return hir::expression::Tuple {
-                .elements = bu::map(context.lower())(tuple.elements)
+                .elements = std::move(elements)
             };
         }
 
         auto operator()(ast::expression::Conditional const& conditional) -> hir::Expression::Variant {
             auto false_branch = conditional.false_branch
                               . transform(context.lower())
-                              . value_or(context.node_context.unit_value);
+                              . value_or(context.unit_value);
 
             if (auto* const let = std::get_if<ast::expression::Conditional_let>(&conditional.condition->value)) {
                 /*
@@ -78,11 +107,11 @@ namespace {
                 return hir::expression::Match {
                     .cases = bu::vector_from<hir::expression::Match::Case>({
                         {
-                            .pattern = context.node_context.true_pattern,
+                            .pattern = context.true_pattern,
                             .expression = context.lower(conditional.true_branch)
                         },
                         {
-                            .pattern = context.node_context.false_pattern,
+                            .pattern = context.false_pattern,
                             .expression = false_branch
                         }
                     }),
@@ -131,19 +160,23 @@ namespace {
 
                 return hir::expression::Loop {
                     .body = hir::Expression {
-                        .value = hir::expression::Match {
+                        hir::expression::Match {
                             .cases = bu::vector_from<hir::expression::Match::Case>({
                                 {
                                     .pattern    = context.lower(*let->pattern),
                                     .expression = context.lower(loop.body)
                                 },
                                 {
-                                    .pattern    = hir::pattern::Wildcard {},
-                                    .expression = hir::expression::Break {}
+                                    .pattern = hir::pattern::Wildcard {},
+                                    .expression {
+                                        hir::expression::Break {},
+                                        context.unit_type
+                                    }
                                 }
                             }),
                             .expression = context.lower(*let->initializer)
-                        }
+                        },
+                        context.fresh_type_variable()
                     }
                 };
             }
@@ -163,20 +196,24 @@ namespace {
 
             return hir::expression::Loop {
                 .body = hir::Expression {
-                    .value = hir::expression::Match {
+                    hir::expression::Match {
                         .cases = bu::vector_from<hir::expression::Match::Case>({
                             {
-                                .pattern    = context.node_context.true_pattern,
+                                .pattern    = context.true_pattern,
                                 .expression = context.lower(loop.body)
                             },
                             {
-                                .pattern    = context.node_context.false_pattern,
-                                .expression = hir::expression::Break {}
+                                .pattern = context.false_pattern,
+                                .expression {
+                                    hir::expression::Break {},
+                                    context.unit_type
+                                }
                             }
                         }),
                         .expression = context.lower(loop.condition)
                     },
-                    .source_view = loop.body->source_view
+                    context.fresh_type_variable(),
+                    loop.body->source_view
                 }
             };
         }
@@ -323,14 +360,17 @@ namespace {
 
 
 auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expression {
+    Expression_lowering_visitor visitor {
+        .context         = *this,
+        .this_expression = expression
+    };
+    auto value = std::visit(visitor, expression.value);
+
     return {
-        .value = std::visit(
-            Expression_lowering_visitor {
-                .context         = *this,
-                .this_expression = expression
-            },
-            expression.value
-        ),
-        .source_view = expression.source_view
+        std::move(value),
+        visitor.non_general_type.has_value()
+            ? *visitor.non_general_type
+            : bu::wrap(fresh_type_variable()),
+        expression.source_view
     };
 }

@@ -89,7 +89,7 @@ namespace bu {
 
     template <std::integral T>
     class Safe_integer {
-        T value;
+        T value = 0;
 
         template <class U = T>
         static constexpr auto is_in_range(std::integral auto const x) noexcept -> bool {
@@ -97,15 +97,15 @@ namespace bu {
                 && std::cmp_less_equal(x, std::numeric_limits<U>::max());
         }
     public:
-        constexpr Safe_integer() noexcept
-            : value {} {}
+        constexpr Safe_integer() noexcept = default;
 
-        constexpr explicit Safe_integer(Unchecked, std::integral auto const value) noexcept
+        constexpr Safe_integer(Unchecked, std::integral auto const value) noexcept
             : value { static_cast<T>(value) }
         {
             assert(is_in_range(value));
         }
 
+        // Implicit on purpose
         constexpr Safe_integer(std::integral auto const value)
             : value { static_cast<T>(value) }
         {

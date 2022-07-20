@@ -4,13 +4,15 @@
 
 
 Lowering_context::Lowering_context(
-    hir::Node_context       & node_context,
-    bu::diagnostics::Builder& diagnostics,
-    bu::Source         const& source
+    hir::Node_context             & node_context,
+    bu::Wrapper_context<mir::Type>& type_context,
+    bu::diagnostics::Builder      & diagnostics,
+    bu::Source               const& source
 ) noexcept
-    : node_context      { node_context }
-    , diagnostics       { diagnostics }
-    , source            { source } {}
+    : node_context { node_context }
+    , type_context { type_context }
+    , diagnostics  { diagnostics }
+    , source       { source } {}
 
 
 auto Lowering_context::is_within_function() const noexcept -> bool {
@@ -18,8 +20,12 @@ auto Lowering_context::is_within_function() const noexcept -> bool {
         == bu::alternative_index<ast::Definition::Variant, ast::definition::Function>;
 }
 
-auto Lowering_context::fresh_tag() -> bu::Usize {
-    return current_tag++.get();
+auto Lowering_context::fresh_name_tag() -> bu::Usize {
+    return current_name_tag++.get();
+}
+
+auto Lowering_context::fresh_type_variable(mir::type::Variable::Kind const kind) -> mir::Type {
+    return { .value = mir::type::Variable { .tag = current_type_variable_tag++.get(), .kind = kind } };
 }
 
 
@@ -36,7 +42,7 @@ auto Lowering_context::lower(ast::Function_parameter const& parameter) -> hir::F
             }
             else {
                 bu::always_assert(current_function_implicit_template_parameters != nullptr);
-                auto const tag = fresh_tag();
+                auto const tag = fresh_name_tag();
                 current_function_implicit_template_parameters->push_back({ .tag = tag });
                 return { .value = hir::type::Implicit_parameter_reference { .tag = tag } };
             }
@@ -158,12 +164,14 @@ auto ast::lower(Module&& module) -> hir::Module {
             bu::Wrapper_context<hir::Type>       { module.node_context.arena_size<ast::Type>() },
             bu::Wrapper_context<hir::Pattern>    { module.node_context.arena_size<ast::Pattern>() },
         },
+        .type_context { module.node_context.arena_size<ast::Expression>() },
         .diagnostics = std::move(module.diagnostics),
         .source = std::move(module.source)
     };
 
     Lowering_context context {
         hir_module.node_context,
+        hir_module.type_context,
         hir_module.diagnostics,
         hir_module.source
     };

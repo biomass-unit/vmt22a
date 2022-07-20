@@ -4,10 +4,6 @@
 #include "lir/lir.hpp"
 
 
-auto resolution::Context::fresh_type_variable(mir::type::Variable::Kind const kind) -> mir::Type {
-    return { mir::type::Variable { .tag { .value = current_type_variable_tag++.get() }, .kind = kind } };
-}
-
 auto resolution::Context::error(
     bu::Source_view                    const source_view,
     bu::diagnostics::Message_arguments const arguments) -> void
@@ -19,7 +15,7 @@ auto resolution::Context::error(
 namespace {
 
     template <class HIR_definition, auto resolution::Namespace::* member>
-    auto visit_handler_for(resolution::Namespace& space) {
+    auto visit_handler(resolution::Namespace& space) {
         return [&space](HIR_definition& hir_definition) -> void {
             lexer::Identifier identifier = hir_definition.name.identifier;
             bu::Wrapper definition = resolution::Definition_info { std::move(hir_definition) };
@@ -37,11 +33,11 @@ namespace {
 
         for (hir::Definition& definition : definitions) {
             std::visit(bu::Overload {
-                visit_handler_for<hir::definition::Function,  &resolution::Namespace::functions>   (space),
-                visit_handler_for<hir::definition::Struct,    &resolution::Namespace::structures>  (space),
-                visit_handler_for<hir::definition::Enum,      &resolution::Namespace::enumerations>(space),
-                visit_handler_for<hir::definition::Alias,     &resolution::Namespace::aliases>     (space),
-                visit_handler_for<hir::definition::Typeclass, &resolution::Namespace::typeclasses> (space),
+                visit_handler<hir::definition::Function,  &resolution::Namespace::functions>   (space),
+                visit_handler<hir::definition::Struct,    &resolution::Namespace::structures>  (space),
+                visit_handler<hir::definition::Enum,      &resolution::Namespace::enumerations>(space),
+                visit_handler<hir::definition::Alias,     &resolution::Namespace::aliases>     (space),
+                visit_handler<hir::definition::Typeclass, &resolution::Namespace::typeclasses> (space),
 
                 [&](hir::definition::Implementation&) {
                     bu::todo();
@@ -100,6 +96,5 @@ resolution::Context::Context(
 
 auto resolution::resolve(hir::Module&& module) -> Module {
     [[maybe_unused]] auto context = register_top_level_definitions(std::move(module));
-    bu::print("global namespace size: {}\n", context.global_namespace->definitions_in_order.size());
     bu::todo();
 }

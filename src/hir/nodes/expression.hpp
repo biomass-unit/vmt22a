@@ -10,10 +10,7 @@ namespace hir {
     namespace expression {
 
         template <class T>
-        struct Literal {
-            T value;
-            DEFAULTED_EQUALITY(Literal);
-        };
+        using Literal = ast::expression::Literal<T>;
 
         struct Array_literal {
             std::vector<Expression> elements;
@@ -185,7 +182,13 @@ namespace hir {
         >;
 
         Variant                        value;
+        bu::Wrapper<mir::Type>         type;
         std::optional<bu::Source_view> source_view;
+
+        Expression(Variant&& value, bu::Wrapper<mir::Type> const type, std::optional<bu::Source_view> source_view = std::nullopt)
+            : value       { std::move(value) }
+            , type        { type }
+            , source_view { source_view } {}
 
         DEFAULTED_EQUALITY(Expression);
     };

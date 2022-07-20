@@ -437,19 +437,19 @@ namespace bu {
 
             template <class T>
             auto operator()(this Mapper const self, std::vector<T>&& vector) {
-                std::vector<std::invoke_result_t<F const&, T&&>> output;
+                std::vector<std::decay_t<std::invoke_result_t<F const&, T&&>>> output;
                 output.reserve(vector.size());
                 for (T& element : vector) {
-                    output.push_back(self.f(std::move(element)));
+                    output.push_back(std::invoke(self.f, std::move(element)));
                 }
                 return output;
             }
             template <class T>
             auto operator()(this Mapper const self, std::vector<T> const& vector) {
-                std::vector<std::invoke_result_t<F&&, T const&>> output;
+                std::vector<std::decay_t<std::invoke_result_t<F&&, T const&>>> output;
                 output.reserve(vector.size());
                 for (T const& element : vector) {
-                    output.push_back(self.f(element));
+                    output.push_back(std::invoke(self.f, element));
                 }
                 return output;
             }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "bu/utilities.hpp"
-#include "bu/safe_integer.hpp"
 #include "hir/hir.hpp"
 #include "mir/mir.hpp"
 
@@ -34,7 +33,7 @@ namespace resolution {
         std::variant<
             hir::definition::Function,   // Fully unresolved
             Partially_resolved_function, // Signature resolved, body unresolved
-            bu::Wrapper<mir::Function>   // Fully resolved
+            mir::Function                // Fully resolved
         >
     {
         Definition_state state = Definition_state::unresolved;
@@ -75,14 +74,14 @@ namespace resolution {
             bu::Wrapper<Namespace>
         >;
 
-        std::vector<Definition_variant> definitions_in_order;
+        std::vector<Definition_variant>       definitions_in_order;
 
-        Table<Function_info>  functions;
-        Table<Struct_info>    structures;
-        Table<Enum_info>      enumerations;
-        Table<Alias_info>     aliases;
-        Table<Typeclass_info> typeclasses;
-        Table<Namespace>      namespaces;
+        Table<Function_info>                  functions;
+        Table<Struct_info>                    structures;
+        Table<Enum_info>                      enumerations;
+        Table<Alias_info>                     aliases;
+        Table<Typeclass_info>                 typeclasses;
+        Table<Namespace>                      namespaces;
 
         mir::Template_parameter_set           template_parameters;
         std::optional<hir::Name>              name;
@@ -91,7 +90,6 @@ namespace resolution {
 
 
     class Context {
-        bu::Safe_usize     current_type_variable_tag;
         hir::Node_context  hir_node_context;
         mir::Node_context  mir_node_context;
         Namespace::Context namespace_context;
@@ -105,8 +103,6 @@ namespace resolution {
         Context(Context const&) = delete;
         Context(Context&&) = default;
 
-
-        auto fresh_type_variable(mir::type::Variable::Kind = mir::type::Variable::Kind::general) -> mir::Type;
 
         auto error(bu::Source_view, bu::diagnostics::Message_arguments) -> void;
 
