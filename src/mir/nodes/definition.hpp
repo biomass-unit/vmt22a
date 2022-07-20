@@ -29,33 +29,4 @@ namespace mir {
 
     struct Typeclass {};
 
-
-    struct Namespace {
-        using Context = bu::Wrapper_context_for<Function, Struct, Enum, Alias, Typeclass, Namespace>;
-
-        template <class T>
-        using Table = bu::Flatmap<lexer::Identifier, bu::Wrapper<T>>;
-
-        std::vector<
-            std::variant<
-                bu::Wrapper<Function>,
-                bu::Wrapper<Struct>,
-                bu::Wrapper<Enum>,
-                bu::Wrapper<Alias>,
-                bu::Wrapper<Typeclass>,
-                bu::Wrapper<Namespace>
-            >
-        > definitions_in_order;
-
-        Table<Function>  functions;
-        Table<Struct>    structures;
-        Table<Enum>      enumerations;
-        Table<Alias>     aliases;
-        Table<Typeclass> typeclasses;
-        Table<Namespace> namespaces;
-
-        Template_parameter_set   template_parameters;
-        std::optional<hir::Name> name;
-    };
-
 }
