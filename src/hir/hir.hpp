@@ -64,18 +64,12 @@ struct hir::Function_parameter {
 
 namespace hir {
 
-    struct Node_context {
-        bu::Wrapper_context_for<
-            Expression,
-            Type,
-            Pattern,
-            Definition
-        > wrapper_context;
+    struct Node_context : bu::Wrapper_context_for<Expression, Type, Pattern> {
+        using Wrapper_context_for::Wrapper_context_for;
 
         bu::Wrapper<Expression> unit_value = expression::Tuple {};
-
-        bu::Wrapper<Pattern> true_pattern  = pattern::Literal<bool> { true };
-        bu::Wrapper<Pattern> false_pattern = pattern::Literal<bool> { false };
+        bu::Wrapper<Pattern>    true_pattern  = pattern::Literal<bool> { true };
+        bu::Wrapper<Pattern>    false_pattern = pattern::Literal<bool> { false };
     };
 
 

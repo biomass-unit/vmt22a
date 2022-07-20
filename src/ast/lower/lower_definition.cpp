@@ -72,14 +72,6 @@ namespace {
             };
         }
 
-        auto operator()(ast::definition::Namespace const& space) -> hir::Definition::Variant {
-            return hir::definition::Namespace {
-                .definitions         = bu::map(context.lower())(space.definitions),
-                .name                = context.lower(space.name),
-                .template_parameters = context.lower(space.template_parameters)
-            };
-        }
-
         auto operator()(ast::definition::Typeclass const& typeclass) -> hir::Definition::Variant {
             return hir::definition::Typeclass {
                 .function_signatures = bu::map(context.lower())(typeclass.function_signatures),
@@ -103,6 +95,14 @@ namespace {
                 .instance            = context.lower(instantiation.instance),
                 .definitions         = bu::map(context.lower())(instantiation.definitions),
                 .template_parameters = context.lower(instantiation.template_parameters),
+            };
+        }
+
+        auto operator()(ast::definition::Namespace const& space) -> hir::Definition::Variant {
+            return hir::definition::Namespace {
+                .definitions         = bu::map(context.lower())(space.definitions),
+                .name                = context.lower(space.name),
+                .template_parameters = context.lower(space.template_parameters)
             };
         }
     };

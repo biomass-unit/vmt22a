@@ -46,8 +46,8 @@ namespace hir {
             definition::Namespace
         >;
 
-        Variant                        value;
-        std::optional<bu::Source_view> source_view;
+        Variant         value;
+        bu::Source_view source_view;
 
         DEFAULTED_EQUALITY(Definition);
     };

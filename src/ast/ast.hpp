@@ -225,14 +225,6 @@ namespace ast {
         std::vector<Module_path>         imported_by;
     };
 
-
-    struct [[nodiscard]] Full_program {
-        Node_context                    node_context;
-        bu::Wrapper_context<bu::Source> source_context;
-
-        std::vector<bu::Pair<bu::Wrapper<bu::Source>, Definition>> definitions;
-    };
-
 }
 
 

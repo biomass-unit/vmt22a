@@ -4,13 +4,13 @@
 
 #include "lexer/lexer.hpp"
 
+#include "parser/parser.hpp"
+#include "parser/parser_internals.hpp"
+
 #include "ast/ast.hpp"
 #include "ast/lower/lower.hpp"
 
 #include "resolution/resolution.hpp"
-
-#include "parser/parser.hpp"
-#include "parser/parser_internals.hpp"
 
 #include "vm/bytecode.hpp"
 #include "vm/virtual_machine.hpp"
@@ -214,7 +214,7 @@ auto main(int argc, char const** argv) -> int try {
     }
 
     if (options["resolve"]) {
-        bu::Source source { (std::filesystem::current_path() / "sample-project" / "src" / "main.vmt").string()};
+        bu::Source source { (std::filesystem::current_path() / "sample-project" / "src" / "main.vmt").string() };
         [[maybe_unused]] auto module = resolution::resolve(ast::lower(parser::parse(lexer::lex(std::move(source)))));
     }
 

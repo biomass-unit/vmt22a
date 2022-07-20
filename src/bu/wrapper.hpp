@@ -180,7 +180,7 @@ namespace bu {
         Wrapper_context_for(Wrapper_context<Ts>&&... children)
             : Wrapper_context<Ts> { std::move(children) }... {}
 
-        template <class T> [[nodiscard]]
+        template <bu::one_of<Ts...> T> [[nodiscard]]
         auto arena_size() const noexcept -> bu::Usize {
             return Wrapper_context<T>::arena_size();
         }
