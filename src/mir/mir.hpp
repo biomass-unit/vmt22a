@@ -1,14 +1,13 @@
 #pragma once
 
 #include "bu/utilities.hpp"
+#include "bu/wrapper.hpp"
 #include "bu/source.hpp"
+#include "hir/hir.hpp"
+#include "forward.hpp"
 
 
 namespace mir {
-
-    struct [[nodiscard]] Expression;
-    struct [[nodiscard]] Pattern;
-    struct [[nodiscard]] Type;
 
     struct [[nodiscard]] Function_parameter;
 
@@ -21,6 +20,8 @@ namespace mir {
         std::vector<Template_mutability_parameter> mutability_parameters;
         std::vector<Template_value_parameter>      value_parameters;
     };
+
+    struct Class_reference {};
 
 }
 
@@ -48,10 +49,3 @@ struct mir::Function_parameter {
     Pattern pattern;
     Type    type;
 };
-
-
-namespace mir {
-
-    using Node_context = bu::Wrapper_context_for<Expression, Pattern, Type>;
-
-}

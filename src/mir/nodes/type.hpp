@@ -23,6 +23,15 @@ namespace mir {
             std::vector<bu::Wrapper<Type>> types;
         };
 
+        struct Array {
+            bu::Wrapper<Type>       element_type;
+            bu::Wrapper<Expression> length;
+        };
+
+        struct Slice {
+            bu::Wrapper<Type> element_type;
+        };
+
         struct Function {
             std::vector<bu::Wrapper<Type>> arguments;
             bu::Wrapper<Type>              return_type;
@@ -60,8 +69,12 @@ namespace mir {
         using Variant = std::variant<
             type::Integer,
             type::Floating,
+            type::Character,
             type::Boolean,
+            type::String,
             type::Tuple,
+            type::Array,
+            type::Slice,
             type::Function,
             type::Reference,
             type::Parameterized,

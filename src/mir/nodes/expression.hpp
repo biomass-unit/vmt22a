@@ -20,7 +20,8 @@ namespace mir {
             expression::Literal<bu::Isize>,
             expression::Literal<bu::Float>,
             expression::Literal<bu::Char>,
-            expression::Literal<bool>
+            expression::Literal<bool>,
+            expression::Literal<lexer::String>
         >;
 
         Variant                        value;

@@ -89,6 +89,30 @@ namespace resolution {
     };
 
 
+    namespace constraint {
+
+        struct Equality {
+            bu::Wrapper<mir::Type> left, right;
+        };
+
+        struct Vertical_relationship {
+            bu::Wrapper<mir::Type> supertype, subtype;
+        };
+
+        struct Instance {
+            bu::Wrapper<mir::Type>            type;
+            std::vector<mir::Class_reference> classes;
+        };
+
+    }
+
+    struct [[nodiscard]] Constraint : std::variant<
+        constraint::Equality,
+        constraint::Vertical_relationship,
+        constraint::Instance
+    > {};
+
+
     class Context {
         hir::Node_context  hir_node_context;
         mir::Node_context  mir_node_context;
@@ -98,7 +122,13 @@ namespace resolution {
         bu::Source               source;
         bu::Wrapper<Namespace>   global_namespace;
 
-        Context(hir::Node_context&&, Namespace::Context&&, bu::diagnostics::Builder&&, bu::Source&&) noexcept;
+        Context(
+            hir::Node_context&&,
+            mir::Node_context&&,
+            Namespace::Context&&,
+            bu::diagnostics::Builder&&,
+            bu::Source&&
+        ) noexcept;
 
         Context(Context const&) = delete;
         Context(Context&&) = default;
@@ -107,6 +137,11 @@ namespace resolution {
         auto error(bu::Source_view, bu::diagnostics::Message_arguments) -> void;
 
 
+        auto collect_constraints(hir::Expression const&) -> std::queue<Constraint>;
+        auto unify(std::queue<Constraint>&&) -> void;
+
+
+        auto resolve(hir::Type       const&) -> mir::Type;
         auto resolve(hir::Expression const&) -> mir::Expression;
 
         auto resolve() noexcept {
@@ -117,3 +152,6 @@ namespace resolution {
     };
 
 }
+
+
+DECLARE_FORMATTER_FOR(resolution::Constraint);

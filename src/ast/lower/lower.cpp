@@ -1,18 +1,19 @@
 #include "bu/utilities.hpp"
 #include "lower.hpp"
 #include "lowering_internals.hpp"
+#include "mir/mir.hpp"
 
 
 Lowering_context::Lowering_context(
-    hir::Node_context             & node_context,
-    bu::Wrapper_context<mir::Type>& type_context,
+    hir::Node_context             & hir_node_context,
+    mir::Node_context             & mir_node_context,
     bu::diagnostics::Builder      & diagnostics,
     bu::Source               const& source
 ) noexcept
-    : node_context { node_context }
-    , type_context { type_context }
-    , diagnostics  { diagnostics }
-    , source       { source } {}
+    : hir_node_context { hir_node_context }
+    , mir_node_context { mir_node_context }
+    , diagnostics      { diagnostics }
+    , source           { source } {}
 
 
 auto Lowering_context::is_within_function() const noexcept -> bool {
@@ -25,7 +26,7 @@ auto Lowering_context::fresh_name_tag() -> bu::Usize {
 }
 
 auto Lowering_context::fresh_type_variable(mir::type::Variable::Kind const kind) -> mir::Type {
-    return { .value = mir::type::Variable { .tag = current_type_variable_tag++.get(), .kind = kind } };
+    return { mir::type::Variable { .tag = current_type_variable_tag++.get(), .kind = kind } };
 }
 
 
@@ -159,19 +160,23 @@ auto Lowering_context::error(
 
 auto ast::lower(Module&& module) -> hir::Module {
     hir::Module hir_module {
-        .node_context {
+        .hir_node_context {
             bu::Wrapper_context<hir::Expression> { module.node_context.arena_size<ast::Expression>() },
             bu::Wrapper_context<hir::Type>       { module.node_context.arena_size<ast::Type>() },
             bu::Wrapper_context<hir::Pattern>    { module.node_context.arena_size<ast::Pattern>() },
         },
-        .type_context { module.node_context.arena_size<ast::Expression>() },
+        .mir_node_context {
+            bu::Wrapper_context<mir::Expression> { module.node_context.arena_size<ast::Expression>() },
+            bu::Wrapper_context<mir::Type>       { module.node_context.arena_size<ast::Expression>() }, // One mir-type per hir-expression
+            bu::Wrapper_context<mir::Pattern>    { module.node_context.arena_size<ast::Pattern>() },
+        },
         .diagnostics = std::move(module.diagnostics),
         .source = std::move(module.source)
     };
 
     Lowering_context context {
-        hir_module.node_context,
-        hir_module.type_context,
+        hir_module.hir_node_context,
+        hir_module.mir_node_context,
         hir_module.diagnostics,
         hir_module.source
     };

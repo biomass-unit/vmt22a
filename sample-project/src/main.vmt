@@ -2,6 +2,7 @@ namespace test {
     fn f(): Int = 0
 }
 
+fn f(n: Int) = [10, 20, 30]: [Int; 3]
 
 fn main(): Int {
     f()

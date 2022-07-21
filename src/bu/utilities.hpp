@@ -28,6 +28,7 @@
 #include <list>
 #include <tuple>
 #include <array>
+#include <queue>
 #include <vector>
 #include <variant>
 #include <optional>

@@ -4,14 +4,6 @@
 #include "lir/lir.hpp"
 
 
-auto resolution::Context::error(
-    bu::Source_view                    const source_view,
-    bu::diagnostics::Message_arguments const arguments) -> void
-{
-    diagnostics.emit_simple_error(arguments.add_source_info(source, source_view));
-}
-
-
 namespace {
 
     template <class HIR_definition, auto resolution::Namespace::* member>
@@ -65,7 +57,8 @@ namespace {
 
     auto register_top_level_definitions(hir::Module&& module) -> resolution::Context {
         resolution::Context context {
-            std::move(module.node_context),
+            std::move(module.hir_node_context),
+            std::move(module.mir_node_context),
             resolution::Namespace::Context {},
             std::move(module.diagnostics),
             std::move(module.source),
@@ -77,24 +70,14 @@ namespace {
 }
 
 
-resolution::Context::Context(
-    hir::Node_context       && node_context,
-    Namespace::Context      && namespace_context,
-    bu::diagnostics::Builder&& diagnostics,
-    bu::Source              && source
-) noexcept
-    : hir_node_context { std::move(node_context) }
-    , mir_node_context {
-        bu::Wrapper_context<mir::Expression> { hir_node_context.arena_size<hir::Expression>() },
-        bu::Wrapper_context<mir::Pattern>    { hir_node_context.arena_size<hir::Pattern>() },
-        bu::Wrapper_context<mir::Type>       { hir_node_context.arena_size<hir::Type>() },
-    }
-    , namespace_context { std::move(namespace_context) }
-    , diagnostics       { std::move(diagnostics) }
-    , source            { std::move(source) } {}
-
-
 auto resolution::resolve(hir::Module&& module) -> Module {
-    [[maybe_unused]] auto context = register_top_level_definitions(std::move(module));
+    Context context = register_top_level_definitions(std::move(module));
+
+    auto& f = std::get<hir::definition::Function>(*context.global_namespace->functions.container().front().second);
+
+    bu::print("body before inference: {}\n\n", f.body);
+    context.unify(context.collect_constraints(f.body));
+    bu::print("body after inference: {}\n\n", f.body);
+
     bu::todo();
 }

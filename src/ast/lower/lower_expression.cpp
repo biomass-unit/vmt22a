@@ -40,6 +40,10 @@ namespace {
         }
 
         auto operator()(ast::expression::Array_literal const& literal) -> hir::Expression::Variant {
+            non_general_type = mir::type::Array {
+                .element_type = context.fresh_type_variable(),
+                .length       = mir::expression::Literal<bu::Isize> { std::ssize(literal.elements) }
+            };
             return hir::expression::Array_literal {
                 .elements = bu::map(context.lower())(literal.elements)
             };
