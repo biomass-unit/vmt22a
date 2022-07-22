@@ -90,27 +90,16 @@ namespace resolution {
 
 
     namespace constraint {
-
         struct Equality {
             bu::Wrapper<mir::Type> left, right;
         };
-
-        struct Vertical_relationship {
-            bu::Wrapper<mir::Type> supertype, subtype;
-        };
-
         struct Instance {
             bu::Wrapper<mir::Type>            type;
             std::vector<mir::Class_reference> classes;
         };
-
     }
 
-    struct [[nodiscard]] Constraint : std::variant<
-        constraint::Equality,
-        constraint::Vertical_relationship,
-        constraint::Instance
-    > {};
+    struct [[nodiscard]] Constraint : std::variant<constraint::Equality, constraint::Instance> {};
 
 
     class Context {
@@ -137,12 +126,12 @@ namespace resolution {
         auto error(bu::Source_view, bu::diagnostics::Message_arguments) -> void;
 
 
-        auto collect_constraints(hir::Expression const&) -> std::queue<Constraint>;
+        auto collect_constraints(hir::Expression&) -> std::queue<Constraint>;
         auto unify(std::queue<Constraint>&&) -> void;
 
 
-        auto resolve(hir::Type       const&) -> mir::Type;
-        auto resolve(hir::Expression const&) -> mir::Expression;
+        auto resolve(hir::Type const&) -> mir::Type;
+        auto resolve(hir::Expression&) -> mir::Expression;
 
         auto resolve() noexcept {
             return [this](auto const& node) {

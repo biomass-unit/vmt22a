@@ -29,9 +29,6 @@ DEFINE_FORMATTER_FOR(resolution::Constraint) {
         [&](resolution::constraint::Equality const& e) {
             return std::format_to(context.out(), "{} = {}", e.left, e.right);
         },
-        [&](resolution::constraint::Vertical_relationship const& v) {
-            return std::format_to(context.out(), "{} <= {}", v.subtype, v.supertype);
-        },
         [&](resolution::constraint::Instance const&) -> std::format_context::iterator {
             bu::todo();
         }

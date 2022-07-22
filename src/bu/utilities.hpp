@@ -381,6 +381,20 @@ namespace bu {
     }
 
 
+    template <class T, class V> [[nodiscard]]
+    constexpr decltype(auto) get(
+        V&& variant,
+        std::source_location const caller = std::source_location::current()) noexcept
+    {
+        try {
+            return forward_like<V>(std::get<T>(variant));
+        }
+        catch (std::bad_variant_access const&) {
+            abort("Bad variant access", caller);
+        }
+    }
+
+
     template <class T>
     auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
         std::vector<T> vector;

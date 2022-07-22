@@ -52,11 +52,11 @@ namespace {
         resolution::Context& context;
 
         auto operator()(resolution::constraint::Equality const& equality) {
-            auto& [a, b] = equality;
-            std::visit(Equality_constraint_visitor { context, a, b }, a->value, b->value);
-        }
-        auto operator()(resolution::constraint::Vertical_relationship const& vert) {
-            operator()(resolution::constraint::Equality { vert.supertype, vert.subtype });
+            std::visit(
+                Equality_constraint_visitor { context, equality.left, equality.right },
+                equality.left->value,
+                equality.right->value
+            );
         }
         auto operator()(resolution::constraint::Instance const&) {
             bu::todo();

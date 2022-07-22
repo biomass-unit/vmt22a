@@ -9,7 +9,11 @@ namespace {
         std::queue<resolution::Constraint>& constraints;
         hir::Expression              const& this_expression;
 
-        auto recurse(hir::Expression const& expression) -> void {
+        auto equality_constraint(bu::Wrapper<mir::Type> const left, bu::Wrapper<mir::Type> const right) -> void {
+            constraints.emplace(resolution::constraint::Equality { .left = left, .right = right });
+        }
+
+        auto recurse(hir::Expression& expression) -> void {
             std::visit(
                 Constraint_collecting_visitor {
                     context,
@@ -21,24 +25,20 @@ namespace {
         }
 
 
-        auto operator()(hir::expression::Array_literal const& array) -> void {
-            for (hir::Expression const& element : array.elements) {
-                constraints.emplace(
-                    resolution::constraint::Vertical_relationship {
-                        .supertype = std::get<mir::type::Array>(this_expression.type->value).element_type,
-                        .subtype   = element.type
-                    }
+        auto operator()(hir::expression::Array_literal& array) -> void {
+            for (hir::Expression& element : array.elements) {
+                equality_constraint(
+                    bu::get<mir::type::Array>(this_expression.type->value).element_type,
+                    element.type
                 );
             }
         }
 
-        auto operator()(hir::expression::Type_cast const& cast) -> void {
+        auto operator()(hir::expression::Type_cast& cast) -> void {
             if (cast.kind == ast::expression::Type_cast::Kind::ascription) {
-                constraints.emplace(
-                    resolution::constraint::Equality {
-                        cast.expression->type,
-                        context.resolve(cast.target)
-                    }
+                equality_constraint(
+                    cast.expression->type,
+                    context.resolve(*cast.target)
                 );
             }
             else {
@@ -47,7 +47,7 @@ namespace {
         }
 
         template <class T>
-        auto operator()(T const&) -> void {
+        auto operator()(T&) -> void {
             bu::abort(typeid(T).name());
         }
     };
@@ -55,7 +55,7 @@ namespace {
 }
 
 
-auto resolution::Context::collect_constraints(hir::Expression const& expression)
+auto resolution::Context::collect_constraints(hir::Expression& expression)
     -> std::queue<Constraint>
 {
     std::queue<Constraint> constraints;

@@ -22,7 +22,7 @@ namespace {
 }
 
 
-auto resolution::Context::resolve(hir::Expression const& expression) -> mir::Expression {
+auto resolution::Context::resolve(hir::Expression& expression) -> mir::Expression {
     return {
         .value = std::visit(
             Expression_resolution_visitor {

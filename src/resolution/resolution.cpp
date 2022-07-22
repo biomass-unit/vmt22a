@@ -73,11 +73,15 @@ namespace {
 auto resolution::resolve(hir::Module&& module) -> Module {
     Context context = register_top_level_definitions(std::move(module));
 
+    // loop through definitions in order and resolve every function signature
+
+
     auto& f = std::get<hir::definition::Function>(*context.global_namespace->functions.container().front().second);
 
     bu::print("body before inference: {}\n\n", f.body);
     context.unify(context.collect_constraints(f.body));
     bu::print("body after inference: {}\n\n", f.body);
+
 
     bu::todo();
 }

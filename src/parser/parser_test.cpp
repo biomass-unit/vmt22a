@@ -58,10 +58,7 @@ namespace {
 
 
     template <auto extract, class Node = std::invoke_result_t<decltype(extract), parser::Parse_context&>>
-    auto assert_node_eq(std::string_view     const text,
-                        typename Node::Variant&&   value,
-                        std::source_location const caller = std::source_location::current()) -> void
-    {
+    auto assert_node_eq(std::string_view const text, typename Node::Variant&& value, std::source_location const caller = std::source_location::current()) -> void {
         tests::assert_eq(
             extract_node<extract>(text),
             Node { .value = std::move(value), .source_view = empty_view() },
@@ -69,24 +66,13 @@ namespace {
         );
     };
 
-    auto assert_expr_eq(std::string_view     const text,
-                        ast::Expression::Variant&& value,
-                        std::source_location const caller = std::source_location::current())
-    {
+    auto assert_expr_eq(std::string_view const text, ast::Expression::Variant&& value, std::source_location const caller = std::source_location::current()) -> void {
         assert_node_eq<parser::extract_expression>(text, std::move(value), caller);
     }
-
-    auto assert_patt_eq(std::string_view     const text,
-                        ast::Pattern::Variant&&    value,
-                        std::source_location const caller = std::source_location::current())
-    {
+    auto assert_patt_eq(std::string_view const text, ast::Pattern::Variant&& value, std::source_location const caller = std::source_location::current()) -> void {
         assert_node_eq<parser::extract_pattern>(text, std::move(value), caller);
     }
-
-    auto assert_type_eq(std::string_view     const text,
-                        ast::Type::Variant&&       value,
-                        std::source_location const caller = std::source_location::current())
-    {
+    auto assert_type_eq(std::string_view const text, ast::Type::Variant&& value, std::source_location const caller = std::source_location::current()) -> void {
         assert_node_eq<parser::extract_type>(text, std::move(value), caller);
     }
 

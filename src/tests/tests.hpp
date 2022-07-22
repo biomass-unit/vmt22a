@@ -31,9 +31,7 @@ namespace tests {
             std::function<void()> callable;
             std::source_location  caller;
 
-            Invoke(
-                auto&&                     callable,
-                std::source_location const caller = std::source_location::current())
+            Invoke(auto&& callable, std::source_location const caller = std::source_location::current())
                 : callable { std::forward<decltype(callable)>(callable) }
                 , caller { caller } {}
         };
