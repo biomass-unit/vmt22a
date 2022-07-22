@@ -383,7 +383,7 @@ namespace {
 
             if (found != it) {
                 context.error(it->source_view, {
-                    .message_format = "A {} with this name has already been defined",
+                    .message = "A {} with this name has already been defined",
                     .message_arguments = std::make_format_args(description)
                 });
 
@@ -506,7 +506,7 @@ namespace {
                 context.error(
                     { anchor - 1, anchor + 1 },
                     {
-                        .message_format =
+                        .message =
                             "An enum-definition must not define more "
                             "than {} constructors, but {} defines {}",
                         .message_arguments = std::make_format_args(max, name, constructors->size()),

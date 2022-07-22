@@ -149,14 +149,14 @@ namespace {
                     context.diagnostics.emit_simple_note({
                         .erroneous_view = condition.source_view,
                         .source         = context.source,
-                        .message_format = "Consider using 'loop' instead of 'while true'",
+                        .message        = "Consider using 'loop' instead of 'while true'",
                     });
                 }
                 else {
                     context.diagnostics.emit_simple_warning({
                         .erroneous_view = condition.source_view,
                         .source         = context.source,
-                        .message_format = "Loop will never be run"
+                        .message        = "Loop will never be run"
                     });
                 }
             }
@@ -309,7 +309,7 @@ namespace {
 
                 context.diagnostics.emit_warning({
                     .sections = std::move(sections),
-                    .message_format = "Boolean literal condition"
+                    .message  = "Boolean literal condition"
                 });
             }
 

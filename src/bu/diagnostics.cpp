@@ -188,7 +188,7 @@ namespace {
         bu::Color                                const title_color,
         bu::diagnostics::Type                    const diagnostic_type = bu::diagnostics::Type::recoverable) -> void
     {
-        auto& [sections, message_format, message_format_arguments, help_note] = arguments;
+        auto& [sections, message, message_format_arguments, help_note, help_note_arguments] = arguments;
 
         assert(!arguments.sections.empty());
         auto out = std::back_inserter(diagnostic_string);
@@ -199,7 +199,7 @@ namespace {
 
         std::format_to(out, "{}{}{}: ", title_color, title, bu::Color::white);
 
-        std::vformat_to(out, message_format, message_format_arguments);
+        std::vformat_to(out, message, message_format_arguments);
         std::format_to(out, "\n\n");
 
         bu::Source const* current_source = nullptr;
@@ -229,7 +229,8 @@ namespace {
         }
 
         if (help_note) {
-            std::format_to(out, "\n\nHelpful note: {}", *help_note);
+            std::format_to(out, "\n\nHelpful note: ");
+            std::vformat_to(out, *help_note, help_note_arguments);
         }
 
         if (diagnostic_type == bu::diagnostics::Type::irrecoverable) {
@@ -253,12 +254,19 @@ namespace {
                     .note_color  = note_color
                 }
             },
-            .message_format    = arguments.message_format,
-            .message_arguments = arguments.message_arguments,
-            .help_note         = arguments.help_note
+            .message             = arguments.message,
+            .message_arguments   = arguments.message_arguments,
+            .help_note           = arguments.help_note,
+            .help_note_arguments = arguments.help_note_arguments
         };
     }
 
+}
+
+
+auto bu::diagnostics::Text_section::operator=(Text_section const& other) noexcept -> Text_section& {
+    this->~Text_section();
+    return *::new(this) Text_section { other };
 }
 
 
@@ -361,10 +369,11 @@ auto bu::diagnostics::Message_arguments::add_source_info(
     bu::Source_view const  erroneous_view) const -> Builder::Simple_emit_arguments
 {
     return {
-        .erroneous_view    = erroneous_view,
-        .source            = source,
-        .message_format    = message_format,
-        .message_arguments = message_arguments,
-        .help_note         = help_note
+        .erroneous_view      = erroneous_view,
+        .source              = source,
+        .message             = message,
+        .message_arguments   = message_arguments,
+        .help_note           = help_note,
+        .help_note_arguments = help_note_arguments
     };
 }

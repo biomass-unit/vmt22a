@@ -184,7 +184,7 @@ namespace {
             std::string_view                const message,
             std::optional<std::string_view> const help_note = std::nullopt) -> void
         {
-            error(location, { .message_format = message, .help_note = help_note });
+            error(location, { .message = message, .help_note = help_note });
         }
 
         [[noreturn]]
@@ -193,7 +193,7 @@ namespace {
             std::string_view const   message,
             std::optional<std::string_view> const help_note = std::nullopt) -> void
         {
-            error(view, { .message_format = message, .help_note = help_note });
+            error(view, { .message = message, .help_note = help_note });
         }
 
         auto error(char const* const&&, bu::diagnostics::Message_arguments) const -> void = delete;
@@ -317,12 +317,6 @@ namespace {
             return false;
         }
 
-        auto const view = context.extract(is_identifier);
-
-        if (std::ranges::all_of(view, is_one_of<'_'>)) [[unlikely]] {
-            return context.success(Token::Type::underscore);
-        }
-
         static auto const options = std::to_array<bu::Pair<lexer::Identifier, Token::Type>>({
             { new_id("let")       , Token::Type::let            },
             { new_id("mut")       , Token::Type::mut            },
@@ -367,6 +361,12 @@ namespace {
             true_id  = new_id("true" ),
             false_id = new_id("false");
 
+        std::string_view const view = context.extract(is_identifier);
+
+        if (std::ranges::all_of(view, is_one_of<'_'>)) {
+            return context.success(Token::Type::underscore);
+        }
+
         lexer::Identifier const identifier { view };
 
         if (identifier == true_id || identifier == false_id) {
@@ -380,7 +380,7 @@ namespace {
         }
 
         return context.success(
-            is_upper(view.front())
+            is_upper(view[view.find_first_not_of('_')])
                 ? Token::Type::upper_name
                 : Token::Type::lower_name,
             identifier
@@ -541,7 +541,10 @@ namespace {
             else {
                 context.error(
                     { state.pointer, 2 }, // view of the base specifier
-                    "Expected an integer literal after the base-{} specifier"_format(base)
+                    {
+                        .message = "Expected an integer literal after the base-{} specifier",
+                        .message_arguments = std::make_format_args(base)
+                    }
                 );
             }
         }

@@ -31,14 +31,12 @@ namespace {
         using namespace tests;
         using enum lexer::Token::Type;
 
-
         "whitespace"_test = [] {
             assert_tok_eq(
                 "\ta\nb  \t  c  \n  d\n\n e ",
                 { lower_name, lower_name, lower_name, lower_name, lower_name }
             );
         };
-
 
         "numeric"_test = [] {
             assert_tok_eq(
@@ -52,14 +50,12 @@ namespace {
             );
         };
 
-
         "tuple_member_access"_test = [] {
             assert_tok_eq(
                 ".0.0, 0.0",
                 { dot, integer, dot, integer, comma, floating }
             );
         };
-
 
         "punctuation"_test = [] {
             assert_tok_eq(
@@ -68,14 +64,12 @@ namespace {
             );
         };
 
-
         "comment"_test = [] {
             assert_tok_eq(
                 ". /* , /*::*/! */ in /**/ / //",
                 { dot, in, operator_name }
             );
         };
-
 
         "keyword"_test = [] {
             assert_tok_eq(
@@ -88,7 +82,6 @@ namespace {
                 { comma, dot, bracket_open, brace_close, match, double_colon }
             );
         };
-
 
         "pattern"_test = [] {
             assert_tok_eq(
@@ -107,7 +100,6 @@ namespace {
             );
         };
 
-
         "string"_test = [] {
             assert_tok_eq(
                 "\"test\\t\\\",\", 'a', '\\\\'",
@@ -117,6 +109,13 @@ namespace {
             assert_tok_eq(
                 "\"hmm\" \", yes\"",
                 { string }
+            );
+        };
+
+        "casing"_test = [] {
+            assert_tok_eq(
+                "a A _a _A _0 _",
+                { lower_name, upper_name, lower_name, upper_name, lower_name, underscore }
             );
         };
     }

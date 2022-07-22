@@ -68,13 +68,7 @@ namespace parser {
             bu::Source_view                    const erroneous_view,
             bu::diagnostics::Message_arguments const arguments) const -> void
         {
-            diagnostics.emit_simple_error({
-                .erroneous_view    = erroneous_view,
-                .source            = source,
-                .message_format    = arguments.message_format,
-                .message_arguments = arguments.message_arguments,
-                .help_note         = arguments.help_note
-            });
+            diagnostics.emit_simple_error(arguments.add_source_info(source, erroneous_view));
         }
 
         [[noreturn]]
@@ -90,7 +84,7 @@ namespace parser {
             std::span<Token const> const span,
             std::string_view       const message) const -> void
         {
-            error(span, { .message_format = message });
+            error(span, { .message = message });
         }
 
         [[noreturn]]
@@ -105,7 +99,7 @@ namespace parser {
             std::optional<std::string_view> const help = std::nullopt) const -> void
         {
             error(span, {
-                .message_format    = "Expected {}, but found {}",
+                .message           = "Expected {}, but found {}",
                 .message_arguments = std::make_format_args(expectation, lexer::token_description(pointer->type)),
                 .help_note         = help
             });

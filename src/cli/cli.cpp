@@ -123,7 +123,7 @@ namespace {
         [[noreturn]]
         auto expected(std::string_view const expectation) const -> void {
             error({
-                .message_format = "Expected {}",
+                .message = "Expected {}",
                 .message_arguments = std::make_format_args(expectation)
             });
         }
@@ -132,7 +132,7 @@ namespace {
         auto error_unrecognized_option() const -> void {
             // Not optimal, but this is a special case so it shouldn't matter.
             try {
-                error({ .message_format = "Unrecognized option" });
+                error({ "Unrecognized option" });
             }
             catch (bu::Exception const& exception) {
                 throw cli::Unrecognized_option { exception.what() };
@@ -165,7 +165,7 @@ namespace {
                 else {
                     context.retreat();
                     context.error({
-                        .message_format = "Unexpected suffix: '{}'",
+                        .message = "Unexpected suffix: '{}'",
                         .message_arguments = std::make_format_args(std::string_view { ptr, stop })
                     });
                 }
@@ -174,7 +174,7 @@ namespace {
             {
                 context.retreat();
                 context.error({
-                    .message_format = "The given value is too large to be represented by a {}-bit value",
+                    .message = "The given value is too large to be represented by a {}-bit value",
                     .message_arguments = std::make_format_args(sizeof(T) * CHAR_BIT)
                 });
             }
@@ -230,7 +230,7 @@ namespace {
 
                 if (!argument) {
                     context.error({
-                        .message_format = "Expected an argument [{}]",
+                        .message = "Expected an argument [{}]",
                         .message_arguments = std::make_format_args(type_description<T>())
                     });
                 }
@@ -239,7 +239,7 @@ namespace {
                     if (*argument < *value.minimum_value) {
                         context.retreat();
                         context.error({
-                            .message_format = "The minimum allowed value is {}",
+                            .message = "The minimum allowed value is {}",
                             .message_arguments = std::make_format_args(*value.minimum_value)
                         });
                     }
@@ -248,7 +248,7 @@ namespace {
                     if (*argument > *value.maximum_value) {
                         context.retreat();
                         context.error({
-                            .message_format = "The maximum allowed value is {}",
+                            .message = "The maximum allowed value is {}",
                             .message_arguments = std::make_format_args(*value.maximum_value)
                         });
                     }

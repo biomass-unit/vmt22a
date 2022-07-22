@@ -381,16 +381,29 @@ namespace bu {
     }
 
 
-    template <class T, class V> [[nodiscard]]
+    template <class T, class V> requires instance_of<std::decay_t<V>, std::variant> [[nodiscard]]
     constexpr decltype(auto) get(
         V&& variant,
         std::source_location const caller = std::source_location::current()) noexcept
     {
-        try {
-            return forward_like<V>(std::get<T>(variant));
+        if (T* const alternative = std::get_if<T>(&variant)) [[likely]] {
+            return forward_like<V>(*alternative);
         }
-        catch (std::bad_variant_access const&) {
+        else [[unlikely]] {
             abort("Bad variant access", caller);
+        }
+    }
+
+    template <class O> requires instance_of<std::decay_t<O>, std::optional> [[nodiscard]]
+    constexpr decltype(auto) get(
+        O&& optional,
+        std::source_location const caller = std::source_location::current()) noexcept
+    {
+        if (optional.has_value()) [[likely]] {
+            return forward_like<O>(*optional);
+        }
+        else [[unlikely]] {
+            abort("Bad optional access", caller);
         }
     }
 

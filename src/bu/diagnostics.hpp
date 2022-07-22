@@ -21,6 +21,9 @@ namespace bu::diagnostics {
         Source const&        source;
         std::string_view     note = "here";
         std::optional<Color> note_color;
+
+        // Has to be manually defined due to reference member
+        auto operator=(Text_section const&) noexcept -> Text_section&;
     };
 
 
@@ -28,16 +31,18 @@ namespace bu::diagnostics {
     public:
         struct Emit_arguments {
             std::vector<Text_section>       sections;
-            std::string_view                message_format;
+            std::string_view                message;
             std::format_args                message_arguments;
             std::optional<std::string_view> help_note;
+            std::format_args                help_note_arguments;
         };
         struct Simple_emit_arguments {
             bu::Source_view                 erroneous_view;
             Source const&                   source;
-            std::string_view                message_format;
+            std::string_view                message;
             std::format_args                message_arguments;
             std::optional<std::string_view> help_note;
+            std::format_args                help_note_arguments;
         };
         struct Configuration {
             Level note_level    = Level::normal;
@@ -79,9 +84,10 @@ namespace bu::diagnostics {
 
 
     struct Message_arguments {
-        std::string_view                message_format;
+        std::string_view                message;
         std::format_args                message_arguments;
         std::optional<std::string_view> help_note;
+        std::format_args                help_note_arguments;
 
         auto add_source_info(bu::Source const&, bu::Source_view) const
             -> Builder::Simple_emit_arguments;

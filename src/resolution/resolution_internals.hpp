@@ -102,6 +102,42 @@ namespace resolution {
     struct [[nodiscard]] Constraint : std::variant<constraint::Equality, constraint::Instance> {};
 
 
+    class Context;
+
+    class Scope {
+    public:
+        struct Variable_binding {
+            bu::Wrapper<mir::Type>         type;
+            ast::Mutability                mutability;
+            bool                           has_been_mentioned;
+            std::optional<bu::Source_view> source_view;
+        };
+
+        struct Type_binding {
+            bu::Wrapper<mir::Type>         type;
+            bool                           has_been_mentioned;
+            std::optional<bu::Source_view> source_view;
+        };
+    private:
+        bu::Flatmap<lexer::Identifier, Variable_binding> variables;
+        bu::Flatmap<lexer::Identifier, Type_binding>     types;
+        Context&                                         context;
+        Scope*                                           parent = nullptr;
+    public:
+        Scope(Context&) noexcept;
+
+        ~Scope();
+
+        auto bind_variable(lexer::Identifier, Variable_binding&&) -> void;
+        auto bind_type    (lexer::Identifier, Type_binding    &&) -> void;
+
+        auto find_variable(lexer::Identifier) noexcept -> Variable_binding*;
+        auto find_type    (lexer::Identifier) noexcept -> Type_binding*;
+
+        auto make_child() noexcept -> Scope;
+    };
+
+
     class Context {
         hir::Node_context  hir_node_context;
         mir::Node_context  mir_node_context;

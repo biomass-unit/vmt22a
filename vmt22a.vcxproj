@@ -250,6 +250,7 @@
     <ClCompile Include="src\resolution\resolution.cpp" />
     <ClCompile Include="src\resolution\resolution_internals.cpp" />
     <ClCompile Include="src\resolution\resolve_type.cpp" />
+    <ClCompile Include="src\resolution\scope.cpp" />
     <ClCompile Include="src\resolution\unification.cpp" />
     <ClCompile Include="src\tests\tests.cpp" />
     <ClCompile Include="src\vm\serializing.cpp" />
