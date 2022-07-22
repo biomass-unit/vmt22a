@@ -46,6 +46,9 @@ struct mir::Template_value_parameter {
 
 
 struct mir::Function_parameter {
-    Pattern pattern;
-    Type    type;
+    Pattern           pattern;
+    bu::Wrapper<Type> type;
 };
+
+
+DECLARE_FORMATTER_FOR(mir::Class_reference);

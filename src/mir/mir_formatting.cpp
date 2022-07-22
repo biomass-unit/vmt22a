@@ -10,6 +10,13 @@ DIRECTLY_DEFINE_FORMATTER_FOR(mir::Template_parameter_set) {
 }
 
 
+DEFINE_FORMATTER_FOR(mir::Class_reference) {
+    std::ignore = value;
+    std::ignore = context;
+    bu::todo();
+}
+
+
 namespace {
 
     struct Expression_format_visitor : bu::fmt::Visitor_base {

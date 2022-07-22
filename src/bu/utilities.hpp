@@ -28,7 +28,6 @@
 #include <list>
 #include <tuple>
 #include <array>
-#include <queue>
 #include <vector>
 #include <variant>
 #include <optional>
@@ -381,10 +380,11 @@ namespace bu {
     }
 
 
-    template <class T, class V> requires instance_of<std::decay_t<V>, std::variant> [[nodiscard]]
+    template <class T, class V> [[nodiscard]]
     constexpr decltype(auto) get(
         V&& variant,
         std::source_location const caller = std::source_location::current()) noexcept
+        requires requires { std::get_if<T>(&variant); }
     {
         if (T* const alternative = std::get_if<T>(&variant)) [[likely]] {
             return forward_like<V>(*alternative);

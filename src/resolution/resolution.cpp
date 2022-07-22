@@ -7,12 +7,12 @@
 namespace {
 
     template <class HIR_definition, auto resolution::Namespace::* member>
-    auto visit_handler(resolution::Namespace& space) {
-        return [&space](HIR_definition& hir_definition) -> void {
+    auto visit_handler(bu::Wrapper<resolution::Namespace> const space) {
+        return [space](HIR_definition& hir_definition) -> void {
             lexer::Identifier identifier = hir_definition.name.identifier;
-            bu::Wrapper definition = resolution::Definition_info { std::move(hir_definition) };
-            (space.*member).add(std::move(identifier), bu::copy(definition));
-            space.definitions_in_order.push_back(definition);
+            bu::Wrapper definition = resolution::Definition_info { std::move(hir_definition), space };
+            ((*space).*member).add(std::move(identifier), bu::copy(definition));
+            space->definitions_in_order.push_back(definition);
         };
     }
 
@@ -55,6 +55,8 @@ namespace {
         }
     }
 
+
+    // Creates a resolution context by collecting top level name information
     auto register_top_level_definitions(hir::Module&& module) -> resolution::Context {
         resolution::Context context {
             std::move(module.hir_node_context),
@@ -67,21 +69,31 @@ namespace {
         return context;
     }
 
+
+    // Resolves all definitions in order, but only visits function bodies if their return types have been omitted
+    auto resolve_signatures(resolution::Context& context, bu::Wrapper<resolution::Namespace> const space) -> void {
+        for (resolution::Namespace::Definition_variant& definition : space->definitions_in_order) {
+            std::visit(bu::Overload {
+                [&](resolution::Function_info& info) {
+                    auto& sig = context.resolve_function_signature(info);
+                    bu::print("return type: {}\n", sig.return_type);
+                },
+                [&](resolution::Struct_info&)    { bu::todo(); },
+                [&](resolution::Enum_info&)      { bu::todo(); },
+                [&](resolution::Alias_info&)     { bu::todo(); },
+                [&](resolution::Typeclass_info&) { bu::todo(); },
+                [&](bu::Wrapper<resolution::Namespace>& child) {
+                    resolve_signatures(context, child);
+                }
+            }, definition);
+        }
+    }
+
 }
 
 
 auto resolution::resolve(hir::Module&& module) -> Module {
     Context context = register_top_level_definitions(std::move(module));
-
-    // loop through definitions in order and resolve every function signature
-
-
-    auto& f = std::get<hir::definition::Function>(*context.global_namespace->functions.container().front().second);
-
-    bu::print("body before inference: {}\n\n", f.body);
-    context.unify(context.collect_constraints(f.body));
-    bu::print("body after inference: {}\n\n", f.body);
-
-
+    resolve_signatures(context, context.global_namespace);
     bu::todo();
 }

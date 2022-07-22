@@ -12,31 +12,45 @@ namespace resolution {
         resolved,
         currently_on_resolution_stack,
     };
-
+    
 
     struct Partially_resolved_function {
-        mir::Template_parameter_set          template_parameters;
-        std::vector<mir::Function_parameter> parameters;
-        mir::Type                            return_type;
-        hir::Expression                      unresolved_body;
-        ast::Name                            name;
+        mir::Function::Signature resolved_signature;
+        hir::Expression          unresolved_body;
+        hir::Name                name;
     };
 
 
+    struct Namespace;
+
     template <class HIR_representation, class MIR_representation>
-    struct Definition_info : std::variant<HIR_representation, MIR_representation> {
-        Definition_state state = Definition_state::unresolved;
+    struct Definition_info {
+        using Variant = std::variant<HIR_representation, MIR_representation>;
+
+        Variant                value;
+        bu::Wrapper<Namespace> home_namespace;
+        Definition_state       state = Definition_state::unresolved;
+
+        Definition_info(HIR_representation&& value, bu::Wrapper<Namespace> const home_namespace) noexcept
+            : value          { std::move(value) }
+            , home_namespace { home_namespace } {}
     };
 
     template <>
-    struct Definition_info<hir::definition::Function, mir::Function> :
-        std::variant<
+    struct Definition_info<hir::definition::Function, mir::Function> {
+        using Variant = std::variant<
             hir::definition::Function,   // Fully unresolved
             Partially_resolved_function, // Signature resolved, body unresolved
             mir::Function                // Fully resolved
-        >
-    {
-        Definition_state state = Definition_state::unresolved;
+        >;
+
+        Variant                value;
+        bu::Wrapper<Namespace> home_namespace;
+        Definition_state       state = Definition_state::unresolved;
+
+        Definition_info(hir::definition::Function&& value, bu::Wrapper<Namespace> const home_namespace) noexcept
+            : value          { std::move(value) }
+            , home_namespace { home_namespace } {}
     };
 
     using Function_info  = Definition_info<hir::definition::Function,  mir::Function>;
@@ -45,11 +59,11 @@ namespace resolution {
     using Alias_info     = Definition_info<hir::definition::Alias,     mir::Alias>;
     using Typeclass_info = Definition_info<hir::definition::Typeclass, mir::Typeclass>;
     
-    Definition_info(hir::definition::Function&&)  -> Function_info;
-    Definition_info(hir::definition::Struct&&)    -> Struct_info;
-    Definition_info(hir::definition::Enum&&)      -> Enum_info;
-    Definition_info(hir::definition::Alias&&)     -> Alias_info;
-    Definition_info(hir::definition::Typeclass&&) -> Typeclass_info;
+    Definition_info(hir::definition::Function &&, bu::Wrapper<Namespace>) -> Function_info;
+    Definition_info(hir::definition::Struct   &&, bu::Wrapper<Namespace>) -> Struct_info;
+    Definition_info(hir::definition::Enum     &&, bu::Wrapper<Namespace>) -> Enum_info;
+    Definition_info(hir::definition::Alias    &&, bu::Wrapper<Namespace>) -> Alias_info;
+    Definition_info(hir::definition::Typeclass&&, bu::Wrapper<Namespace>) -> Typeclass_info;
 
 
     struct Namespace {
@@ -99,10 +113,11 @@ namespace resolution {
         };
     }
 
-    struct [[nodiscard]] Constraint : std::variant<constraint::Equality, constraint::Instance> {};
+    struct Constraint_set {
+        std::vector<constraint::Equality> equality_constraints;
+        std::vector<constraint::Instance> instance_constraints;
+    };
 
-
-    class Context;
 
     class Scope {
     public:
@@ -121,7 +136,7 @@ namespace resolution {
     private:
         bu::Flatmap<lexer::Identifier, Variable_binding> variables;
         bu::Flatmap<lexer::Identifier, Type_binding>     types;
-        Context&                                         context;
+        class Context&                                   context;
         Scope*                                           parent = nullptr;
     public:
         Scope(Context&) noexcept;
@@ -147,6 +162,8 @@ namespace resolution {
         bu::Source               source;
         bu::Wrapper<Namespace>   global_namespace;
 
+        bu::Wrapper<mir::Type> array_indexing_type = mir::type::Integer::u64;
+
         Context(
             hir::Node_context&&,
             mir::Node_context&&,
@@ -162,21 +179,15 @@ namespace resolution {
         auto error(bu::Source_view, bu::diagnostics::Message_arguments) -> void;
 
 
-        auto collect_constraints(hir::Expression&) -> std::queue<Constraint>;
-        auto unify(std::queue<Constraint>&&) -> void;
+        auto unify(Constraint_set&) -> void;
 
+        auto resolve_type      (hir::Type      &, Scope&, Namespace&) -> bu::Wrapper<mir::Type>;
+        auto resolve_expression(hir::Expression&, Scope&, Namespace&) -> bu::Pair<Constraint_set, mir::Expression>;
 
-        auto resolve(hir::Type const&) -> mir::Type;
-        auto resolve(hir::Expression&) -> mir::Expression;
-
-        auto resolve() noexcept {
-            return [this](auto const& node) {
-                return resolve(node);
-            };
-        }
+        auto resolve_function_signature(Function_info&) -> mir::Function::Signature&;
     };
 
 }
 
 
-DECLARE_FORMATTER_FOR(resolution::Constraint);
+DECLARE_FORMATTER_FOR(resolution::Constraint_set);

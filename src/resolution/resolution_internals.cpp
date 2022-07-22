@@ -24,13 +24,15 @@ resolution::Context::Context(
     , source            { std::move(source) } {}
 
 
-DEFINE_FORMATTER_FOR(resolution::Constraint) {
-    return std::visit(bu::Overload {
-        [&](resolution::constraint::Equality const& e) {
-            return std::format_to(context.out(), "{} = {}", e.left, e.right);
-        },
-        [&](resolution::constraint::Instance const&) -> std::format_context::iterator {
-            bu::todo();
-        }
-    }, value);
+DEFINE_FORMATTER_FOR(resolution::Constraint_set) {
+    auto out = context.out();
+
+    for (auto const& equality_constraint : value.equality_constraints) {
+        std::format_to(out, "{} = {}\n", equality_constraint.left, equality_constraint.right);
+    }
+    for (auto const& instance_constraint : value.instance_constraints) {
+        std::format_to(out, "{}: {}", instance_constraint.type, bu::fmt::delimited_range(instance_constraint.classes, " + "));
+    }
+
+    return out;
 }

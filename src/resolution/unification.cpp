@@ -47,28 +47,15 @@ namespace {
         }
     };
 
-
-    struct Unification_visitor {
-        resolution::Context& context;
-
-        auto operator()(resolution::constraint::Equality const& equality) {
-            std::visit(
-                Equality_constraint_visitor { context, equality.left, equality.right },
-                equality.left->value,
-                equality.right->value
-            );
-        }
-        auto operator()(resolution::constraint::Instance const&) {
-            bu::todo();
-        }
-    };
-
 }
 
 
-auto resolution::Context::unify(std::queue<Constraint>&& constraints) -> void {
-    while (!constraints.empty()) {
-        std::visit(Unification_visitor { *this }, constraints.front());
-        constraints.pop();
+auto resolution::Context::unify(Constraint_set& constraints) -> void {
+    for (constraint::Equality& equality_constraint : constraints.equality_constraints) {
+        auto& [left, right] = equality_constraint;
+        Equality_constraint_visitor { *this, *left, *right }.recurse(*left, *right);
+    }
+    if (!constraints.instance_constraints.empty()) {
+        bu::todo();
     }
 }

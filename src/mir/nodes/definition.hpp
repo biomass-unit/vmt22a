@@ -8,10 +8,13 @@
 namespace mir {
 
     struct Function {
-        Template_parameter_set          template_parameters;
-        std::vector<Function_parameter> parameters;
-        Type                            return_type;
-        Expression                      body;
+        struct Signature {
+            mir::Template_parameter_set          template_parameters;
+            std::vector<mir::Function_parameter> parameters;
+            bu::Wrapper<mir::Type>               return_type;
+        };
+        Signature  signature;
+        Expression body;
     };
 
     struct Struct {

@@ -2,40 +2,39 @@
 #include "resolution_internals.hpp"
 
 
-resolution::Scope::Scope(Context& context) noexcept
-    : context { context } {}
+namespace {
 
-
-resolution::Scope::~Scope() {
-    auto const warn_about_unused_bindings = [this](auto const& bindings, std::string_view const formal_name) {
-        for (auto& [name, binding] : bindings.container()) {
-            if (!binding.has_been_mentioned
-                && binding.source_view.has_value() // Ignore bindings that have been inserted by the compiler
-                && name.view().front() != '_')     // Ignore bindings that start with an underscore
-            {
+    auto warn_about_unused_bindings(
+        resolution::Context  & context,
+        auto                 & bindings,
+        std::string_view const description) -> void
+    {
+        for (auto& [name, binding] : bindings) {
+            if (!binding.has_been_mentioned && binding.source_view.has_value()) {
                 context.diagnostics.emit_simple_warning({
                     .erroneous_view      = *binding.source_view,
                     .source              = context.source,
                     .message             = "Unused local {}",
-                    .message_arguments   = std::make_format_args(formal_name),
+                    .message_arguments   = std::make_format_args(description),
                     .help_note           = "If this is intentional, prefix the {} with an underscore: _{}",
-                    .help_note_arguments = std::make_format_args(formal_name, name)
+                    .help_note_arguments = std::make_format_args(description, name)
                 });
             }
         }
-    };
+    }
 
-    warn_about_unused_bindings(variables, "variable");
-    warn_about_unused_bindings(types, "type alias");
-}
+    auto add_binding(
+        resolution::Context   & context,
+        auto                  & bindings,
+        lexer::Identifier const identifier,
+        auto                 && binding,
+        std::string_view  const description) -> void
+    {
+        // If the name starts with an underscore, then we pretend that the
+        // binding has already been mentioned in order to prevent possible warnings.
+        binding.has_been_mentioned = identifier.view().front() == '_';
 
-
-namespace {
-
-    auto add_binding(resolution::Context& context, auto& bindings, lexer::Identifier const identifier, auto&& binding, std::string_view const description) -> void {
-        auto const it = std::ranges::find(bindings, identifier, bu::first);
-
-        if (it == bindings.end()) {
+        if (auto const it = std::ranges::find(bindings, identifier, bu::first); it == bindings.end()) {
             bindings.emplace_back(identifier, std::forward<decltype(binding)>(binding));
         }
         else {
@@ -64,6 +63,15 @@ namespace {
         }
     }
 
+}
+
+
+resolution::Scope::Scope(Context& context) noexcept
+    : context { context } {}
+
+resolution::Scope::~Scope() {
+    warn_about_unused_bindings(context, variables.container(), "variable");
+    warn_about_unused_bindings(context, types.container(), "type alias");
 }
 
 
