@@ -78,21 +78,11 @@ namespace {
         auto operator()(mir::type::Tuple const& tuple) {
             return format("({})", tuple.types);
         }
-        auto operator()(mir::type::Variable const& variable) {
-            return format(
-                "'{}{}",
-                [k = variable.kind] {
-                    using enum mir::type::Variable::Kind;
-                    switch (k) {
-                    case any_integer:    return 'I';
-                    case signed_integer: return 'S';
-                    case general:        return 'T';
-                    default:
-                        std::unreachable();
-                    }
-                }(),
-                variable.tag.value
-            );
+        auto operator()(mir::type::General_variable const& variable) {
+            return format("'T{}", variable.tag.value);
+        }
+        auto operator()(mir::type::Integral_variable const& variable) {
+            return format("'I{}", variable.tag.value);
         }
         auto operator()(mir::type::Parameterized const& parameterized) {
             return format("(\\{} -> {})", parameterized.parameters, parameterized.body);

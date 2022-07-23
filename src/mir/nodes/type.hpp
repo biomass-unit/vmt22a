@@ -7,6 +7,10 @@
 
 namespace mir {
 
+    struct Type_variable_tag {
+        bu::Usize value;
+    };
+
     namespace type {
 
         enum class Integer {
@@ -47,19 +51,12 @@ namespace mir {
             bu::Wrapper<Type>      body;
         };
 
-        struct Variable {
-            struct Tag {
-                bu::Usize value;
-            };
+        struct General_variable {
+            Type_variable_tag tag;
+        };
 
-            enum class Kind {
-                any_integer,    // Arises from an integer literal with no explicit sign. Can be unified with any sufficiently large integer type.
-                signed_integer, // Arises from a negative integer literal. Can be unified with any sufficiently large signed integer type.
-                general,        // Arises from any other expression.
-            };
-
-            Tag  tag;
-            Kind kind;
+        struct Integral_variable {
+            Type_variable_tag tag;
         };
 
     }
@@ -78,7 +75,8 @@ namespace mir {
             type::Function,
             type::Reference,
             type::Parameterized,
-            type::Variable
+            type::General_variable,
+            type::Integral_variable
         >;
         Variant                        value;
         std::optional<bu::Source_view> source_view;

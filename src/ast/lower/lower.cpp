@@ -25,8 +25,12 @@ auto Lowering_context::fresh_name_tag() -> bu::Usize {
     return current_name_tag++.get();
 }
 
-auto Lowering_context::fresh_type_variable(mir::type::Variable::Kind const kind) -> mir::Type {
-    return { mir::type::Variable { .tag = current_type_variable_tag++.get(), .kind = kind } };
+auto Lowering_context::fresh_general_type_variable() -> mir::Type {
+    return { mir::type::General_variable { .tag = current_type_variable_tag++.get() } };
+}
+
+auto Lowering_context::fresh_integral_type_variable() -> mir::Type {
+    return { mir::type::Integral_variable { .tag = current_type_variable_tag++.get() } };
 }
 
 

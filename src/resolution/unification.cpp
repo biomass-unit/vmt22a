@@ -10,7 +10,7 @@ namespace {
         mir::Type          & right_type;
 
         auto recurse(mir::Type& left, mir::Type& right) -> void {
-            return std::visit(
+            std::visit(
                 Equality_constraint_visitor {
                     .context    = context,
                     .left_type  = left,
@@ -21,24 +21,47 @@ namespace {
             );
         }
 
-        auto operator()(mir::type::Variable const& left, mir::type::Variable const& right) {
-            if (left.kind == mir::type::Variable::Kind::general) {
-                left_type.value = right;
-            }
-            else {
-                right_type.value = left;
+
+        auto operator()(mir::type::Integer const left, mir::type::Integer const right) -> void {
+            if (left != right) {
+                bu::todo();
             }
         }
 
-        auto operator()(mir::type::Variable const&, auto const& right) {
+        template <bu::one_of<mir::type::Floating, mir::type::Character, mir::type::Boolean, mir::type::String> T>
+        auto operator()(T const&, T const&) -> void {
+            // Do nothing
+        }
+
+        auto operator()(mir::type::General_variable const&, mir::type::General_variable const& right) -> void {
+            left_type.value = right;
+        }
+        auto operator()(mir::type::Integral_variable const&, mir::type::Integral_variable const& right) -> void {
             left_type.value = right;
         }
 
-        auto operator()(auto const& left, mir::type::Variable const&) {
+        auto operator()(mir::type::General_variable const&, mir::type::Integral_variable const& right) -> void {
+            left_type.value = right;
+        }
+        auto operator()(mir::type::Integral_variable const& left, mir::type::General_variable const&) -> void {
             right_type.value = left;
         }
 
-        auto operator()(mir::type::Array const& left, mir::type::Array const& right) {
+        auto operator()(mir::type::Integer const& left, mir::type::Integral_variable const&) -> void {
+            right_type.value = left;
+        }
+        auto operator()(mir::type::Integral_variable const&, mir::type::Integer const& right) -> void {
+            left_type.value = right;
+        }
+
+        auto operator()(mir::type::General_variable const&, auto const& right) -> void {
+            left_type.value = right;
+        }
+        auto operator()(auto const& left, mir::type::General_variable const&) -> void {
+            right_type.value = left;
+        }
+
+        auto operator()(mir::type::Array const& left, mir::type::Array const& right) -> void {
             recurse(left.element_type, right.element_type);
         }
 

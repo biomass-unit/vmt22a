@@ -42,7 +42,8 @@ public:
 
     auto fresh_name_tag() -> bu::Usize;
 
-    auto fresh_type_variable(mir::type::Variable::Kind = mir::type::Variable::Kind::general) -> mir::Type;
+    auto fresh_general_type_variable()  -> mir::Type;
+    auto fresh_integral_type_variable() -> mir::Type;
 
     auto lower(ast::Expression const&) -> hir::Expression;
     auto lower(ast::Type       const&) -> hir::Type;

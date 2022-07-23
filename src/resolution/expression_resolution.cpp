@@ -55,6 +55,22 @@ namespace {
             };
         }
 
+        auto operator()(hir::expression::Variable& variable) -> mir::Expression {
+            if (variable.name.is_unqualified()) {
+                if (auto* const binding = scope.find_variable(variable.name.primary_name.identifier)) {
+                    this_expression.type = binding->type;
+                    binding->has_been_mentioned = true;
+                    return {
+                        .value       = mir::expression::Local_variable_reference { variable.name.primary_name },
+                        .type        = binding->type,
+                        .source_view = this_expression.source_view
+                    };
+                }
+            }
+
+            bu::todo();
+        }
+
         auto operator()(hir::expression::Type_cast& cast) -> mir::Expression {
             if (cast.kind == ast::expression::Type_cast::Kind::ascription) {
                 constraint_set.equality_constraints.emplace_back(

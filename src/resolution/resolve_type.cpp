@@ -44,6 +44,13 @@ namespace {
             };
         }
 
+        auto operator()(hir::type::Type_of& type_of) -> bu::Wrapper<mir::Type> {
+            auto child_scope = scope.make_child();
+            auto [constraints, expression] = context.resolve_expression(*type_of.expression, child_scope, space);
+            context.unify(constraints);
+            return expression.type;
+        }
+
         template <class T>
         auto operator()(T&) -> bu::Wrapper<mir::Type> {
             bu::abort(typeid(T).name());

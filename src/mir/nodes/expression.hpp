@@ -20,6 +20,10 @@ namespace mir {
             std::vector<Expression> elements;
         };
 
+        struct Local_variable_reference {
+            hir::Name name;
+        };
+
     }
 
 
@@ -31,7 +35,8 @@ namespace mir {
             expression::Literal<bool>,
             expression::Literal<lexer::String>,
             expression::Array_literal,
-            expression::Tuple
+            expression::Tuple,
+            expression::Local_variable_reference
         >;
 
         Variant                        value;

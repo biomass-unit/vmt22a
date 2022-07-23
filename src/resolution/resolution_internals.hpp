@@ -141,6 +141,9 @@ namespace resolution {
     public:
         Scope(Context&) noexcept;
 
+        Scope(Scope const&) = delete;
+        Scope(Scope&&) = default;
+
         ~Scope();
 
         auto bind_variable(lexer::Identifier, Variable_binding&&) -> void;

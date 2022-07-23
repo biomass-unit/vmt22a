@@ -11,11 +11,7 @@ namespace {
 
 
         auto operator()(ast::expression::Literal<bu::Isize> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.fresh_type_variable(
-                literal.value < 0
-                    ? mir::type::Variable::Kind::signed_integer
-                    : mir::type::Variable::Kind::any_integer
-            );
+            non_general_type = context.fresh_integral_type_variable();
             return literal;
         }
 
@@ -41,7 +37,7 @@ namespace {
 
         auto operator()(ast::expression::Array_literal const& literal) -> hir::Expression::Variant {
             non_general_type = mir::type::Array {
-                .element_type = context.fresh_type_variable(),
+                .element_type = context.fresh_general_type_variable(),
                 .length       = mir::expression::Literal<bu::Isize> { std::ssize(literal.elements) }
             };
             return hir::expression::Array_literal {
@@ -180,7 +176,7 @@ namespace {
                             }),
                             .expression = context.lower(*let->initializer)
                         },
-                        context.fresh_type_variable()
+                        context.fresh_general_type_variable()
                     }
                 };
             }
@@ -216,7 +212,7 @@ namespace {
                         }),
                         .expression = context.lower(loop.condition)
                     },
-                    context.fresh_type_variable(),
+                    context.fresh_general_type_variable(),
                     loop.body->source_view
                 }
             };
@@ -374,7 +370,7 @@ auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expressi
         std::move(value),
         visitor.non_general_type.has_value()
             ? *visitor.non_general_type
-            : bu::wrap(fresh_type_variable()),
+            : bu::wrap(fresh_general_type_variable()),
         expression.source_view
     };
 }
