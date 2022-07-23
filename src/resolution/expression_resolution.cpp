@@ -66,9 +66,13 @@ namespace {
                         .source_view = this_expression.source_view
                     };
                 }
+                else {
+                    bu::todo();
+                }
             }
-
-            bu::todo();
+            else {
+                bu::todo();
+            }
         }
 
         auto operator()(hir::expression::Type_cast& cast) -> mir::Expression {

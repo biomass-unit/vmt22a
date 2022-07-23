@@ -67,20 +67,15 @@ namespace {
 
 
 resolution::Scope::Scope(Context& context) noexcept
-    : context { context } {}
-
-resolution::Scope::~Scope() {
-    warn_about_unused_bindings(context, variables.container(), "variable");
-    warn_about_unused_bindings(context, types.container(), "type alias");
-}
+    : context { &context } {}
 
 
 auto resolution::Scope::bind_variable(lexer::Identifier const identifier, Variable_binding&& binding) -> void {
-    add_binding(context, variables.container(), identifier, std::move(binding), "variable");
+    add_binding(*context, variables.container(), identifier, std::move(binding), "variable");
 }
 
 auto resolution::Scope::bind_type(lexer::Identifier const identifier, Type_binding&& binding) -> void {
-    add_binding(context, types.container(), identifier, std::move(binding), "type alias");
+    add_binding(*context, types.container(), identifier, std::move(binding), "type alias");
 }
 
 
@@ -104,7 +99,13 @@ auto resolution::Scope::find_type(lexer::Identifier const identifier) noexcept -
 
 
 auto resolution::Scope::make_child() noexcept -> Scope {
-    Scope child { context };
+    Scope child { *context };
     child.parent = this;
     return child;
+}
+
+
+auto resolution::Scope::warn_about_unused_bindings() -> void {
+    ::warn_about_unused_bindings(*context, variables.container(), "variable");
+    ::warn_about_unused_bindings(*context, types.container(), "type alias");
 }

@@ -291,6 +291,10 @@ namespace bu {
         return *x;
     };
 
+    constexpr auto size = [](auto const& x) noexcept -> Usize {
+        return std::size(x);
+    };
+
     template <class T>
     constexpr auto make = []<class... Args>(Args&&... args)
         noexcept(std::is_nothrow_constructible_v<T, Args&&...>) -> T

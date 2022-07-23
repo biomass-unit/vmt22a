@@ -498,11 +498,11 @@ namespace {
         };
 
 
-        "scope_access_1"_throwing_test = [] { std::ignore = extract_expression("::"); };
+        "scope_access_1"_throwing_test = [] { (void)extract_expression("::"); };
 
-        "scope_access_2"_throwing_test = [] { std::ignore = extract_expression("test::"); };
+        "scope_access_2"_throwing_test = [] { (void)extract_expression("test::"); };
 
-        "scope_access_3"_test = [] { std::ignore = extract_expression("::test"); };
+        "scope_access_3"_test = [] { (void)extract_expression("::test"); };
 
     }
 

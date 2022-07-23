@@ -40,13 +40,13 @@ namespace {
             assert_eq(integer, 5);
             assert_eq(static_cast<bool>(integer), true);
 
-            std::ignore = integer + 5;
+            (void)(integer + 5);
 
             assert_eq(integer, 5);
         };
 
         "division_by_zero"_throwing_test = [&] {
-            std::ignore = integer / 0;
+            (void)(integer / 0);
         };
 
         "out_of_bounds_increment"_throwing_test = [&] {

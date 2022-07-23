@@ -4,15 +4,15 @@
 
 
 DIRECTLY_DEFINE_FORMATTER_FOR(mir::Template_parameter_set) {
-    std::ignore = value;
-    std::ignore = context;
+    (void)value;
+    (void)context;
     bu::todo();
 }
 
 
 DEFINE_FORMATTER_FOR(mir::Class_reference) {
-    std::ignore = value;
-    std::ignore = context;
+    (void)value;
+    (void)context;
     bu::todo();
 }
 

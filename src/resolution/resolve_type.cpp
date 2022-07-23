@@ -26,7 +26,34 @@ namespace {
 
 
         auto operator()(hir::type::Integer&) -> bu::Wrapper<mir::Type> {
-            return mir::type::Integer::i64;
+            return mir::Type {
+                .value       = mir::type::Integer::i64,
+                .source_view = this_type.source_view
+            };
+        }
+        auto operator()(hir::type::String&) -> bu::Wrapper<mir::Type> {
+            return mir::Type {
+                .value       = mir::type::String {},
+                .source_view = this_type.source_view
+            };
+        }
+        auto operator()(hir::type::Floating&) -> bu::Wrapper<mir::Type> {
+            return mir::Type {
+                .value       = mir::type::Floating {},
+                .source_view = this_type.source_view
+            };
+        }
+        auto operator()(hir::type::Character&) -> bu::Wrapper<mir::Type> {
+            return mir::Type {
+                .value       = mir::type::Character {},
+                .source_view = this_type.source_view
+            };
+        }
+        auto operator()(hir::type::Boolean&) -> bu::Wrapper<mir::Type> {
+            return mir::Type {
+                .value       = mir::type::Boolean {},
+                .source_view = this_type.source_view
+            };
         }
 
         auto operator()(hir::type::Array& array) -> bu::Wrapper<mir::Type> {

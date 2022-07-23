@@ -1,1 +1,1 @@
-fn f(n: Int) = [n, "hello"]
+fn f(n: Int): String = n

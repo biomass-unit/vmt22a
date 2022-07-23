@@ -14,8 +14,49 @@ namespace resolution {
     };
     
 
+    class Scope {
+    public:
+        struct Variable_binding {
+            bu::Wrapper<mir::Type>         type;
+            ast::Mutability                mutability;
+            bool                           has_been_mentioned;
+            std::optional<bu::Source_view> source_view;
+        };
+
+        struct Type_binding {
+            bu::Wrapper<mir::Type>         type;
+            bool                           has_been_mentioned;
+            std::optional<bu::Source_view> source_view;
+        };
+    private:
+        bu::Flatmap<lexer::Identifier, Variable_binding> variables;
+        bu::Flatmap<lexer::Identifier, Type_binding>     types;
+        class Context*                                   context;
+        Scope*                                           parent = nullptr;
+    public:
+        Scope(Context&) noexcept;
+
+        Scope(Scope const&) = delete;
+        Scope(Scope&&) = default;
+
+        auto operator=(Scope const&) -> Scope& = delete;
+        auto operator=(Scope&&) -> Scope& = default;
+
+        auto bind_variable(lexer::Identifier, Variable_binding&&) -> void;
+        auto bind_type    (lexer::Identifier, Type_binding    &&) -> void;
+
+        auto find_variable(lexer::Identifier) noexcept -> Variable_binding*;
+        auto find_type    (lexer::Identifier) noexcept -> Type_binding*;
+
+        auto make_child() noexcept -> Scope;
+
+        auto warn_about_unused_bindings() -> void;
+    };
+
+
     struct Partially_resolved_function {
         mir::Function::Signature resolved_signature;
+        Scope                    signature_scope;
         hir::Expression          unresolved_body;
         hir::Name                name;
     };
@@ -119,43 +160,6 @@ namespace resolution {
     };
 
 
-    class Scope {
-    public:
-        struct Variable_binding {
-            bu::Wrapper<mir::Type>         type;
-            ast::Mutability                mutability;
-            bool                           has_been_mentioned;
-            std::optional<bu::Source_view> source_view;
-        };
-
-        struct Type_binding {
-            bu::Wrapper<mir::Type>         type;
-            bool                           has_been_mentioned;
-            std::optional<bu::Source_view> source_view;
-        };
-    private:
-        bu::Flatmap<lexer::Identifier, Variable_binding> variables;
-        bu::Flatmap<lexer::Identifier, Type_binding>     types;
-        class Context&                                   context;
-        Scope*                                           parent = nullptr;
-    public:
-        Scope(Context&) noexcept;
-
-        Scope(Scope const&) = delete;
-        Scope(Scope&&) = default;
-
-        ~Scope();
-
-        auto bind_variable(lexer::Identifier, Variable_binding&&) -> void;
-        auto bind_type    (lexer::Identifier, Type_binding    &&) -> void;
-
-        auto find_variable(lexer::Identifier) noexcept -> Variable_binding*;
-        auto find_type    (lexer::Identifier) noexcept -> Type_binding*;
-
-        auto make_child() noexcept -> Scope;
-    };
-
-
     class Context {
         hir::Node_context  hir_node_context;
         mir::Node_context  mir_node_context;
@@ -188,6 +192,7 @@ namespace resolution {
         auto resolve_expression(hir::Expression&, Scope&, Namespace&) -> bu::Pair<Constraint_set, mir::Expression>;
 
         auto resolve_function_signature(Function_info&) -> mir::Function::Signature&;
+        auto resolve_function          (Function_info&) -> mir::Function&;
     };
 
 }

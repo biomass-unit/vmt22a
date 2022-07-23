@@ -56,25 +56,30 @@ namespace {
             auto [signature_scope, parameters] =
                 resolve_function_parameters(context, function.parameters, info.home_namespace);
 
-
             if (function.return_type.has_value()) {
                 bu::wrapper auto const return_type =
                     context.resolve_type(*function.return_type, signature_scope, *info.home_namespace);
+
+                auto body = std::move(function.body);
 
                 auto& partially_resolved = info.value.emplace<resolution::Partially_resolved_function>(
                     mir::Function::Signature {
                         .parameters  = std::move(parameters),
                         .return_type = return_type,
                     },
-                    std::move(function.body),
+                    std::move(signature_scope),
+                    std::move(body),
                     function.name
-                    );
+                );
                 info.state = resolution::Definition_state::unresolved;
                 return partially_resolved.resolved_signature;
             }
             else {
-                auto [constraints, body] = context.resolve_expression(function.body, signature_scope, *info.home_namespace);
+                auto [constraints, body] =
+                    context.resolve_expression(function.body, signature_scope, *info.home_namespace);
                 context.unify(constraints);
+
+                signature_scope.warn_about_unused_bindings();
 
                 bu::wrapper auto const return_type = body.type;
 
@@ -102,4 +107,38 @@ auto resolution::Context::resolve_function_signature(Function_info& info)
         std::mem_fn(&Partially_resolved_function::resolved_signature),
         std::mem_fn(&mir::Function::signature)
     }, info.value);
+}
+
+
+auto resolution::Context::resolve_function(Function_info& info)
+    -> mir::Function&
+{
+    if (info.state == Definition_state::unresolved) {
+        (void)resolve_function_signature(info);
+        bu::always_assert(!std::holds_alternative<hir::definition::Function>(info.value));
+    }
+
+    if (auto* const ptr = std::get_if<Partially_resolved_function>(&info.value)) {
+        Partially_resolved_function function = std::move(*ptr);
+
+        auto [constraints, body] =
+            resolve_expression(function.unresolved_body, function.signature_scope, *info.home_namespace);
+
+        function.signature_scope.warn_about_unused_bindings();
+
+        constraints.equality_constraints.emplace_back(
+            body.type,
+            function.resolved_signature.return_type
+        );
+        unify(constraints);
+
+        info.state = Definition_state::resolved;
+        return info.value.emplace<mir::Function>(
+            std::move(function.resolved_signature),
+            std::move(body)
+        );
+    }
+    else {
+        return bu::get<mir::Function>(info.value);
+    }
 }

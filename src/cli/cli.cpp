@@ -77,7 +77,7 @@ namespace {
                         stop,
                         bu::unsigned_distance(start, stop), // Account for whitespace delimiters
                         std::plus {},
-                        std::mem_fn(&std::string_view::size)
+                        bu::size
                     ),
                     sizeof(std::string) // Disable SSO
                 )

@@ -89,7 +89,7 @@ namespace {
         }
 
         bu::Usize const longest_line_length =
-            std::ranges::max(lines | std::views::transform(&std::string_view::size));
+            std::ranges::max(lines | std::views::transform(bu::size));
 
         for (auto& line : lines) {
             std::format_to(

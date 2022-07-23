@@ -75,8 +75,7 @@ namespace {
         for (resolution::Namespace::Definition_variant& definition : space->definitions_in_order) {
             std::visit(bu::Overload {
                 [&](resolution::Function_info& info) {
-                    auto& sig = context.resolve_function_signature(info);
-                    bu::print("return type: {}\n", sig.return_type);
+                    (void)context.resolve_function_signature(info);
                 },
                 [&](resolution::Struct_info&)    { bu::todo(); },
                 [&](resolution::Enum_info&)      { bu::todo(); },
@@ -89,11 +88,24 @@ namespace {
         }
     }
 
+
+    auto resolve_functions(resolution::Context& context, bu::Wrapper<resolution::Namespace> const space) -> void {
+        for (resolution::Namespace::Definition_variant& definition : space->definitions_in_order) {
+            if (bu::wrapper auto* const info = std::get_if<bu::Wrapper<resolution::Function_info>>(&definition)) {
+                (void)context.resolve_function(**info);
+            }
+            else if (bu::wrapper auto* const child = std::get_if<bu::Wrapper<resolution::Namespace>>(&definition)) {
+                resolve_functions(context, *child);
+            }
+        }
+    }
+
 }
 
 
 auto resolution::resolve(hir::Module&& module) -> Module {
     Context context = register_top_level_definitions(std::move(module));
     resolve_signatures(context, context.global_namespace);
+    resolve_functions(context, context.global_namespace);
     bu::todo();
 }

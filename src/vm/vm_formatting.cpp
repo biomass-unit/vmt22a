@@ -67,7 +67,7 @@ namespace {
     template <class T>
     auto extract(std::byte const*& start, std::byte const* stop) noexcept -> T {
         assert(start + sizeof(T) <= stop);
-        std::ignore = stop;
+        (void)stop;
         T x;
         std::memcpy(&x, start, sizeof x);
         start += sizeof x;
