@@ -69,6 +69,11 @@ namespace {
                 ". /* , /*::*/! */ in /**/ / //",
                 { dot, in, operator_name }
             );
+
+            assert_tok_eq(
+                "/* \"\" */ . /* \"*/\" */ . \"/* /*\" . /* /* \"*/\"*/ */ .",
+                { dot, dot, string, dot, dot }
+            );
         };
 
         "keyword"_test = [] {

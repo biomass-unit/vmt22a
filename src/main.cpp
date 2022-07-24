@@ -30,7 +30,7 @@ namespace {
     }
 
 
-    consteval auto generic_repl(std::invocable<bu::Source> auto f) {
+    consteval auto generic_repl(void (*f)(bu::Source)) {
         return [=] {
             for (;;) {
                 std::string string;

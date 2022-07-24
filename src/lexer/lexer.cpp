@@ -178,26 +178,6 @@ namespace {
             error({ location, location + 1 }, arguments);
         }
 
-        [[noreturn]]
-        auto error(
-            char const*                     const location,
-            std::string_view                const message,
-            std::optional<std::string_view> const help_note = std::nullopt) -> void
-        {
-            error(location, { .message = message, .help_note = help_note });
-        }
-
-        [[noreturn]]
-        auto error(
-            std::string_view const&& view,
-            std::string_view const   message,
-            std::optional<std::string_view> const help_note = std::nullopt) -> void
-        {
-            error(view, { .message = message, .help_note = help_note });
-        }
-
-        auto error(char const* const&&, bu::diagnostics::Message_arguments) const -> void = delete;
-
         template <bu::trivial T>
         struct Parse_result {
             std::from_chars_result result;
@@ -280,25 +260,35 @@ namespace {
                 context.consume(is_not_one_of<'\n'>);
                 break;
             case '*':
+            {
                 for (bu::Usize depth = 1; depth != 0; ) {
-                    if (context.is_finished()) {
-                        context.error(
-                            state.pointer,
-                            "Unterminating comment",
-                            "Comments starting with '/*' can be terminated with '*/'"
-                        );
+                    if (context.try_consume('"')) {
+                        char const* const string_start = context.current_pointer() - 1;
+                        context.consume(is_not_one_of<'"'>);
+                        if (context.is_finished()) {
+                            context.error(string_start, { .message = "Unterminating string within comment block" });
+                        }
+                        context.advance();
                     }
-                    else if (context.try_consume("*/")) {
+                    
+                    if (context.try_consume("*/")) {
                         --depth;
                     }
                     else if (context.try_consume("/*")) {
                         ++depth;
+                    }
+                    else if (context.is_finished()) {
+                        context.error(state.pointer, {
+                            .message   = "Unterminating comment block",
+                            .help_note = "Comments starting with '/*' can be terminated with '*/'"
+                        });
                     }
                     else {
                         context.advance();
                     }
                 }
                 break;
+            }
             default:
                 context.restore(state);
                 return;
@@ -467,7 +457,7 @@ namespace {
             if (context.try_consume('-')) {
                 context.error(
                     state.pointer - 1,
-                    "'-' must be applied before the base specifier"
+                    { "'-' must be applied before the base specifier" }
                 );
             }
         }
@@ -483,20 +473,19 @@ namespace {
                 if (exponent.is_too_large()) {
                     context.error(
                         { exponent.start_position, exponent.result.ptr },
-                        "Exponent is too large"
+                        { "Exponent is too large" }
                     );
                 }
                 if (exponent.get() < 0) [[unlikely]] {
-                    context.error(
-                        context.current_pointer(),
-                        "Negative exponent",
-                        "use a floating point literal if this was intended"
-                    );
+                    context.error(context.current_pointer(), {
+                        .message   = "Negative exponent",
+                        .help_note = "use a floating point literal if this was intended"
+                    });
                 }
                 else if (bu::digit_count(integer) + exponent.get() >= std::numeric_limits<bu::Isize>::digits10) {
                     context.error(
                         { anchor, exponent.result.ptr },
-                        "Integer literal is too large after applying scientific coefficient"
+                        { "Integer literal is too large after applying scientific coefficient" }
                     );
                 }
 
@@ -517,7 +506,7 @@ namespace {
             else if (exponent.was_non_numeric()) {
                 context.error(
                     exponent.start_position,
-                    "Expected an exponent"
+                    { "Expected an exponent" }
                 );
             }
             else {
@@ -551,7 +540,7 @@ namespace {
         else if (integer.is_too_large()) {
             context.error(
                 { state.pointer, integer.result.ptr },
-                "Integer literal is too large"
+                { "Integer literal is too large" }
             );
         }
         else if (!integer.did_parse()) {
@@ -559,7 +548,7 @@ namespace {
         }
 
         if (negative && integer.get() < 0) {
-            context.error(state.pointer + 1, "Only one '-' may be applied");
+            context.error(state.pointer + 1, { "Only one '-' may be applied" });
         }
 
         auto const is_tuple_member_index = [&] {
@@ -572,7 +561,7 @@ namespace {
 
         if (*integer.result.ptr == '.' && !is_tuple_member_index()) {
             if (base != 10) {
-                context.error({ state.pointer, 2 }, "Float literals must be base-10");
+                context.error({ state.pointer, 2 }, { "Float literals must be base-10" });
             }
 
             context.restore(state);
@@ -582,7 +571,7 @@ namespace {
                 if (floating.is_too_large()) {
                     context.error(
                         { state.pointer, floating.result.ptr },
-                        "Floating-point literal is too large"
+                        { "Floating-point literal is too large" }
                     );
                 }
                 else {
@@ -630,9 +619,9 @@ namespace {
         case '\"': return '\"';
         case '\\': return '\\';
         case '\0':
-            context.error(anchor, "Expected an escape sequence, but found the end of input");
+            context.error(anchor, { "Expected an escape sequence, but found the end of input" });
         default:
-            context.error(anchor, "Unrecognized escape sequence");
+            context.error(anchor, { "Unrecognized escape sequence" });
         }
     }
 
@@ -644,7 +633,7 @@ namespace {
             char c = context.extract_current();
 
             if (c == '\0') {
-                context.error(anchor, "Unterminating character literal");
+                context.error(anchor, { "Unterminating character literal" });
             }
             else if (c == '\\') {
                 c = handle_escape_sequence(context);
@@ -654,7 +643,7 @@ namespace {
                 return context.success(Token::Type::character, c);
             }
             else {
-                context.error(context.current_pointer(), "Expected a closing single-quote");
+                context.error(context.current_pointer(), { "Expected a closing single-quote" });
             }
         }
         else {
@@ -671,7 +660,7 @@ namespace {
             for (;;) {
                 switch (char c = context.extract_current()) {
                 case '\0':
-                    context.error(anchor, "Unterminating string literal");
+                    context.error(anchor, { "Unterminating string literal" });
                 case '"':
                     if (!context.tokens.empty() && context.tokens.back().type == Token::Type::string) {
                         // Concatenate adjacent string literals
@@ -750,7 +739,7 @@ auto lexer::lex(bu::Source&& source, bu::diagnostics::Builder&& diagnostics) -> 
             else {
                 context.error(
                     context.current_pointer(),
-                    "Syntax error; unable to extract lexical token"
+                    { "Syntax error; unable to extract lexical token" }
                 );
             }
         }
