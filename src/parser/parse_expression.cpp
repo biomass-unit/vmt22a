@@ -720,7 +720,9 @@ namespace {
             std::vector<ast::expression::Member_access_chain::Accessor> accessors;
 
             while (context.try_consume(Token::Type::dot)) {
-                if (auto member_name = parse_lower_id(context)) {
+                using Chain = ast::expression::Member_access_chain;
+
+                if (auto member_name = parse_lower_name(context)) {
                     if (context.try_consume(Token::Type::paren_open)) {
                         if (!accessors.empty()) {
                             *expression = ast::Expression {
@@ -737,22 +739,27 @@ namespace {
 
                         *expression = ast::Expression {
                             .value = ast::expression::Member_function_invocation {
-                                std::move(arguments),
-                                std::move(*expression),
-                                *member_name
+                                .arguments   = std::move(arguments),
+                                .expression  = std::move(*expression),
+                                .member_name = *member_name
                             },
                             .source_view = make_source_view(anchor, context.pointer - 1)
                         };
                     }
                     else {
-                        accessors.emplace_back(*member_name);
+                        accessors.push_back(Chain::Struct_field { *member_name });
                     }
                 }
-                else if (auto member_index = context.try_extract(Token::Type::integer)) {
-                    accessors.emplace_back(member_index->as_integer());
+                else if (Token* const member_index = context.try_extract(Token::Type::integer)) {
+                    accessors.push_back(Chain::Tuple_field { member_index->as_integer() });
+                }
+                else if (context.try_consume(Token::Type::bracket_open)) {
+                    auto expression = extract_expression(context);
+                    context.consume_required(Token::Type::bracket_close);
+                    accessors.push_back(Chain::Array_index { std::move(expression) });
                 }
                 else {
-                    context.error_expected("a member name or index");
+                    context.error_expected("a struct member name (a.b), a tuple member index (a.0), or an array index (a.[b])");
                 }
             }
 

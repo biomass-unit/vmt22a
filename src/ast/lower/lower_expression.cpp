@@ -265,8 +265,25 @@ namespace {
         }
 
         auto operator()(ast::expression::Member_access_chain const& chain) -> hir::Expression::Variant {
+            using AST_chain = ast::expression::Member_access_chain;
+            using HIR_chain = hir::expression::Member_access_chain;
+
+            auto const lower_accessor = [this](AST_chain::Accessor const& accessor) {
+                return std::visit<HIR_chain::Accessor>(bu::Overload {
+                    [](AST_chain::Tuple_field const& field) {
+                        return HIR_chain::Tuple_field { .index = field.index };
+                    },
+                    [this](AST_chain::Struct_field const& field) {
+                        return HIR_chain::Struct_field { .name = context.lower(field.name) };
+                    },
+                    [this](AST_chain::Array_index const& index) {
+                        return HIR_chain::Array_index { .expression = context.lower(index.expression) };
+                    }
+                }, accessor);
+            };
+
             return hir::expression::Member_access_chain {
-                .accessors  = chain.accessors,
+                .accessors  = bu::map(lower_accessor)(chain.accessors),
                 .expression = context.lower(chain.expression)
             };
         }
@@ -275,7 +292,7 @@ namespace {
             return hir::expression::Member_function_invocation {
                 .arguments   = bu::map(context.lower())(invocation.arguments),
                 .expression  = context.lower(invocation.expression),
-                .member_name = invocation.member_name
+                .member_name = context.lower(invocation.member_name)
             };
         }
 

@@ -93,7 +93,23 @@ namespace {
             return format("({} {} {})", invocation.left, invocation.op, invocation.right);
         }
         auto operator()(hir::expression::Member_access_chain const& chain) {
-            return format("({}.{})", chain.expression, bu::fmt::delimited_range(chain.accessors, "."));
+            using Chain = hir::expression::Member_access_chain;
+
+            format("({}", chain.expression);
+            for (Chain::Accessor const& accessor : chain.accessors) {
+                std::visit(bu::Overload {
+                    [this](Chain::Tuple_field const& field) {
+                        format(".{}", field.index);
+                    },
+                    [this](Chain::Struct_field const& field) {
+                        format(".{}", field.name);
+                    },
+                    [this](Chain::Array_index const& index) {
+                        format(".[{}]", index.expression);
+                    }
+                }, accessor);
+            }
+            return format(")");
         }
         auto operator()(hir::expression::Member_function_invocation const& invocation) {
             return format("{}.{}({})", invocation.expression, invocation.member_name, invocation.arguments);

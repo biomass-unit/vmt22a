@@ -68,15 +68,28 @@ namespace hir {
         };
 
         struct Member_access_chain {
-            std::vector<ast::expression::Member_access_chain::Accessor> accessors;
-            bu::Wrapper<Expression>                                     expression;
+            struct Tuple_field {
+                bu::Isize index;
+                DEFAULTED_EQUALITY(Tuple_field);
+            };
+            struct Struct_field {
+                Name name;
+                DEFAULTED_EQUALITY(Struct_field);
+            };
+            struct Array_index {
+                bu::Wrapper<Expression> expression;
+                DEFAULTED_EQUALITY(Array_index);
+            };
+            using Accessor = std::variant<Tuple_field, Struct_field, Array_index>;
+            std::vector<Accessor>   accessors;
+            bu::Wrapper<Expression> expression;
             DEFAULTED_EQUALITY(Member_access_chain);
         };
 
         struct Member_function_invocation {
             std::vector<Function_argument> arguments;
             bu::Wrapper<Expression>        expression;
-            lexer::Identifier              member_name;
+            Name                           member_name;
             DEFAULTED_EQUALITY(Member_function_invocation);
         };
 

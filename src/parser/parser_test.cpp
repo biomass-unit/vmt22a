@@ -236,25 +236,39 @@ namespace {
         };
 
         "member_access"_test = [] {
+            using Chain = ast::expression::Member_access_chain;
+
             assert_expr_eq(
-                "().1.2.x.50.y",
-                ast::expression::Member_access_chain {
-                    .accessors { 1, 2, "x"_id, 50, "y"_id },
+                "().1.2.[???].x.50.y.[0]",
+                Chain {
+                    .accessors = bu::vector_from<Chain::Accessor>({
+                        Chain::Tuple_field { 1 },
+                        Chain::Tuple_field { 2 },
+                        Chain::Array_index { mk_expr(ast::expression::Hole {}) },
+                        Chain::Struct_field { ast::Name { .identifier = "x"_id, .source_view = empty_view() } },
+                        Chain::Tuple_field { 50 },
+                        Chain::Struct_field { ast::Name { .identifier = "y"_id, .source_view = empty_view() } },
+                        Chain::Array_index { mk_expr(ast::expression::Literal<bu::Isize> { 0 }) }
+                    }),
                     .expression = mk_expr(ast::expression::Tuple {})
                 }
             );
         };
 
         "member_function"_test = [] {
+            using Chain = ast::expression::Member_access_chain;
+
             assert_expr_eq(
                 "x.y.f()",
                 ast::expression::Member_function_invocation {
                     .arguments = {},
-                    .expression = mk_expr(ast::expression::Member_access_chain {
-                        .accessors { "y"_id },
+                    .expression = mk_expr(Chain {
+                        .accessors = bu::vector_from<Chain::Accessor>({
+                            Chain::Struct_field { ast::Name { .identifier = "y"_id, .source_view = empty_view() } }
+                        }),
                         .expression = mk_expr(ast::expression::Variable { "x"_unqualified })
                     }),
-                    .member_name = "f"_id
+                    .member_name = ast::Name { .identifier = "f"_id, .source_view = empty_view() }
                 }
             );
         };

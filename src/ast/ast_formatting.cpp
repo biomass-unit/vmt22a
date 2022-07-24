@@ -105,9 +105,21 @@ namespace {
             return format("({} {} {})", invocation.left, invocation.op, invocation.right);
         }
         auto operator()(ast::expression::Member_access_chain const& chain) {
+            using Chain = ast::expression::Member_access_chain;
+
             format("({}", chain.expression);
-            for (auto& accessor : chain.accessors) {
-                format(".{}", accessor);
+            for (Chain::Accessor const& accessor : chain.accessors) {
+                std::visit(bu::Overload {
+                    [this](Chain::Tuple_field const& field) {
+                        format(".{}", field.index);
+                    },
+                    [this](Chain::Struct_field const& field) {
+                        format(".{}", field.name);
+                    },
+                    [this](Chain::Array_index const& index) {
+                        format(".[{}]", index.expression);
+                    }
+                }, accessor);
             }
             return format(")");
         }
