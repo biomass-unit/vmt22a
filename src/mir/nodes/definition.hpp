@@ -19,8 +19,9 @@ namespace mir {
 
     struct Struct {
         struct Member {
-            hir::Name name;
-            Type      type;
+            hir::Name         name;
+            bu::Wrapper<Type> type;
+            bool              is_public;
         };
         Template_parameter_set                 template_parameters;
         bu::Flatmap<lexer::Identifier, Member> members;

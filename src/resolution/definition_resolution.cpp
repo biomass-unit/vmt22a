@@ -144,8 +144,34 @@ auto resolution::Context::resolve_function(Function_info& info)
 }
 
 
-auto resolution::Context::resolve_structure(Struct_info&) -> mir::Struct& {
-    bu::todo();
+auto resolution::Context::resolve_structure(Struct_info& info) -> mir::Struct& {
+    if (info.state == Definition_state::currently_on_resolution_stack) {
+        bu::abort();
+    }
+
+    return std::visit(bu::Overload {
+        [&, this](hir::definition::Struct& hir_structure) -> mir::Struct& {
+            mir::Struct structure;
+            structure.members.container().reserve(hir_structure.members.size());
+
+            Scope member_scope { *this }; // Dummy scope, necessary because resolve_type takes a scope parameter
+
+            for (hir::definition::Struct::Member& member : hir_structure.members) {
+                structure.members.add(
+                    bu::copy(member.name.identifier),
+                    {
+                        .name      = member.name,
+                        .type      = resolve_type(member.type, member_scope, *info.home_namespace),
+                        .is_public = member.is_public
+                    }
+                );
+            }
+
+            info.state = Definition_state::resolved;
+            return info.value.emplace<mir::Struct>(std::move(structure));
+        },
+        std::identity {} // Catches already resolved structures
+    }, info.value);
 }
 
 

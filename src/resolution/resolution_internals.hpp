@@ -37,10 +37,10 @@ namespace resolution {
         Scope(Context&) noexcept;
 
         Scope(Scope const&) = delete;
-        Scope(Scope&&) = default;
+        Scope(Scope&&) noexcept;
 
         auto operator=(Scope const&) -> Scope& = delete;
-        auto operator=(Scope&&) -> Scope& = default;
+        auto operator=(Scope&&) noexcept -> Scope&;
 
         auto bind_variable(lexer::Identifier, Variable_binding&&) -> void;
         auto bind_type    (lexer::Identifier, Type_binding    &&) -> void;

@@ -63,11 +63,36 @@ namespace {
         }
     }
 
+    auto error_if_parent(resolution::Scope* const parent) -> void {
+        if (parent) [[unlikely]] {
+            bu::abort("Attempted to move from a scope with a parent");
+        }
+    }
+
 }
 
 
 resolution::Scope::Scope(Context& context) noexcept
     : context { &context } {}
+
+resolution::Scope::Scope(Scope&& other) noexcept
+    : variables { std::move(other.variables) }
+    , types     { std::move(other.types) }
+    , context   { other.context }
+{
+    error_if_parent(other.parent);
+}
+
+auto resolution::Scope::operator=(Scope&& other) noexcept -> Scope& {
+    error_if_parent(other.parent);
+
+    variables = std::move(other.variables);
+    types     = std::move(other.types);
+    context   = other.context;
+    parent    = nullptr;
+
+    return *this;
+}
 
 
 auto resolution::Scope::bind_variable(lexer::Identifier const identifier, Variable_binding&& binding) -> void {
