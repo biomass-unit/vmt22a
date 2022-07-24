@@ -247,6 +247,7 @@
     <ClCompile Include="src\resolution\codegen\codegen.cpp" />
     <ClCompile Include="src\resolution\definition_resolution.cpp" />
     <ClCompile Include="src\resolution\expression_resolution.cpp" />
+    <ClCompile Include="src\resolution\namespace_lookup.cpp" />
     <ClCompile Include="src\resolution\resolution.cpp" />
     <ClCompile Include="src\resolution\resolution_internals.cpp" />
     <ClCompile Include="src\resolution\resolve_type.cpp" />

@@ -142,3 +142,13 @@ auto resolution::Context::resolve_function(Function_info& info)
         return bu::get<mir::Function>(info.value);
     }
 }
+
+
+auto resolution::Context::resolve_structure(Struct_info&) -> mir::Struct& {
+    bu::todo();
+}
+
+
+auto resolution::Context::resolve_enumeration(Enum_info&) -> mir::Enum& {
+    bu::todo();
+}

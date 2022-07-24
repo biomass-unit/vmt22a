@@ -71,10 +71,6 @@ namespace resolution {
         Variant                value;
         bu::Wrapper<Namespace> home_namespace;
         Definition_state       state = Definition_state::unresolved;
-
-        Definition_info(HIR_representation&& value, bu::Wrapper<Namespace> const home_namespace) noexcept
-            : value          { std::move(value) }
-            , home_namespace { home_namespace } {}
     };
 
     template <>
@@ -88,18 +84,28 @@ namespace resolution {
         Variant                value;
         bu::Wrapper<Namespace> home_namespace;
         Definition_state       state = Definition_state::unresolved;
-
-        Definition_info(hir::definition::Function&& value, bu::Wrapper<Namespace> const home_namespace) noexcept
-            : value          { std::move(value) }
-            , home_namespace { home_namespace } {}
     };
 
-    using Function_info  = Definition_info<hir::definition::Function,  mir::Function>;
-    using Struct_info    = Definition_info<hir::definition::Struct,    mir::Struct>;
-    using Enum_info      = Definition_info<hir::definition::Enum,      mir::Enum>;
-    using Alias_info     = Definition_info<hir::definition::Alias,     mir::Alias>;
-    using Typeclass_info = Definition_info<hir::definition::Typeclass, mir::Typeclass>;
-    
+    template <>
+    struct Definition_info<hir::definition::Struct, mir::Struct> {
+        using Variant = std::variant<hir::definition::Struct, mir::Struct>;
+
+        Variant                value;
+        bu::Wrapper<Namespace> home_namespace;
+        bu::Wrapper<Namespace> associated_namespace;
+        Definition_state       state;
+    };
+
+    template <>
+    struct Definition_info<hir::definition::Enum, mir::Enum> {
+        using Variant = std::variant<hir::definition::Enum, mir::Enum>;
+
+        Variant                value;
+        bu::Wrapper<Namespace> home_namespace;
+        bu::Wrapper<Namespace> associated_namespace;
+        Definition_state       state;
+    };
+
     Definition_info(hir::definition::Function &&, bu::Wrapper<Namespace>) -> Function_info;
     Definition_info(hir::definition::Struct   &&, bu::Wrapper<Namespace>) -> Struct_info;
     Definition_info(hir::definition::Enum     &&, bu::Wrapper<Namespace>) -> Enum_info;
@@ -169,7 +175,8 @@ namespace resolution {
         bu::Source               source;
         bu::Wrapper<Namespace>   global_namespace;
 
-        bu::Wrapper<mir::Type> array_indexing_type = mir::type::Integer::u64;
+        bu::Wrapper<mir::Type> size_type;
+
 
         Context(
             hir::Node_context&&,
@@ -183,8 +190,8 @@ namespace resolution {
         Context(Context&&) = default;
 
 
+        [[noreturn]]
         auto error(bu::Source_view, bu::diagnostics::Message_arguments) -> void;
-
 
         auto unify(Constraint_set&) -> void;
 
@@ -193,6 +200,22 @@ namespace resolution {
 
         auto resolve_function_signature(Function_info&) -> mir::Function::Signature&;
         auto resolve_function          (Function_info&) -> mir::Function&;
+
+        auto resolve_structure(Struct_info&) -> mir::Struct&;
+        auto resolve_enumeration(Enum_info&) -> mir::Enum&;
+
+
+        auto namespace_associated_with(mir::Type&) -> std::optional<bu::Wrapper<Namespace>>;
+
+
+        auto find_typeclass(Scope&, Namespace&, hir::Qualified_name&)
+            -> std::optional<bu::Wrapper<Typeclass_info>>;
+
+        auto find_type(Scope&, Namespace&, hir::Qualified_name&)
+            -> std::optional<std::variant<bu::Wrapper<Struct_info>, bu::Wrapper<Enum_info>, bu::Wrapper<Alias_info>>>;
+
+        auto find_function(Scope&, Namespace&, hir::Qualified_name&)
+            -> std::optional<bu::Wrapper<Function_info>>;
     };
 
 }

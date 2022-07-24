@@ -75,10 +75,14 @@ namespace {
         for (resolution::Namespace::Definition_variant& definition : space->definitions_in_order) {
             std::visit(bu::Overload {
                 [&](resolution::Function_info& info) {
-                    (void)context.resolve_function_signature(info);
+                    context.resolve_function_signature(info);
                 },
-                [&](resolution::Struct_info&)    { bu::todo(); },
-                [&](resolution::Enum_info&)      { bu::todo(); },
+                [&](resolution::Struct_info& info) {
+                    context.resolve_structure(info);
+                },
+                [&](resolution::Enum_info& info) {
+                    context.resolve_enumeration(info);
+                },
                 [&](resolution::Alias_info&)     { bu::todo(); },
                 [&](resolution::Typeclass_info&) { bu::todo(); },
                 [&](bu::Wrapper<resolution::Namespace>& child) {

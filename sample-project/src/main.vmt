@@ -1,1 +1,3 @@
-fn f(n: Int): String = n
+fn f(n: Int): S = ???
+
+struct S = a: Int, b: Int

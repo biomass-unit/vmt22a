@@ -78,14 +78,20 @@ namespace {
         auto operator()(mir::type::Tuple const& tuple) {
             return format("({})", tuple.types);
         }
+        auto operator()(mir::type::Structure const&) -> std::format_context::iterator {
+            bu::todo();
+        }
+        auto operator()(mir::type::Enumeration const&) -> std::format_context::iterator {
+            bu::todo();
+        }
+        auto operator()(mir::type::Parameterized const& parameterized) {
+            return format("(\\{} -> {})", parameterized.parameters, parameterized.body);
+        }
         auto operator()(mir::type::General_variable const& variable) {
             return format("'T{}", variable.tag.value);
         }
         auto operator()(mir::type::Integral_variable const& variable) {
             return format("'I{}", variable.tag.value);
-        }
-        auto operator()(mir::type::Parameterized const& parameterized) {
-            return format("(\\{} -> {})", parameterized.parameters, parameterized.body);
         }
     };
 

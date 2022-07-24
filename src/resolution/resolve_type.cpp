@@ -59,7 +59,7 @@ namespace {
         auto operator()(hir::type::Array& array) -> bu::Wrapper<mir::Type> {
             bu::wrapper auto const element_type = recurse(*array.element_type);
             auto [constraints, length] = context.resolve_expression(*array.length, scope, space);
-            constraints.equality_constraints.emplace_back(length.type, context.array_indexing_type);
+            constraints.equality_constraints.emplace_back(length.type, context.size_type);
             context.unify(constraints);
 
             return mir::Type {
@@ -76,6 +76,25 @@ namespace {
             auto [constraints, expression] = context.resolve_expression(*type_of.expression, child_scope, space);
             context.unify(constraints);
             return expression.type;
+        }
+
+        auto operator()(hir::type::Typename& name) -> bu::Wrapper<mir::Type> {
+            if (auto type = context.find_type(scope, space, name.identifier)) {
+                return std::visit(bu::Overload {
+                    [this](bu::Wrapper<resolution::Struct_info> const info) -> bu::Wrapper<mir::Type> {
+                        return mir::Type {
+                            .value       = mir::type::Structure { info },
+                            .source_view = this_type.source_view
+                        };
+                    },
+                    [](auto&) -> bu::Wrapper<mir::Type> {
+                        bu::todo();
+                    }
+                }, *type);
+            }
+            else {
+                context.error(bu::get(this_type.source_view), { "Unrecognized typename" }); // FIX
+            }
         }
 
         template <class T>

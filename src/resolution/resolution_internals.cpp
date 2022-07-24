@@ -11,17 +11,32 @@ auto resolution::Context::error(
 
 
 resolution::Context::Context(
-    hir::Node_context        && hir_node_context,
-    mir::Node_context        && mir_node_context,
-    Namespace::Context       && namespace_context,
-    bu::diagnostics::Builder && diagnostics,
-    bu::Source               && source
+    hir::Node_context       && hir_node_context,
+    mir::Node_context       && mir_node_context,
+    Namespace::Context      && namespace_context,
+    bu::diagnostics::Builder&& diagnostics,
+    bu::Source              && source
 ) noexcept
     : hir_node_context  { std::move(hir_node_context) }
     , mir_node_context  { std::move(mir_node_context) }
     , namespace_context { std::move(namespace_context) }
     , diagnostics       { std::move(diagnostics) }
     , source            { std::move(source) } {}
+
+
+auto resolution::Context::namespace_associated_with(mir::Type& type)
+    -> std::optional<bu::Wrapper<resolution::Namespace>>
+{
+    if (auto* const structure = std::get_if<mir::type::Structure>(&type.value)) {
+        return structure->info->associated_namespace;
+    }
+    else if (auto* const enumeration = std::get_if<mir::type::Enumeration>(&type.value)) {
+        return enumeration->info->associated_namespace;
+    }
+    else {
+        return std::nullopt;
+    }
+}
 
 
 DEFINE_FORMATTER_FOR(resolution::Constraint_set) {
