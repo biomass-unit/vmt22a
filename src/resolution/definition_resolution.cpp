@@ -88,9 +88,16 @@ namespace {
                         .parameters  = std::move(parameters),
                         .return_type = return_type
                     },
-                    std::move(body)
+                    std::move(body),
+                    function.name
                 );
                 info.state = resolution::Definition_state::resolved;
+
+                info.function_type->value = mir::type::Function {
+                    .arguments   = bu::map(&mir::Function_parameter::type)(resolved.signature.parameters),
+                    .return_type = resolved.signature.return_type
+                };
+
                 return resolved.signature;
             }
         };
@@ -113,10 +120,12 @@ auto resolution::Context::resolve_function_signature(Function_info& info)
 auto resolution::Context::resolve_function(Function_info& info)
     -> mir::Function&
 {
-    if (info.state == Definition_state::unresolved) {
-        (void)resolve_function_signature(info);
-        bu::always_assert(!std::holds_alternative<hir::definition::Function>(info.value));
+    if (info.state == Definition_state::currently_on_resolution_stack) {
+        bu::abort();
     }
+
+    resolve_function_signature(info);
+    bu::always_assert(!std::holds_alternative<hir::definition::Function>(info.value));
 
     if (auto* const ptr = std::get_if<Partially_resolved_function>(&info.value)) {
         Partially_resolved_function function = std::move(*ptr);
@@ -132,10 +141,16 @@ auto resolution::Context::resolve_function(Function_info& info)
         );
         unify(constraints);
 
+        info.function_type->value = mir::type::Function {
+            .arguments   = bu::map(&mir::Function_parameter::type)(function.resolved_signature.parameters),
+            .return_type = function.resolved_signature.return_type
+        };
+
         info.state = Definition_state::resolved;
         return info.value.emplace<mir::Function>(
             std::move(function.resolved_signature),
-            std::move(body)
+            std::move(body),
+            function.name
         );
     }
     else {
@@ -151,26 +166,27 @@ auto resolution::Context::resolve_structure(Struct_info& info) -> mir::Struct& {
 
     return std::visit(bu::Overload {
         [&, this](hir::definition::Struct& hir_structure) -> mir::Struct& {
-            mir::Struct structure;
-            structure.members.container().reserve(hir_structure.members.size());
+            mir::Struct structure {
+                .name = hir_structure.name
+            };
+            structure.members.reserve(hir_structure.members.size());
 
             Scope member_scope { *this }; // Dummy scope, necessary because resolve_type takes a scope parameter
 
             for (hir::definition::Struct::Member& member : hir_structure.members) {
-                structure.members.add(
-                    bu::copy(member.name.identifier),
-                    {
-                        .name      = member.name,
-                        .type      = resolve_type(member.type, member_scope, *info.home_namespace),
-                        .is_public = member.is_public
-                    }
-                );
+                structure.members.push_back({
+                    .name      = member.name,
+                    .type      = resolve_type(member.type, member_scope, *info.home_namespace),
+                    .is_public = member.is_public
+                });
             }
 
             info.state = Definition_state::resolved;
             return info.value.emplace<mir::Struct>(std::move(structure));
         },
-        std::identity {} // Catches already resolved structures
+        [](mir::Struct& structure) -> mir::Struct& {
+            return structure;
+        }
     }, info.value);
 }
 

@@ -36,12 +36,6 @@ namespace resolution {
     public:
         Scope(Context&) noexcept;
 
-        Scope(Scope const&) = delete;
-        Scope(Scope&&) noexcept;
-
-        auto operator=(Scope const&) -> Scope& = delete;
-        auto operator=(Scope&&) noexcept -> Scope&;
-
         auto bind_variable(lexer::Identifier, Variable_binding&&) -> void;
         auto bind_type    (lexer::Identifier, Type_binding    &&) -> void;
 
@@ -83,6 +77,7 @@ namespace resolution {
 
         Variant                value;
         bu::Wrapper<Namespace> home_namespace;
+        bu::Wrapper<mir::Type> function_type;
         Definition_state       state = Definition_state::unresolved;
     };
 
@@ -93,6 +88,7 @@ namespace resolution {
         Variant                value;
         bu::Wrapper<Namespace> home_namespace;
         bu::Wrapper<Namespace> associated_namespace;
+        bu::Wrapper<mir::Type> structure_type;
         Definition_state       state;
     };
 
@@ -103,6 +99,7 @@ namespace resolution {
         Variant                value;
         bu::Wrapper<Namespace> home_namespace;
         bu::Wrapper<Namespace> associated_namespace;
+        bu::Wrapper<mir::Type> enumeration_type;
         Definition_state       state;
     };
 

@@ -6,28 +6,6 @@
 
 
 namespace mir {
-    struct Function;
-    struct Struct;
-    struct Enum;
-    struct Alias;
-    struct Typeclass;
-}
-
-namespace resolution {
-    // Definition_info forward declaration needed by mir::type::Structure and mir::type::Enumeration
-
-    template <class, class>
-    struct Definition_info;
-
-    using Function_info  = Definition_info<hir::definition::Function,  mir::Function>;
-    using Struct_info    = Definition_info<hir::definition::Struct,    mir::Struct>;
-    using Enum_info      = Definition_info<hir::definition::Enum,      mir::Enum>;
-    using Alias_info     = Definition_info<hir::definition::Alias,     mir::Alias>;
-    using Typeclass_info = Definition_info<hir::definition::Typeclass, mir::Typeclass>;
-}
-
-
-namespace mir {
 
     struct Type_variable_tag {
         bu::Usize value;
@@ -94,12 +72,12 @@ namespace mir {
 
     struct Type {
         using Variant = std::variant<
+            type::Tuple,
             type::Integer,
             type::Floating,
             type::Character,
             type::Boolean,
             type::String,
-            type::Tuple,
             type::Array,
             type::Slice,
             type::Function,

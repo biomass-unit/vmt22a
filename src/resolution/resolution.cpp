@@ -26,10 +26,44 @@ namespace {
         for (hir::Definition& definition : definitions) {
             std::visit(bu::Overload {
                 visit_handler<hir::definition::Function,  &resolution::Namespace::functions>   (space),
-                visit_handler<hir::definition::Struct,    &resolution::Namespace::structures>  (space),
-                visit_handler<hir::definition::Enum,      &resolution::Namespace::enumerations>(space),
                 visit_handler<hir::definition::Alias,     &resolution::Namespace::aliases>     (space),
                 visit_handler<hir::definition::Typeclass, &resolution::Namespace::typeclasses> (space),
+
+                [&](hir::definition::Struct& structure) {
+                    lexer::Identifier identifier = structure.name.identifier;
+
+                    bu::Wrapper<mir::Type> structure_type;
+
+                    bu::Wrapper info = resolution::Struct_info {
+                        .value          = std::move(structure),
+                        .home_namespace = space,
+                        .structure_type = structure_type
+                    };
+
+                    info->associated_namespace->parent = space;
+                    structure_type->value = mir::type::Structure { info };
+
+                    space->definitions_in_order.push_back(info);
+                    space->structures.add(std::move(identifier), std::move(info));
+                },
+
+                [&](hir::definition::Enum& enumeration) {
+                    lexer::Identifier identifier = enumeration.name.identifier;
+
+                    bu::Wrapper<mir::Type> enumeration_type;
+
+                    bu::Wrapper info = resolution::Enum_info {
+                        .value            = std::move(enumeration),
+                        .home_namespace   = space,
+                        .enumeration_type = enumeration_type
+                    };
+
+                    info->associated_namespace->parent = space;
+                    enumeration_type->value = mir::type::Enumeration { info };
+
+                    space->definitions_in_order.push_back(info);
+                    space->enumerations.add(std::move(identifier), std::move(info));
+                },
 
                 [&](hir::definition::Implementation&) {
                     bu::todo();
@@ -111,5 +145,20 @@ auto resolution::resolve(hir::Module&& module) -> Module {
     Context context = register_top_level_definitions(std::move(module));
     resolve_signatures(context, context.global_namespace);
     resolve_functions(context, context.global_namespace);
+
+    for (auto& definition : context.global_namespace->definitions_in_order) {
+        std::visit(bu::Overload {
+            [](bu::Wrapper<Function_info> def) -> void {
+                bu::print("{}\n\n", std::get<2>(def->value));
+            },
+            [](auto const& def) -> void {
+                bu::print("{}\n\n", std::get<1>(def->value));
+            },
+            [](bu::Wrapper<Namespace>) -> void {
+                bu::todo();
+            }
+        }, definition);
+    }
+
     bu::todo();
 }

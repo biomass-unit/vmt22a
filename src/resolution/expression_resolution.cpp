@@ -66,12 +66,24 @@ namespace {
                         .source_view = this_expression.source_view
                     };
                 }
-                else {
-                    bu::todo();
-                }
+            }
+
+            if (auto info = context.find_function(scope, space, variable.name)) {
+                context.resolve_function(*info);
+
+                constraint_set.equality_constraints.emplace_back(
+                    (*info)->function_type,
+                    this_expression.type
+                );
+
+                return {
+                    .value       = mir::expression::Function_reference { *info },
+                    .type        = this_expression.type,
+                    .source_view = this_expression.source_view
+                };
             }
             else {
-                bu::todo();
+                context.error(bu::get(this_expression.source_view), { "Unrecognized identifier" });
             }
         }
 

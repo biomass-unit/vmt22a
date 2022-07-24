@@ -15,6 +15,7 @@ namespace mir {
         };
         Signature  signature;
         Expression body;
+        hir::Name  name;
     };
 
     struct Struct {
@@ -23,13 +24,26 @@ namespace mir {
             bu::Wrapper<Type> type;
             bool              is_public;
         };
-        Template_parameter_set                 template_parameters;
-        bu::Flatmap<lexer::Identifier, Member> members;
+        Template_parameter_set template_parameters;
+        std::vector<Member>    members;
+        hir::Name              name;
     };
 
-    struct Enum {};
+    struct Enum {
+        struct Constructor {
+            hir::Name                        name;
+            std::optional<bu::Wrapper<Type>> type;
+        };
+        Template_parameter_set   template_parameters;
+        std::vector<Constructor> constructors;
+        hir::Name                name;
+    };
 
-    struct Alias {};
+    struct Alias {
+        Template_parameter_set template_parameters;
+        bu::Wrapper<Type>      aliased_type;
+        hir::Name              name;
+    };
 
     struct Typeclass {};
 

@@ -1,3 +1,6 @@
-fn f(n: Int): S = 0
+fn f() = g
+fn g(n: Int) = 0
 
-struct S = a: Int, b: Int
+// fn h(n: Int): type_of(h) = h
+
+struct S = a: Int, b: type_of(f)

@@ -24,6 +24,10 @@ namespace mir {
             hir::Name name;
         };
 
+        struct Function_reference {
+            bu::Wrapper<resolution::Function_info> info;
+        };
+
     }
 
 
@@ -36,7 +40,8 @@ namespace mir {
             expression::Literal<lexer::String>,
             expression::Array_literal,
             expression::Tuple,
-            expression::Local_variable_reference
+            expression::Local_variable_reference,
+            expression::Function_reference
         >;
 
         Variant                        value;
