@@ -161,7 +161,15 @@ auto main(int argc, char const** argv) -> int try {
         ("time"   ,                      "Print the execution time")
         ("test"   ,                      "Run all tests"           );
 
-    auto options = cli::parse_command_line(argc, argv, description);
+    auto options = [&] {
+        if (auto result = cli::parse_command_line(argc, argv, description)) {
+            return std::move(result.value());
+        }
+        else {
+            throw std::move(result.error());
+        }
+    }();
+
 
     auto configuration = language::read_configuration();
     (void)configuration;

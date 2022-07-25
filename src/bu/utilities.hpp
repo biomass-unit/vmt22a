@@ -31,6 +31,7 @@
 #include <vector>
 #include <variant>
 #include <optional>
+#include <expected>
 
 #include <string>
 #include <string_view>

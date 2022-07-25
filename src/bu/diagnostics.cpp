@@ -292,13 +292,8 @@ bu::diagnostics::Builder::~Builder() {
     }
 }
 
-auto bu::diagnostics::Builder::messages() const noexcept -> std::optional<std::string_view> {
-    if (diagnostic_string.empty()) {
-        return std::nullopt;
-    }
-    else {
-        return diagnostic_string;
-    }
+auto bu::diagnostics::Builder::string() && noexcept -> std::string {
+    return std::move(diagnostic_string);
 }
 
 auto bu::diagnostics::Builder::error() const noexcept -> bool {
@@ -326,6 +321,11 @@ auto bu::diagnostics::Builder::emit_note(Emit_arguments const arguments) -> void
     }
 }
 
+auto bu::diagnostics::Builder::emit_simple_note(Simple_emit_arguments const arguments) -> void {
+    return emit_note(to_regular_args(arguments, note_color));
+}
+
+
 auto bu::diagnostics::Builder::emit_warning(Emit_arguments const arguments) -> void {
     switch (configuration.warning_level) {
     case Level::normal:
@@ -339,6 +339,11 @@ auto bu::diagnostics::Builder::emit_warning(Emit_arguments const arguments) -> v
     }
 }
 
+auto bu::diagnostics::Builder::emit_simple_warning(Simple_emit_arguments const arguments) -> void {
+    return emit_warning(to_regular_args(arguments, warning_color));
+}
+
+
 auto bu::diagnostics::Builder::emit_error(
     Emit_arguments const arguments,
     Type           const error_type) -> void
@@ -347,20 +352,22 @@ auto bu::diagnostics::Builder::emit_error(
     do_emit(diagnostic_string, arguments, "Error", error_color, error_type);
 }
 
-
-auto bu::diagnostics::Builder::emit_simple_note(Simple_emit_arguments const arguments) -> void {
-    return emit_note(to_regular_args(arguments, note_color));
+auto bu::diagnostics::Builder::emit_error(Emit_arguments const arguments) -> void {
+    emit_error(arguments, Type::irrecoverable);
+    std::unreachable();
 }
 
-auto bu::diagnostics::Builder::emit_simple_warning(Simple_emit_arguments const arguments) -> void {
-    return emit_warning(to_regular_args(arguments, warning_color));
-}
 
 auto bu::diagnostics::Builder::emit_simple_error(
     Simple_emit_arguments const arguments,
     Type                  const error_type) -> void
 {
     emit_error(to_regular_args(arguments, error_color), error_type);
+}
+
+auto bu::diagnostics::Builder::emit_simple_error(Simple_emit_arguments const arguments) -> void {
+    emit_simple_error(arguments, Type::irrecoverable);
+    std::unreachable();
 }
 
 

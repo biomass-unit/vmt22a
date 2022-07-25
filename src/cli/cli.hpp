@@ -139,7 +139,8 @@ namespace cli {
     };
 
 
-    auto parse_command_line(int argc, char const* const* argv, Options_description const&) -> Options;
+    auto parse_command_line(int argc, char const* const* argv, Options_description const&)
+        -> std::expected<Options, Unrecognized_option>;
 
 }
 

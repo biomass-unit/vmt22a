@@ -64,8 +64,10 @@ namespace {
             --pointer;
         }
 
-        [[noreturn]]
-        auto error(bu::diagnostics::Message_arguments const arguments) const -> void {
+        [[nodiscard]]
+        auto make_error(bu::diagnostics::Message_arguments const arguments) const
+            -> bu::diagnostics::Builder
+        {
             // We must recreate the command line as a single string which will
             // emulate the file that would normally be passed to bu::textual_error
 
@@ -116,8 +118,15 @@ namespace {
                         bu::Source_position {},
                         bu::Source_position { 1, 1 + bu::unsigned_distance(fake_source.string().data(), erroneous_view.data()) }
                     }
-                )
+                ),
+                bu::diagnostics::Type::recoverable // Prevent exception
             );
+            return builder;
+        }
+
+        [[noreturn]]
+        auto error(bu::diagnostics::Message_arguments const arguments) const -> void {
+            throw bu::diagnostics::Error { make_error(arguments).string() };
         }
 
         [[noreturn]]
@@ -128,15 +137,9 @@ namespace {
             });
         }
 
-        [[noreturn]]
-        auto error_unrecognized_option() const -> void {
-            // Not optimal, but this is a special case so it shouldn't matter.
-            try {
-                error({ "Unrecognized option" });
-            }
-            catch (bu::Exception const& exception) {
-                throw cli::Unrecognized_option { exception.what() };
-            }
+        [[nodiscard]]
+        auto unrecognized_option() const -> cli::Unrecognized_option {
+            return make_error({ "Unrecognized option" }).string();
         }
     };
 
@@ -267,7 +270,7 @@ namespace {
 auto cli::parse_command_line(
     int                 const  argc,
     char const* const*  const  argv,
-    Options_description const& description) -> Options
+    Options_description const& description) -> std::expected<Options, Unrecognized_option>
 {
     std::vector<std::string_view> command_line(argv + 1, argv + argc);
     Options options { .program_name_as_invoked = *argv };
@@ -275,7 +278,9 @@ auto cli::parse_command_line(
     Parse_context context { command_line };
 
     while (!context.is_finished()) {
-        auto name = [&]() -> std::optional<std::string> {
+        std::optional<std::string> name;
+
+        {
             auto view = context.extract();
 
             if (view.starts_with("--")) {
@@ -284,7 +289,7 @@ auto cli::parse_command_line(
                     context.expected("a flag name");
                 }
                 else {
-                    return std::string { view };
+                    name = std::string(view);
                 }
             }
             else if (view.starts_with('-')) {
@@ -294,11 +299,11 @@ auto cli::parse_command_line(
                     context.expected("a single-character flag name");
                 case 1:
                     if (auto long_form = description.long_forms.find(view.front())) {
-                        return bu::copy(*long_form);
+                        name = *long_form;
                     }
                     else {
                         context.retreat();
-                        context.error_unrecognized_option();
+                        return std::unexpected(context.unrecognized_option());
                     }
                 default:
                     context.retreat();
@@ -307,9 +312,8 @@ auto cli::parse_command_line(
             }
             else {
                 context.retreat();
-                return std::nullopt;
             }
-        }();
+        }
 
         if (name) {
             auto it = std::ranges::find(
@@ -326,7 +330,7 @@ auto cli::parse_command_line(
             }
             else {
                 context.retreat();
-                context.error_unrecognized_option();
+                return std::unexpected(context.unrecognized_option());
             }
         }
         else {
