@@ -52,7 +52,7 @@ namespace resolution {
         mir::Function::Signature resolved_signature;
         Scope                    signature_scope;
         hir::Expression          unresolved_body;
-        hir::Name                name;
+        ast::Name                name;
     };
 
 
@@ -142,7 +142,7 @@ namespace resolution {
         Table<Namespace>                      namespaces;
 
         mir::Template_parameter_set           template_parameters;
-        std::optional<hir::Name>              name;
+        std::optional<ast::Name>              name;
         std::optional<bu::Wrapper<Namespace>> parent;
     };
 
@@ -172,7 +172,7 @@ namespace resolution {
         bu::Source               source;
         bu::Wrapper<Namespace>   global_namespace;
 
-        bu::Wrapper<mir::Type> size_type;
+        mir::Type::Variant size_type = mir::type::Integer::u64;
 
 
         Context(

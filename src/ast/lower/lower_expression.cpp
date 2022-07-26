@@ -16,29 +16,33 @@ namespace {
         }
 
         auto operator()(ast::expression::Literal<bu::Float> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.floating_type;
+            non_general_type = context.floating_type(this_expression.source_view);
             return literal;
         }
 
         auto operator()(ast::expression::Literal<bu::Char> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.character_type;
+            non_general_type = context.character_type(this_expression.source_view);
             return literal;
         }
 
         auto operator()(ast::expression::Literal<bool> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.boolean_type;
+            non_general_type = context.boolean_type(this_expression.source_view);
             return literal;
         }
 
         auto operator()(ast::expression::Literal<lexer::String> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.string_type;
+            non_general_type = context.string_type(this_expression.source_view);
             return literal;
         }
 
         auto operator()(ast::expression::Array_literal const& literal) -> hir::Expression::Variant {
             non_general_type = mir::type::Array {
                 .element_type = context.fresh_general_type_variable(),
-                .length       = mir::expression::Literal<bu::Isize> { std::ssize(literal.elements) }
+                .length       = mir::Expression {
+                    .value = mir::expression::Literal<bu::Isize> { std::ssize(literal.elements) },
+                    .type  = context.size_type(this_expression.source_view),
+                    .source_view = this_expression.source_view
+                }
             };
             return hir::expression::Array_literal {
                 .elements = bu::map(context.lower())(literal.elements)
@@ -64,7 +68,7 @@ namespace {
         auto operator()(ast::expression::Conditional const& conditional) -> hir::Expression::Variant {
             auto false_branch = conditional.false_branch
                               . transform(context.lower())
-                              . value_or(context.unit_value);
+                              . value_or(context.unit_value(this_expression.source_view));
 
             if (auto* const let = std::get_if<ast::expression::Conditional_let>(&conditional.condition->value)) {
                 /*
@@ -85,7 +89,10 @@ namespace {
                             .expression = context.lower(conditional.true_branch)
                         },
                         {
-                            .pattern = hir::Pattern { .value = hir::pattern::Wildcard {} },
+                            .pattern = hir::Pattern {
+                                .value       = hir::pattern::Wildcard {},
+                                .source_view = let->pattern->source_view
+                            },
                             .expression = std::move(false_branch)
                         }
                     }),
@@ -107,11 +114,11 @@ namespace {
                 return hir::expression::Match {
                     .cases = bu::vector_from<hir::expression::Match::Case>({
                         {
-                            .pattern = context.true_pattern,
+                            .pattern = context.true_pattern(this_expression.source_view),
                             .expression = context.lower(conditional.true_branch)
                         },
                         {
-                            .pattern = context.false_pattern,
+                            .pattern = context.false_pattern(this_expression.source_view),
                             .expression = false_branch
                         }
                     }),
@@ -160,23 +167,25 @@ namespace {
 
                 return hir::expression::Loop {
                     .body = hir::Expression {
-                        hir::expression::Match {
+                        .value = hir::expression::Match {
                             .cases = bu::vector_from<hir::expression::Match::Case>({
                                 {
                                     .pattern    = context.lower(*let->pattern),
                                     .expression = context.lower(loop.body)
                                 },
                                 {
-                                    .pattern = hir::pattern::Wildcard {},
-                                    .expression {
-                                        hir::expression::Break {},
-                                        context.unit_type
+                                    .pattern = context.wildcard_pattern(this_expression.source_view),
+                                    .expression = hir::Expression {
+                                        .value       = hir::expression::Break {},
+                                        .type        = context.unit_type(this_expression.source_view),
+                                        .source_view = this_expression.source_view
                                     }
                                 }
                             }),
                             .expression = context.lower(*let->initializer)
                         },
-                        context.fresh_general_type_variable()
+                        .type        = context.fresh_general_type_variable(),
+                        .source_view = loop.body->source_view
                     }
                 };
             }
@@ -199,14 +208,15 @@ namespace {
                     hir::expression::Match {
                         .cases = bu::vector_from<hir::expression::Match::Case>({
                             {
-                                .pattern    = context.true_pattern,
+                                .pattern    = context.true_pattern(this_expression.source_view),
                                 .expression = context.lower(loop.body)
                             },
                             {
-                                .pattern = context.false_pattern,
-                                .expression {
-                                    hir::expression::Break {},
-                                    context.unit_type
+                                .pattern = context.false_pattern(this_expression.source_view),
+                                .expression = hir::Expression {
+                                    .value       = hir::expression::Break {},
+                                    .type        = context.unit_type(this_expression.source_view),
+                                    .source_view = this_expression.source_view
                                 }
                             }
                         }),
@@ -273,8 +283,8 @@ namespace {
                     [](AST_chain::Tuple_field const& field) {
                         return HIR_chain::Tuple_field { .index = field.index };
                     },
-                    [this](AST_chain::Struct_field const& field) {
-                        return HIR_chain::Struct_field { .name = context.lower(field.name) };
+                    [](AST_chain::Struct_field const& field) {
+                        return HIR_chain::Struct_field { .name = field.name };
                     },
                     [this](AST_chain::Array_index const& index) {
                         return HIR_chain::Array_index { .expression = context.lower(index.expression) };
@@ -292,7 +302,7 @@ namespace {
             return hir::expression::Member_function_invocation {
                 .arguments   = bu::map(context.lower())(invocation.arguments),
                 .expression  = context.lower(invocation.expression),
-                .member_name = context.lower(invocation.member_name)
+                .member_name = invocation.member_name
             };
         }
 
@@ -327,7 +337,7 @@ namespace {
 
         auto operator()(ast::expression::Break const& break_) -> hir::Expression::Variant {
             return hir::expression::Break {
-                .label      = break_.label.transform(context.lower()),
+                .label      = break_.label,
                 .expression = break_.expression.transform(bu::compose(bu::wrap, context.lower()))
             };
         }

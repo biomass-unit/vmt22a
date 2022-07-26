@@ -83,7 +83,7 @@ namespace {
                 };
             }
             else {
-                context.error(bu::get(this_expression.source_view), { "Unrecognized identifier" });
+                context.error(this_expression.source_view, { "Unrecognized identifier" });
             }
         }
 

@@ -35,7 +35,7 @@ auto Lowering_context::fresh_integral_type_variable() -> mir::Type {
 
 
 auto Lowering_context::lower(ast::Function_argument const& argument) -> hir::Function_argument {
-    return { .expression = lower(argument.expression), .name = argument.name.transform(lower()) };
+    return { .expression = lower(argument.expression), .name = argument.name };
 }
 
 auto Lowering_context::lower(ast::Function_parameter const& parameter) -> hir::Function_parameter {
@@ -49,7 +49,10 @@ auto Lowering_context::lower(ast::Function_parameter const& parameter) -> hir::F
                 bu::always_assert(current_function_implicit_template_parameters != nullptr);
                 auto const tag = fresh_name_tag();
                 current_function_implicit_template_parameters->push_back({ .tag = tag });
-                return { .value = hir::type::Implicit_parameter_reference { .tag = tag } };
+                return {
+                    .value       = hir::type::Implicit_parameter_reference { .tag = tag },
+                    .source_view = parameter.pattern.source_view
+                };
             }
         }(),
         .default_value = parameter.default_value.transform(lower())
@@ -69,7 +72,7 @@ auto Lowering_context::lower(ast::Template_argument const& argument) -> hir::Tem
                 error(expression.source_view, { "Constant evaluation is not supported yet" });
             }
         }, argument.value),
-        .name = argument.name.transform(lower()),
+        .name = argument.name,
     };
 }
 
@@ -90,7 +93,7 @@ auto Lowering_context::lower(ast::Template_parameter const& parameter) -> hir::T
                 return hir::Template_parameter::Mutability_parameter {};
             }
         }, parameter.value),
-        .name = lower(parameter.name),
+        .name        = parameter.name,
         .source_view = parameter.source_view
     };
 }
@@ -102,7 +105,7 @@ auto Lowering_context::lower(ast::Template_parameters const& parameters) -> hir:
 auto Lowering_context::lower(ast::Qualifier const& qualifier) -> hir::Qualifier {
     return {
         .template_arguments = qualifier.template_arguments.transform(bu::map(lower())),
-        .name               = lower(qualifier.name),
+        .name               = qualifier.name,
         .source_view        = qualifier.source_view
     };
 }
@@ -115,7 +118,7 @@ auto Lowering_context::lower(ast::Qualified_name const& name) -> hir::Qualified_
             [](ast::Root_qualifier::Global)   -> hir::Root_qualifier { return { .value = hir::Root_qualifier::Global {} }; },
             [this](ast::Type const& type)     -> hir::Root_qualifier { return { .value = lower(type) }; }
         }, name.root_qualifier.value),
-        .primary_name = lower(name.primary_name),
+        .primary_name = name.primary_name,
     };
 }
 
@@ -127,30 +130,54 @@ auto Lowering_context::lower(ast::Class_reference const& reference) -> hir::Clas
     };
 }
 
-auto Lowering_context::lower(ast::Function_signature const& sig) -> hir::Function_signature {
+auto Lowering_context::lower(ast::Function_signature const& signature) -> hir::Function_signature {
     return {
-        .template_parameters = lower(sig.template_parameters),
-        .argument_types      = bu::map(lower())(sig.argument_types),
-        .return_type         = lower(sig.return_type),
-        .name                = lower(sig.name),
+        .template_parameters = lower(signature.template_parameters),
+        .argument_types      = bu::map(lower())(signature.argument_types),
+        .return_type         = lower(signature.return_type),
+        .name                = signature.name,
     };
 }
 
-auto Lowering_context::lower(ast::Type_signature const& sig) -> hir::Type_signature {
+auto Lowering_context::lower(ast::Type_signature const& signature) -> hir::Type_signature {
     return {
-        .template_parameters = lower(sig.template_parameters),
-        .classes             = bu::map(lower())(sig.classes),
-        .name                = lower(sig.name),
+        .template_parameters = lower(signature.template_parameters),
+        .classes             = bu::map(lower())(signature.classes),
+        .name                = signature.name,
     };
 }
 
 
-auto Lowering_context::lower(ast::Name const& name) -> hir::Name {
-    return {
-        .identifier  = name.identifier,
-        .is_upper    = name.is_upper,
-        .source_view = name.source_view
-    };
+auto Lowering_context::unit_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::Tuple {}, .source_view = view };
+}
+auto Lowering_context::floating_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::Floating {}, .source_view = view };
+}
+auto Lowering_context::character_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::Character {}, .source_view = view };
+}
+auto Lowering_context::boolean_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::Boolean {}, .source_view = view };
+}
+auto Lowering_context::string_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::String {}, .source_view = view };
+}
+auto Lowering_context::size_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::Integer::u64, .source_view = view };
+}
+
+auto Lowering_context::unit_value(bu::Source_view const view) -> bu::Wrapper<hir::Expression> {
+    return hir::Expression { .value = hir::expression::Tuple {}, .source_view = view };
+}
+auto Lowering_context::wildcard_pattern(bu::Source_view const view) -> bu::Wrapper<hir::Pattern> {
+    return hir::Pattern { .value = hir::pattern::Wildcard {}, .source_view = view};
+}
+auto Lowering_context::true_pattern(bu::Source_view const view) -> bu::Wrapper<hir::Pattern> {
+    return hir::Pattern { .value = hir::pattern::Literal<bool> { true }, .source_view = view };
+}
+auto Lowering_context::false_pattern(bu::Source_view const view) -> bu::Wrapper<hir::Pattern> {
+    return hir::Pattern { .value = hir::pattern::Literal<bool> { false }, .source_view = view };
 }
 
 

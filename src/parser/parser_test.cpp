@@ -77,16 +77,20 @@ namespace {
     }
 
 
+    auto operator"" _name(char const* const s, bu::Usize const n)
+        -> ast::Name
+    {
+        return ast::Name {
+            .identifier  = lexer::Identifier { std::string_view { s, n } },
+            .is_upper    = std::isupper(*s) != 0,
+            .source_view = empty_view()
+        };
+    }
+
     auto operator"" _unqualified(char const* const s, bu::Usize const n)
         -> ast::Qualified_name
     {
-        return ast::Qualified_name {
-            .primary_name {
-                .identifier  = lexer::Identifier { std::string_view { s, n } },
-                .is_upper    = std::isupper(*s) != 0,
-                .source_view = empty_view()
-            }
-        };
+        return ast::Qualified_name { .primary_name = operator""_name(s, n) };
     }
 
 
@@ -178,13 +182,9 @@ namespace {
             assert_expr_eq(
                 "outer for x in \"hello\" {}",
                 ast::expression::For_loop {
-                    .label = ast::Name {
-                        .identifier = "outer"_id,
-                        .is_upper = false,
-                        .source_view = empty_view()
-                    },
+                    .label = "outer"_name,
                     .iterator = mk_patt(ast::pattern::Name {
-                        "x"_id,
+                        "x"_name,
                         {
                             .type = ast::Mutability::Type::immut,
                             .source_view = empty_view()
@@ -245,9 +245,9 @@ namespace {
                         Chain::Tuple_field { 1 },
                         Chain::Tuple_field { 2 },
                         Chain::Array_index { mk_expr(ast::expression::Hole {}) },
-                        Chain::Struct_field { ast::Name { .identifier = "x"_id, .source_view = empty_view() } },
+                        Chain::Struct_field { "x"_name },
                         Chain::Tuple_field { 50 },
-                        Chain::Struct_field { ast::Name { .identifier = "y"_id, .source_view = empty_view() } },
+                        Chain::Struct_field { "y"_name },
                         Chain::Array_index { mk_expr(ast::expression::Literal<bu::Isize> { 0 }) }
                     }),
                     .expression = mk_expr(ast::expression::Tuple {})
@@ -264,11 +264,11 @@ namespace {
                     .arguments = {},
                     .expression = mk_expr(Chain {
                         .accessors = bu::vector_from<Chain::Accessor>({
-                            Chain::Struct_field { ast::Name { .identifier = "y"_id, .source_view = empty_view() } }
+                            Chain::Struct_field { "y"_name }
                         }),
                         .expression = mk_expr(ast::expression::Variable { "x"_unqualified })
                     }),
-                    .member_name = ast::Name { .identifier = "f"_id, .source_view = empty_view() }
+                    .member_name = "f"_name
                 }
             );
         };
@@ -279,11 +279,7 @@ namespace {
                     .identifier {
                         .middle_qualifiers {
                             ast::Qualifier {
-                                .name {
-                                    .identifier  = "std"_id,
-                                    .is_upper    = false,
-                                    .source_view = empty_view()
-                                },
+                                .name = "std"_name,
                                 .source_view = empty_view()
                             },
                             ast::Qualifier {
@@ -292,19 +288,11 @@ namespace {
                                         bu::wrap(mk_type(ast::type::Typename { "Long"_unqualified }))
                                     }
                                 },
-                                .name {
-                                    .identifier  = "Vector"_id,
-                                    .is_upper    = true,
-                                    .source_view = empty_view()
-                                },
+                                .name = "Vector"_name,
                                 .source_view = empty_view()
                             }
                         },
-                        .primary_name {
-                            .identifier  = "Element"_id,
-                            .is_upper    = true,
-                            .source_view = empty_view()
-                        }
+                        .primary_name = "Element"_name
                     }
                 }
             );
@@ -326,11 +314,11 @@ namespace {
                     .pattern = mk_patt(ast::pattern::Tuple {
                         .patterns = bu::vector_from({
                             mk_patt(ast::pattern::Name {
-                                .identifier = "a"_id,
+                                .value      = "a"_name,
                                 .mutability { .type = ast::Mutability::Type::immut, .source_view = empty_view() }
                             }),
                             mk_patt(ast::pattern::Name {
-                                .identifier = "b"_id,
+                                .value      = "b"_name,
                                 .mutability { .type = ast::Mutability::Type::mut, .source_view = empty_view() }
                             })
                         })
@@ -387,13 +375,13 @@ namespace {
                                 .patterns = bu::vector_from({
                                     mk_patt(ast::pattern::Wildcard {}),
                                     mk_patt(ast::pattern::Name {
-                                        .identifier = "b"_id,
+                                        .value      = "b"_name,
                                         .mutability { .type = ast::Mutability::Type::mut, .source_view = empty_view() }
                                     }),
                                     mk_patt(ast::pattern::Tuple {
                                         .patterns = bu::vector_from({
                                             mk_patt(ast::pattern::Name {
-                                                .identifier = "c"_id,
+                                                .value      = "c"_name,
                                                 .mutability { .type = ast::Mutability::Type::immut, .source_view = empty_view() }
                                             }),
                                             mk_patt(ast::pattern::Wildcard {})
@@ -440,7 +428,7 @@ namespace {
                 ast::pattern::Tuple {
                     .patterns {
                         mk_patt(ast::pattern::Name {
-                            .identifier = "x"_id,
+                            .value = "x"_name,
                             .mutability {
                                 .type        = ast::Mutability::Type::immut,
                                 .source_view = empty_view()
@@ -455,11 +443,7 @@ namespace {
         "enum_constructor_pattern"_test = [] {
             std::vector<ast::Qualifier> qualifiers {
                 ast::Qualifier {
-                    .name {
-                        .identifier  = "Maybe"_id,
-                        .is_upper    = true,
-                        .source_view = empty_view()
-                    },
+                    .name = "Maybe"_name,
                     .source_view = empty_view()
                 }
             };
@@ -469,14 +453,10 @@ namespace {
                 ast::pattern::Constructor {
                     .name = ast::Qualified_name {
                         .middle_qualifiers = std::move(qualifiers),
-                        .primary_name {
-                            .identifier  = "just"_id,
-                            .is_upper    = false,
-                            .source_view = empty_view()
-                        }
+                        .primary_name = "just"_name
                     },
                     .pattern = mk_patt(ast::pattern::Name {
-                        .identifier = "x"_id,
+                        .value = "x"_name,
                         .mutability {
                             .type        = ast::Mutability::Type::immut,
                             .source_view = empty_view()
@@ -495,7 +475,7 @@ namespace {
                 "(_, _) as mut x",
                 ast::pattern::As {
                     .name = ast::pattern::Name {
-                        .identifier = "x"_id,
+                        .value = "x"_name,
                         .mutability {
                             .type        = ast::Mutability::Type::mut,
                             .source_view = empty_view()

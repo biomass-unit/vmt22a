@@ -93,7 +93,7 @@ namespace {
                 }, *type);
             }
             else {
-                context.error(bu::get(this_type.source_view), { "Unrecognized typename" }); // FIX
+                context.error(this_type.source_view, { "Unrecognized typename" }); // FIX
             }
         }
 

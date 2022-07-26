@@ -12,7 +12,7 @@ namespace ast {
         Basic_template_parameters<Configuration>  template_parameters;
         std::vector<typename Configuration::Type> argument_types;
         Configuration::Type                       return_type;
-        Basic_name<Configuration>                 name;
+        Name                                      name;
         DEFAULTED_EQUALITY(Basic_function_signature);
     };
 
@@ -20,7 +20,7 @@ namespace ast {
     struct Basic_type_signature {
         Basic_template_parameters<Configuration>          template_parameters;
         std::vector<Basic_class_reference<Configuration>> classes;
-        Basic_name<Configuration>                         name;
+        Name                                              name;
         DEFAULTED_EQUALITY(Basic_type_signature);
     };
 
@@ -45,30 +45,28 @@ namespace ast {
 
         template <tree_configuration Configuration>
         struct Basic_struct_member {
-            Basic_name<Configuration> name;
-            Configuration::Type       type;
-            bool                      is_public = false;
-
-            Configuration::Source_view source_view;
+            Name                name;
+            Configuration::Type type;
+            bool                is_public = false;
+            bu::Source_view     source_view;
             DEFAULTED_EQUALITY(Basic_struct_member);
         };
 
         template <tree_configuration Configuration>
         struct Basic_struct {
             using Member = Basic_struct_member<Configuration>;
-            std::vector<Member>                       members;
-            Basic_name<Configuration>                 name;
-            Basic_template_parameters<Configuration>  template_parameters;
+            std::vector<Member>                      members;
+            Name                                     name;
+            Basic_template_parameters<Configuration> template_parameters;
             DEFAULTED_EQUALITY(Basic_struct);
         };
 
 
         template <tree_configuration Configuration>
         struct Basic_enum_constructor {
-            Basic_name<Configuration>                   name;
+            Name                                        name;
             std::optional<typename Configuration::Type> type;
-
-            Configuration::Source_view source_view;
+            bu::Source_view                             source_view;
             DEFAULTED_EQUALITY(Basic_enum_constructor);
         };
 
@@ -76,7 +74,7 @@ namespace ast {
         struct Basic_enum {
             using Constructor = Basic_enum_constructor<Configuration>;
             std::vector<Constructor>                 constructors;
-            Basic_name<Configuration>                name;
+            Name                                     name;
             Basic_template_parameters<Configuration> template_parameters;
             DEFAULTED_EQUALITY(Basic_enum);
         };
@@ -84,7 +82,7 @@ namespace ast {
 
         template <tree_configuration Configuration>
         struct Basic_alias {
-            Basic_name<Configuration>                name;
+            Name                                     name;
             Configuration::Type                      type;
             Basic_template_parameters<Configuration> template_parameters;
             DEFAULTED_EQUALITY(Basic_alias);
@@ -95,7 +93,7 @@ namespace ast {
         struct Basic_typeclass {
             std::vector<Basic_function_signature<Configuration>> function_signatures;
             std::vector<Basic_type_signature<Configuration>>     type_signatures;
-            Basic_name<Configuration>                            name;
+            Name                                                 name;
             Basic_template_parameters<Configuration>             template_parameters;
             DEFAULTED_EQUALITY(Basic_typeclass);
         };
@@ -123,7 +121,7 @@ namespace ast {
         template <tree_configuration Configuration>
         struct Basic_namespace {
             std::vector<typename Configuration::Definition> definitions;
-            Basic_name<Configuration>                       name;
+            Name                                            name;
             Basic_template_parameters<Configuration>        template_parameters;
             DEFAULTED_EQUALITY(Basic_namespace);
         };

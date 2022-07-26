@@ -33,7 +33,6 @@ namespace ast {
         typename T::Pattern;
         typename T::Type;
         typename T::Definition;
-        typename T::Source_view;
     };
 
 
@@ -41,13 +40,12 @@ namespace ast {
     struct [[nodiscard]] Function_parameter;
 
 
-    template <tree_configuration Configuration>
-    struct Basic_name {
-        lexer::Identifier          identifier;
-        bool                       is_upper;
-        Configuration::Source_view source_view;
+    struct Name {
+        lexer::Identifier identifier;
+        bool              is_upper;
+        bu::Source_view   source_view;
 
-        auto operator==(Basic_name const& other) const noexcept -> bool {
+        auto operator==(Name const& other) const noexcept -> bool {
             return identifier == other.identifier;
         }
     };
@@ -59,17 +57,16 @@ namespace ast {
             bu::Wrapper<typename Configuration::Expression>,
             Mutability
         >;
-        Variant                                  value;
-        std::optional<Basic_name<Configuration>> name;
+        Variant             value;
+        std::optional<Name> name;
         DEFAULTED_EQUALITY(Basic_template_argument);
     };
 
     template <tree_configuration Configuration>
     struct Basic_qualifier {
         std::optional<std::vector<Basic_template_argument<Configuration>>> template_arguments;
-        Basic_name<Configuration>                                          name;
-
-        Configuration::Source_view source_view;
+        Name                                                               name;
+        bu::Source_view                                                    source_view;
         DEFAULTED_EQUALITY(Basic_qualifier);
     };
 
@@ -88,7 +85,7 @@ namespace ast {
     struct Basic_qualified_name {
         std::vector<Basic_qualifier<Configuration>> middle_qualifiers;
         Basic_root_qualifier<Configuration>         root_qualifier;
-        Basic_name<Configuration>                   primary_name;
+        Name                                        primary_name;
 
         DEFAULTED_EQUALITY(Basic_qualified_name);
 
@@ -99,8 +96,7 @@ namespace ast {
     struct Basic_class_reference {
         std::optional<std::vector<Basic_template_argument<Configuration>>> template_arguments;
         Basic_qualified_name<Configuration>                                name;
-
-        Configuration::Source_view source_view;
+        bu::Source_view                                                    source_view;
         DEFAULTED_EQUALITY(Basic_class_reference);
     };
 
@@ -124,10 +120,9 @@ namespace ast {
             Mutability_parameter
         >;
 
-        Variant                   value;
-        Basic_name<Configuration> name;
-
-        Configuration::Source_view source_view;
+        Variant         value;
+        Name            name;
+        bu::Source_view source_view;
         DEFAULTED_EQUALITY(Basic_template_parameter);
     };
 
@@ -147,10 +142,8 @@ namespace ast {
         using Pattern     = ::ast::Pattern;
         using Type        = ::ast::Type;
         using Definition  = ::ast::Definition;
-        using Source_view = bu::Source_view;
     };
 
-    using Name                = Basic_name                <AST_configuration>;
     using Template_argument   = Basic_template_argument   <AST_configuration>;
     using Qualifier           = Basic_qualifier           <AST_configuration>;
     using Root_qualifier      = Basic_root_qualifier      <AST_configuration>;
@@ -235,13 +228,12 @@ DECLARE_FORMATTER_FOR(ast::Definition);
 
 DECLARE_FORMATTER_FOR(ast::Module);
 DECLARE_FORMATTER_FOR(ast::Mutability);
+DECLARE_FORMATTER_FOR(ast::Name);
 DECLARE_FORMATTER_FOR(ast::expression::Type_cast::Kind);
 
 
-// vvv These are explicitly instantiated in hir/shared_formatting.cpp to avoid repetition vvv
+// vvv These are defined and explicitly instantiated in hir/shared_formatting.cpp to avoid repetition vvv
 
-template <ast::tree_configuration Configuration>
-DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_name<Configuration>);
 template <ast::tree_configuration Configuration>
 DECLARE_FORMATTER_FOR_TEMPLATE(ast::Basic_template_argument<Configuration>);
 template <ast::tree_configuration Configuration>

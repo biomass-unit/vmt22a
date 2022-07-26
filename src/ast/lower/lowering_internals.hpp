@@ -13,19 +13,10 @@ class Lowering_context {
     bu::Safe_usize current_type_variable_tag;
     bu::Usize      current_definition_kind = std::variant_size_v<ast::Definition::Variant>;
 public:
-    hir::Node_context             & hir_node_context;
-    mir::Node_context             & mir_node_context;
-    bu::diagnostics::Builder      & diagnostics;
-    bu::Source               const& source;
-
-    bu::Wrapper<mir::Type>       unit_type      = mir::type::Tuple {};
-    bu::Wrapper<mir::Type>       floating_type  = mir::type::Floating {};
-    bu::Wrapper<mir::Type>       character_type = mir::type::Character {};
-    bu::Wrapper<mir::Type>       boolean_type   = mir::type::Boolean {};
-    bu::Wrapper<mir::Type>       string_type    = mir::type::String {};
-    bu::Wrapper<hir::Expression> unit_value     { hir::expression::Tuple {}, unit_type };
-    bu::Wrapper<hir::Pattern>    true_pattern   = hir::pattern::Literal<bool> { true };
-    bu::Wrapper<hir::Pattern>    false_pattern  = hir::pattern::Literal<bool> { false };
+    hir::Node_context       & hir_node_context;
+    mir::Node_context       & mir_node_context;
+    bu::diagnostics::Builder& diagnostics;
+    bu::Source         const& source;
 
     std::vector<hir::Implicit_template_parameter>* current_function_implicit_template_parameters = nullptr;
 
@@ -61,8 +52,17 @@ public:
     auto lower(ast::Function_signature  const&) -> hir::Function_signature;
     auto lower(ast::Type_signature      const&) -> hir::Type_signature;
 
-    // For convenience
-    static auto lower(ast::Name const&) -> hir::Name;
+    auto unit_type     (bu::Source_view) -> bu::Wrapper<mir::Type>;
+    auto floating_type (bu::Source_view) -> bu::Wrapper<mir::Type>;
+    auto character_type(bu::Source_view) -> bu::Wrapper<mir::Type>;
+    auto boolean_type  (bu::Source_view) -> bu::Wrapper<mir::Type>;
+    auto string_type   (bu::Source_view) -> bu::Wrapper<mir::Type>;
+    auto size_type     (bu::Source_view) -> bu::Wrapper<mir::Type>;
+
+    auto unit_value    (bu::Source_view)   -> bu::Wrapper<hir::Expression>;
+    auto wildcard_pattern(bu::Source_view) -> bu::Wrapper<hir::Pattern>;
+    auto true_pattern  (bu::Source_view)   -> bu::Wrapper<hir::Pattern>;
+    auto false_pattern (bu::Source_view)   -> bu::Wrapper<hir::Pattern>;
 
     auto lower() noexcept {
         return [this](auto const& node) {

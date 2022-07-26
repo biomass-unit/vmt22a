@@ -19,7 +19,7 @@ namespace hir {
             std::vector<Function_parameter>          parameters;
             std::optional<Type>                      return_type;
             Expression                               body;
-            Name                                     name;
+            ast::Name                                name;
             DEFAULTED_EQUALITY(Function);
         };
 

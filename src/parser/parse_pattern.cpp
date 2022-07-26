@@ -105,28 +105,28 @@ namespace {
         context.retreat();
         auto mutability = extract_mutability(context);
 
-        std::optional<lexer::Identifier> identifier;
+        std::optional<ast::Name> name;
 
         if (mutability.type == ast::Mutability::Type::immut) { // Mutability wasn't specified
-            if (auto name = parse_constructor_name(context)) {
-                if (!name->is_unqualified()) {
+            if (auto ctor_name = parse_constructor_name(context)) {
+                if (!ctor_name->is_unqualified()) {
                     return ast::pattern::Constructor {
-                        .name    = std::move(*name),
+                        .name    = std::move(*ctor_name),
                         .pattern = parse_constructor_pattern(context)
                     };
                 }
                 else {
-                    identifier = name->primary_name.identifier;
+                    name = ctor_name->primary_name;
                 }
             }
         }
 
-        if (!identifier) {
-            identifier = extract_lower_id(context, "a lowercase identifier");
+        if (!name) {
+            name = extract_lower_name(context, "a lowercase identifier");
         }
 
         return ast::pattern::Name {
-            .identifier = std::move(*identifier),
+            .value      = std::move(*name),
             .mutability = std::move(mutability)
         };
     };
@@ -198,11 +198,11 @@ auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern
     if (pattern) {
         if (context.try_consume(Token::Type::as)) {
             auto mutability = extract_mutability(context);
-            auto alias      = extract_lower_id(context, "a pattern alias");
+            auto alias      = extract_lower_name(context, "a pattern alias");
             *pattern = ast::Pattern {
                 .value = ast::pattern::As {
                     .name {
-                        .identifier = std::move(alias),
+                        .value      = std::move(alias),
                         .mutability = std::move(mutability)
                     },
                     .pattern = std::move(*pattern)

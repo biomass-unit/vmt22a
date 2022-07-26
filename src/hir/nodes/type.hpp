@@ -101,8 +101,8 @@ namespace hir {
             type::Template_application
         >;
 
-        Variant                        value;
-        std::optional<bu::Source_view> source_view;
+        Variant         value;
+        bu::Source_view source_view;
 
         DEFAULTED_EQUALITY(Type);
     };

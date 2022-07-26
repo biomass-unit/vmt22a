@@ -51,8 +51,8 @@ namespace mir {
 
 #include "nodes/type.hpp"
 #include "nodes/expression.hpp"
-#include "nodes/pattern.hpp"
 #include "nodes/definition.hpp"
+#include "nodes/pattern.hpp"
 
 
 struct mir::Template_type_parameter {

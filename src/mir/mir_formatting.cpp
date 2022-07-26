@@ -58,6 +58,29 @@ namespace {
         auto operator()(mir::pattern::Wildcard const&) {
             return format("_");
         }
+        auto operator()(mir::pattern::Name const& name) {
+            return format("{}{}", name.is_mutable ? "mut " : "", name.value);
+        }
+        auto operator()(mir::pattern::Tuple const& tuple) {
+            return format("({})", tuple.patterns);
+        }
+        auto operator()(mir::pattern::Slice const& slice) {
+            return format("[{}]", slice.patterns);
+        }
+        auto operator()(mir::pattern::As const& as) {
+            format("{} as", as.pattern);
+            return operator()(as.name);
+        }
+        auto operator()(mir::pattern::Guarded const& guarded) {
+            return format("{} if {}", guarded.pattern, guarded.guard);
+        }
+        auto operator()(mir::pattern::Enum_constructor const& ctor) {
+            return format(
+                "{}{}",
+                ctor.constructor.name,
+                ctor.pattern.transform("({})"_format).value_or("")
+            );
+        }
     };
 
     struct Type_format_visitor : bu::fmt::Visitor_base {

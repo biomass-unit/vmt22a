@@ -23,7 +23,7 @@ namespace {
                 .parameters                   = std::move(parameters),
                 .return_type                  = function.return_type.transform(context.lower()),
                 .body                         = context.lower(function.body),
-                .name                         = context.lower(function.name)
+                .name                         = function.name
             };
         }
 
@@ -32,7 +32,7 @@ namespace {
                 -> hir::definition::Struct::Member
             {
                 return {
-                    .name        = context.lower(member.name),
+                    .name        = member.name,
                     .type        = context.lower(member.type),
                     .is_public   = member.is_public,
                     .source_view = member.source_view
@@ -41,7 +41,7 @@ namespace {
 
             return hir::definition::Struct {
                 .members             = bu::map(lower_member)(structure.members),
-                .name                = context.lower(structure.name),
+                .name                = structure.name,
                 .template_parameters = context.lower(structure.template_parameters),
             };
         }
@@ -51,7 +51,7 @@ namespace {
                 -> hir::definition::Enum::Constructor
             {
                 return {
-                    .name        = context.lower(ctor.name),
+                    .name        = ctor.name,
                     .type        = ctor.type.transform(context.lower()),
                     .source_view = ctor.source_view
                 };
@@ -59,14 +59,14 @@ namespace {
 
             return hir::definition::Enum {
                 .constructors        = bu::map(lower_constructor)(enumeration.constructors),
-                .name                = context.lower(enumeration.name),
+                .name                = enumeration.name,
                 .template_parameters = context.lower(enumeration.template_parameters)
             };
         }
 
         auto operator()(ast::definition::Alias const& alias) -> hir::Definition::Variant {
             return hir::definition::Alias {
-                .name                = context.lower(alias.name),
+                .name                = alias.name,
                 .type                = context.lower(alias.type),
                 .template_parameters = context.lower(alias.template_parameters)
             };
@@ -76,7 +76,7 @@ namespace {
             return hir::definition::Typeclass {
                 .function_signatures = bu::map(context.lower())(typeclass.function_signatures),
                 .type_signatures     = bu::map(context.lower())(typeclass.type_signatures),
-                .name                = context.lower(typeclass.name),
+                .name                = typeclass.name,
                 .template_parameters = context.lower(typeclass.template_parameters),
             };
         }
@@ -101,7 +101,7 @@ namespace {
         auto operator()(ast::definition::Namespace const& space) -> hir::Definition::Variant {
             return hir::definition::Namespace {
                 .definitions         = bu::map(context.lower())(space.definitions),
-                .name                = context.lower(space.name),
+                .name                = space.name,
                 .template_parameters = context.lower(space.template_parameters)
             };
         }

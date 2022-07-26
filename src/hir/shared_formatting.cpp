@@ -9,16 +9,6 @@
 
 
 template <ast::tree_configuration Configuration>
-DEFINE_FORMATTER_FOR(ast::Basic_name<Configuration>) {
-    return std::format_to(context.out(), "{}", value.identifier.view());
-}
-
-template struct std::formatter<ast::Name>;
-template struct std::formatter<hir::Name>;
-
-
-
-template <ast::tree_configuration Configuration>
 DEFINE_FORMATTER_FOR(ast::Basic_template_argument<Configuration>) {
     if (value.name) {
         std::format_to(context.out(), "{} = ", *value.name);

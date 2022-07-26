@@ -17,8 +17,8 @@ namespace ast {
         };
 
         struct Name {
-            lexer::Identifier identifier;
-            Mutability        mutability;
+            ::ast::Name value;
+            Mutability  mutability;
             DEFAULTED_EQUALITY(Name);
         };
 

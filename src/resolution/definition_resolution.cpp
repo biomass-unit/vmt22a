@@ -27,15 +27,28 @@ namespace {
             }
 
             if (auto* const name = std::get_if<hir::pattern::Name>(&parameter.pattern.value)) {
+                if (name->mutability.parameter_name.has_value()) {
+                    bu::todo();
+                }
+
                 signature_scope.bind_variable(
-                    name->identifier,
+                    name->value.identifier,
                     {
                         .type        = parameter_type,
                         .mutability  = name->mutability,
                         .source_view = parameter.pattern.source_view,
                     }
                 );
-                mir_parameters.emplace_back(mir::Pattern { .value = mir::pattern::Wildcard {} }, parameter_type); // FIX
+                mir_parameters.emplace_back(
+                    mir::Pattern {
+                        .value = mir::pattern::Name {
+                            .value      = name->value,
+                            .is_mutable = name->mutability.type == ast::Mutability::Type::mut,
+                        },
+                        .source_view = parameter.pattern.source_view
+                    },
+                    parameter_type
+                );
             }
             else {
                 bu::todo();

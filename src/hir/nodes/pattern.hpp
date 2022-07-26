@@ -20,7 +20,7 @@ namespace hir {
         };
 
         struct Constructor_shorthand {
-            ::hir::Name                         name;
+            ast::Name                           name;
             std::optional<bu::Wrapper<Pattern>> pattern;
             DEFAULTED_EQUALITY(Constructor_shorthand);
         };
@@ -43,7 +43,7 @@ namespace hir {
 
         struct Guarded {
             bu::Wrapper<Pattern> pattern;
-            bu::Wrapper<Expression> guard;
+            Expression           guard;
             DEFAULTED_EQUALITY(Guarded);
         };
 
@@ -66,8 +66,8 @@ namespace hir {
             pattern::Guarded
         >;
 
-        Variant                        value;
-        std::optional<bu::Source_view> source_view;
+        Variant         value;
+        bu::Source_view source_view;
 
         DEFAULTED_EQUALITY(Pattern);
     };

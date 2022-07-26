@@ -213,7 +213,7 @@ namespace {
             return format("_");
         }
         auto operator()(hir::pattern::Name const& name) {
-            return format("{}{}", name.mutability, name.identifier);
+            return format("{}{}", name.mutability, name.value);
         }
         auto operator()(hir::pattern::Constructor const& ctor) {
             return format(ctor.pattern ? "ctor {}({})" : "ctor {}", ctor.name, ctor.pattern);
@@ -228,7 +228,8 @@ namespace {
             return format("[{}]", slice.patterns);
         }
         auto operator()(hir::pattern::As const& as) {
-            return format("{} as {}{}", as.pattern, as.name.mutability, as.name.identifier);
+            format("{} as {}", as.pattern);
+            return operator()(as.name);
         }
         auto operator()(hir::pattern::Guarded const& guarded) {
             return format("{} if {}", guarded.pattern, guarded.guard);

@@ -37,7 +37,7 @@ namespace hir {
         };
 
         struct Break {
-            std::optional<Name>                    label;
+            std::optional<ast::Name>               label;
             std::optional<bu::Wrapper<Expression>> expression;
             DEFAULTED_EQUALITY(Break);
         };
@@ -73,7 +73,7 @@ namespace hir {
                 DEFAULTED_EQUALITY(Tuple_field);
             };
             struct Struct_field {
-                Name name;
+                ast::Name name;
                 DEFAULTED_EQUALITY(Struct_field);
             };
             struct Array_index {
@@ -89,7 +89,7 @@ namespace hir {
         struct Member_function_invocation {
             std::vector<Function_argument> arguments;
             bu::Wrapper<Expression>        expression;
-            Name                           member_name;
+            ast::Name                      member_name;
             DEFAULTED_EQUALITY(Member_function_invocation);
         };
 
@@ -194,14 +194,9 @@ namespace hir {
             expression::Hole
         >;
 
-        Variant                        value;
-        bu::Wrapper<mir::Type>         type;
-        std::optional<bu::Source_view> source_view;
-
-        Expression(Variant&& value, bu::Wrapper<mir::Type> const type, std::optional<bu::Source_view> source_view = std::nullopt)
-            : value       { std::move(value) }
-            , type        { type }
-            , source_view { source_view } {}
+        Variant                value;
+        bu::Wrapper<mir::Type> type;
+        bu::Source_view        source_view;
 
         DEFAULTED_EQUALITY(Expression);
     };

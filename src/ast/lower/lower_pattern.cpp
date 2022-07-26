@@ -18,7 +18,7 @@ namespace {
 
         auto operator()(ast::pattern::Name const& name) -> hir::Pattern::Variant {
             return hir::pattern::Name {
-                .identifier = name.identifier,
+                .value      = name.value,
                 .mutability = name.mutability
             };
         }
@@ -44,7 +44,7 @@ namespace {
 
         auto operator()(ast::pattern::Constructor_shorthand const& ctor) -> hir::Pattern::Variant {
             return hir::pattern::Constructor_shorthand {
-                .name    = context.lower(ctor.name),
+                .name    = ctor.name,
                 .pattern = ctor.pattern.transform(bu::compose(bu::wrap, context.lower()))
             };
         }

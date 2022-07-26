@@ -13,14 +13,12 @@ namespace hir {
 
 
     struct HIR_configuration {
-        using Expression  = ::hir::Expression;
-        using Pattern     = ::hir::Pattern;
-        using Type        = ::hir::Type;
-        using Definition  = ::hir::Definition;
-        using Source_view = std::optional<bu::Source_view>;
+        using Expression = ::hir::Expression;
+        using Pattern    = ::hir::Pattern;
+        using Type       = ::hir::Type;
+        using Definition = ::hir::Definition;
     };
 
-    using Name                = ast::Basic_name                <HIR_configuration>;
     using Template_argument   = ast::Basic_template_argument   <HIR_configuration>;
     using Root_qualifier      = ast::Basic_root_qualifier      <HIR_configuration>;
     using Qualifier           = ast::Basic_qualifier           <HIR_configuration>;
@@ -54,8 +52,8 @@ namespace hir {
 
 
 struct hir::Function_argument {
-    Expression          expression;
-    std::optional<Name> name;
+    Expression               expression;
+    std::optional<ast::Name> name;
     DEFAULTED_EQUALITY(Function_argument);
 };
 
@@ -71,11 +69,11 @@ namespace hir {
     using Node_context = bu::Wrapper_context_for<Expression, Type, Pattern>;
 
     struct Module {
-        Node_context              hir_node_context;
-        mir::Node_context         mir_node_context;
-        bu::diagnostics::Builder  diagnostics;
-        bu::Source                source;
-        std::vector<Definition>   definitions;
+        Node_context             hir_node_context;
+        mir::Node_context        mir_node_context;
+        bu::diagnostics::Builder diagnostics;
+        bu::Source               source;
+        std::vector<Definition>  definitions;
     };
 
 }

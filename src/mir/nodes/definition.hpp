@@ -15,34 +15,35 @@ namespace mir {
         };
         Signature  signature;
         Expression body;
-        hir::Name  name;
+        ast::Name  name;
     };
 
     struct Struct {
         struct Member {
-            hir::Name         name;
+            ast::Name         name;
             bu::Wrapper<Type> type;
             bool              is_public;
         };
         Template_parameter_set template_parameters;
         std::vector<Member>    members;
-        hir::Name              name;
+        ast::Name              name;
     };
 
     struct Enum {
         struct Constructor {
-            hir::Name                        name;
+            ast::Name                        name;
             std::optional<bu::Wrapper<Type>> type;
+            bu::Wrapper<Type>                function_type;
         };
         Template_parameter_set   template_parameters;
         std::vector<Constructor> constructors;
-        hir::Name                name;
+        ast::Name                name;
     };
 
     struct Alias {
         Template_parameter_set template_parameters;
         bu::Wrapper<Type>      aliased_type;
-        hir::Name              name;
+        ast::Name              name;
     };
 
     struct Typeclass {};

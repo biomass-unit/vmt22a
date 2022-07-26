@@ -62,6 +62,10 @@ DEFINE_FORMATTER_FOR(ast::expression::Type_cast::Kind) {
     }
 }
 
+DEFINE_FORMATTER_FOR(ast::Name) {
+    return std::format_to(context.out(), "{}", value.identifier);
+}
+
 
 namespace {
 
@@ -219,7 +223,7 @@ namespace {
             return std::invoke(Expression_format_visitor { { out } }, literal);
         }
         auto operator()(ast::pattern::Name const& name) {
-            return format("{}{}", name.mutability, name.identifier);
+            return format("{}{}", name.mutability, name.value);
         }
         auto operator()(ast::pattern::Constructor const& ctor) {
             return format(ctor.pattern ? "ctor {}({})" : "ctor {}", ctor.name, ctor.pattern);
@@ -234,7 +238,8 @@ namespace {
             return format("[{}]", slice.patterns);
         }
         auto operator()(ast::pattern::As const& as) {
-            return format("{} as {}{}", as.pattern, as.name.mutability, as.name.identifier);
+            format("{} as ", as.pattern);
+            return operator()(as.name);
         }
         auto operator()(ast::pattern::Guarded const& guarded) {
             return format("{} if {}", guarded.pattern, guarded.guard);

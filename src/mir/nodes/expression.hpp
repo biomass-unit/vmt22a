@@ -21,7 +21,7 @@ namespace mir {
         };
 
         struct Local_variable_reference {
-            hir::Name name;
+            ast::Name name;
         };
 
         struct Function_reference {
@@ -44,9 +44,9 @@ namespace mir {
             expression::Function_reference
         >;
 
-        Variant                        value;
-        bu::Wrapper<Type>              type;
-        std::optional<bu::Source_view> source_view;
+        Variant           value;
+        bu::Wrapper<Type> type;
+        bu::Source_view   source_view;
     };
 
 }
