@@ -19,11 +19,13 @@ namespace {
                 context.resolve_type(parameter.type, signature_scope, *home_namespace);
 
             if (parameter.default_value.has_value()) { // FIX
-                auto [constraints, default_value] =
+                /*auto [constraints, default_value] =
                     context.resolve_expression(*parameter.default_value, signature_scope, *home_namespace);
 
                 constraints.equality_constraints.emplace_back(default_value.type, parameter_type);
-                context.unify(constraints);
+                context.unify(constraints);*/
+
+                bu::todo();
             }
 
             if (auto* const name = std::get_if<hir::pattern::Name>(&parameter.pattern.value)) {
@@ -148,10 +150,18 @@ auto resolution::Context::resolve_function(Function_info& info)
 
         function.signature_scope.warn_about_unused_bindings();
 
-        constraints.equality_constraints.emplace_back(
-            body.type,
-            function.resolved_signature.return_type
-        );
+        constraints.equality_constraints.push_back({
+            .left  = body.type,
+            .right = function.resolved_signature.return_type,
+            .constrainer {
+                bu::get(function.resolved_signature.return_type->source_view),
+                "The return type is specified to be {1}"
+            },
+            .constrained {
+                body.source_view,
+                "But the body is of type {0}"
+            }
+        });
         unify(constraints);
 
         info.function_type->value = mir::type::Function {

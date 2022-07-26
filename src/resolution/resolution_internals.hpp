@@ -149,7 +149,14 @@ namespace resolution {
 
     namespace constraint {
         struct Equality {
-            bu::Wrapper<mir::Type> left, right;
+            struct Explanation {
+                bu::Source_view  source_view;
+                std::string_view explanatory_note;
+            };
+            bu::Wrapper<mir::Type> left;
+            bu::Wrapper<mir::Type> right;
+            Explanation            constrainer;
+            Explanation            constrained;
         };
         struct Instance {
             bu::Wrapper<mir::Type>            type;

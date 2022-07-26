@@ -12,10 +12,10 @@ namespace {
     };
 
     auto apply_qualifiers(
-        Context  & context,
-        Scope    & scope,
-        Namespace& space,
-        hir::Qualified_name  & name) -> bu::Pair<Lookup, Namespace*>
+        Context            & context,
+        Scope              & scope,
+        Namespace          & space,
+        hir::Qualified_name& name) -> bu::Pair<Lookup, Namespace*>
     {
         Lookup lookup_strategy = Lookup::relative;
 
@@ -34,9 +34,7 @@ namespace {
                     return &**associated;
                 }
                 else {
-                    context.diagnostics.emit_simple_error({
-                        .erroneous_view    = bu::get(type->source_view),
-                        .source            = context.source,
+                    context.error(bu::get(type->source_view), {
                         .message           = "{} does not have an associated namespace",
                         .message_arguments = std::make_format_args(type)
                     });
@@ -73,10 +71,10 @@ namespace {
         auto Namespace::*... tables
     >
     auto do_lookup(
-        resolution::Context  & context,
-        resolution::Scope    & scope,
-        resolution::Namespace& space,
-        hir::Qualified_name  & name)
+        Context            & context,
+        Scope              & scope,
+        Namespace          & space,
+        hir::Qualified_name& name)
     {
         auto [strategy, target] = apply_qualifiers(context, scope, space, name);
         using R = decltype((context.*lookup_function)(scope, space, name));

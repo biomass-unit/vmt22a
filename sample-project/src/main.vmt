@@ -1,6 +1,7 @@
 fn f() = g
-fn g(n: Int) = 0
+fn g(n: Int) = n
 
-// fn h(n: Int): type_of(h) = h
+fn test(): Char = [10, 20 : Int]
 
-struct S = a: Int, b: type_of(f)
+// fn h(): [Int; ""] = ["hi", "hello"]
+//struct S = a: Int, b: type_of(a)

@@ -59,7 +59,21 @@ namespace {
         auto operator()(hir::type::Array& array) -> bu::Wrapper<mir::Type> {
             bu::wrapper auto const element_type = recurse(*array.element_type);
             auto [constraints, length] = context.resolve_expression(*array.length, scope, space);
-            constraints.equality_constraints.emplace_back(length.type, context.size_type);
+            constraints.equality_constraints.push_back({
+                .left  = length.type,
+                .right = mir::Type {
+                    .value       = bu::copy(context.size_type),
+                    .source_view = this_type.source_view
+                },
+                .constrainer {
+                    this_type.source_view,
+                    "The array length must be of type U64"
+                },
+                .constrained {
+                    length.source_view,
+                    "But this expression is of type {0}"
+                }
+            });
             context.unify(constraints);
 
             return mir::Type {

@@ -43,9 +43,33 @@ namespace {
             mir::expression::Array_literal mir_array;
             mir_array.elements.reserve(array.elements.size());
 
-            for (hir::Expression& element : array.elements) {
-                mir_array.elements.push_back(recurse(element));
-                constraint_set.equality_constraints.emplace_back(element_type, element.type);
+            if (!array.elements.empty()) {
+                mir_array.elements.push_back(recurse(array.elements.front()));
+                bu::wrapper auto const first_element_type = mir_array.elements.back().type;
+
+                hir::Expression* previous_element = &array.elements.front();
+
+                for (hir::Expression& element : array.elements | std::views::drop(1)) {
+                    constraint_set.equality_constraints.push_back({
+                        .left  = first_element_type,
+                        .right = element.type,
+                        .constrainer {
+                            array.elements.front().source_view + previous_element->source_view,
+                            &element == &array.elements[1]
+                                ? "The previous element was of type {0}"
+                                : "The previous elements were of type {0}"
+                        },
+                        .constrained {
+                            element.source_view,
+                            "But this element is of type {1}"
+                        }
+                    });
+
+                    mir_array.elements.push_back(recurse(element));
+                    previous_element = &element;
+                }
+
+                element_type->value = first_element_type->value;
             }
 
             return {
@@ -70,11 +94,20 @@ namespace {
 
             if (auto info = context.find_function(scope, space, variable.name)) {
                 context.resolve_function(*info);
+                this_expression.type->value = (*info)->function_type->value;
 
-                constraint_set.equality_constraints.emplace_back(
-                    (*info)->function_type,
-                    this_expression.type
-                );
+                /*constraint_set.equality_constraints.push_back({
+                    .left  = (*info)->function_type,
+                    .right = this_expression.type,
+                    .constrainer {
+                        std::visit([](auto const& function) { return function.name.source_view; }, (*info)->value),
+                        ""
+                    },
+                    .constrained {
+                        this_expression.source_view,
+                        ""
+                    }
+                });*/
 
                 return {
                     .value       = mir::expression::Function_reference { *info },
@@ -89,10 +122,18 @@ namespace {
 
         auto operator()(hir::expression::Type_cast& cast) -> mir::Expression {
             if (cast.kind == ast::expression::Type_cast::Kind::ascription) {
-                constraint_set.equality_constraints.emplace_back(
-                    cast.expression->type,
-                    context.resolve_type(*cast.target, scope, space)
-                );
+                constraint_set.equality_constraints.push_back({
+                    .left  = cast.expression->type,
+                    .right = context.resolve_type(*cast.target, scope, space),
+                    .constrainer {
+                        cast.target->source_view,
+                        "The ascribed type is {1}"
+                    },
+                    .constrained {
+                        cast.expression->source_view,
+                        "But the actual type is {0}"
+                    }
+                });
                 return recurse(*cast.expression);
             }
             else {

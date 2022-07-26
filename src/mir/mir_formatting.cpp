@@ -14,7 +14,7 @@ DIRECTLY_DEFINE_FORMATTER_FOR(mir::Template_parameter_set) {
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(mir::Function_parameter) {
-    return std::format_to(context.out(),"{}: {}", value.pattern, value.type);
+    return std::format_to(context.out(), "{}: {}", value.pattern, value.type);
 }
 
 DIRECTLY_DEFINE_FORMATTER_FOR(mir::Struct::Member) {
@@ -49,8 +49,14 @@ namespace {
         auto operator()(mir::expression::Function_reference const& function) {
             return format("{}", std::visit([](auto& f) { return f.name; }, function.info->value));
         }
-        auto operator()(auto const&) -> std::format_context::iterator {
-            bu::todo();
+        auto operator()(mir::expression::Tuple const& tuple) {
+            return format("({})", tuple.elements);
+        }
+        auto operator()(mir::expression::Array_literal const& array) {
+            return format("[{}]", array.elements);
+        }
+        auto operator()(mir::expression::Local_variable_reference const& variable) {
+            return format("{}", variable.name);
         }
     };
 
