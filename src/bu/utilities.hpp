@@ -412,6 +412,16 @@ namespace bu {
         }
     }
 
+    template <class Ok, std::derived_from<std::exception> Err>
+    constexpr auto expect(std::expected<Ok, Err>&& expected) -> Ok&& {
+        if (expected) {
+            return std::move(*expected);
+        }
+        else {
+            throw std::move(expected.error());
+        }
+    }
+
 
     template <class T>
     auto vector_with_capacity(Usize const capacity) noexcept -> std::vector<T> {
