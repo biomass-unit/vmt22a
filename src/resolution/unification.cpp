@@ -5,8 +5,10 @@
 namespace {
 
     struct Equality_constraint_visitor {
-        resolution::Context            & context;
+        resolution::Context&             context;
         resolution::constraint::Equality this_constraint;
+        bu::Wrapper<mir::Type>           outer_left_type;
+        bu::Wrapper<mir::Type>           outer_right_type;
 
 
         auto recurse(bu::Wrapper<mir::Type> const left, bu::Wrapper<mir::Type> const right) -> void {
@@ -18,7 +20,9 @@ namespace {
                         .right       = right,
                         .constrainer = this_constraint.constrainer,
                         .constrained = this_constraint.constrained
-                    }
+                    },
+                    .outer_left_type  = outer_left_type,
+                    .outer_right_type = outer_right_type
                 },
                 left->value,
                 right->value
@@ -100,18 +104,18 @@ namespace {
         }
 
         auto operator()(auto const&, auto const&) -> void {
-            auto const constrainer_note = std::vformat(
+            std::string const constrainer_note = std::vformat(
                 this_constraint.constrainer.explanatory_note,
                 std::make_format_args(
-                    this_constraint.left,
-                    this_constraint.right
+                    outer_left_type,
+                    outer_right_type
                 )
             );
-            auto const constrained_note = std::vformat(
+            std::string const constrained_note = std::vformat(
                 this_constraint.constrained.explanatory_note,
                 std::make_format_args(
-                    this_constraint.left,
-                    this_constraint.right
+                    outer_left_type,
+                    outer_right_type
                 )
             );
             context.diagnostics.emit_error({
@@ -138,7 +142,12 @@ namespace {
 
 auto resolution::Context::unify(Constraint_set& constraints) -> void {
     for (constraint::Equality const& constraint : constraints.equality_constraints) {
-        Equality_constraint_visitor { *this, constraint }.recurse(constraint.left, constraint.right);
+        Equality_constraint_visitor {
+            .context          = *this,
+            .this_constraint  = constraint,
+            .outer_left_type  = constraint.left,
+            .outer_right_type = constraint.right
+        }.recurse(constraint.left, constraint.right);
     }
     if (!constraints.instance_constraints.empty()) {
         bu::todo();

@@ -47,10 +47,20 @@ namespace {
             return format("\"{}\"", literal.value);
         }
         auto operator()(mir::expression::Function_reference const& function) {
-            return format("{}", std::visit([](auto& f) { return f.name; }, function.info->value));
+            return format("{}", std::visit([](auto& f) { return f.name; }, function.info->value)); // FIX
         }
         auto operator()(mir::expression::Tuple const& tuple) {
             return format("({})", tuple.elements);
+        }
+        auto operator()(mir::expression::Block const& block) {
+            format("{{ ");
+            for (auto const& side_effect : block.side_effects) {
+                format("{}; ", side_effect);
+            }
+            return format("{}}}", block.result.transform("{} "_format).value_or(""));
+        }
+        auto operator()(mir::expression::Let_binding const& let) {
+            return format("let {}: {} = {}", let.pattern, let.type, let.initializer);
         }
         auto operator()(mir::expression::Array_literal const& array) {
             return format("[{}]", array.elements);

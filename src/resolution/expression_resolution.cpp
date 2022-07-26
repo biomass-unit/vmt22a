@@ -37,22 +37,19 @@ namespace {
         }
 
         auto operator()(hir::expression::Array_literal& array) -> mir::Expression {
-            bu::wrapper auto const element_type =
-                bu::get<mir::type::Array>(this_expression.type->value).element_type;
-
             mir::expression::Array_literal mir_array;
             mir_array.elements.reserve(array.elements.size());
 
             if (!array.elements.empty()) {
                 mir_array.elements.push_back(recurse(array.elements.front()));
-                bu::wrapper auto const first_element_type = mir_array.elements.back().type;
-
                 hir::Expression* previous_element = &array.elements.front();
 
                 for (hir::Expression& element : array.elements | std::views::drop(1)) {
+                    mir_array.elements.push_back(recurse(element));
+
                     constraint_set.equality_constraints.push_back({
-                        .left  = first_element_type,
-                        .right = element.type,
+                        .left  = mir_array.elements.front().type,
+                        .right = mir_array.elements.back().type,
                         .constrainer {
                             array.elements.front().source_view + previous_element->source_view,
                             &element == &array.elements[1]
@@ -65,11 +62,10 @@ namespace {
                         }
                     });
 
-                    mir_array.elements.push_back(recurse(element));
                     previous_element = &element;
                 }
 
-                element_type->value = first_element_type->value;
+                bu::get<mir::type::Array>(this_expression.type->value).element_type = mir_array.elements.front().type;
             }
 
             return {
@@ -120,10 +116,119 @@ namespace {
             }
         }
 
+        auto operator()(hir::expression::Block& block) -> mir::Expression {
+            resolution::Scope block_scope = scope.make_child();
+
+            std::vector<mir::Expression> side_effects;
+            side_effects.reserve(block.side_effects.size());
+
+            for (hir::Expression& side_effect : block.side_effects) {
+                side_effects.push_back(recurse(side_effect, &block_scope));
+                constraint_set.equality_constraints.push_back({
+                    .left  = side_effects.back().type,
+                    .right = mir::type::Tuple {},
+                    .constrainer {
+                        this_expression.source_view,
+                        "The side-effect expressions in a block expression must of the unit type"
+                    },
+                    .constrained {
+                        side_effect.source_view,
+                        "But this expression is of type {0}"
+                    }
+                });
+            }
+
+            std::optional<bu::Wrapper<mir::Expression>> block_result;
+            if (block.result) {
+                auto [constraints, result] =
+                    context.resolve_expression(*block.result, block_scope, space);
+                context.unify(constraints);
+                block_result = std::move(result);
+            }
+
+            bu::wrapper auto const result_type
+                = block_result
+                ? (*block_result)->type
+                : mir::type::Tuple {};
+
+            block_scope.warn_about_unused_bindings();
+
+            return {
+                .value = mir::expression::Block {
+                    .side_effects = std::move(side_effects),
+                    .result       = std::move(block_result)
+                },
+                .type        = result_type,
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(hir::expression::Let_binding& let) -> mir::Expression {
+            auto initializer = recurse(let.initializer);
+
+            bu::wrapper auto const type = [&] {
+                if (let.type.has_value()) {
+                    bu::wrapper auto type = context.resolve_type(*let.type, scope, space);
+                    constraint_set.equality_constraints.push_back({
+                        .left  = initializer.type,
+                        .right = type,
+                        .constrainer {
+                            (*let.type)->source_view,
+                            "The variable is specified to be of type {1}"
+                        },
+                        .constrained {
+                            let.initializer->source_view,
+                            "But its initializer is of type {0}"
+                        }
+                    });
+                    return type;
+                }
+                else {
+                    return initializer.type;
+                }
+            }();
+
+            if (auto* const name = std::get_if<hir::pattern::Name>(&let.pattern->value)) {
+                if (name->mutability.parameter_name.has_value()) {
+                    bu::todo();
+                }
+
+                scope.bind_variable(
+                    name->value.identifier,
+                    {
+                        .type               = type,
+                        .mutability         = name->mutability,
+                        .has_been_mentioned = false,
+                        .source_view        = name->value.source_view,
+                    }
+                );
+
+                return {
+                    .value = mir::expression::Let_binding {
+                        .pattern = mir::Pattern {
+                            .value = mir::pattern::Name {
+                                .value      = name->value,
+                                .is_mutable = name->mutability.type == ast::Mutability::Type::mut
+                            },
+                            .source_view = let.pattern->source_view
+                        },
+                        .type        = type,
+                        .initializer = std::move(initializer),
+                    },
+                    .type        = this_expression.type,
+                    .source_view = this_expression.source_view
+                };
+            }
+            else {
+                bu::todo();
+            }
+        }
+
         auto operator()(hir::expression::Type_cast& cast) -> mir::Expression {
             if (cast.kind == ast::expression::Type_cast::Kind::ascription) {
+                auto result = recurse(*cast.expression);
                 constraint_set.equality_constraints.push_back({
-                    .left  = cast.expression->type,
+                    .left  = result.type,
                     .right = context.resolve_type(*cast.target, scope, space),
                     .constrainer {
                         cast.target->source_view,
@@ -134,16 +239,15 @@ namespace {
                         "But the actual type is {0}"
                     }
                 });
-                return recurse(*cast.expression);
+                return result;
             }
             else {
                 bu::todo();
             }
         }
 
-        template <class T>
-        auto operator()(T&) -> mir::Expression {
-            bu::abort(typeid(T).name());
+        auto operator()(auto&) -> mir::Expression {
+            context.error(this_expression.source_view, { "This expression can not be resolved yet" });
         }
     };
 

@@ -111,9 +111,8 @@ namespace {
             }
         }
 
-        template <class T>
-        auto operator()(T&) -> bu::Wrapper<mir::Type> {
-            bu::abort(typeid(T).name());
+        auto operator()(auto&) -> bu::Wrapper<mir::Type> {
+            context.error(this_type.source_view, { "This type can not be resolved yet" });
         }
     };
 

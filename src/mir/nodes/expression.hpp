@@ -20,6 +20,17 @@ namespace mir {
             std::vector<Expression> elements;
         };
 
+        struct Block {
+            std::vector<Expression>                side_effects;
+            std::optional<bu::Wrapper<Expression>> result;
+        };
+
+        struct Let_binding {
+            bu::Wrapper<Pattern>    pattern;
+            bu::Wrapper<Type>       type;
+            bu::Wrapper<Expression> initializer;
+        };
+
         struct Local_variable_reference {
             ast::Name name;
         };
@@ -40,6 +51,8 @@ namespace mir {
             expression::Literal<lexer::String>,
             expression::Array_literal,
             expression::Tuple,
+            expression::Block,
+            expression::Let_binding,
             expression::Local_variable_reference,
             expression::Function_reference
         >;

@@ -1,7 +1,8 @@
-fn f() = g
-fn g(n: Int) = n
+//fn f() = g
+//fn g(n: Int) = n
 
-fn test(): Char = [10, 20 : Int]
+fn f() { let x = 10; x: Int }
+fn g() { 5 }
 
-// fn h(): [Int; ""] = ["hi", "hello"]
+//fn h(): [Int; ""] = ["hi", "hello"]
 //struct S = a: Int, b: type_of(a)

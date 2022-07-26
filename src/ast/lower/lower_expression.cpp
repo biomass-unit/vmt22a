@@ -315,6 +315,7 @@ namespace {
         }
 
         auto operator()(ast::expression::Let_binding const& let) -> hir::Expression::Variant {
+            non_general_type = context.unit_type(this_expression.source_view);
             return hir::expression::Let_binding {
                 .pattern     = context.lower(let.pattern),
                 .initializer = context.lower(let.initializer),
