@@ -56,6 +56,20 @@ namespace {
             };
         }
 
+        auto operator()(hir::type::Tuple& tuple) -> bu::Wrapper<mir::Type> {
+            mir::type::Tuple mir_tuple;
+            mir_tuple.types.reserve(tuple.types.size());
+
+            for (hir::Type& element : tuple.types) {
+                mir_tuple.types.push_back(recurse(element));
+            }
+
+            return mir::Type {
+                .value       = std::move(mir_tuple),
+                .source_view = this_type.source_view
+            };
+        }
+
         auto operator()(hir::type::Array& array) -> bu::Wrapper<mir::Type> {
             bu::wrapper auto const element_type = recurse(*array.element_type);
             auto [constraints, length] = context.resolve_expression(*array.length, scope, space);

@@ -4,10 +4,16 @@
 //struct S = a: Int, b: type_of(a)
 
 
+fn f() = 10
 
-fn f(n: Int) = [10, n, 20]
 
-fn g() {
-    let x = 5;
-    let y = f(x);
+fn g() = f
+
+
+/*
+fn f(n: Int) = match n {
+    0 -> "zero"
+    1 -> "one"
+    _ -> "other"
 }
+*/

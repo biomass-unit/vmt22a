@@ -90,30 +90,38 @@ namespace {
 
             if (auto info = context.find_function(scope, space, variable.name)) {
                 context.resolve_function(*info);
-                this_expression.type->value = (*info)->function_type->value;
-
-                /*constraint_set.equality_constraints.push_back({
-                    .left  = (*info)->function_type,
-                    .right = this_expression.type,
-                    .constrainer {
-                        std::visit([](auto const& function) { return function.name.source_view; }, (*info)->value),
-                        ""
-                    },
-                    .constrained {
-                        this_expression.source_view,
-                        ""
-                    }
-                });*/
 
                 return {
                     .value       = mir::expression::Function_reference { *info },
-                    .type        = this_expression.type,
+                    .type        = (*info)->function_type,
                     .source_view = this_expression.source_view
                 };
             }
             else {
                 context.error(this_expression.source_view, { "Unrecognized identifier" });
             }
+        }
+
+        auto operator()(hir::expression::Tuple& tuple) -> mir::Expression {
+            mir::expression::Tuple mir_tuple;
+            mir::type::Tuple mir_tuple_type;
+
+            mir_tuple.elements.reserve(tuple.elements.size());
+            mir_tuple_type.types.reserve(tuple.elements.size());
+
+            for (hir::Expression& element : tuple.elements) {
+                mir_tuple.elements.push_back(recurse(element));
+                mir_tuple_type.types.push_back(mir_tuple.elements.back().type);
+            }
+
+            return {
+                .value = std::move(mir_tuple),
+                .type  = mir::Type {
+                    .value       = std::move(mir_tuple_type),
+                    .source_view = this_expression.type->source_view
+                },
+                .source_view = this_expression.source_view
+            };
         }
 
         auto operator()(hir::expression::Block& block) -> mir::Expression {
@@ -255,8 +263,6 @@ namespace {
             if (auto* const function = std::get_if<mir::expression::Function_reference>(&invocable.value)) {
                 mir::Function::Signature& signature     = context.resolve_function_signature(function->info);
                 auto const&               function_type = bu::get<mir::type::Function>(function->info->function_type->value);
-
-                invocable.type->value = function_type;
 
                 bu::Usize const argument_count  = invocation.arguments.size();
                 bu::Usize const parameter_count = signature.parameters.size();
