@@ -39,6 +39,11 @@ namespace mir {
             bu::Wrapper<resolution::Function_info> info;
         };
 
+        struct Direct_invocation {
+            Function_reference      function;
+            std::vector<Expression> arguments;
+        };
+
     }
 
 
@@ -54,7 +59,8 @@ namespace mir {
             expression::Block,
             expression::Let_binding,
             expression::Local_variable_reference,
-            expression::Function_reference
+            expression::Function_reference,
+            expression::Direct_invocation
         >;
 
         Variant           value;

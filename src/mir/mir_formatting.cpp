@@ -68,6 +68,10 @@ namespace {
         auto operator()(mir::expression::Local_variable_reference const& variable) {
             return format("{}", variable.name);
         }
+        auto operator()(mir::expression::Direct_invocation const& invocation) {
+            operator()(invocation.function);
+            return format("({})", invocation.arguments);
+        }
     };
 
     struct Pattern_format_visitor : bu::fmt::Visitor_base {
@@ -131,7 +135,7 @@ namespace {
             return format("&{}{}", reference.mutability, reference.referenced_type);
         }
         auto operator()(mir::type::Function const& function) {
-            return format("fn({}): {}", function.arguments, function.return_type);
+            return format("fn({}): {}", function.parameter_types, function.return_type);
         }
         auto operator()(mir::type::Tuple const& tuple) {
             return format("({})", tuple.types);

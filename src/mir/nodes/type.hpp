@@ -37,7 +37,7 @@ namespace mir {
         };
 
         struct Function {
-            std::vector<bu::Wrapper<Type>> arguments;
+            std::vector<bu::Wrapper<Type>> parameter_types;
             bu::Wrapper<Type>              return_type;
         };
 

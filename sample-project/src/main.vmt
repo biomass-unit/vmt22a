@@ -1,8 +1,13 @@
 //fn f() = g
 //fn g(n: Int) = n
-
-fn f() { let x = 10; x: Int }
-fn g() { 5 }
-
 //fn h(): [Int; ""] = ["hi", "hello"]
 //struct S = a: Int, b: type_of(a)
+
+
+
+fn f(n: Int) = [10, n, 20]
+
+fn g() {
+    let x = 5;
+    let y = f(x);
+}

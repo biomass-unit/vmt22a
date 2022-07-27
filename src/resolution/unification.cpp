@@ -85,9 +85,9 @@ namespace {
         }
 
         auto operator()(mir::type::Function const& left, mir::type::Function const& right) -> void {
-            if (left.arguments.size() == right.arguments.size()) {
-                for (bu::Usize i = 0; i != left.arguments.size(); ++i) {
-                    recurse(left.arguments[i], right.arguments[i]);
+            if (left.parameter_types.size() == right.parameter_types.size()) {
+                for (bu::Usize i = 0; i != left.parameter_types.size(); ++i) {
+                    recurse(left.parameter_types[i], right.parameter_types[i]);
                 }
                 recurse(left.return_type, right.return_type);
             }

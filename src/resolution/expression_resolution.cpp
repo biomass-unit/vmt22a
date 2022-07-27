@@ -246,6 +246,74 @@ namespace {
             }
         }
 
+        auto operator()(hir::expression::Invocation& invocation) -> mir::Expression {
+            mir::Expression invocable = recurse(invocation.invocable);
+            
+            // If the invocable is a direct reference to a function, named arguments
+            // may be supplied. Otherwise, only positional arguments are allowed.
+
+            if (auto* const function = std::get_if<mir::expression::Function_reference>(&invocable.value)) {
+                mir::Function::Signature& signature     = context.resolve_function_signature(function->info);
+                auto const&               function_type = bu::get<mir::type::Function>(function->info->function_type->value);
+
+                invocable.type->value = function_type;
+
+                bu::Usize const argument_count  = invocation.arguments.size();
+                bu::Usize const parameter_count = signature.parameters.size();
+
+                if (argument_count != parameter_count) {
+                    context.error(this_expression.source_view, {
+                        .message             = "The function has {} parameters, but {} arguments were supplied",
+                        .message_arguments   = std::make_format_args(parameter_count, argument_count),
+                        .help_note           = "The function is of type {}",
+                        .help_note_arguments = std::make_format_args(function->info->function_type)
+                    });
+                }
+
+                std::vector<mir::Expression> arguments;
+                arguments.reserve(parameter_count);
+
+                for (bu::Usize i = 0; i != argument_count; ++i) {
+                    hir::Function_argument&  argument            = invocation.arguments[i];
+                    mir::Expression          argument_expression = recurse(argument.expression);
+                    mir::Function_parameter& parameter           = signature.parameters[i];
+
+                    if (argument.name.has_value()) {
+                        bu::todo();
+                    }
+
+                    constraint_set.equality_constraints.push_back({
+                        .left  = argument_expression.type,
+                        .right = parameter.type,
+                        .constrainer {
+                            parameter.type->source_view.has_value()
+                                ? parameter.pattern.source_view + *parameter.type->source_view
+                                : parameter.pattern.source_view,
+                            "The parameter is specified to be of type {1}"
+                        },
+                        .constrained {
+                            argument_expression.source_view,
+                            "But the argument is of type {0}"
+                        }
+                    });
+
+                    arguments.push_back(std::move(argument_expression));
+                }
+
+                return {
+                    .value = mir::expression::Direct_invocation {
+                        .function  { .info = function->info },
+                        .arguments = std::move(arguments)
+                    },
+                    .type        = function_type.return_type,
+                    .source_view = this_expression.source_view
+                };
+            }
+            else {
+                bu::todo();
+            }
+        }
+
         auto operator()(auto&) -> mir::Expression {
             context.error(this_expression.source_view, { "This expression can not be resolved yet" });
         }

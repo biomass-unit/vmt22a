@@ -109,8 +109,8 @@ namespace {
                 info.state = resolution::Definition_state::resolved;
 
                 info.function_type->value = mir::type::Function {
-                    .arguments   = bu::map(&mir::Function_parameter::type)(resolved.signature.parameters),
-                    .return_type = resolved.signature.return_type
+                    .parameter_types = bu::map(&mir::Function_parameter::type)(resolved.signature.parameters),
+                    .return_type     = resolved.signature.return_type
                 };
 
                 return resolved.signature;
@@ -165,8 +165,8 @@ auto resolution::Context::resolve_function(Function_info& info)
         unify(constraints);
 
         info.function_type->value = mir::type::Function {
-            .arguments   = bu::map(&mir::Function_parameter::type)(function.resolved_signature.parameters),
-            .return_type = function.resolved_signature.return_type
+            .parameter_types = bu::map(&mir::Function_parameter::type)(function.resolved_signature.parameters),
+            .return_type     = function.resolved_signature.return_type
         };
 
         info.state = Definition_state::resolved;
