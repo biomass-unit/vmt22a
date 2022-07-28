@@ -78,6 +78,12 @@ namespace hir {
             DEFAULTED_EQUALITY(Template_application);
         };
 
+        struct For_all {
+            std::vector<Template_parameter> parameters;
+            bu::Wrapper<Type>               body;
+            DEFAULTED_EQUALITY(For_all);
+        };
+
     }
 
     struct Type {
@@ -98,7 +104,8 @@ namespace hir {
             type::Reference,
             type::Pointer,
             type::Instance_of,
-            type::Template_application
+            type::Template_application,
+            type::For_all
         >;
 
         Variant         value;

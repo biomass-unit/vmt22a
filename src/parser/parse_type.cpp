@@ -161,6 +161,20 @@ namespace {
         return ast::type::Pointer { extract_type(context), std::move(mutability) };
     };
 
+    constexpr Extractor extract_for_all = +[](Parse_context& context)
+        -> ast::Type::Variant
+    {
+        if (auto parameters = parse_template_parameters(context)) {
+            return ast::type::For_all {
+                .parameters = std::move(*parameters),
+                .body       = extract_type(context)
+            };
+        }
+        else {
+            context.error_expected("'[' followed by a comma-separated list of template parameters");
+        }
+    };
+
 
     auto parse_normal_type(Parse_context& context) -> std::optional<ast::Type> {
         switch (context.extract().type) {
@@ -195,6 +209,8 @@ namespace {
             return extract_typename(context);
         case Token::Type::double_colon:
             return extract_global_typename(context);
+        case Token::Type::for_:
+            return extract_for_all(context);
         default:
             context.retreat();
             return std::nullopt;

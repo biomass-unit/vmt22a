@@ -99,6 +99,13 @@ namespace {
                 .name      = context.lower(application.name)
             };
         }
+
+        auto operator()(ast::type::For_all const& for_all) -> hir::Type::Variant {
+            return hir::type::For_all {
+                .parameters = bu::map(context.lower())(for_all.parameters),
+                .body       = context.lower(for_all.body)
+            };
+        }
     };
 
 }

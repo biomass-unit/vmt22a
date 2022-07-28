@@ -148,17 +148,17 @@ auto resolution::resolve(hir::Module&& module) -> Module {
 
     for (auto& definition : context.global_namespace->definitions_in_order) {
         std::visit(bu::Overload {
-            [](bu::Wrapper<Function_info> def) -> void {
+            [](bu::Wrapper<Function_info> def) {
                 bu::print("{}\n\n", std::get<2>(def->value));
             },
-            [](auto const& def) -> void {
+            [](bu::wrapper auto const def) {
                 bu::print("{}\n\n", std::get<1>(def->value));
             },
-            [](bu::Wrapper<Namespace>) -> void {
+            [](bu::Wrapper<Namespace>) {
                 bu::todo();
             }
         }, definition);
     }
 
-    bu::todo();
+    throw bu::exception("Reached the end of resolution::resolve");
 }

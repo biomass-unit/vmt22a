@@ -287,6 +287,9 @@ namespace {
         auto operator()(ast::type::Template_application const& application) {
             return format("{}[{}]", application.name, application.arguments);
         }
+        auto operator()(ast::type::For_all const& for_all) {
+            return format("for [{}] {}", for_all.parameters, for_all.body);
+        }
     };
 
 

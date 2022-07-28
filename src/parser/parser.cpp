@@ -83,6 +83,74 @@ auto parser::parse_template_arguments(Parse_context& context)
     }
 }
 
+auto parser::parse_template_parameters(Parse_context& context)
+    -> std::optional<std::vector<ast::Template_parameter>>
+{
+    constexpr auto extract_parameters = parse_comma_separated_one_or_more<[](Parse_context& context)
+        -> std::optional<ast::Template_parameter>
+    {
+        auto const get_source_view = [&, anchor = context.pointer] {
+            return make_source_view(anchor, context.pointer - 1);
+        };
+
+        if (auto name = parse_lower_name(context)) {
+            if (context.try_consume(Token::Type::colon)) {
+                if (context.try_consume(Token::Type::mut)) {
+                    return ast::Template_parameter {
+                        .value       = ast::Template_parameter::Mutability_parameter {},
+                        .name        = std::move(*name),
+                        .source_view = get_source_view()
+                    };
+                }
+                else if (auto type = parse_type(context)) {
+                    return ast::Template_parameter {
+                        .value       = ast::Template_parameter::Value_parameter { std::move(*type) },
+                        .name        = std::move(*name),
+                        .source_view = get_source_view()
+                    };
+                }
+                else {
+                    context.error_expected("'mut' or a type");
+                }
+            }
+
+            return ast::Template_parameter {
+                .value       = ast::Template_parameter::Value_parameter { .type = std::nullopt },
+                .name        = std::move(*name),
+                .source_view = get_source_view()
+            };
+        }
+        else if (auto name = parse_upper_name(context)) {
+            std::vector<ast::Class_reference> classes;
+            if (context.try_consume(Token::Type::colon)) {
+                classes = extract_class_references(context);
+            }
+
+            return ast::Template_parameter {
+                .value       = ast::Template_parameter::Type_parameter { std::move(classes) },
+                .name        = std::move(*name),
+                .source_view = get_source_view()
+            };
+        }
+        else {
+            return std::nullopt;
+        }
+    }, "a template parameter">;
+
+    if (context.try_consume(Token::Type::bracket_open)) {
+        if (auto parameters = extract_parameters(context)) {
+            context.consume_required(Token::Type::bracket_close);
+            return parameters;
+        }
+        else {
+            context.error_expected("one or more template parameters");
+        }
+    }
+    else {
+        return std::nullopt;
+    }
+}
+
 auto parser::extract_function_parameters(Parse_context& context)
     -> std::vector<ast::Function_parameter>
 {
@@ -254,75 +322,6 @@ namespace {
 
 
     auto parse_class_reference(Parse_context&) -> std::optional<ast::Class_reference>;
-
-
-    auto parse_template_parameters(Parse_context& context)
-        -> std::optional<std::vector<ast::Template_parameter>>
-    {
-        constexpr auto extract_parameters = parse_comma_separated_one_or_more<[](Parse_context& context)
-            -> std::optional<ast::Template_parameter>
-        {
-            auto const get_source_view = [&, anchor = context.pointer] {
-                return make_source_view(anchor, context.pointer - 1);
-            };
-
-            if (auto name = parse_lower_name(context)) {
-                if (context.try_consume(Token::Type::colon)) {
-                    if (context.try_consume(Token::Type::mut)) {
-                        return ast::Template_parameter {
-                            .value       = ast::Template_parameter::Mutability_parameter {},
-                            .name        = std::move(*name),
-                            .source_view = get_source_view()
-                        };
-                    }
-                    else if (auto type = parse_type(context)) {
-                        return ast::Template_parameter {
-                            .value       = ast::Template_parameter::Value_parameter { std::move(*type) },
-                            .name        = std::move(*name),
-                            .source_view = get_source_view()
-                        };
-                    }
-                    else {
-                        context.error_expected("'mut' or a type");
-                    }
-                }
-
-                return ast::Template_parameter {
-                    .value       = ast::Template_parameter::Value_parameter { .type = std::nullopt },
-                    .name        = std::move(*name),
-                    .source_view = get_source_view()
-                };
-            }
-            else if (auto name = parse_upper_name(context)) {
-                std::vector<ast::Class_reference> classes;
-                if (context.try_consume(Token::Type::colon)) {
-                    classes = extract_class_references(context);
-                }
-
-                return ast::Template_parameter {
-                    .value       = ast::Template_parameter::Type_parameter { std::move(classes) },
-                    .name        = std::move(*name),
-                    .source_view = get_source_view()
-                };
-            }
-            else {
-                return std::nullopt;
-            }
-        }, "a template parameter">;
-
-        if (context.try_consume(Token::Type::bracket_open)) {
-            if (auto parameters = extract_parameters(context)) {
-                context.consume_required(Token::Type::bracket_close);
-                return parameters;
-            }
-            else {
-                context.error_expected("one or more template parameters");
-            }
-        }
-        else {
-            return std::nullopt;
-        }
-    }
 
 
     constexpr Extractor extract_function = +[](Parse_context& context)

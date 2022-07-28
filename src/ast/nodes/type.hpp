@@ -79,6 +79,12 @@ namespace ast {
             DEFAULTED_EQUALITY(Template_application);
         };
 
+        struct For_all {
+            std::vector<Template_parameter> parameters;
+            bu::Wrapper<Type>               body;
+            DEFAULTED_EQUALITY(For_all);
+        };
+
     }
 
 
@@ -99,7 +105,8 @@ namespace ast {
             type::Instance_of,
             type::Reference,
             type::Pointer,
-            type::Template_application
+            type::Template_application,
+            type::For_all
         >;
 
         Variant         value;

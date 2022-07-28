@@ -201,6 +201,9 @@ namespace {
         auto operator()(hir::type::Template_application const& application) {
             return format("{}[{}]", application.name, application.arguments);
         }
+        auto operator()(hir::type::For_all const& for_all) {
+            return format("for [{}] {}", for_all.parameters, for_all.body);
+        }
     };
 
 

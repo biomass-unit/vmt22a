@@ -7,7 +7,7 @@
 fn f() = 10
 
 
-fn g() = f
+fn g(): Int = f()
 
 
 /*
