@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bu/utilities.hpp"
+#include "bu/safe_integer.hpp"
 #include "hir/hir.hpp"
 #include "mir/mir.hpp"
 
@@ -174,6 +175,7 @@ namespace resolution {
         hir::Node_context  hir_node_context;
         mir::Node_context  mir_node_context;
         Namespace::Context namespace_context;
+        bu::Safe_usize     current_type_variable_tag;
     public:
         bu::diagnostics::Builder diagnostics;
         bu::Source               source;
@@ -199,8 +201,9 @@ namespace resolution {
 
         auto unify(Constraint_set&) -> void;
 
-        auto resolve_type      (hir::Type      &, Scope&, Namespace&) -> bu::Wrapper<mir::Type>;
-        auto resolve_expression(hir::Expression&, Scope&, Namespace&) -> bu::Pair<Constraint_set, mir::Expression>;
+        auto fresh_general_unification_variable()  -> bu::Wrapper<mir::Type>;
+        auto fresh_integral_unification_variable() -> bu::Wrapper<mir::Type>;
+
 
         auto resolve_function_signature(Function_info&) -> mir::Function::Signature&;
         auto resolve_function          (Function_info&) -> mir::Function&;
@@ -209,16 +212,20 @@ namespace resolution {
         auto resolve_enumeration(Enum_info&) -> mir::Enum&;
 
 
-        auto namespace_associated_with(mir::Type&) -> std::optional<bu::Wrapper<Namespace>>;
+        [[nodiscard]] auto resolve_type      (hir::Type      &, Scope&, Namespace&) -> bu::Wrapper<mir::Type>;
+        [[nodiscard]] auto resolve_expression(hir::Expression&, Scope&, Namespace&) -> bu::Pair<Constraint_set, mir::Expression>;
 
 
-        auto find_typeclass(Scope&, Namespace&, hir::Qualified_name&)
+        [[nodiscard]] auto namespace_associated_with(mir::Type&) -> std::optional<bu::Wrapper<Namespace>>;
+
+
+        [[nodiscard]] auto find_typeclass(Scope&, Namespace&, hir::Qualified_name&)
             -> std::optional<bu::Wrapper<Typeclass_info>>;
 
-        auto find_type(Scope&, Namespace&, hir::Qualified_name&)
+        [[nodiscard]] auto find_type(Scope&, Namespace&, hir::Qualified_name&)
             -> std::optional<std::variant<bu::Wrapper<Struct_info>, bu::Wrapper<Enum_info>, bu::Wrapper<Alias_info>>>;
 
-        auto find_function(Scope&, Namespace&, hir::Qualified_name&)
+        [[nodiscard]] auto find_function(Scope&, Namespace&, hir::Qualified_name&)
             -> std::optional<bu::Wrapper<Function_info>>;
     };
 

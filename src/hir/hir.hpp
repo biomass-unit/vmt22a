@@ -41,14 +41,10 @@ namespace hir {
 }
 
 
-#include "mir/forward.hpp"
-
 #include "nodes/expression.hpp"
 #include "nodes/pattern.hpp"
 #include "nodes/type.hpp"
 #include "nodes/definition.hpp"
-
-#include "mir/mir.hpp"
 
 
 struct hir::Function_argument {
@@ -69,8 +65,7 @@ namespace hir {
     using Node_context = bu::Wrapper_context_for<Expression, Type, Pattern>;
 
     struct Module {
-        Node_context             hir_node_context;
-        mir::Node_context        mir_node_context;
+        Node_context             node_context;
         bu::diagnostics::Builder diagnostics;
         bu::Source               source;
         std::vector<Definition>  definitions;

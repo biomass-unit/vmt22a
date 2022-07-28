@@ -4,7 +4,6 @@
 #include "bu/wrapper.hpp"
 #include "bu/source.hpp"
 #include "hir/hir.hpp"
-#include "forward.hpp"
 
 
 namespace mir {
@@ -31,6 +30,12 @@ namespace resolution {
 
 
 namespace mir {
+
+    struct [[nodiscard]] Expression;
+    struct [[nodiscard]] Pattern;
+    struct [[nodiscard]] Type;
+
+    using Node_context = bu::Wrapper_context_for<Expression, Type, Pattern>;
 
     struct [[nodiscard]] Function_parameter;
 
@@ -73,6 +78,10 @@ struct mir::Function_parameter {
     bu::Wrapper<Type> type;
 };
 
+
+DECLARE_FORMATTER_FOR(mir::Expression);
+DECLARE_FORMATTER_FOR(mir::Pattern);
+DECLARE_FORMATTER_FOR(mir::Type);
 
 DECLARE_FORMATTER_FOR(mir::Class_reference);
 

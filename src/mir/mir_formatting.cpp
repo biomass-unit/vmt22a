@@ -153,8 +153,8 @@ namespace {
         auto operator()(mir::type::Enumeration const&) -> std::format_context::iterator {
             bu::todo();
         }
-        auto operator()(mir::type::Parameterized const& parameterized) {
-            return format("(\\{} -> {})", parameterized.parameters, parameterized.body);
+        auto operator()(mir::type::For_all const& for_all) {
+            return format("for [{}] {}", for_all.parameters, for_all.body);
         }
         auto operator()(mir::type::General_variable const& variable) {
             return format("'T{}", variable.tag.value);

@@ -2,12 +2,11 @@
 //fn g(n: Int) = n
 //fn h(): [Int; ""] = ["hi", "hello"]
 //struct S = a: Int, b: type_of(a)
+// fn f() = 10
+// fn g(): Int = f()
 
 
-fn f() = 10
-
-
-fn g(): Int = f()
+fn f() = [10, 20, 25, 30: Int, 40]
 
 
 /*

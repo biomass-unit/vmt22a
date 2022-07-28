@@ -5,15 +5,13 @@
 
 
 Lowering_context::Lowering_context(
-    hir::Node_context             & hir_node_context,
-    mir::Node_context             & mir_node_context,
-    bu::diagnostics::Builder      & diagnostics,
-    bu::Source               const& source
+    hir::Node_context       & node_context,
+    bu::diagnostics::Builder& diagnostics,
+    bu::Source         const& source
 ) noexcept
-    : hir_node_context { hir_node_context }
-    , mir_node_context { mir_node_context }
-    , diagnostics      { diagnostics }
-    , source           { source } {}
+    : node_context { node_context }
+    , diagnostics  { diagnostics }
+    , source       { source } {}
 
 
 auto Lowering_context::is_within_function() const noexcept -> bool {
@@ -23,14 +21,6 @@ auto Lowering_context::is_within_function() const noexcept -> bool {
 
 auto Lowering_context::fresh_name_tag() -> bu::Usize {
     return current_name_tag++.get();
-}
-
-auto Lowering_context::fresh_general_type_variable() -> mir::Type {
-    return { mir::type::General_variable { .tag = current_type_variable_tag++.get() } };
-}
-
-auto Lowering_context::fresh_integral_type_variable() -> mir::Type {
-    return { mir::type::Integral_variable { .tag = current_type_variable_tag++.get() } };
 }
 
 
@@ -148,25 +138,6 @@ auto Lowering_context::lower(ast::Type_signature const& signature) -> hir::Type_
 }
 
 
-auto Lowering_context::unit_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
-    return mir::Type { .value = mir::type::Tuple {}, .source_view = view };
-}
-auto Lowering_context::floating_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
-    return mir::Type { .value = mir::type::Floating {}, .source_view = view };
-}
-auto Lowering_context::character_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
-    return mir::Type { .value = mir::type::Character {}, .source_view = view };
-}
-auto Lowering_context::boolean_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
-    return mir::Type { .value = mir::type::Boolean {}, .source_view = view };
-}
-auto Lowering_context::string_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
-    return mir::Type { .value = mir::type::String {}, .source_view = view };
-}
-auto Lowering_context::size_type(bu::Source_view const view) -> bu::Wrapper<mir::Type> {
-    return mir::Type { .value = mir::type::Integer::u64, .source_view = view };
-}
-
 auto Lowering_context::unit_value(bu::Source_view const view) -> bu::Wrapper<hir::Expression> {
     return hir::Expression { .value = hir::expression::Tuple {}, .source_view = view };
 }
@@ -191,23 +162,17 @@ auto Lowering_context::error(
 
 auto ast::lower(Module&& module) -> hir::Module {
     hir::Module hir_module {
-        .hir_node_context {
+        .node_context {
             bu::Wrapper_context<hir::Expression> { module.node_context.arena_size<ast::Expression>() },
             bu::Wrapper_context<hir::Type>       { module.node_context.arena_size<ast::Type>() },
             bu::Wrapper_context<hir::Pattern>    { module.node_context.arena_size<ast::Pattern>() },
         },
-        .mir_node_context {
-            bu::Wrapper_context<mir::Expression> { module.node_context.arena_size<ast::Expression>() },
-            bu::Wrapper_context<mir::Type>       { module.node_context.arena_size<ast::Expression>() }, // One mir-type per hir-expression
-            bu::Wrapper_context<mir::Pattern>    { module.node_context.arena_size<ast::Pattern>() },
-        },
         .diagnostics = std::move(module.diagnostics),
-        .source = std::move(module.source)
+        .source      = std::move(module.source)
     };
 
     Lowering_context context {
-        hir_module.hir_node_context,
-        hir_module.mir_node_context,
+        hir_module.node_context,
         hir_module.diagnostics,
         hir_module.source
     };

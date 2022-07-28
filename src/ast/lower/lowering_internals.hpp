@@ -5,16 +5,13 @@
 #include "bu/diagnostics.hpp"
 #include "ast/ast.hpp"
 #include "hir/hir.hpp"
-#include "mir/mir.hpp"
 
 
 class Lowering_context {
     bu::Safe_usize current_name_tag;
-    bu::Safe_usize current_type_variable_tag;
     bu::Usize      current_definition_kind = std::variant_size_v<ast::Definition::Variant>;
 public:
-    hir::Node_context       & hir_node_context;
-    mir::Node_context       & mir_node_context;
+    hir::Node_context       & node_context;
     bu::diagnostics::Builder& diagnostics;
     bu::Source         const& source;
 
@@ -23,7 +20,6 @@ public:
 
     Lowering_context(
         hir::Node_context&,
-        mir::Node_context&,
         bu::diagnostics::Builder&,
         bu::Source const&
     ) noexcept;
@@ -32,9 +28,6 @@ public:
     auto is_within_function() const noexcept -> bool;
 
     auto fresh_name_tag() -> bu::Usize;
-
-    auto fresh_general_type_variable()  -> mir::Type;
-    auto fresh_integral_type_variable() -> mir::Type;
 
     auto lower(ast::Expression const&) -> hir::Expression;
     auto lower(ast::Type       const&) -> hir::Type;
@@ -51,13 +44,6 @@ public:
     auto lower(ast::Class_reference     const&) -> hir::Class_reference;
     auto lower(ast::Function_signature  const&) -> hir::Function_signature;
     auto lower(ast::Type_signature      const&) -> hir::Type_signature;
-
-    auto unit_type     (bu::Source_view) -> bu::Wrapper<mir::Type>;
-    auto floating_type (bu::Source_view) -> bu::Wrapper<mir::Type>;
-    auto character_type(bu::Source_view) -> bu::Wrapper<mir::Type>;
-    auto boolean_type  (bu::Source_view) -> bu::Wrapper<mir::Type>;
-    auto string_type   (bu::Source_view) -> bu::Wrapper<mir::Type>;
-    auto size_type     (bu::Source_view) -> bu::Wrapper<mir::Type>;
 
     auto unit_value    (bu::Source_view)   -> bu::Wrapper<hir::Expression>;
     auto wildcard_pattern(bu::Source_view) -> bu::Wrapper<hir::Pattern>;

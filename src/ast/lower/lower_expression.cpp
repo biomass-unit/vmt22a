@@ -5,45 +5,16 @@
 namespace {
 
     struct Expression_lowering_visitor {
-        Lowering_context                    & context;
-        ast::Expression                const& this_expression;
-        std::optional<bu::Wrapper<mir::Type>> non_general_type;
+        Lowering_context     & context;
+        ast::Expression const& this_expression;
 
 
-        auto operator()(ast::expression::Literal<bu::Isize> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.fresh_integral_type_variable();
-            return literal;
-        }
-
-        auto operator()(ast::expression::Literal<bu::Float> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.floating_type(this_expression.source_view);
-            return literal;
-        }
-
-        auto operator()(ast::expression::Literal<bu::Char> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.character_type(this_expression.source_view);
-            return literal;
-        }
-
-        auto operator()(ast::expression::Literal<bool> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.boolean_type(this_expression.source_view);
-            return literal;
-        }
-
-        auto operator()(ast::expression::Literal<lexer::String> const& literal) -> hir::Expression::Variant {
-            non_general_type = context.string_type(this_expression.source_view);
+        template <class T>
+        auto operator()(ast::expression::Literal<T> const& literal) -> hir::Expression::Variant {
             return literal;
         }
 
         auto operator()(ast::expression::Array_literal const& literal) -> hir::Expression::Variant {
-            non_general_type = mir::type::Array {
-                .element_type = context.fresh_general_type_variable(),
-                .length       = mir::Expression {
-                    .value = mir::expression::Literal<bu::Isize> { std::ssize(literal.elements) },
-                    .type  = context.size_type(this_expression.source_view),
-                    .source_view = this_expression.source_view
-                }
-            };
             return hir::expression::Array_literal {
                 .elements = bu::map(context.lower())(literal.elements)
             };
@@ -56,12 +27,8 @@ namespace {
         }
 
         auto operator()(ast::expression::Tuple const& tuple) -> hir::Expression::Variant {
-            auto elements = bu::map(context.lower())(tuple.elements);
-            non_general_type = mir::type::Tuple {
-                .types = bu::map(&hir::Expression::type)(elements)
-            };
             return hir::expression::Tuple {
-                .elements = std::move(elements)
+                .elements = bu::map(context.lower())(tuple.elements)
             };
         }
 
@@ -177,14 +144,12 @@ namespace {
                                     .pattern = context.wildcard_pattern(this_expression.source_view),
                                     .expression = hir::Expression {
                                         .value       = hir::expression::Break {},
-                                        .type        = context.unit_type(this_expression.source_view),
                                         .source_view = this_expression.source_view
                                     }
                                 }
                             }),
                             .expression = context.lower(*let->initializer)
                         },
-                        .type        = context.fresh_general_type_variable(),
                         .source_view = loop.body->source_view
                     }
                 };
@@ -205,7 +170,7 @@ namespace {
 
             return hir::expression::Loop {
                 .body = hir::Expression {
-                    hir::expression::Match {
+                    .value = hir::expression::Match {
                         .cases = bu::vector_from<hir::expression::Match::Case>({
                             {
                                 .pattern    = context.true_pattern(this_expression.source_view),
@@ -215,15 +180,13 @@ namespace {
                                 .pattern = context.false_pattern(this_expression.source_view),
                                 .expression = hir::Expression {
                                     .value       = hir::expression::Break {},
-                                    .type        = context.unit_type(this_expression.source_view),
                                     .source_view = this_expression.source_view
                                 }
                             }
                         }),
                         .expression = context.lower(loop.condition)
                     },
-                    context.fresh_general_type_variable(),
-                    loop.body->source_view
+                    .source_view = loop.body->source_view
                 }
             };
         }
@@ -315,7 +278,6 @@ namespace {
         }
 
         auto operator()(ast::expression::Let_binding const& let) -> hir::Expression::Variant {
-            non_general_type = context.unit_type(this_expression.source_view);
             return hir::expression::Let_binding {
                 .pattern     = context.lower(let.pattern),
                 .initializer = context.lower(let.initializer),
@@ -388,17 +350,14 @@ namespace {
 
 
 auto Lowering_context::lower(ast::Expression const& expression) -> hir::Expression {
-    Expression_lowering_visitor visitor {
-        .context         = *this,
-        .this_expression = expression
-    };
-    auto value = std::visit(visitor, expression.value);
-
     return {
-        std::move(value),
-        visitor.non_general_type.has_value()
-            ? *visitor.non_general_type
-            : bu::wrap(fresh_general_type_variable()),
-        expression.source_view
+        .value = std::visit(
+            Expression_lowering_visitor {
+                .context         = *this,
+                .this_expression = expression
+            },
+            expression.value
+        ),
+        .source_view = expression.source_view
     };
 }

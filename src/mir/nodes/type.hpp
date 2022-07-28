@@ -46,11 +46,6 @@ namespace mir {
             bu::Wrapper<Type> referenced_type;
         };
 
-        struct Parameterized {
-            Template_parameter_set parameters;
-            bu::Wrapper<Type>      body;
-        };
-
         struct Structure {
             bu::Wrapper<resolution::Struct_info> info;
         };
@@ -65,6 +60,11 @@ namespace mir {
 
         struct Integral_variable {
             Type_variable_tag tag;
+        };
+
+        struct For_all {
+            Template_parameter_set parameters;
+            bu::Wrapper<Type>      body;
         };
 
     }
@@ -82,11 +82,11 @@ namespace mir {
             type::Slice,
             type::Function,
             type::Reference,
-            type::Parameterized,
             type::Structure,
             type::Enumeration,
             type::General_variable,
-            type::Integral_variable
+            type::Integral_variable,
+            type::For_all
         >;
         Variant                        value;
         std::optional<bu::Source_view> source_view;

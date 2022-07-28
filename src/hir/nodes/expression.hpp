@@ -194,9 +194,8 @@ namespace hir {
             expression::Hole
         >;
 
-        Variant                value;
-        bu::Wrapper<mir::Type> type;
-        bu::Source_view        source_view;
+        Variant         value;
+        bu::Source_view source_view;
 
         DEFAULTED_EQUALITY(Expression);
     };

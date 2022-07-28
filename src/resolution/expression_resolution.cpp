@@ -27,11 +27,42 @@ namespace {
         }
 
 
-        template <class T>
-        auto operator()(hir::expression::Literal<T>& literal) -> mir::Expression {
+        auto operator()(hir::expression::Literal<bu::Isize>& literal) -> mir::Expression {
             return {
-                .value       = literal,
-                .type        = this_expression.type,
+                .value       = mir::expression::Literal { literal.value },
+                .type        = context.fresh_integral_unification_variable(),
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(hir::expression::Literal<bu::Float>& literal) -> mir::Expression {
+            return {
+                .value       = mir::expression::Literal { literal.value },
+                .type        = mir::Type { .value = mir::type::Floating {}, .source_view = this_expression.source_view },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(hir::expression::Literal<bu::Char>& literal) -> mir::Expression {
+            return {
+                .value       = mir::expression::Literal { literal.value },
+                .type        = mir::Type { .value = mir::type::Character {}, .source_view = this_expression.source_view },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(hir::expression::Literal<bool>& literal) -> mir::Expression {
+            return {
+                .value       = mir::expression::Literal { literal.value },
+                .type        = mir::Type { .value = mir::type::Boolean {}, .source_view = this_expression.source_view },
+                .source_view = this_expression.source_view
+            };
+        }
+
+        auto operator()(hir::expression::Literal<lexer::String>& literal) -> mir::Expression {
+            return {
+                .value       = mir::expression::Literal { literal.value },
+                .type        = mir::Type { .value = mir::type::String {}, .source_view = this_expression.source_view },
                 .source_view = this_expression.source_view
             };
         }
@@ -42,35 +73,48 @@ namespace {
 
             if (!array.elements.empty()) {
                 mir_array.elements.push_back(recurse(array.elements.front()));
-                hir::Expression* previous_element = &array.elements.front();
 
-                for (hir::Expression& element : array.elements | std::views::drop(1)) {
-                    mir_array.elements.push_back(recurse(element));
+                for (bu::Usize i = 1; i != array.elements.size(); ++i) {
+                    hir::Expression& previous_element = array.elements[i - 1];
+                    hir::Expression& current_element  = array.elements[i];
+
+                    mir_array.elements.push_back(recurse(current_element));
 
                     constraint_set.equality_constraints.push_back({
                         .left  = mir_array.elements.front().type,
                         .right = mir_array.elements.back().type,
                         .constrainer {
-                            array.elements.front().source_view + previous_element->source_view,
-                            &element == &array.elements[1]
-                                ? "The previous element was of type {0}"
-                                : "The previous elements were of type {0}"
+                            array.elements.front().source_view + previous_element.source_view,
+                            i == 1 ? "The previous element was of type {0}"
+                                   : "The previous elements were of type {0}"
                         },
                         .constrained {
-                            element.source_view,
+                            current_element.source_view,
                             "But this element is of type {1}"
                         }
                     });
-
-                    previous_element = &element;
                 }
-
-                bu::get<mir::type::Array>(this_expression.type->value).element_type = mir_array.elements.front().type;
             }
 
+            bu::wrapper auto const element_type = mir_array.elements.empty()
+                ? context.fresh_general_unification_variable()
+                : mir_array.elements.front().type;
+
+            bu::Isize const array_length = std::ssize(mir_array.elements);
+
             return {
-                .value       = std::move(mir_array),
-                .type        = this_expression.type,
+                .value = std::move(mir_array),
+                .type  = mir::Type {
+                    .value = mir::type::Array {
+                        .element_type = element_type,
+                        .length       = mir::Expression {
+                            .value       = mir::expression::Literal { array_length },
+                            .type        = mir::Type { .value = bu::copy(context.size_type), .source_view = this_expression.source_view },
+                            .source_view = this_expression.source_view
+                        }
+                    },
+                    .source_view = this_expression.source_view
+                },
                 .source_view = this_expression.source_view
             };
         }
@@ -78,7 +122,6 @@ namespace {
         auto operator()(hir::expression::Variable& variable) -> mir::Expression {
             if (variable.name.is_unqualified()) {
                 if (auto* const binding = scope.find_variable(variable.name.primary_name.identifier)) {
-                    this_expression.type = binding->type;
                     binding->has_been_mentioned = true;
                     return {
                         .value       = mir::expression::Local_variable_reference { variable.name.primary_name },
@@ -118,7 +161,7 @@ namespace {
                 .value = std::move(mir_tuple),
                 .type  = mir::Type {
                     .value       = std::move(mir_tuple_type),
-                    .source_view = this_expression.type->source_view
+                    .source_view = this_expression.source_view
                 },
                 .source_view = this_expression.source_view
             };
@@ -148,10 +191,7 @@ namespace {
 
             std::optional<bu::Wrapper<mir::Expression>> block_result;
             if (block.result) {
-                auto [constraints, result] =
-                    context.resolve_expression(*block.result, block_scope, space);
-                context.unify(constraints);
-                block_result = std::move(result);
+                block_result = recurse(*block.result, &block_scope);
             }
 
             bu::wrapper auto const result_type
@@ -223,7 +263,7 @@ namespace {
                         .type        = type,
                         .initializer = std::move(initializer),
                     },
-                    .type        = this_expression.type,
+                    .type        = mir::Type { .value = mir::type::Tuple {}, .source_view = this_expression.source_view },
                     .source_view = this_expression.source_view
                 };
             }

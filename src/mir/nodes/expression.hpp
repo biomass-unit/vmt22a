@@ -10,7 +10,9 @@ namespace mir {
     namespace expression {
 
         template <class T>
-        using Literal = hir::expression::Literal<T>;
+        struct Literal {
+            T value;
+        };
 
         struct Array_literal {
             std::vector<Expression> elements;

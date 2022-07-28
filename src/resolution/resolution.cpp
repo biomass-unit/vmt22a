@@ -92,13 +92,22 @@ namespace {
 
     // Creates a resolution context by collecting top level name information
     auto register_top_level_definitions(hir::Module&& module) -> resolution::Context {
+        bu::Usize const expression_count = module.node_context.arena_size<hir::Expression>();
+        bu::Usize const type_count       = module.node_context.arena_size<hir::Pattern>();
+        bu::Usize const pattern_count    = module.node_context.arena_size<hir::Type>();
+
         resolution::Context context {
-            std::move(module.hir_node_context),
-            std::move(module.mir_node_context),
+            std::move(module.node_context),
+            mir::Node_context {
+                bu::Wrapper_context<mir::Expression> { expression_count },
+                bu::Wrapper_context<mir::Type>       { expression_count + type_count },
+                bu::Wrapper_context<mir::Pattern>    { pattern_count },
+            },
             resolution::Namespace::Context {},
             std::move(module.diagnostics),
             std::move(module.source),
         };
+
         register_namespace(context, module.definitions, context.global_namespace);
         return context;
     }

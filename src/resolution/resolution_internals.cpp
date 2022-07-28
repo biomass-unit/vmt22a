@@ -2,14 +2,6 @@
 #include "resolution_internals.hpp"
 
 
-auto resolution::Context::error(
-    bu::Source_view                    const source_view,
-    bu::diagnostics::Message_arguments const arguments) -> void
-{
-    diagnostics.emit_simple_error(arguments.add_source_info(source, source_view));
-}
-
-
 resolution::Context::Context(
     hir::Node_context       && hir_node_context,
     mir::Node_context       && mir_node_context,
@@ -22,6 +14,22 @@ resolution::Context::Context(
     , namespace_context { std::move(namespace_context) }
     , diagnostics       { std::move(diagnostics) }
     , source            { std::move(source) } {}
+
+
+auto resolution::Context::error(
+    bu::Source_view                    const source_view,
+    bu::diagnostics::Message_arguments const arguments) -> void
+{
+    diagnostics.emit_simple_error(arguments.add_source_info(source, source_view));
+}
+
+
+auto resolution::Context::fresh_general_unification_variable() -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::General_variable { .tag { .value = current_type_variable_tag++.get() } } };
+}
+auto resolution::Context::fresh_integral_unification_variable() -> bu::Wrapper<mir::Type> {
+    return mir::Type { .value = mir::type::Integral_variable { .tag { .value = current_type_variable_tag++.get() } } };
+}
 
 
 auto resolution::Context::namespace_associated_with(mir::Type& type)
