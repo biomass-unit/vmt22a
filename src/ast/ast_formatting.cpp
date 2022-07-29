@@ -205,6 +205,9 @@ namespace {
         auto operator()(ast::expression::Take_reference const& reference) {
             return format("&{}{}", reference.mutability, reference.name);
         }
+        auto operator()(ast::expression::Placement_init const& init) {
+            return format("{} <- {}", init.lvalue, init.initializer);
+        }
         auto operator()(ast::expression::Meta const& meta) {
             return format("meta({})", meta.expression);
         }

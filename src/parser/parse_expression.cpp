@@ -914,7 +914,20 @@ namespace {
 
 
 auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expression> {
-    return parse_binary_operator_invocation_with_precedence<lowest_precedence>(context);
+    Token const* const anchor = context.pointer;
+    auto expression = parse_binary_operator_invocation_with_precedence<lowest_precedence>(context);
+
+    if (expression && context.try_consume(Token::Type::left_arrow)) {
+        *expression = ast::Expression {
+            .value = ast::expression::Placement_init {
+                .lvalue      = std::move(*expression),
+                .initializer = extract_expression(context)
+            },
+            .source_view = make_source_view(anchor, context.pointer)
+        };
+    }
+
+    return expression;
 }
 
 auto parser::parse_block_expression(Parse_context& context) -> std::optional<ast::Expression> {

@@ -151,6 +151,12 @@ namespace hir {
             DEFAULTED_EQUALITY(Take_reference);
         };
 
+        struct Placement_init {
+            bu::Wrapper<Expression> lvalue;
+            bu::Wrapper<Expression> initializer;
+            DEFAULTED_EQUALITY(Placement_init);
+        };
+
         struct Meta {
             bu::Wrapper<Expression> expression;
             DEFAULTED_EQUALITY(Meta);
@@ -190,6 +196,7 @@ namespace hir {
             expression::Ret,
             expression::Size_of,
             expression::Take_reference,
+            expression::Placement_init,
             expression::Meta,
             expression::Hole
         >;

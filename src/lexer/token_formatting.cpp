@@ -16,6 +16,7 @@ auto lexer::token_description(Token::Type const type) noexcept -> std::string_vi
     case Token::Type::equals:        return "a '='";
     case Token::Type::pipe:          return "a '|'";
     case Token::Type::lambda:        return "a '\\'";
+    case Token::Type::left_arrow:    return "a '<-'";
     case Token::Type::right_arrow:   return "a '->'";
     case Token::Type::hole:          return "a hole";
     case Token::Type::paren_open:    return "a '('";
@@ -30,6 +31,7 @@ auto lexer::token_description(Token::Type const type) noexcept -> std::string_vi
     case Token::Type::immut:
     case Token::Type::if_:
     case Token::Type::else_:
+    case Token::Type::elif:
     case Token::Type::for_:
     case Token::Type::in:
     case Token::Type::while_:
@@ -43,7 +45,9 @@ auto lexer::token_description(Token::Type const type) noexcept -> std::string_vi
     case Token::Type::enum_:
     case Token::Type::struct_:
     case Token::Type::class_:
+    case Token::Type::namespace_:
     case Token::Type::inst:
+    case Token::Type::impl:
     case Token::Type::alias:
     case Token::Type::import_:
     case Token::Type::export_:
@@ -75,14 +79,14 @@ auto lexer::token_description(Token::Type const type) noexcept -> std::string_vi
         return "a primitive typename";
 
     default:
-        bu::abort("Unimplemented for {}"_format(type));
+        bu::abort("Unimplemented for {}"_format(std::to_underlying(type)));
     }
 }
 
 
 DEFINE_FORMATTER_FOR(lexer::Token::Type) {
     constexpr auto strings = std::to_array<std::string_view>({
-        ".", ",", ":", ";", "::", "&", "*", "+", "?", "=", "|", "\\", "->", "???", "(", ")", "{", "}", "[", "]",
+        ".", ",", ":", ";", "::", "&", "*", "+", "?", "=", "|", "\\", "<-", "->", "???", "(", ")", "{", "}", "[", "]",
 
         "let", "mut", "immut", "if", "else", "elif", "for", "in", "while", "loop", "continue",
         "break", "match", "ret", "fn", "as", "enum", "struct", "class", "inst", "impl", "alias",

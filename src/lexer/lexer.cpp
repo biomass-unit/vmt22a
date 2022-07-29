@@ -399,6 +399,7 @@ namespace {
             { "+"  , Token::Type::plus         },
             { "?"  , Token::Type::question     },
             { "\\" , Token::Type::lambda       },
+            { "<-" , Token::Type::left_arrow   },
             { "->" , Token::Type::right_arrow  },
             { "???", Token::Type::hole         },
         });

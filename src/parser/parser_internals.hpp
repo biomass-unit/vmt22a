@@ -321,7 +321,7 @@ namespace parser {
     constexpr auto extract_upper_name = extract_name<Token::Type::upper_name>;
 
 
-    inline auto make_source_view(Token* const first, Token* const last)
+    inline auto make_source_view(Token const* const first, Token const* const last)
         noexcept -> bu::Source_view
     {
         assert(first <= last);

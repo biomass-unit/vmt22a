@@ -150,6 +150,9 @@ namespace {
         auto operator()(hir::expression::Take_reference const& take) {
             return format("&{}{}", take.mutability, take.name);
         }
+        auto operator()(hir::expression::Placement_init const& init) {
+            return format("{} <- {}", init.lvalue, init.initializer);
+        }
         auto operator()(hir::expression::Meta const& meta) {
             return format("meta {}", meta.expression);
         }

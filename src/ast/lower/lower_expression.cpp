@@ -320,6 +320,13 @@ namespace {
             };
         }
 
+        auto operator()(ast::expression::Placement_init const& init) -> hir::Expression::Variant {
+            return hir::expression::Placement_init {
+                .lvalue      = context.lower(init.lvalue),
+                .initializer = context.lower(init.initializer)
+            };
+        }
+
         auto operator()(ast::expression::Meta const& meta) -> hir::Expression::Variant {
             return hir::expression::Meta { .expression = context.lower(meta.expression) };
         }

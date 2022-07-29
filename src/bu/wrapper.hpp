@@ -62,7 +62,7 @@ namespace bu {
             return ::bu::hash(*self);
         }
 
-        auto kill(this Wrapper const self) noexcept -> T&& {
+        auto unsafe_kill(this Wrapper const self) noexcept -> T&& {
             return context().kill_wrapper(self.index);
         }
     };

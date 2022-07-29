@@ -36,6 +36,7 @@ namespace lexer {
             equals,
             pipe,
             lambda,
+            left_arrow,
             right_arrow,
             hole,
 
