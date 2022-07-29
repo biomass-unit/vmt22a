@@ -5,7 +5,7 @@
 
 namespace bu {
 
-    template <class>
+    template <class...>
     class [[nodiscard]] Wrapper_context;
 
 
@@ -74,7 +74,7 @@ namespace bu {
 
 
     template <class T>
-    class Wrapper_context {
+    class Wrapper_context<T> {
         std::vector<T>     arena;
         std::vector<Usize> free_indices;
         bool               is_responsible = true;
@@ -178,13 +178,14 @@ namespace bu {
 
 
     template <class... Ts>
-    struct Wrapper_context_for : private Wrapper_context<Ts>... {
-        Wrapper_context_for(
+    class Wrapper_context : Wrapper_context<Ts>... {
+    public:
+        Wrapper_context(
             Usize                const capacity = default_wrapper_arena_capacity,
             std::source_location const caller = std::source_location::current())
             : Wrapper_context<Ts> { capacity, caller }... {}
 
-        Wrapper_context_for(Wrapper_context<Ts>&&... children)
+        Wrapper_context(Wrapper_context<Ts>&&... children)
             : Wrapper_context<Ts> { std::move(children) }... {}
 
         template <bu::one_of<Ts...> T> [[nodiscard]]

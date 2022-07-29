@@ -35,7 +35,7 @@ namespace mir {
     struct [[nodiscard]] Pattern;
     struct [[nodiscard]] Type;
 
-    using Node_context = bu::Wrapper_context_for<Expression, Type, Pattern>;
+    using Node_context = bu::Wrapper_context<Expression, Type, Pattern>;
 
     struct [[nodiscard]] Function_parameter;
 

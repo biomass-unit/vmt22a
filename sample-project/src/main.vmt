@@ -8,6 +8,8 @@
 
 fn f() = [10, 20, 25, 30: Int, 40]
 
+fn g(n: Int): [Int; 3] = ["aa", "bb"]
+
 
 /*
 fn f(n: Int) = match n {

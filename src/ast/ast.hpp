@@ -189,7 +189,7 @@ auto ast::Basic_qualified_name<Configuration>::is_unqualified() const noexcept -
 
 namespace ast {
 
-    using Node_context = bu::Wrapper_context_for<
+    using Node_context = bu::Wrapper_context<
         ast::Expression,
         ast::Type,
         ast::Pattern,

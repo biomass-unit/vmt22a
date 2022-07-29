@@ -158,11 +158,11 @@ namespace parser {
                     return result;
                 }
                 else {
-                    throw context.error_expected("a closing '{}'"_format(close));
+                    context.error_expected("a closing '{}'"_format(close));
                 }
             }
             else {
-                throw context.error_expected(description.view());
+                context.error_expected(description.view());
             }
         }
         else {
@@ -252,6 +252,8 @@ namespace parser {
 
     auto extract_mutability(Parse_context&) -> ast::Mutability;
 
+    auto parse_class_reference(Parse_context&) -> std::optional<ast::Class_reference>;
+
     auto extract_class_references(Parse_context&) -> std::vector<ast::Class_reference>;
 
 
@@ -329,35 +331,29 @@ namespace parser {
     }
 
 
-    template <class T>
-    class Extractor {
-        typename T::Variant(*function)(Parse_context&);
-    public:
-        consteval Extractor(decltype(function) const function) noexcept
-            : function { function } {}
+    template <class Node, std::optional<typename Node::Variant> (*parse)(Parse_context&)>
+    auto parse_node(Parse_context& context) -> std::optional<Node> {
+        Token const* const anchor = context.pointer;
 
-        auto operator()(Parse_context& context) const -> T {
-            auto* const anchor = context.pointer - 1;
-            auto        value  = function(context);
-
-            return T {
-                .value       = std::move(value),
-                .source_view = make_source_view(anchor, context.pointer - 1)
+        if (auto node_value = parse(context)) {
+            return Node {
+                .value       = std::move(*node_value),
+                .source_view = anchor->source_view + context.pointer[-1].source_view
             };
         }
-    };
-
-    namespace dtl {
-        template <class>
-        struct Variant_map;
-
-        template <> struct Variant_map<ast::Expression::Variant> : std::type_identity<ast::Expression> {};
-        template <> struct Variant_map<ast::Pattern   ::Variant> : std::type_identity<ast::Pattern   > {};
-        template <> struct Variant_map<ast::Type      ::Variant> : std::type_identity<ast::Type      > {};
-        template <> struct Variant_map<ast::Definition::Variant> : std::type_identity<ast::Definition> {};
+        else {
+            return std::nullopt;
+        }
     }
 
-    template <class Variant>
-    Extractor(Variant(*)(Parse_context&)) -> Extractor<typename dtl::Variant_map<Variant>::type>;
+    template <class Node, Node::Variant (*extract)(Parse_context&)>
+    auto extract_node(Parse_context& context) -> Node {
+        Token const* const     anchor = context.pointer;
+        typename Node::Variant value  = extract(context);
+        return {
+            .value       = std::move(value),
+            .source_view = anchor->source_view + context.pointer[-1].source_view
+        };
+    }
 
 }

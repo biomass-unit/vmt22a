@@ -7,22 +7,22 @@ namespace {
     using namespace parser;
 
 
-    constexpr Extractor extract_wildcard = +[](Parse_context&)
-        -> ast::Pattern::Variant
-    {
+    auto extract_wildcard(Parse_context&)
+		-> ast::Pattern::Variant
+	{
         return ast::pattern::Wildcard {};
     };
 
     template <class T>
-    constexpr Extractor extract_literal = +[](Parse_context& context)
-        -> ast::Pattern::Variant
-    {
+    auto extract_literal(Parse_context& context)
+		-> ast::Pattern::Variant
+	{
         return ast::pattern::Literal<T> { context.previous().value_as<T>() };
     };
 
-    constexpr Extractor extract_tuple = +[](Parse_context& context)
-        -> ast::Pattern::Variant
-    {
+    auto extract_tuple(Parse_context& context)
+		-> ast::Pattern::Variant
+	{
         auto patterns = extract_comma_separated_zero_or_more<parse_pattern, "a pattern">(context);
         context.consume_required(Token::Type::paren_close);
 
@@ -34,9 +34,9 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_slice = +[](Parse_context& context)
-        -> ast::Pattern::Variant
-    {
+    auto extract_slice(Parse_context& context)
+		-> ast::Pattern::Variant
+	{
         static constexpr auto extract_elements =
             extract_comma_separated_zero_or_more<parse_pattern, "an element pattern">;
 
@@ -54,20 +54,11 @@ namespace {
     };
 
 
-    auto parse_constructor_pattern(Parse_context& context)
-        -> std::optional<bu::Wrapper<ast::Pattern>>
-    {
-        if (context.try_consume(Token::Type::paren_open)) {
-            return extract_tuple(context);
-        }
-        else {
-            return std::nullopt;
-        }
-    }
+    constexpr std::optional<ast::Pattern> (*parse_constructor_pattern)(Parse_context&) =
+        parenthesized<parse_top_level_pattern, "a pattern">;
 
-    auto parse_constructor_name(Parse_context& context)
-        -> std::optional<ast::Qualified_name>
-    {
+
+    auto parse_constructor_name(Parse_context& context) -> std::optional<ast::Qualified_name> {
         auto* const anchor = context.pointer;
 
         auto name = [&]() -> std::optional<ast::Qualified_name> {
@@ -99,9 +90,9 @@ namespace {
     }
 
 
-    constexpr Extractor extract_name = +[](Parse_context& context)
-        -> ast::Pattern::Variant
-    {
+    auto extract_name(Parse_context& context)
+		-> ast::Pattern::Variant
+	{
         context.retreat();
         auto mutability = extract_mutability(context);
 
@@ -112,7 +103,7 @@ namespace {
                 if (!ctor_name->is_unqualified()) {
                     return ast::pattern::Constructor {
                         .name    = std::move(*ctor_name),
-                        .pattern = parse_constructor_pattern(context)
+                        .pattern = parse_constructor_pattern(context).transform(bu::wrap)
                     };
                 }
                 else {
@@ -131,15 +122,15 @@ namespace {
         };
     };
 
-    constexpr Extractor extract_qualified_constructor = +[](Parse_context& context)
-        -> ast::Pattern::Variant
-    {
+    auto extract_qualified_constructor(Parse_context& context)
+		-> ast::Pattern::Variant
+	{
         context.retreat();
 
         if (auto name = parse_constructor_name(context)) {
             return ast::pattern::Constructor {
                 .name    = std::move(*name),
-                .pattern = parse_constructor_pattern(context)
+                .pattern = parse_constructor_pattern(context).transform(bu::wrap)
             };
         }
         else {
@@ -147,18 +138,18 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_constructor_shorthand = +[](Parse_context& context)
-        -> ast::Pattern::Variant
-    {
+    auto extract_constructor_shorthand(Parse_context& context)
+		-> ast::Pattern::Variant
+	{
         auto name = extract_lower_name(context, "an enum constructor name");
         return ast::pattern::Constructor_shorthand {
             .name    = std::move(name),
-            .pattern = parse_constructor_pattern(context)
+            .pattern = parse_constructor_pattern(context).transform(bu::wrap)
         };
     };
 
 
-    auto parse_normal_pattern(Parse_context& context) -> std::optional<ast::Pattern> {
+    auto parse_normal_pattern(Parse_context& context) -> std::optional<ast::Pattern::Variant> {
         switch (context.extract().type) {
         case Token::Type::underscore:
             return extract_wildcard(context);
@@ -189,43 +180,58 @@ namespace {
         }
     }
 
-}
 
+    auto parse_potentially_aliased_pattern(Parse_context& context)
+        -> std::optional<ast::Pattern::Variant>
+    {
+        if (auto pattern = parse_node<ast::Pattern, parse_normal_pattern>(context)) {
+            if (context.try_consume(Token::Type::as)) {
+                auto mutability = extract_mutability(context);
+                auto alias      = extract_lower_name(context, "a pattern alias");
 
-auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern> {
-    auto pattern = parse_normal_pattern(context);
-
-    if (pattern) {
-        if (context.try_consume(Token::Type::as)) {
-            auto mutability = extract_mutability(context);
-            auto alias      = extract_lower_name(context, "a pattern alias");
-            *pattern = ast::Pattern {
-                .value = ast::pattern::As {
+                return ast::pattern::As {
                     .name {
                         .value      = std::move(alias),
                         .mutability = std::move(mutability)
                     },
                     .pattern = std::move(*pattern)
-                },
-                .source_view = pattern->source_view + context.pointer[-1].source_view
-            };
-        }
-
-        if (context.try_consume(Token::Type::if_)) {
-            if (auto guard = parse_expression(context)) {
-                *pattern = ast::Pattern {
-                    .value = ast::pattern::Guarded {
-                        std::move(*pattern),
-                        std::move(*guard)
-                    },
-                    .source_view = pattern->source_view + context.pointer[-1].source_view
                 };
             }
-            else {
-                context.error_expected("a guard expression");
-            }
+            return std::move(pattern->value);
+        }
+        else {
+            return std::nullopt;
         }
     }
 
-    return pattern;
+
+    auto parse_potentially_guarded_pattern(Parse_context& context)
+        -> std::optional<ast::Pattern::Variant>
+    {
+        if (auto pattern = parse_node<ast::Pattern, parse_potentially_aliased_pattern>(context)) {
+            if (context.try_consume(Token::Type::if_)) {
+                if (auto guard = parse_expression(context)) {
+                    return ast::pattern::Guarded {
+                        std::move(*pattern),
+                        std::move(*guard)
+                    };
+                }
+                else {
+                    context.error_expected("a guard expression");
+                }
+            }
+            else {
+                return std::move(pattern->value);
+            }
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
+}
+
+
+auto parser::parse_pattern(Parse_context& context) -> std::optional<ast::Pattern> {
+    return parse_node<ast::Pattern, parse_potentially_guarded_pattern>(context);
 }

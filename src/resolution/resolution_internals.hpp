@@ -112,7 +112,7 @@ namespace resolution {
 
 
     struct Namespace {
-        using Context = bu::Wrapper_context_for<
+        using Context = bu::Wrapper_context<
             Function_info,
             Struct_info,
             Enum_info,
@@ -204,6 +204,7 @@ namespace resolution {
         auto fresh_general_unification_variable()  -> bu::Wrapper<mir::Type>;
         auto fresh_integral_unification_variable() -> bu::Wrapper<mir::Type>;
 
+        auto instantiate(mir::type::For_all const&) -> bu::Wrapper<mir::Type>;
 
         auto resolve_function_signature(Function_info&) -> mir::Function::Signature&;
         auto resolve_function          (Function_info&) -> mir::Function&;

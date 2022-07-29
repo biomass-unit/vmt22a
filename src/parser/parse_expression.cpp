@@ -8,14 +8,14 @@ namespace {
 
 
     template <class T>
-    constexpr Extractor extract_literal = +[](Parse_context& context)
+    auto extract_literal(Parse_context& context)
         -> ast::Expression::Variant
     {
         return ast::expression::Literal<T> { context.previous().value_as<T>() };
     };
 
     template <>
-    constexpr Extractor extract_literal<char> = +[](Parse_context& context)
+    auto extract_literal<char>(Parse_context& context)
         -> ast::Expression::Variant
     {
         return ast::expression::Literal { static_cast<bu::Char>(context.previous().as_character()) };
@@ -99,21 +99,25 @@ namespace {
     }
 
 
-    constexpr Extractor extract_condition = +[](Parse_context& context)
-        -> ast::Expression::Variant
+    auto extract_condition(Parse_context& context)
+        -> ast::Expression
     {
+        Token const* const anchor = context.pointer;
+
         if (context.try_consume(Token::Type::let)) {
             auto pattern = extract_pattern(context);
-
             context.consume_required(Token::Type::equals);
 
-            return ast::expression::Conditional_let {
-                .pattern     = std::move(pattern),
-                .initializer = extract_expression(context)
+            return {
+                .value = ast::expression::Conditional_let {
+                    .pattern     = std::move(pattern),
+                    .initializer = extract_expression(context)
+                },
+                .source_view = make_source_view(anchor, context.pointer - 1)
             };
         }
         else {
-            return std::move(extract_expression(context).value);
+            return extract_expression(context);
         }
     };
 
@@ -185,12 +189,12 @@ namespace {
         }
     }
 
-    constexpr Extractor extract_loop = +[](Parse_context& context) -> ast::Expression::Variant {
+    auto extract_loop(Parse_context& context) -> ast::Expression::Variant {
         return extract_any_loop(context);
     };
 
 
-    constexpr Extractor extract_identifier = +[](Parse_context& context)
+    auto extract_identifier(Parse_context& context)
         -> ast::Expression::Variant
     {
         switch (context.pointer->type) {
@@ -217,19 +221,19 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_global_identifier = +[](Parse_context& context)
+    auto extract_global_identifier(Parse_context& context)
         -> ast::Expression::Variant
     {
         return extract_qualified_lower_name_or_struct_initializer({ ast::Root_qualifier::Global {} }, context);
     };
 
-    constexpr Extractor extract_dereference = +[](Parse_context& context)
+    auto extract_dereference(Parse_context& context)
         -> ast::Expression::Variant
     {
         return ast::expression::Dereference { extract_expression(context) };
     };
 
-    constexpr Extractor extract_tuple = +[](Parse_context& context)
+    auto extract_tuple(Parse_context& context)
         -> ast::Expression::Variant
     {
         auto expressions = extract_comma_separated_zero_or_more<parse_expression, "an expression">(context);
@@ -242,7 +246,7 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_array = +[](Parse_context& context)
+    auto extract_array(Parse_context& context)
         -> ast::Expression::Variant
     {
         static constexpr auto extract_elements =
@@ -261,7 +265,7 @@ namespace {
         }
     };
 
-    constexpr Extractor<ast::Expression> extract_conditional = +[](Parse_context& context)
+    auto extract_conditional(Parse_context& context)
         -> ast::Expression::Variant
     {
         static constexpr std::string_view help =
@@ -283,7 +287,7 @@ namespace {
                 }
             }
             else if (context.try_consume(Token::Type::elif)) {
-                false_branch = bu::wrap(extract_conditional(context));
+                false_branch = bu::wrap(extract_node<ast::Expression, extract_conditional>(context));
             }
 
             if (auto* const literal = std::get_if<ast::expression::Literal<bool>>(&condition.value)) {
@@ -324,7 +328,7 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_let_binding = +[](Parse_context& context)
+    auto extract_let_binding(Parse_context& context)
         -> ast::Expression::Variant
     {
         auto pattern = extract_required<parse_top_level_pattern, "a pattern">(context);
@@ -343,7 +347,7 @@ namespace {
         };
     };
 
-    constexpr Extractor extract_local_type_alias = +[](Parse_context& context)
+    auto extract_local_type_alias(Parse_context& context)
         -> ast::Expression::Variant
     {
         auto name = extract_upper_id(context, "an alias name");
@@ -355,7 +359,7 @@ namespace {
     };
 
 
-    constexpr Extractor extract_lambda = +[](Parse_context& context)
+    auto extract_lambda(Parse_context& context)
         -> ast::Expression::Variant
     {
         auto parameters = extract_function_parameters(context);
@@ -420,14 +424,14 @@ namespace {
     };
 
 
-    constexpr Extractor extract_hole = +[](Parse_context&)
+    auto extract_hole(Parse_context&)
         -> ast::Expression::Variant
     {
         return ast::expression::Hole {};
     };
 
 
-    constexpr Extractor extract_size_of = +[](Parse_context& context)
+    auto extract_size_of(Parse_context& context)
         -> ast::Expression::Variant
     {
         if (context.try_consume(Token::Type::paren_open)) {
@@ -457,7 +461,7 @@ namespace {
     }
 
 
-    constexpr Extractor extract_match = +[](Parse_context& context)
+    auto extract_match(Parse_context& context)
         -> ast::Expression::Variant
     {
         auto expression = extract_expression(context);
@@ -481,13 +485,13 @@ namespace {
         };
     };
 
-    constexpr Extractor extract_continue = +[](Parse_context&)
+    auto extract_continue(Parse_context&)
         -> ast::Expression::Variant
     {
         return ast::expression::Continue {};
     };
 
-    constexpr Extractor extract_break = +[](Parse_context& context)
+    auto extract_break(Parse_context& context)
         -> ast::Expression::Variant
     {
         std::optional<ast::Name> label;
@@ -508,7 +512,7 @@ namespace {
         };
     };
 
-    constexpr Extractor extract_ret = +[](Parse_context& context)
+    auto extract_ret(Parse_context& context)
         -> ast::Expression::Variant
     {
         return ast::expression::Ret {
@@ -516,7 +520,7 @@ namespace {
         };
     };
 
-    constexpr Extractor extract_take_reference = +[](Parse_context& context)
+    auto extract_take_reference(Parse_context& context)
         -> ast::Expression::Variant
     {
         auto mutability = extract_mutability(context);
@@ -526,7 +530,7 @@ namespace {
         };
     };
 
-    constexpr Extractor extract_meta = +[](Parse_context& context)
+    auto extract_meta(Parse_context& context)
         -> ast::Expression::Variant
     {
         if (context.try_consume(Token::Type::paren_open)) {
@@ -539,7 +543,7 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_block_expression = +[](Parse_context& context)
+    auto extract_block_expression(Parse_context& context)
         -> ast::Expression::Variant
     {
         std::vector<ast::Expression> expressions;
@@ -574,7 +578,9 @@ namespace {
     };
 
 
-    auto parse_normal_expression(Parse_context& context) -> std::optional<ast::Expression> {
+    auto parse_normal_expression(Parse_context& context)
+        -> std::optional<ast::Expression::Variant>
+    {
         switch (context.extract().type) {
         case Token::Type::integer:
             return extract_literal<bu::Isize>(context);
@@ -633,25 +639,18 @@ namespace {
             auto* const anchor = context.pointer;
 
             if (auto type = parse_type(context)) {
-                auto value = [&] {
-                    if (context.try_consume(Token::Type::double_colon)) {
-                        return extract_qualified_lower_name_or_struct_initializer(ast::Root_qualifier { std::move(*type) }, context);
-                    }
-                    else if (context.try_consume(Token::Type::brace_open)) {
-                        return extract_struct_initializer(std::move(*type), context);
-                    }
-                    else {
-                        context.error(
-                            { anchor, context.pointer },
-                            "Expected an expression, but found a type"
-                        );
-                    }
-                }();
-
-                return ast::Expression {
-                    .value       = std::move(value),
-                    .source_view = make_source_view(anchor, context.pointer - 1)
-                };
+                if (context.try_consume(Token::Type::double_colon)) {
+                    return extract_qualified_lower_name_or_struct_initializer(ast::Root_qualifier { std::move(*type) }, context);
+                }
+                else if (context.try_consume(Token::Type::brace_open)) {
+                    return extract_struct_initializer(std::move(*type), context);
+                }
+                else {
+                    context.error(
+                        { anchor, context.pointer },
+                        "Expected an expression, but found a type"
+                    );
+                }
             }
             else {
                 return std::nullopt;
@@ -661,7 +660,9 @@ namespace {
     }
 
 
-    auto parse_argument(Parse_context& context) -> std::optional<ast::Function_argument> {
+    auto parse_argument(Parse_context& context)
+        -> std::optional<ast::Function_argument>
+    {
         if (auto name = parse_lower_name(context)) {
             if (context.try_consume(Token::Type::equals)) {
                 return ast::Function_argument {
@@ -676,7 +677,9 @@ namespace {
         return parse_expression(context).transform(bu::make<ast::Function_argument>);
     }
 
-    auto extract_arguments(Parse_context& context) -> std::vector<ast::Function_argument> {
+    auto extract_arguments(Parse_context& context)
+        -> std::vector<ast::Function_argument>
+    {
         constexpr auto extract_arguments =
             extract_comma_separated_zero_or_more<parse_argument, "a function argument">;
         auto arguments = extract_arguments(context);
@@ -690,7 +693,7 @@ namespace {
         -> std::optional<ast::Expression>
     {
         auto* const anchor              = context.pointer;
-        auto        potential_invocable = parse_normal_expression(context);
+        auto        potential_invocable = parse_node<ast::Expression, parse_normal_expression>(context);
 
         if (potential_invocable) {
             while (context.try_consume(Token::Type::paren_open)) {
@@ -910,29 +913,36 @@ namespace {
         return parse_potential_type_cast(context);
     }
 
+
+    auto parse_potential_placement_init(Parse_context& context)
+        -> std::optional<ast::Expression::Variant>
+    {
+        if (auto expression = parse_binary_operator_invocation_with_precedence<lowest_precedence>(context)) {
+            if (context.try_consume(Token::Type::left_arrow)) {
+                return ast::expression::Placement_init {
+                    .lvalue      = std::move(*expression),
+                    .initializer = extract_expression(context)
+                };
+            }
+            else {
+                return std::move(expression->value);
+            }
+        }
+        else {
+            return std::nullopt;
+        }
+    }
+
 }
 
 
 auto parser::parse_expression(Parse_context& context) -> std::optional<ast::Expression> {
-    Token const* const anchor = context.pointer;
-    auto expression = parse_binary_operator_invocation_with_precedence<lowest_precedence>(context);
-
-    if (expression && context.try_consume(Token::Type::left_arrow)) {
-        *expression = ast::Expression {
-            .value = ast::expression::Placement_init {
-                .lvalue      = std::move(*expression),
-                .initializer = extract_expression(context)
-            },
-            .source_view = make_source_view(anchor, context.pointer)
-        };
-    }
-
-    return expression;
+    return parse_node<ast::Expression, parse_potential_placement_init>(context);
 }
 
 auto parser::parse_block_expression(Parse_context& context) -> std::optional<ast::Expression> {
     if (context.try_consume(Token::Type::brace_open)) {
-        return extract_block_expression(context);
+        return extract_node<ast::Expression, extract_block_expression>(context);
     }
     else {
         return std::nullopt;

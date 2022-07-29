@@ -8,8 +8,8 @@ namespace {
 
 
     auto extract_qualified_upper_name(ast::Root_qualifier&& root, Parse_context& context)
-        -> ast::Type::Variant
-    {
+		-> ast::Type::Variant
+	{
         auto* const anchor = context.pointer;
         auto name = extract_qualified(std::move(root), context);
 
@@ -34,34 +34,34 @@ namespace {
 
 
     template <class T>
-    constexpr Extractor extract_primitive = +[](Parse_context&)
-        -> ast::Type::Variant
-    {
+    auto extract_primitive(Parse_context&)
+		-> ast::Type::Variant
+	{
         return ast::type::Primitive<T> {};
     };
 
-    constexpr Extractor extract_wildcard = +[](Parse_context&)
-        -> ast::Type::Variant
-    {
+    auto extract_wildcard(Parse_context&)
+		-> ast::Type::Variant
+	{
         return ast::type::Wildcard {};
     };
 
-    constexpr Extractor extract_typename = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_typename(Parse_context& context)
+		-> ast::Type::Variant
+	{
         context.retreat();
         return extract_qualified_upper_name({ std::monostate {} }, context);
     };
 
-    constexpr Extractor extract_global_typename = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_global_typename(Parse_context& context)
+		-> ast::Type::Variant
+	{
         return extract_qualified_upper_name({ ast::Root_qualifier::Global{} }, context);
     };
 
-    constexpr Extractor extract_tuple = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_tuple(Parse_context& context)
+		-> ast::Type::Variant
+	{
         auto types = extract_comma_separated_zero_or_more<parse_type, "a type">(context);
         context.consume_required(Token::Type::paren_close);
         if (types.size() == 1) {
@@ -72,12 +72,14 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_array_or_slice = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_array_or_slice(Parse_context& context)
+		-> ast::Type::Variant
+	{
         auto element_type = extract_type(context);
 
-        auto type = [&]() -> ast::Type::Variant {
+        auto type = [&]()
+		-> ast::Type::Variant
+	{
             if (context.try_consume(Token::Type::semicolon)) {
                 if (auto length = parse_expression(context)) {
                     return ast::type::Array {
@@ -98,9 +100,9 @@ namespace {
         return type;
     };
 
-    constexpr Extractor extract_function = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_function(Parse_context& context)
+		-> ast::Type::Variant
+	{
         if (context.try_consume(Token::Type::paren_open)) {
             static constexpr auto parse_argument_types =
                 extract_comma_separated_zero_or_more<parse_type, "a type">;
@@ -128,9 +130,9 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_type_of = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_type_of(Parse_context& context)
+		-> ast::Type::Variant
+	{
         if (context.try_consume(Token::Type::paren_open)) {
             auto expression = extract_expression(context);
             context.consume_required(Token::Type::paren_close);
@@ -141,29 +143,29 @@ namespace {
         }
     };
 
-    constexpr Extractor extract_instance_of = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_instance_of(Parse_context& context)
+		-> ast::Type::Variant
+	{
         return ast::type::Instance_of { extract_class_references(context) };
     };
 
-    constexpr Extractor extract_reference = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_reference(Parse_context& context)
+		-> ast::Type::Variant
+	{
         auto const mutability = extract_mutability(context);
         return ast::type::Reference { extract_type(context), mutability };
     };
 
-    constexpr Extractor extract_pointer = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_pointer(Parse_context& context)
+		-> ast::Type::Variant
+	{
         auto mutability = extract_mutability(context);
         return ast::type::Pointer { extract_type(context), std::move(mutability) };
     };
 
-    constexpr Extractor extract_for_all = +[](Parse_context& context)
-        -> ast::Type::Variant
-    {
+    auto extract_for_all(Parse_context& context)
+		-> ast::Type::Variant
+	{
         if (auto parameters = parse_template_parameters(context)) {
             return ast::type::For_all {
                 .parameters = std::move(*parameters),
@@ -176,7 +178,7 @@ namespace {
     };
 
 
-    auto parse_normal_type(Parse_context& context) -> std::optional<ast::Type> {
+    auto parse_normal_type(Parse_context& context) -> std::optional<ast::Type::Variant> {
         switch (context.extract().type) {
         case Token::Type::string_type:
             return extract_primitive<lexer::String>(context);
@@ -221,36 +223,47 @@ namespace {
 
 
 auto parser::parse_type(Parse_context& context) -> std::optional<ast::Type> {
-    auto        type   = parse_normal_type(context);
-    auto* const anchor = context.pointer;
+    Token const* const type_anchor = context.pointer;
 
-    if (type && context.try_consume(Token::Type::double_colon)) {
-        auto name = extract_qualified({ std::move(*type) }, context);
+    if (auto type_value = parse_normal_type(context)) {
+        ast::Type type {
+            .value       = std::move(*type_value),
+            .source_view = make_source_view(type_anchor, context.pointer - 1)
+        };
 
-        if (name.primary_name.is_upper) {
-            auto template_arguments = parse_template_arguments(context);
+        Token* const anchor = context.pointer;
 
-            type = ast::Type {
-                [&]() -> ast::Type::Variant {
-                    if (template_arguments) {
-                        return ast::type::Template_application {
-                            std::move(*template_arguments),
-                            std::move(name)
-                        };
-                    }
-                    else {
-                        return ast::type::Typename { std::move(name) };
-                    }
-                }(),
-                anchor->source_view + context.pointer[-1].source_view
-            };
+        if (context.try_consume(Token::Type::double_colon)) {
+            auto name = extract_qualified({ std::move(type) }, context);
+
+            if (name.primary_name.is_upper) {
+                auto template_arguments = parse_template_arguments(context);
+
+                type = ast::Type {
+                    [&]() -> ast::Type::Variant {
+                        if (template_arguments) {
+                            return ast::type::Template_application {
+                                std::move(*template_arguments),
+                                std::move(name)
+                            };
+                        }
+                        else {
+                            return ast::type::Typename { std::move(name) };
+                        }
+                    }(),
+                    make_source_view(anchor, context.pointer - 1)
+                };
+            }
+            else {
+                // Not a qualified type, retreat
+                context.pointer = anchor;
+                type = std::get<bu::Wrapper<ast::Type>>(name.root_qualifier.value).unsafe_kill(); // This is safe because the wrapper hasn't yet escaped the scope of this function
+            }
         }
-        else {
-            // Not a qualified type, retreat
-            context.pointer = anchor;
-            type = std::get<bu::Wrapper<ast::Type>>(name.root_qualifier.value).kill();
-        }
+
+        return std::move(type);
     }
-
-    return type;
+    else {
+        return std::nullopt;
+    }
 }

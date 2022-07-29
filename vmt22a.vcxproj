@@ -239,6 +239,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bu/utilities.hpp</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="src\mir\mir_formatting.cpp" />
+    <ClCompile Include="src\parser\parser_internals.cpp" />
     <ClCompile Include="src\parser\parse_expression.cpp" />
     <ClCompile Include="src\parser\parse_pattern.cpp" />
     <ClCompile Include="src\parser\parse_type.cpp" />
@@ -250,6 +251,7 @@
     <ClCompile Include="src\resolution\namespace_lookup.cpp" />
     <ClCompile Include="src\resolution\resolution.cpp" />
     <ClCompile Include="src\resolution\resolution_internals.cpp" />
+    <ClCompile Include="src\resolution\type_instantiation.cpp" />
     <ClCompile Include="src\resolution\type_resolution.cpp" />
     <ClCompile Include="src\resolution\scope.cpp" />
     <ClCompile Include="src\resolution\unification.cpp" />
@@ -289,7 +291,6 @@
     <ClInclude Include="src\lexer\lexer.hpp" />
     <ClInclude Include="src\lexer\token.hpp" />
     <ClInclude Include="src\lir\lir.hpp" />
-    <ClInclude Include="src\mir\forward.hpp" />
     <ClInclude Include="src\mir\nodes\definition.hpp" />
     <ClInclude Include="src\mir\mir.hpp" />
     <ClInclude Include="src\mir\nodes\expression.hpp" />
