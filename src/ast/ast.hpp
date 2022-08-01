@@ -14,9 +14,7 @@ namespace ast {
         enum class Type { mut, immut, parameterized };
 
         std::optional<lexer::Identifier> parameter_name;
-        Type                             type;
-
-        bu::Source_view source_view;
+        Type                             type = Type::immut;
         DEFAULTED_EQUALITY(Mutability);
     };
 

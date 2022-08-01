@@ -124,9 +124,10 @@ namespace {
                 if (auto* const binding = scope.find_variable(variable.name.primary_name.identifier)) {
                     binding->has_been_mentioned = true;
                     return {
-                        .value       = mir::expression::Local_variable_reference { variable.name.primary_name },
-                        .type        = binding->type,
-                        .source_view = this_expression.source_view
+                        .value          = mir::expression::Local_variable_reference { variable.name.primary_name },
+                        .type           = binding->type,
+                        .source_view    = this_expression.source_view,
+                        .is_addressable = true
                     };
                 }
             }
@@ -358,6 +359,63 @@ namespace {
             else {
                 bu::todo();
             }
+        }
+
+        auto operator()(hir::expression::Reference& reference) -> mir::Expression {
+            auto             expression      = recurse(reference.expression);
+            bu::wrapper auto referenced_type = expression.type;
+
+            if (expression.is_addressable) {
+                return {
+                    .value = mir::expression::Reference {
+                        .mutability = reference.mutability,
+                        .expression = std::move(expression)
+                    },
+                    .type = mir::Type {
+                        .value = mir::type::Reference {
+                            .mutability      = reference.mutability,
+                            .referenced_type = referenced_type
+                        },
+                        .source_view = this_expression.source_view
+                    },
+                    .source_view = this_expression.source_view
+                };
+            }
+            else {
+                context.error(reference.expression->source_view, { "This expression is not addressable" });
+            }
+        }
+
+        auto operator()(hir::expression::Dereference& deref) -> mir::Expression {
+            auto             expression      = recurse(deref.expression);
+            bu::wrapper auto referenced_type = context.fresh_general_unification_variable();
+
+            constraint_set.equality_constraints.push_back({
+                .left  = expression.type,
+                .right = mir::Type {
+                    .value = mir::type::Reference_variable {
+                        .referenced_type = referenced_type
+                    },
+                    .source_view = this_expression.source_view
+                },
+                .constrainer {
+                    this_expression.source_view,
+                    "Only expressions of reference types (&T or &mut T) can be dereferenced"
+                },
+                .constrained {
+                    deref.expression->source_view,
+                    "But this expression is of type {0}"
+                }
+            });
+
+            return {
+                .value = mir::expression::Dereference {
+                    .expression = std::move(expression)
+                },
+                .type           = referenced_type,
+                .source_view    = this_expression.source_view,
+                .is_addressable = true
+            };
         }
 
         auto operator()(auto&) -> mir::Expression {

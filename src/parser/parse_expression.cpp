@@ -524,9 +524,9 @@ namespace {
         -> ast::Expression::Variant
     {
         auto mutability = extract_mutability(context);
-        return ast::expression::Take_reference {
+        return ast::expression::Reference {
             .mutability = std::move(mutability),
-            .name       = extract_lower_id(context, "a variable name")
+            .expression = extract_expression(context)
         };
     };
 

@@ -125,6 +125,16 @@ namespace {
             }
         }
 
+        auto operator()(hir::type::Reference& reference) -> bu::Wrapper<mir::Type> {
+            return mir::Type {
+                .value = mir::type::Reference {
+                    .mutability      = reference.mutability,
+                    .referenced_type = recurse(reference.type)
+                },
+                .source_view = this_type.source_view
+            };
+        }
+
         auto operator()(auto&) -> bu::Wrapper<mir::Type> {
             context.error(this_type.source_view, { "This type can not be resolved yet" });
         }

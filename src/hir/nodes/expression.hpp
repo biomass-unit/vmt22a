@@ -104,11 +104,6 @@ namespace hir {
             DEFAULTED_EQUALITY(Match);
         };
 
-        struct Dereference {
-            bu::Wrapper<Expression> expression;
-            DEFAULTED_EQUALITY(Dereference);
-        };
-
         struct Template_application {
             std::vector<Template_argument> template_arguments;
             Qualified_name                 name;
@@ -145,10 +140,15 @@ namespace hir {
             DEFAULTED_EQUALITY(Size_of);
         };
 
-        struct Take_reference {
-            ast::Mutability   mutability;
-            lexer::Identifier name;
-            DEFAULTED_EQUALITY(Take_reference);
+        struct Reference {
+            ast::Mutability         mutability;
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Reference);
+        };
+
+        struct Dereference {
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Dereference);
         };
 
         struct Placement_init {
@@ -188,14 +188,14 @@ namespace hir {
             expression::Member_access_chain,
             expression::Member_function_invocation,
             expression::Match,
-            expression::Dereference,
             expression::Template_application,
             expression::Type_cast,
             expression::Let_binding,
             expression::Local_type_alias,
             expression::Ret,
             expression::Size_of,
-            expression::Take_reference,
+            expression::Reference,
+            expression::Dereference,
             expression::Placement_init,
             expression::Meta,
             expression::Hole

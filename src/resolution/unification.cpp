@@ -69,6 +69,25 @@ namespace {
             this_constraint.right->value = left;
         }
 
+        auto operator()(mir::type::Reference_variable const& left, mir::type::Reference const& right) -> void {
+            recurse(left.referenced_type, right.referenced_type);
+            this_constraint.left->value = right;
+        }
+        auto operator()(mir::type::Reference const& left, mir::type::Reference_variable const& right) -> void {
+            recurse(left.referenced_type, right.referenced_type);
+            this_constraint.right->value = left;
+        }
+        auto operator()(mir::type::Reference_variable const& left, mir::type::Reference_variable const& right) -> void {
+            recurse(left.referenced_type, right.referenced_type);
+            this_constraint.left->value = right;
+        }
+        auto operator()(mir::type::Reference const& left, mir::type::Reference const& right) -> void {
+            recurse(left.referenced_type, right.referenced_type);
+            if (left.mutability != right.mutability) {
+                bu::todo();
+            }
+        }
+
         auto operator()(mir::type::Array const& left, mir::type::Array const& right) -> void {
             recurse(left.element_type, right.element_type);
         }

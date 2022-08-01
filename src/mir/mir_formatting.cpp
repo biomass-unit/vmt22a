@@ -72,6 +72,12 @@ namespace {
             operator()(invocation.function);
             return format("({})", invocation.arguments);
         }
+        auto operator()(mir::expression::Reference const& reference) {
+            return format("(&{}{})", reference.mutability, reference.expression);
+        }
+        auto operator()(mir::expression::Dereference const& dereference) {
+            return format("(*{})", dereference.expression);
+        }
     };
 
     struct Pattern_format_visitor : bu::fmt::Visitor_base {
@@ -153,14 +159,17 @@ namespace {
         auto operator()(mir::type::Enumeration const&) -> std::format_context::iterator {
             bu::todo();
         }
-        auto operator()(mir::type::For_all const& for_all) {
-            return format("for [{}] {}", for_all.parameters, for_all.body);
-        }
         auto operator()(mir::type::General_variable const& variable) {
             return format("'T{}", variable.tag.value);
         }
         auto operator()(mir::type::Integral_variable const& variable) {
             return format("'I{}", variable.tag.value);
+        }
+        auto operator()(mir::type::Reference_variable const& variable) {
+            return format("&'{}", variable.referenced_type);
+        }
+        auto operator()(mir::type::For_all const& for_all) {
+            return format("for [{}] {}", for_all.parameters, for_all.body);
         }
     };
 

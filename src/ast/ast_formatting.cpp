@@ -86,9 +86,6 @@ namespace {
         auto operator()(ast::expression::Variable const& variable) {
             return format("{}", variable.name);
         }
-        auto operator()(ast::expression::Dereference const& dereference) {
-            return format("*{}", dereference.expression);
-        }
         auto operator()(ast::expression::Template_application const& application) {
             return format("{}[{}]", application.name, application.template_arguments);
         }
@@ -202,8 +199,11 @@ namespace {
         auto operator()(ast::expression::Size_of const& size_of) {
             return format("size_of({})", size_of.type);
         }
-        auto operator()(ast::expression::Take_reference const& reference) {
-            return format("&{}{}", reference.mutability, reference.name);
+        auto operator()(ast::expression::Reference const& reference) {
+            return format("&{}{}", reference.mutability, reference.expression);
+        }
+        auto operator()(ast::expression::Dereference const& dereference) {
+            return format("*{}", dereference.expression);
         }
         auto operator()(ast::expression::Placement_init const& init) {
             return format("{} <- {}", init.lvalue, init.initializer);

@@ -224,12 +224,6 @@ namespace {
             };
         }
 
-        auto operator()(ast::expression::Dereference const& deref) -> hir::Expression::Variant {
-            return hir::expression::Dereference {
-                .expression = context.lower(deref.expression)
-            };
-        }
-
         auto operator()(ast::expression::Template_application const& application) -> hir::Expression::Variant {
             return hir::expression::Template_application {
                 .template_arguments = bu::map(context.lower())(application.template_arguments),
@@ -313,10 +307,16 @@ namespace {
             return hir::expression::Size_of { .type = context.lower(size_of.type) };
         }
 
-        auto operator()(ast::expression::Take_reference const& take) -> hir::Expression::Variant {
-            return hir::expression::Take_reference {
-                .mutability = take.mutability,
-                .name       = take.name
+        auto operator()(ast::expression::Reference const& reference) -> hir::Expression::Variant {
+            return hir::expression::Reference {
+                .mutability = reference.mutability,
+                .expression = context.lower(reference.expression)
+            };
+        }
+
+        auto operator()(ast::expression::Dereference const& dereference) -> hir::Expression::Variant {
+            return hir::expression::Dereference {
+                .expression = context.lower(dereference.expression)
             };
         }
 

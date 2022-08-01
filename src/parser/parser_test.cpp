@@ -185,10 +185,7 @@ namespace {
                     .label = "outer"_name,
                     .iterator = mk_patt(ast::pattern::Name {
                         "x"_name,
-                        {
-                            .type = ast::Mutability::Type::immut,
-                            .source_view = empty_view()
-                        }
+                        { .type = ast::Mutability::Type::immut }
                     }),
                     .iterable = mk_expr(ast::expression::Literal { lexer::String { "hello"sv } }),
                     .body = mk_expr(ast::expression::Block {})
@@ -315,11 +312,11 @@ namespace {
                         .patterns = bu::vector_from({
                             mk_patt(ast::pattern::Name {
                                 .value      = "a"_name,
-                                .mutability { .type = ast::Mutability::Type::immut, .source_view = empty_view() }
+                                .mutability { .type = ast::Mutability::Type::immut }
                             }),
                             mk_patt(ast::pattern::Name {
                                 .value      = "b"_name,
-                                .mutability { .type = ast::Mutability::Type::mut, .source_view = empty_view() }
+                                .mutability { .type = ast::Mutability::Type::mut }
                             })
                         })
                     }),
@@ -376,13 +373,13 @@ namespace {
                                     mk_patt(ast::pattern::Wildcard {}),
                                     mk_patt(ast::pattern::Name {
                                         .value      = "b"_name,
-                                        .mutability { .type = ast::Mutability::Type::mut, .source_view = empty_view() }
+                                        .mutability { .type = ast::Mutability::Type::mut }
                                     }),
                                     mk_patt(ast::pattern::Tuple {
                                         .patterns = bu::vector_from({
                                             mk_patt(ast::pattern::Name {
                                                 .value      = "c"_name,
-                                                .mutability { .type = ast::Mutability::Type::immut, .source_view = empty_view() }
+                                                .mutability { .type = ast::Mutability::Type::immut }
                                             }),
                                             mk_patt(ast::pattern::Wildcard {})
                                         })
@@ -429,10 +426,7 @@ namespace {
                     .patterns {
                         mk_patt(ast::pattern::Name {
                             .value = "x"_name,
-                            .mutability {
-                                .type        = ast::Mutability::Type::immut,
-                                .source_view = empty_view()
-                            }
+                            .mutability { .type = ast::Mutability::Type::immut }
                         }),
                         mk_patt(ast::pattern::Wildcard {})
                     }
@@ -457,10 +451,7 @@ namespace {
                     },
                     .pattern = mk_patt(ast::pattern::Name {
                         .value = "x"_name,
-                        .mutability {
-                            .type        = ast::Mutability::Type::immut,
-                            .source_view = empty_view()
-                        }
+                        .mutability { .type = ast::Mutability::Type::immut }
                     })
                 }
             );
@@ -476,10 +467,7 @@ namespace {
                 ast::pattern::As {
                     .name = ast::pattern::Name {
                         .value = "x"_name,
-                        .mutability {
-                            .type        = ast::Mutability::Type::mut,
-                            .source_view = empty_view()
-                        }
+                        .mutability { .type = ast::Mutability::Type::mut }
                     },
                     .pattern = mk_patt(ast::pattern::Tuple {
                         .patterns {

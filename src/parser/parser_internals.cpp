@@ -46,27 +46,16 @@ auto parser::parse_template_arguments(Parse_context& context)
                     mutability.emplace(
                         ast::Mutability {
                             .parameter_name = extract_lower_id(context, "a mutability parameter name"),
-                            .type           = ast::Mutability::Type::parameterized,
-                            .source_view    = get_source_view()
+                            .type           = ast::Mutability::Type::parameterized
                         }
                     );
                 }
                 else {
-                    mutability.emplace(
-                        ast::Mutability {
-                            .type        = ast::Mutability::Type::mut,
-                            .source_view = get_source_view()
-                        }
-                    );
+                    mutability.emplace(ast::Mutability { .type = ast::Mutability::Type::mut });
                 }
             }
             else if (context.try_consume(Token::Type::immut)) {
-                mutability.emplace(
-                    ast::Mutability {
-                        .type        = ast::Mutability::Type::immut,
-                        .source_view = get_source_view()
-                    }
-                );
+                mutability.emplace(ast::Mutability { .type = ast::Mutability::Type::immut });
             }
 
             return mutability.transform(bu::make<ast::Template_argument>);
@@ -258,22 +247,15 @@ auto parser::extract_mutability(Parse_context& context) -> ast::Mutability {
         if (context.try_consume(Token::Type::question)) {
             return {
                 .parameter_name = extract_lower_id(context, "a mutability parameter name"),
-                .type           = ast::Mutability::Type::parameterized,
-                .source_view    = get_source_view()
+                .type           = ast::Mutability::Type::parameterized
             };
         }
         else {
-            return {
-                .type        = ast::Mutability::Type::mut,
-                .source_view = get_source_view()
-            };
+            return { .type = ast::Mutability::Type::mut };
         }
     }
     else {
-        return {
-            .type        = ast::Mutability::Type::immut,
-            .source_view = get_source_view()
-        };
+        return { .type = ast::Mutability::Type::immut };
     }
 }
 

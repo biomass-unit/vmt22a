@@ -46,6 +46,15 @@ namespace mir {
             std::vector<Expression> arguments;
         };
 
+        struct Reference {
+            ast::Mutability         mutability;
+            bu::Wrapper<Expression> expression;
+        };
+
+        struct Dereference {
+            bu::Wrapper<Expression> expression;
+        };
+
     }
 
 
@@ -62,12 +71,16 @@ namespace mir {
             expression::Let_binding,
             expression::Local_variable_reference,
             expression::Function_reference,
-            expression::Direct_invocation
+            expression::Direct_invocation,
+            expression::Reference,
+            expression::Dereference
         >;
 
         Variant           value;
         bu::Wrapper<Type> type;
         bu::Source_view   source_view;
+        ast::Mutability   mutability;
+        bool              is_addressable = false;
     };
 
 }

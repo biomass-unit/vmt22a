@@ -121,9 +121,6 @@ namespace {
             }
             return format(" }}");
         }
-        auto operator()(hir::expression::Dereference const& deref) {
-            return format("(*{})", deref.expression);
-        }
         auto operator()(hir::expression::Template_application const& application) {
             return format("{}[{}]", application.name, application.template_arguments);
         }
@@ -147,8 +144,11 @@ namespace {
         auto operator()(hir::expression::Size_of const& size_of) {
             return format("size_of({})", size_of.type);
         }
-        auto operator()(hir::expression::Take_reference const& take) {
-            return format("&{}{}", take.mutability, take.name);
+        auto operator()(hir::expression::Reference const& reference) {
+            return format("&{}{}", reference.mutability, reference.expression);
+        }
+        auto operator()(hir::expression::Dereference const& dereference) {
+            return format("(*{})", dereference.expression);
         }
         auto operator()(hir::expression::Placement_init const& init) {
             return format("{} <- {}", init.lvalue, init.initializer);

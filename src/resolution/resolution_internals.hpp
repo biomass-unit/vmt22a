@@ -201,7 +201,7 @@ namespace resolution {
 
         auto unify(Constraint_set&) -> void;
 
-        auto fresh_general_unification_variable()  -> bu::Wrapper<mir::Type>;
+        auto fresh_general_unification_variable() -> bu::Wrapper<mir::Type>;
         auto fresh_integral_unification_variable() -> bu::Wrapper<mir::Type>;
 
         auto instantiate(mir::type::For_all const&) -> bu::Wrapper<mir::Type>;

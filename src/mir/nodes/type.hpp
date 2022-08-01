@@ -57,9 +57,12 @@ namespace mir {
         struct General_variable {
             Type_variable_tag tag;
         };
-
         struct Integral_variable {
             Type_variable_tag tag;
+        };
+
+        struct Reference_variable {
+            bu::Wrapper<Type> referenced_type;
         };
 
         struct For_all {
@@ -86,6 +89,7 @@ namespace mir {
             type::Enumeration,
             type::General_variable,
             type::Integral_variable,
+            type::Reference_variable,
             type::For_all
         >;
         Variant                        value;

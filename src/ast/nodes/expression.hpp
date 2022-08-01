@@ -25,11 +25,6 @@ namespace ast {
             DEFAULTED_EQUALITY(Variable);
         };
 
-        struct Dereference {
-            bu::Wrapper<Expression> expression;
-            DEFAULTED_EQUALITY(Dereference);
-        };
-
         struct Template_application {
             std::vector<Template_argument> template_arguments;
             Qualified_name                 name;
@@ -204,10 +199,15 @@ namespace ast {
             DEFAULTED_EQUALITY(Size_of);
         };
 
-        struct Take_reference {
-            Mutability        mutability;
-            lexer::Identifier name;
-            DEFAULTED_EQUALITY(Take_reference);
+        struct Reference {
+            Mutability              mutability;
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Reference);
+        };
+
+        struct Dereference {
+            bu::Wrapper<Expression> expression;
+            DEFAULTED_EQUALITY(Dereference);
         };
 
         struct Placement_init {
@@ -237,7 +237,6 @@ namespace ast {
             expression::Literal<lexer::String>,
             expression::Array_literal,
             expression::Variable,
-            expression::Dereference,
             expression::Template_application,
             expression::Tuple,
             expression::Block,
@@ -260,7 +259,8 @@ namespace ast {
             expression::Break,
             expression::Ret,
             expression::Size_of,
-            expression::Take_reference,
+            expression::Reference,
+            expression::Dereference,
             expression::Placement_init,
             expression::Meta,
             expression::Hole
