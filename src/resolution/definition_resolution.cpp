@@ -7,7 +7,7 @@ namespace {
     auto resolve_function_parameters(
         resolution::Context                    & context,
         std::span<hir::Function_parameter> const hir_parameters,
-        bu::Wrapper<resolution::Namespace> const home_namespace) -> bu::Pair<resolution::Scope, std::vector<mir::Function_parameter>>
+        bu::Wrapper<resolution::Namespace>       home_namespace) -> bu::Pair<resolution::Scope, std::vector<mir::Function_parameter>>
     {
         resolution::Scope                    signature_scope { context };
         std::vector<mir::Function_parameter> mir_parameters;

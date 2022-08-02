@@ -35,7 +35,7 @@ namespace {
         auto operator()(ast::expression::Conditional const& conditional) -> hir::Expression::Variant {
             auto false_branch = conditional.false_branch
                               . transform(context.lower())
-                              . value_or(context.unit_value(this_expression.source_view));
+                              . value_or(*context.unit_value(this_expression.source_view));
 
             if (auto* const let = std::get_if<ast::expression::Conditional_let>(&conditional.condition->value)) {
                 /*

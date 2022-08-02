@@ -7,8 +7,8 @@
 namespace {
 
     template <class HIR_definition, auto resolution::Namespace::* member>
-    auto visit_handler(bu::Wrapper<resolution::Namespace> const space) {
-        return [space](HIR_definition& hir_definition) -> void {
+    auto visit_handler(bu::Wrapper<resolution::Namespace> space) {
+        return [space](HIR_definition& hir_definition) mutable -> void {
             lexer::Identifier identifier = hir_definition.name.identifier;
             bu::Wrapper definition = resolution::Definition_info { std::move(hir_definition), space };
             ((*space).*member).add(std::move(identifier), bu::copy(definition));
@@ -19,7 +19,7 @@ namespace {
     auto register_namespace(
         resolution::Context                    & context,
         std::span<hir::Definition>         const definitions,
-        bu::Wrapper<resolution::Namespace> const space) -> void
+        bu::Wrapper<resolution::Namespace>       space) -> void
     {
         space->definitions_in_order.reserve(definitions.size());
 
@@ -114,7 +114,7 @@ namespace {
 
 
     // Resolves all definitions in order, but only visits function bodies if their return types have been omitted
-    auto resolve_signatures(resolution::Context& context, bu::Wrapper<resolution::Namespace> const space) -> void {
+    auto resolve_signatures(resolution::Context& context, bu::Wrapper<resolution::Namespace> space) -> void {
         for (resolution::Namespace::Definition_variant& definition : space->definitions_in_order) {
             std::visit(bu::Overload {
                 [&](resolution::Function_info& info) {
@@ -136,7 +136,7 @@ namespace {
     }
 
 
-    auto resolve_functions(resolution::Context& context, bu::Wrapper<resolution::Namespace> const space) -> void {
+    auto resolve_functions(resolution::Context& context, bu::Wrapper<resolution::Namespace> space) -> void {
         for (resolution::Namespace::Definition_variant& definition : space->definitions_in_order) {
             if (bu::wrapper auto* const info = std::get_if<bu::Wrapper<resolution::Function_info>>(&definition)) {
                 (void)context.resolve_function(**info);

@@ -28,7 +28,7 @@ namespace {
                 return &*context.global_namespace;
             },
             [&](hir::Type& hir_type) {
-                bu::wrapper auto const type = context.resolve_type(hir_type, scope, space);
+                bu::wrapper auto type = context.resolve_type(hir_type, scope, space);
 
                 if (auto associated = context.namespace_associated_with(type)) {
                     return &**associated;

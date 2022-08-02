@@ -40,19 +40,25 @@ namespace bu {
         Wrapper(Args&&... args)
             noexcept(std::is_nothrow_constructible_v<T, Args&&...>)
         {
-            index = context().make_wrapper(std::forward<Args>(args)...);
+            this->index = context().make_wrapper(std::forward<Args>(args)...);
         }
 
-        auto operator*(this Wrapper const self) noexcept -> T& {
-            return context().get_element(self.index);
-        }
+        auto operator*() const noexcept -> T const& { return context().get_element(index); }
+        auto operator*()       noexcept -> T      & { return context().get_element(index); }
 
-        auto operator->(this Wrapper const self) noexcept -> T* {
-            return std::addressof(*self);
-        }
+        auto operator->() const noexcept -> T const* { return std::addressof(**this); }
+        auto operator->()       noexcept -> T      * { return std::addressof(**this); }
 
-        operator T&(this Wrapper const self) noexcept {
-            return *self;
+        operator T const&() const& noexcept { return **this; }
+        operator T      &()      & noexcept { return **this; }
+
+        operator T const&() const&& = delete;
+        operator T      &()      && = delete;
+
+        auto clone(this Wrapper const self)
+            noexcept(noexcept(std::is_nothrow_copy_constructible_v<T>)) -> Wrapper
+        {
+            return Wrapper { *self };
         }
 
         auto hash(this Wrapper const self)

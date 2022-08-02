@@ -148,10 +148,10 @@ namespace {
         }
         auto operator()(mir::type::Structure const& structure) {
             return std::visit(bu::Overload {
-                [this](hir::definition::Struct& structure) {
+                [this](hir::definition::Struct const& structure) {
                     return format("{}", structure.name);
                 },
-                [this](mir::Struct& structure) {
+                [this](mir::Struct const& structure) {
                     return format("{}", structure.name);
                 }
             }, structure.info->value);
